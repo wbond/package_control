@@ -1,0 +1,7 @@
+{
+	// A list of URLs that contain a packages JSON file, earlier repos take
+	// priority over later repos
+	"repos": [
+		"http://wbond.net/sublime/repo/packages.json"
+	]
+}

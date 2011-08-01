@@ -1,0 +1,43 @@
+[
+    {
+        "caption": "Package Manager: List Packages",
+        "command": "list_packages"
+    },
+    {
+        "caption": "Package Manager: Create Package",
+        "command": "create_package"
+    },
+    {
+        "caption": "Package Manager: Install Package",
+        "command": "install_package"
+    },
+    {
+        "caption": "Preferences: Package Manager Settings",
+        "command": "open_file", "args":
+        {
+            "file": "${packages}/PackageManager/PackageManager.sublime-settings"} },
+    {
+        "caption": "Preferences: Package Manager Key Bindings",
+        "command": "open_file", "args":
+        {
+            "file": "${packages}/PackageManager/Default (Windows).sublime-keymap",
+            "platform": "Windows"
+        }
+    },
+    {
+        "caption": "Preferences: Package Manager Key Bindings",
+        "command": "open_file", "args":
+        {
+            "file": "${packages}/PackageManager/Default (OSX).sublime-keymap",
+            "platform": "OSX"
+        }
+    },
+    {
+        "caption": "Preferences: Package Manager Key Bindings",
+        "command": "open_file", "args":
+        {
+            "file": "${packages}/PackageManager/Default (Linux).sublime-keymap",
+            "platform": "Linux"
+        }
+    }
+]
