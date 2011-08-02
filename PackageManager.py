@@ -218,22 +218,6 @@ class PackageManagerPanel():
         self.panel.set_read_only(True)
 
 
-class ListPackagesCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
-    def run(self):
-        manager = PackageManager()
-        packages = manager.list_available_packages()
-
-        self.write("\n\nAvailable packages:")
-        for package in sorted(packages.iterkeys()):
-            info = packages[package]
-            installed = ('Installed' if info['installed'] else 'Not installed')
-            download = info['downloads'][0]
-            self.write("\n  " + package)
-            self.write("\n    v" + download['version'] + ', ' +
-                download['date'])
-            self.write("\n    " + installed + ', ' + info['repo'])
-
-
 class CreatePackageCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
     def run(self):
         self.manager = PackageManager()
