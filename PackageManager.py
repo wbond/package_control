@@ -17,6 +17,11 @@ class PackageManager():
     files_to_ignore = ['.hgignore', '.gitignore', '.bzrignore', '*.pyc',
         '*.sublime-project', '*.tmTheme.cache']
 
+    def compare_versions(self, version1, version2):
+        def normalize(v):
+            return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
+        return cmp(normalize(version1), normalize(version2))
+
     def list_repos(self):
         settings = sublime.load_settings('PackageManager.sublime-settings')
         return settings.get('repos')
@@ -58,14 +63,23 @@ class PackageManager():
                 downloads = []
                 for download in package['platforms'][id]:
                     downloads.append(download)
-                output[package['name']] = {
+                info = {
                     'name': package['name'],
                     'description': package['description'],
                     'package_filename': package['package_filename'],
                     'downloads': downloads,
                     'repo': repo,
                     'installed': package['name'] in installed_packages
-                    }
+                }
+                if info['installed']:
+                    metadata_filename = os.path.join(sublime.packages_path(),
+                        package['name'], 'package-metadata.json')
+                    if os.path.exists(metadata_filename):
+                        with open(metadata_filename) as f:
+                            metadata = json.load(f)
+                        info['installed_version'] = metadata['version']
+                        info['installed_repo'] = metadata['repo']
+                output[package['name']] = info
                 break
         return output
 
@@ -117,7 +131,8 @@ class PackageManager():
         return True
 
     def install_package(self, package_name):
-        packages = self.list_packages()
+        installed_packages = self.list_packages()
+        packages = self.list_available_packages()
 
         if package_name not in packages.keys():
             sublime.active_window().run_command('list_packages')
@@ -164,6 +179,14 @@ class PackageManager():
 
         os.chdir(package_dir)
         package_zip.extractall()
+        package_metadata_file = os.path.join(package_dir,
+            'package-metadata.json')
+        with open(package_metadata_file, 'w') as f:
+            metadata = {
+                "version": packages[package_name]['downloads'][0]['version'],
+                "repo": packages[package_name]['repo']
+            }
+            json.dump(metadata, f)
         return True
 
 
@@ -229,15 +252,36 @@ class CreatePackageCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
 
 class InstallPackageCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
     def run(self):
-        view = self.window.show_input_panel('Package To Install', '',
-            self.on_done, self.on_change, self.on_cancel)
+        self.manager = PackageManager()
+        packages = self.manager.list_available_packages()
 
-    def on_done(self, package_name):
-        manager = PackageManager()
-        manager.install_package(package_name)
+        self.package_list = []
+        for package in sorted(packages.iterkeys()):
+            package_entry = [package]
+            info = packages[package]
+            download = info['downloads'][0]
+            if info['installed']:
+                if 'installed_version' not in info:
+                    action = 'overwrite'
+                else:
+                    res = self.manager.compare_versions(
+                        info['installed_version'], download['version'])
+                    if res < 0:
+                        action = 'upgrade'
+                    elif res > 0:
+                        action = 'downgrade'
+                    else:
+                        action = 'reinstall'
+            else:
+                action = 'install'
+            package_entry.append('v' + download['version'] + ' (' +
+                action + ') ' + re.sub('^https?://', '', info['repo']))
+            self.package_list.append(package_entry)
+        self.window.show_quick_panel(self.package_list, self.on_done)
 
-    def on_change(self, text):
-        pass
-
-    def on_cancel(self):
-        pass
+    def on_done(self, picked):
+        if picked == -1:
+            return
+        package_name = self.package_list[picked][0]
+        package = self.manager.list_available_packages()[package_name]
+        self.manager.install_package(package_name)
