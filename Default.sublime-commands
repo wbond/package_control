@@ -16,6 +16,10 @@
         "command": "upgrade_package"
     },
     {
+        "caption": "Package Manager: Add Repo",
+        "command": "add_repo"
+    },
+    {
         "caption": "Preferences: Package Manager Settings",
         "command": "open_file", "args":
         {

@@ -3,5 +3,8 @@
 	// priority over later repos
 	"repos": [
 		"http://wbond.net/sublime/repo/packages.json"
-	]
+	],
+
+	// If packages should be automatically upgraded when ST2 starts
+	"auto_upgrade": true
 }

@@ -260,6 +260,27 @@ class UpgradePackageCommand(sublime_plugin.WindowCommand, PackageInstaller):
         self.window.show_quick_panel(self.package_list, self.on_done)
 
 
+class AddRepoCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        self.window.show_input_panel('Repo JSON URL', '', self.on_done,
+            self.on_change, self.on_cancel)
+
+    def on_done(self, input):
+        settings = sublime.load_settings('PackageManager.sublime-settings')
+        repos = settings.get('repos', [])
+        if not repos:
+            repos = []
+        repos.append(input)
+        settings.set('repos', repos)
+        sublime.save_settings('PackageManager.sublime-settings')
+
+    def on_change(self, input):
+        pass
+
+    def on_cancel(self):
+        pass
+
+
 def automatic_upgrader():
     settings = sublime.load_settings('PackageManager.sublime-settings')
     if settings.get('auto_upgrade'):
