@@ -22,12 +22,35 @@ class PackageManager():
             return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
         return cmp(normalize(version1), normalize(version2))
 
-    def list_repos(self):
+    def get_metadata(self, package):
+        metadata_filename = os.path.join(sublime.packages_path(),
+            package, 'package-metadata.json')
+        if os.path.exists(metadata_filename):
+            with open(metadata_filename) as f:
+                return json.load(f)
+        return {}
+
+    def list_repositories(self):
         settings = sublime.load_settings('PackageManager.sublime-settings')
-        return settings.get('repos')
+        repositories = settings.get('repositories')
+        repository_channels = settings.get('repository_channels')
+        for channel in repository_channels:
+            try:
+                channel_file_http = urllib2.urlopen(channel)
+                channel_info = json.load(channel_file_http)
+                repositories.extend(channel_info['repositories'])
+            except (urllib2.HTTPError) as (e):
+                sublime.error_message('Package Manager: Error downloading ' +
+                    'channel. HTTP Error ' + str(e.code) + ' downloading ' +
+                    channel + '.')
+            except (urllib2.URLError) as (e):
+                sublime.error_message('Package Manager: Error downloading ' +
+                    'channel. URL Error ' + e.reason + ' downloading ' +
+                    channel + '.')
+        return repositories
 
     def list_available_packages(self):
-        repos = self.list_repos()
+        repos = self.list_repositories()
         installed_packages = self.list_packages()
         packages = {}
         for repo in repos[::-1]:
@@ -65,19 +88,17 @@ class PackageManager():
                     downloads.append(download)
                 info = {
                     'name': package['name'],
-                    'description': package['description'],
-                    'package_filename': package['package_filename'],
+                    'description': package.get('description'),
+                    'url': package.get('url', repo),
                     'downloads': downloads,
-                    'repo': repo,
                     'installed': package['name'] in installed_packages
                 }
+
                 if info['installed']:
-                    metadata_filename = os.path.join(sublime.packages_path(),
-                        package['name'], 'package-metadata.json')
-                    if os.path.exists(metadata_filename):
-                        with open(metadata_filename) as f:
-                            metadata = json.load(f)
+                    metadata = self.get_metadata(package['name'])
+                    if metadata.get('version'):
                         info['installed_version'] = metadata['version']
+                    if metadata.get('repo'):
                         info['installed_repo'] = metadata['repo']
                 output[package['name']] = info
                 break
@@ -97,9 +118,9 @@ class PackageManager():
         package_dir = os.path.join(sublime.packages_path(), package_name) + '/'
 
         if not os.path.exists(package_dir):
-            sublime.error_message('The folder for the package name ' +
-                'specified, %s, does not exist in %s' % (package_name,
-                sublime.packages_path()))
+            sublime.error_message('Package Manager: The folder for the ' +
+                'package name specified, %s, does not exist in %s' %
+                (package_name, sublime.packages_path()))
             return False
 
         package_filename = os.path.join(sublime.installed_packages_path(),
@@ -135,33 +156,28 @@ class PackageManager():
         packages = self.list_available_packages()
 
         if package_name not in packages.keys():
-            sublime.active_window().run_command('list_packages')
-            sublime.error_message('The package specified,' +
-                ' %s, is not available. The list of available packages is' +
-                ' printed below.' % (package_name,))
+            sublime.error_message('Package Manager: The package specified,' +
+                ' %s, is not available.' % (package_name,))
             return False
 
         download = packages[package_name]['downloads'][0]
         url = download['url']
-        package_filename = packages[package_name]['package_filename']
+        package_filename = package_name + '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
 
         try:
             package_file_http = urllib2.urlopen(url)
-
             package_file = open(package_path, "w")
             package_file.write(package_file_http.read())
             package_file.close()
-
-        #handle errors
-        except (HTTPError) as (e):
-            sublime.error_message("HTTP Error " + e.code + ' downloading ' +
-                url)
+        except (urllib2.HTTPError) as (e):
+            sublime.error_message('Package Manager: Error downloading ' +
+                'package. HTTP Error ' + str(e.code) + ' downloading ' + url + '.')
             return False
-        except (URLError) as (e):
-            sublime.error_message("URL Error " + e.reason + ' downloading ' +
-                url)
+        except (urllib2.URLError) as (e):
+            sublime.error_message('Package Manager: Error downloading ' +
+                'package. URL Error ' + e.reason + ' downloading ' + url + '.')
             return False
 
         package_dir = os.path.join(sublime.packages_path(),
@@ -172,9 +188,9 @@ class PackageManager():
         package_zip = zipfile.ZipFile(package_path, 'r')
         for path in package_zip.namelist():
             if path[0] == '/' or path.find('..') != -1:
-                sublime.error_message('The package specified,' +
-                    ' %s, contains files outside of the package dir and' +
-                    ' cannot be safely installed.' % (package_name,))
+                sublime.error_message('Package Manager: The package ' +
+                    'specified, %s, contains files outside of the package ' +
+                    'dir and cannot be safely installed.' % (package_name,))
                 return False
 
         os.chdir(package_dir)
@@ -188,6 +204,44 @@ class PackageManager():
             }
             json.dump(metadata, f)
         return True
+
+
+    def remove_package(self, package_name):
+        installed_packages = self.list_packages()
+
+        if package_name not in installed_packages:
+            sublime.error_message('Package Manager: The package specified,' +
+                ' %s, is not installed.' % (package_name,))
+            return False
+
+        package_filename = package_name + '.sublime-package'
+        package_path = os.path.join(sublime.installed_packages_path(),
+            package_filename)
+        package_dir = os.path.join(sublime.packages_path(),
+            package_filename.replace('.sublime-package', ''))
+
+        try:
+            os.remove(package_path)
+        except (OSError) as (exception):
+            sublime.error_message('Package Manager: An error occurred while' +
+                ' trying to remove the package file for %s. %s' %
+                (package_name, str(exception)))
+            return False
+
+        try:
+            os.removedirs(package_dir)
+        except (OSError) as (exception):
+            sublime.error_message('Package Manager: An error occurred while' +
+                ' trying to remove the package directory for %s. %s' %
+                (package_name, str(exception)))
+            return False
+
+        return True
+
+
+class GitHubRepo():
+    def list_available_packages(self):
+        url = 'https://api.github.com/repos/wbond/sublime_alignment/commits?per_page=1'
 
 
 class CreatePackageCommand(sublime_plugin.WindowCommand):
@@ -232,8 +286,16 @@ class PackageInstaller():
                 action = 'install'
             if action in ignore_actions:
                 continue
-            package_entry.append('v' + download['version'] + ' (' +
-                action + ') ' + re.sub('^https?://', '', info['repo']))
+
+            if action in ['upgrade', 'downgrade']:
+                action += ' from v' + info['installed_version']
+            if action == 'overwrite unknown':
+                action += ' version'
+
+            if info['description']:
+                package_entry.append(info['description'])
+            package_entry.append('v' + download['version'] + '; ' +
+                re.sub('^https?://', '', info['url']) + '; action: ' + action)
             package_list.append(package_entry)
         return package_list
 
@@ -249,29 +311,85 @@ class PackageInstaller():
 
 class InstallPackageCommand(sublime_plugin.WindowCommand, PackageInstaller):
     def run(self):
-        self.package_list = self.make_package_list()
+        self.package_list = self.make_package_list(['upgrade', 'downgrade',
+            'reinstall'])
         self.window.show_quick_panel(self.package_list, self.on_done)
 
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand, PackageInstaller):
     def run(self):
-        self.package_list = self.make_package_list(['install', 'reinstall',
-            'downgrade'])
+        self.package_list = self.make_package_list(['install'])
         self.window.show_quick_panel(self.package_list, self.on_done)
 
 
-class AddRepoCommand(sublime_plugin.WindowCommand):
+class RemovePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.window.show_input_panel('Repo JSON URL', '', self.on_done,
+        self.manager = PackageManager()
+        available_packages = self.manager.list_available_packages()
+        packages = self.manager.list_packages()
+
+        package_list = []
+        for package in sorted(packages):
+            package_entry = [package]
+            info = packages.get(package, {})
+            metadata = self.manager.get_metadata(package)
+
+            if 'description' in info:
+                package_entry.append(info['description'])
+
+            version = metadata.get('version')
+            if version:
+                version += 'v'
+            else:
+                version = 'unknown version'
+
+            url = re.sub('^https?://', '', info.get('url',
+                metadata.get('repo')))
+            if url:
+                url += '; '
+            package_entry.append(version + '; ' + url + 'action: remove')
+            package_list.append(package_entry)
+        return package_list
+        self.window.show_quick_panel(self.package_list, self.on_done)
+
+    def on_done(self, picked):
+        package = self.package_list[picked]['name']
+        self.manager.remove_package(package)
+
+
+class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        self.window.show_input_panel('Repository Channel URL', '', self.on_done,
             self.on_change, self.on_cancel)
 
     def on_done(self, input):
         settings = sublime.load_settings('PackageManager.sublime-settings')
-        repos = settings.get('repos', [])
-        if not repos:
-            repos = []
-        repos.append(input)
-        settings.set('repos', repos)
+        repository_channels = settings.get('repository_channels', [])
+        if not repository_channels:
+            repository_channels = []
+        repository_channels.append(input)
+        settings.set('repository_channels', repository_channels)
+        sublime.save_settings('PackageManager.sublime-settings')
+
+    def on_change(self, input):
+        pass
+
+    def on_cancel(self):
+        pass
+
+
+class AddRepositoryCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        self.window.show_input_panel('Repository URL', '', self.on_done,
+            self.on_change, self.on_cancel)
+
+    def on_done(self, input):
+        settings = sublime.load_settings('PackageManager.sublime-settings')
+        repositories = settings.get('repositories', [])
+        if not repositories:
+            repositories = []
+        repositories.append(input)
+        settings.set('repositories', repositories)
         sublime.save_settings('PackageManager.sublime-settings')
 
     def on_change(self, input):
