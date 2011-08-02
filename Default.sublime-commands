@@ -12,6 +12,10 @@
         "command": "install_package"
     },
     {
+        "caption": "Package Manager: Upgrade Package",
+        "command": "upgrade_package"
+    },
+    {
         "caption": "Preferences: Package Manager Settings",
         "command": "open_file", "args":
         {

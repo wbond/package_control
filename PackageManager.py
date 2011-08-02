@@ -190,35 +190,7 @@ class PackageManager():
         return True
 
 
-class PackageManagerPanel():
-    def write(self, string):
-        if not hasattr(self, 'panel'):
-            self.window = sublime.active_window()
-            self.panel  = self.window.get_output_panel('PackageManager')
-            self.panel.settings().set("word_wrap", True)
-            self.panel.set_read_only(True)
-
-        self.window.run_command('show_panel', {'panel':
-            'output.PackageManager'})
-        self.panel.set_read_only(False)
-        edit = self.panel.begin_edit()
-
-        while self.panel.size() == 0 and string[0] == '\n':
-            string = string[1:]
-
-        regions = self.panel.get_regions('PackageManager')
-        region = sublime.Region(self.panel.size(), self.panel.size() +
-            len(string))
-        regions.append(region)
-        self.panel.add_regions('PackageManager', regions, 'string',
-            sublime.PERSISTENT)
-        self.panel.insert(edit, self.panel.size(), string)
-        self.panel.show(self.panel.size())
-        self.panel.end_edit(edit)
-        self.panel.set_read_only(True)
-
-
-class CreatePackageCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
+class CreatePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
         self.manager = PackageManager()
         self.packages = self.manager.list_packages()
@@ -234,19 +206,19 @@ class CreatePackageCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
                 '.sublime-package'})
 
 
-class InstallPackageCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
-    def run(self):
+class PackageInstaller():
+    def make_package_list(self, ignore_actions=[]):
         self.manager = PackageManager()
         packages = self.manager.list_available_packages()
 
-        self.package_list = []
+        package_list = []
         for package in sorted(packages.iterkeys()):
             package_entry = [package]
             info = packages[package]
             download = info['downloads'][0]
             if info['installed']:
                 if 'installed_version' not in info:
-                    action = 'overwrite'
+                    action = 'overwrite unknown'
                 else:
                     res = self.manager.compare_versions(
                         info['installed_version'], download['version'])
@@ -258,14 +230,49 @@ class InstallPackageCommand(sublime_plugin.WindowCommand, PackageManagerPanel):
                         action = 'reinstall'
             else:
                 action = 'install'
+            if action in ignore_actions:
+                continue
             package_entry.append('v' + download['version'] + ' (' +
                 action + ') ' + re.sub('^https?://', '', info['repo']))
-            self.package_list.append(package_entry)
-        self.window.show_quick_panel(self.package_list, self.on_done)
+            package_list.append(package_entry)
+        return package_list
 
     def on_done(self, picked):
         if picked == -1:
             return
         package_name = self.package_list[picked][0]
-        package = self.manager.list_available_packages()[package_name]
-        self.manager.install_package(package_name)
+        self.install_package(package_name)
+
+    def install_package(self, name):
+        self.manager.install_package(name)
+
+
+class InstallPackageCommand(sublime_plugin.WindowCommand, PackageInstaller):
+    def run(self):
+        self.package_list = self.make_package_list()
+        self.window.show_quick_panel(self.package_list, self.on_done)
+
+
+class UpgradePackageCommand(sublime_plugin.WindowCommand, PackageInstaller):
+    def run(self):
+        self.package_list = self.make_package_list(['install', 'reinstall',
+            'downgrade'])
+        self.window.show_quick_panel(self.package_list, self.on_done)
+
+
+def automatic_upgrader():
+    settings = sublime.load_settings('PackageManager.sublime-settings')
+    if settings.get('auto_upgrade'):
+        installer = PackageInstaller()
+        packages = installer.make_package_list(['install', 'reinstall',
+            'downgrade', 'overwrite unknown'])
+        if not packages:
+            return
+
+        print 'PackageManager: Installing %s upgrades' % len(packages)
+        for package in packages:
+            installer.install_package(package[0])
+            print 'PackageManager: Upgraded %s to %s' % (package[0],
+                re.sub(' .*$', '', package[1]))
+
+automatic_upgrader()
