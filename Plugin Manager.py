@@ -25,8 +25,8 @@ class ChannelProvider():
     def match_url(self, url):
         return True
 
-    def get_repositories(self, channel, package_manager):
-        channel_json = package_manager.download_url(channel,
+    def get_repositories(self, channel, plugin_manager):
+        channel_json = plugin_manager.download_url(channel,
             'Error downloading channel.')
         if channel_json == False:
             return False
@@ -41,8 +41,8 @@ class PackageProvider():
     def match_url(self, url):
         return True
 
-    def get_packages(self, repo, package_manager):
-        repository_json = package_manager.download_url(repo,
+    def get_packages(self, repo, plugin_manager):
+        repository_json = plugin_manager.download_url(repo,
             'Error downloading repository.')
         if repository_json == False:
             return False
@@ -76,10 +76,10 @@ class GitHubPackageProvider():
     def match_url(self, url):
         return re.search('^https?://github.com/[^/]+/[^/]+$', url) != None
 
-    def get_packages(self, repo, package_manager):
+    def get_packages(self, repo, plugin_manager):
         api_url = re.sub('^https?://github.com/',
             'https://api.github.com/repos/', repo)
-        repo_json = package_manager.download_url(api_url,
+        repo_json = plugin_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -111,10 +111,10 @@ class GitHubUserProvider():
     def match_url(self, url):
         return re.search('^https?://github.com/[^/]+$', url) != None
 
-    def get_packages(self, url, package_manager):
+    def get_packages(self, url, plugin_manager):
         api_url = re.sub('^https?://github.com/',
             'https://api.github.com/users/', url) + '/repos'
-        repo_json = package_manager.download_url(api_url,
+        repo_json = plugin_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -149,16 +149,16 @@ class BitBucketPackageProvider():
     def match_url(self, url):
         return re.search('^https?://bitbucket.org', url) != None
 
-    def get_packages(self, repo, package_manager):
+    def get_packages(self, repo, plugin_manager):
         api_url = re.sub('^https?://bitbucket.org/',
             'https://api.bitbucket.org/1.0/repositories/', repo)
-        repo_json = package_manager.download_url(api_url,
+        repo_json = plugin_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
         repo_info = json.loads(repo_json)
 
-        changeset_json = package_manager.download_url(api_url + \
+        changeset_json = plugin_manager.download_url(api_url + \
             '/changesets/?limit=1', 'Error downloading repository.')
         if changeset_json == False:
             return False
@@ -230,11 +230,11 @@ class UrlLib2Downloader():
             return http_file
 
         except (urllib2.HTTPError) as (e):
-            sublime.error_message('Package Manager: ' + error_message +
+            sublime.error_message('Plugin Manager: ' + error_message +
                 ' HTTP error ' + str(e.code) + ' downloading ' +
                 url + '.')
         except (urllib2.URLError) as (e):
-            sublime.error_message('Package Manager: ' + error_message +
+            sublime.error_message('Plugin Manager: ' + error_message +
                 ' URL error ' + str(e.reason) + ' downloading ' +
                 url + '.')
         return False
@@ -258,7 +258,7 @@ class WgetDownloader(CliDownloader):
             else:
                 error_string = 'unknown connection error'
 
-            sublime.error_message('Package Manager: ' + error_message +
+            sublime.error_message('Plugin Manager: ' + error_message +
                 ' ' + error_string + ' downloading ' +
                 url + '.')
 
@@ -284,14 +284,14 @@ class CurlDownloader(CliDownloader):
             else:
                 error_string = 'unknown connection error'
 
-            sublime.error_message('Package Manager: ' + error_message +
+            sublime.error_message('Plugin Manager: ' + error_message +
                 ' ' + error_string + ' downloading ' +
                 url + '.')
 
 
 class RepositoryDownloader(threading.Thread):
-    def __init__(self, package_manager, installed_packages, repo):
-        self.package_manager = package_manager
+    def __init__(self, plugin_manager, installed_packages, repo):
+        self.plugin_manager = plugin_manager
         self.installed_packages = installed_packages
         self.repo = repo
         self.packages = {}
@@ -302,7 +302,7 @@ class RepositoryDownloader(threading.Thread):
             provider = provider_class()
             if provider.match_url(self.repo):
                 break
-        packages = provider.get_packages(self.repo, self.package_manager)
+        packages = provider.get_packages(self.repo, self.plugin_manager)
         if not packages:
             self.packages = {}
             return
@@ -310,7 +310,7 @@ class RepositoryDownloader(threading.Thread):
         for package in packages.keys():
             if package in self.installed_packages:
                 packages[package]['installed'] = True
-                metadata = self.package_manager.get_metadata(package)
+                metadata = self.plugin_manager.get_metadata(package)
                 if metadata.get('version'):
                     packages[package]['installed_version'] = \
                         metadata['version']
@@ -320,7 +320,7 @@ class RepositoryDownloader(threading.Thread):
         self.packages = packages
 
 
-class PackageManager():
+class PluginManager():
     # Dirs and files to ignore when creating a package
     dirs_to_ignore = ['.hg', '.git', '.svn', '_darcs']
     files_to_ignore = ['.hgignore', '.gitignore', '.bzrignore', '*.pyc',
@@ -332,7 +332,7 @@ class PackageManager():
         return cmp(normalize(version1), normalize(version2))
 
     def download_url(self, url, error_message):
-        settings = sublime.load_settings('PackageManager.sublime-settings')
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
         timeout = settings.get('timeout', 3)
         if 'ssl' in sys.modules:
             downloader = UrlLib2Downloader()
@@ -345,7 +345,7 @@ class PackageManager():
                     pass
 
         if not downloader:
-            sublime.error_message('Package Manager: Unable to download ' +
+            sublime.error_message('Plugin Manager: Unable to download ' +
                 url + ' due to no ssl module available and no capable ' +
                 'program found. Please install curl or wget.')
             return False
@@ -361,7 +361,7 @@ class PackageManager():
         return {}
 
     def list_repositories(self):
-        settings = sublime.load_settings('PackageManager.sublime-settings')
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
         repositories = settings.get('repositories')
         repository_channels = settings.get('repository_channels')
         for channel in repository_channels:
@@ -406,7 +406,7 @@ class PackageManager():
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
 
-        settings = sublime.load_settings('PackageManager.sublime-settings')
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
         map_dict = settings.get('package_name_to_dir_map', {})
         flipped_map_dict = dict(zip(map_dict.values(), map_dict.keys()))
         package_names = [flipped_map_dict.get(name, name) for name in package_names]
@@ -428,7 +428,7 @@ class PackageManager():
             self.get_mapped_name(package))
 
     def get_mapped_name(self, package):
-        settings = sublime.load_settings('PackageManager.sublime-settings')
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
         map_dict = settings.get('package_name_to_dir_map', {})
         return map_dict.get(package, package)
 
@@ -446,7 +446,7 @@ class PackageManager():
         package_dir = self.get_package_dir(package_name) + '/'
 
         if not os.path.exists(package_dir):
-            sublime.error_message('Package Manager: The folder for the ' +
+            sublime.error_message('Plugin Manager: The folder for the ' +
                 'package name specified, %s, does not exist in %s' %
                 (package_name, sublime.packages_path()))
             return False
@@ -484,7 +484,7 @@ class PackageManager():
         packages = self.list_available_packages()
 
         if package_name not in packages.keys():
-            sublime.error_message('Package Manager: The package specified,' +
+            sublime.error_message('Plugin Manager: The package specified,' +
                 ' %s, is not available.' % (package_name,))
             return False
 
@@ -510,7 +510,7 @@ class PackageManager():
         package_zip = zipfile.ZipFile(package_path, 'r')
         for path in package_zip.namelist():
             if path[0] == '/' or path.find('..') != -1:
-                sublime.error_message('Package Manager: The package ' +
+                sublime.error_message('Plugin Manager: The package ' +
                     'specified, %s, contains files outside of the package ' +
                     'dir and cannot be safely installed.' % (package_name,))
                 return False
@@ -543,7 +543,7 @@ class PackageManager():
         installed_packages = self.list_packages()
 
         if package_name not in installed_packages:
-            sublime.error_message('Package Manager: The package specified,' +
+            sublime.error_message('Plugin Manager: The package specified,' +
                 ' %s, is not installed.' % (package_name,))
             return False
 
@@ -557,7 +557,7 @@ class PackageManager():
             if os.path.exists(package_path):
                 os.remove(package_path)
         except (OSError) as (exception):
-            sublime.error_message('Package Manager: An error occurred while' +
+            sublime.error_message('Plugin Manager: An error occurred while' +
                 ' trying to remove the package file for %s. %s' %
                 (package_name, str(exception)))
             return False
@@ -565,7 +565,7 @@ class PackageManager():
         try:
             shutil.rmtree(package_dir)
         except (OSError) as (exception):
-            sublime.error_message('Package Manager: An error occurred while' +
+            sublime.error_message('Plugin Manager: An error occurred while' +
                 ' trying to remove the package directory for %s. %s' %
                 (package_name, str(exception)))
             return False
@@ -575,7 +575,7 @@ class PackageManager():
 
 class CreatePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.manager = PackageManager()
+        self.manager = PluginManager()
         self.packages = self.manager.list_packages()
         self.window.show_quick_panel(self.packages, self.on_done)
 
@@ -591,7 +591,7 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
 
 class PackageInstaller():
     def make_package_list(self, ignore_actions=[]):
-        self.manager = PackageManager()
+        self.manager = PluginManager()
         packages = self.manager.list_available_packages()
 
         package_list = []
@@ -693,7 +693,7 @@ class RemovePackageThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        self.manager = PackageManager()
+        self.manager = PluginManager()
         available_packages = self.manager.list_available_packages()
         packages = self.manager.list_packages()
 
@@ -743,13 +743,13 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
-        settings = sublime.load_settings('PackageManager.sublime-settings')
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
         repository_channels = settings.get('repository_channels', [])
         if not repository_channels:
             repository_channels = []
         repository_channels.append(input)
         settings.set('repository_channels', repository_channels)
-        sublime.save_settings('PackageManager.sublime-settings')
+        sublime.save_settings('Plugin Manager.sublime-settings')
 
     def on_change(self, input):
         pass
@@ -764,13 +764,13 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
             self.on_change, self.on_cancel)
 
     def on_done(self, input):
-        settings = sublime.load_settings('PackageManager.sublime-settings')
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
         repositories = settings.get('repositories', [])
         if not repositories:
             repositories = []
         repositories.append(input)
         settings.set('repositories', repositories)
-        sublime.save_settings('PackageManager.sublime-settings')
+        sublime.save_settings('Plugin Manager.sublime-settings')
 
     def on_change(self, input):
         pass
@@ -781,7 +781,7 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
 
 class AutomaticUpgrader(threading.Thread):
     def run(self):
-        settings = sublime.load_settings('PackageManager.sublime-settings')
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
         if settings.get('auto_upgrade'):
             installer = PackageInstaller()
             packages = installer.make_package_list(['install', 'reinstall',
@@ -789,10 +789,10 @@ class AutomaticUpgrader(threading.Thread):
             if not packages:
                 return
 
-            print 'PackageManager: Installing %s upgrades' % len(packages)
+            print 'Plugin Manager: Installing %s upgrades' % len(packages)
             for package in packages:
                 installer.install_package(package[0])
-                print 'PackageManager: Upgraded %s to %s' % (package[0],
+                print 'Plugin Manager: Upgraded %s to %s' % (package[0],
                     re.sub(' .*$', '', package[1]))
 
 AutomaticUpgrader().start()

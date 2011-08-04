@@ -14,16 +14,16 @@
                     {
                         "command": "open_file", "args":
                         {
-                            "file": "${packages}/PackageManager/PackageManager.sublime-settings"
+                            "file": "${packages}/Plugin Manager/Plugin Manager.sublime-settings"
                         },
-                        "caption": "Package Manager Settings – Default"
+                        "caption": "Plugin Manager Settings – Default"
                     },
                     {
                         "command": "open_file", "args":
                         {
-                            "file": "${packages}/User/PackageManager.sublime-settings"
+                            "file": "${packages}/User/Plugin Manager.sublime-settings"
                         },
-                        "caption": "Package Manager Settings – User"
+                        "caption": "Plugin Manager Settings – User"
                     },
                     { "caption": "-" }
                 ]
