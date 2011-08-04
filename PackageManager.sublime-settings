@@ -11,6 +11,12 @@
 		"http://wbond.net/sublime/repo/repositories.json"
 	],
 
+	// This helps solve naming issues where a repository it not named the
+	// same as the package
+	"package_name_to_dir_map": {
+		"soda-theme": "Theme - Soda"
+	},
+
 	// If packages should be automatically upgraded when ST2 starts
 	"auto_upgrade": true,
 

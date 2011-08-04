@@ -13,6 +13,7 @@ import re
 import threading
 import datetime
 import time
+import shutil
 
 try:
     import ssl
@@ -351,10 +352,9 @@ class PackageManager():
 
         return downloader.download(url, error_message, timeout)
 
-
     def get_metadata(self, package):
-        metadata_filename = os.path.join(sublime.packages_path(),
-            package, 'package-metadata.json')
+        metadata_filename = os.path.join(self.get_package_dir(package),
+            'package-metadata.json')
         if os.path.exists(metadata_filename):
             with open(metadata_filename) as f:
                 return json.load(f)
@@ -402,10 +402,16 @@ class PackageManager():
         return packages
 
     def list_packages(self):
-        package_paths = os.listdir(sublime.packages_path())
-        package_dirs = [path for path in package_paths if
+        package_names = os.listdir(sublime.packages_path())
+        package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
-        packages = list(set(package_dirs) - set(self.list_default_packages()))
+
+        settings = sublime.load_settings('PackageManager.sublime-settings')
+        map_dict = settings.get('package_name_to_dir_map', {})
+        flipped_map_dict = dict(zip(map_dict.values(), map_dict.keys()))
+        package_names = [flipped_map_dict.get(name, name) for name in package_names]
+
+        packages = list(set(package_names) - set(self.list_default_packages()))
         packages.sort()
         return packages
 
@@ -417,10 +423,14 @@ class PackageManager():
         packages.sort()
         return packages
 
-    def extract_package_info(self, repo, installed_packages):
-        repo_downloader = RepositoryDownloader(self, installed_packages, repo)
+    def get_package_dir(self, package):
+        return os.path.join(sublime.packages_path(),
+            self.get_mapped_name(package))
 
-        return packages
+    def get_mapped_name(self, package):
+        settings = sublime.load_settings('PackageManager.sublime-settings')
+        map_dict = settings.get('package_name_to_dir_map', {})
+        return map_dict.get(package, package)
 
     def md5sum(self, file):
         with open("filename", 'rb') as file:
@@ -433,7 +443,7 @@ class PackageManager():
         return sum.hexdigest()
 
     def create_package(self, package_name):
-        package_dir = os.path.join(sublime.packages_path(), package_name) + '/'
+        package_dir = self.get_package_dir(package_name) + '/'
 
         if not os.path.exists(package_dir):
             sublime.error_message('Package Manager: The folder for the ' +
@@ -480,7 +490,10 @@ class PackageManager():
 
         download = packages[package_name]['downloads'][0]
         url = download['url']
-        package_filename = package_name + '.sublime-package'
+
+        mapped_package_name = self.get_mapped_name(package_name)
+        package_filename = mapped_package_name + \
+            '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
 
@@ -490,8 +503,7 @@ class PackageManager():
         with open(package_path, "w") as package_file:
             package_file.write(package_bytes)
 
-        package_dir = os.path.join(sublime.packages_path(),
-            package_filename.replace('.sublime-package', ''))
+        package_dir = self.get_package_dir(package_name)
         if not os.path.exists(package_dir):
             os.mkdir(package_dir)
 
@@ -505,6 +517,17 @@ class PackageManager():
 
         os.chdir(package_dir)
         package_zip.extractall()
+
+        # If the zip contained a single directory, pop everything up a level
+        # and repackage the zip file
+        extracted_paths = os.listdir(package_dir)
+        if len(extracted_paths) == 1 and os.path.isdir(extracted_paths[0]):
+            single_dir = os.path.join(package_dir, extracted_paths[0])
+            for path in os.listdir(single_dir):
+                shutil.move(os.path.join(single_dir, path), package_dir)
+            os.rmdir(single_dir)
+            self.create_package(mapped_package_name)
+
         package_metadata_file = os.path.join(package_dir,
             'package-metadata.json')
         with open(package_metadata_file, 'w') as f:
@@ -524,14 +547,15 @@ class PackageManager():
                 ' %s, is not installed.' % (package_name,))
             return False
 
-        package_filename = package_name + '.sublime-package'
+        mapped_package_name = self.get_mapped_name(package_name)
+        package_filename = mapped_package_name + '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
-        package_dir = os.path.join(sublime.packages_path(),
-            package_filename.replace('.sublime-package', ''))
+        package_dir = self.get_package_dir(package_name)
 
         try:
-            os.remove(package_path)
+            if os.path.exists(package_path):
+                os.remove(package_path)
         except (OSError) as (exception):
             sublime.error_message('Package Manager: An error occurred while' +
                 ' trying to remove the package file for %s. %s' %
@@ -539,7 +563,7 @@ class PackageManager():
             return False
 
         try:
-            os.removedirs(package_dir)
+            shutil.rmtree(package_dir)
         except (OSError) as (exception):
             sublime.error_message('Package Manager: An error occurred while' +
                 ' trying to remove the package directory for %s. %s' %
@@ -609,6 +633,8 @@ class PackageInstaller():
             return
         package_name = self.package_list[picked][0]
         self.install_package(package_name)
+        sublime.status_message('Package ' + package_name + ' successfully ' +
+            self.completion_type)
 
     def install_package(self, name):
         self.manager.install_package(name)
@@ -626,6 +652,7 @@ class InstallPackageCommand(sublime_plugin.WindowCommand):
 class InstallPackageThread(threading.Thread, PackageInstaller):
     def __init__(self, window):
         self.window = window
+        self.completion_type = 'installed'
         threading.Thread.__init__(self)
 
     def run(self):
@@ -644,6 +671,7 @@ class UpgradePackageCommand(sublime_plugin.WindowCommand):
 class UpgradePackageThread(threading.Thread, PackageInstaller):
     def __init__(self, window):
         self.window = window
+        self.completion_type = 'upgraded'
         threading.Thread.__init__(self)
 
     def run(self):
@@ -694,6 +722,8 @@ class RemovePackageThread(threading.Thread):
             package_entry.append(version + '; ' + url + 'action: remove')
             package_list.append(package_entry)
 
+        self.package_list = package_list
+
         def show_quick_panel():
             self.window.run_command('hide_overlay')
             self.window.show_quick_panel(package_list, self.on_done)
@@ -702,8 +732,9 @@ class RemovePackageThread(threading.Thread):
     def on_done(self, picked):
         if picked == -1:
             return
-        package = self.package_list[picked]['name']
+        package = self.package_list[picked][0]
         self.manager.remove_package(package)
+        sublime.status_message('Package ' + package + ' successfully removed')
 
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
