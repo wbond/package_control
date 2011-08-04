@@ -257,7 +257,7 @@ class UrlLib2Downloader():
     def download(self, url, error_message, timeout):
         try:
             http_file = urllib2.urlopen(url, None, timeout)
-            return http_file
+            return http_file.read()
 
         except (urllib2.HTTPError) as (e):
             sublime.error_message('Plugin Manager: ' + error_message +
@@ -364,7 +364,10 @@ class PluginManager():
     def download_url(self, url, error_message):
         settings = sublime.load_settings('Plugin Manager.sublime-settings')
         timeout = settings.get('timeout', 3)
-        if 'ssl' in sys.modules:
+        has_ssl = 'ssl' in sys.modules
+        is_ssl = re.search('^https://', url) != None
+
+        if (is_ssl and has_ssl) or not is_ssl:
             downloader = UrlLib2Downloader()
         else:
             for downloader_class in [CurlDownloader, WgetDownloader]:
