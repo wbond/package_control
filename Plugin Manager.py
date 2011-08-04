@@ -30,7 +30,12 @@ class ChannelProvider():
             'Error downloading channel.')
         if channel_json == False:
             return False
-        channel_info = json.loads(channel_json)
+        try:
+            channel_info = json.loads(channel_json)
+        except (ValueError):
+            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+                ' channel ' + channel + '.')
+            return False
         return channel_info['repositories']
 
 
@@ -46,7 +51,12 @@ class PackageProvider():
             'Error downloading repository.')
         if repository_json == False:
             return False
-        repo_info = json.loads(repository_json)
+        try:
+            repo_info = json.loads(repository_json)
+        except (ValueError):
+            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+                ' repository ' + repo + '.')
+            return False
 
         identifiers = [sublime.platform() + '-' + sublime.arch(),
             sublime.platform(), '*']
@@ -83,7 +93,12 @@ class GitHubPackageProvider():
             'Error downloading repository.')
         if repo_json == False:
             return False
-        repo_info = json.loads(repo_json)
+        try:
+            repo_info = json.loads(repo_json)
+        except (ValueError):
+            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+                ' repository ' + repo + '.')
+            return False
 
         commit_date = repo_info['pushed_at']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
@@ -118,7 +133,12 @@ class GitHubUserProvider():
             'Error downloading repository.')
         if repo_json == False:
             return False
-        repo_info = json.loads(repo_json)
+        try:
+            repo_info = json.loads(repo_json)
+        except (ValueError):
+            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+                ' repository ' + repo + '.')
+            return False
 
         packages = {}
         for package_info in repo_info:
@@ -156,13 +176,23 @@ class BitBucketPackageProvider():
             'Error downloading repository.')
         if repo_json == False:
             return False
-        repo_info = json.loads(repo_json)
+        try:
+            repo_info = json.loads(repo_json)
+        except (ValueError):
+            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+                ' repository ' + repo + '.')
+            return False
 
         changeset_json = plugin_manager.download_url(api_url + \
             '/changesets/?limit=1', 'Error downloading repository.')
         if changeset_json == False:
             return False
-        last_commit = json.loads(changeset_json)
+        try:
+            last_commit = json.loads(changeset_json)
+        except (ValueError):
+            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+                ' repository ' + repo + '.')
+            return False
         commit_date = last_commit['changesets'][0]['timestamp']
         timestamp = datetime.strptime('%Y-%m-%d %H-%M-%S')
         utc_timestamp = timestamp.strftime(
@@ -357,7 +387,10 @@ class PluginManager():
             'package-metadata.json')
         if os.path.exists(metadata_filename):
             with open(metadata_filename) as f:
-                return json.load(f)
+                try:
+                    return json.load(f)
+                except (ValueError):
+                    return {}
         return {}
 
     def list_repositories(self):

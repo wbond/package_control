@@ -8,7 +8,7 @@
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
 	"repository_channels": [
-		"http://wbond.net/sublime/repo/repositories.json"
+		"http://sublime.wbond.net/repositories.json"
 	],
 
 	// This helps solve naming issues where a repository it not named the
