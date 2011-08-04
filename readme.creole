@@ -11,8 +11,8 @@ were manually installed.
 
 == Installation
 
-Download http://sublime.wbond.net/Plugin+Manager.sublime-package and copy it to
-your //Installed Packages// directory. This can be found by going to the
+Download http://sublime.wbond.net/Plugin%20Manager.sublime-package and copy it
+to your //Installed Packages// directory. This can be found by going to the
 //Preferences// menu and selecting //Browse Packages…//, then browsing up a
 folder. If you do not see a folder named //Installed Packages// on the same
 level as //Packages//, please create it.
