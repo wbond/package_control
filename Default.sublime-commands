@@ -1,55 +1,40 @@
 [
     {
-        "caption": "Plugin Manager: Create Package",
-        "command": "create_package"
-    },
-    {
-        "caption": "Plugin Manager: Install Package",
-        "command": "install_package"
-    },
-    {
-        "caption": "Plugin Manager: Upgrade Package",
-        "command": "upgrade_package"
-    },
-    {
-        "caption": "Plugin Manager: Remove Package",
-        "command": "remove_package"
+        "caption": "Plugin Manager: Add Repository",
+        "command": "add_repository"
     },
     {
         "caption": "Plugin Manager: Add Repository Channel",
         "command": "add_repository_channel"
     },
     {
-        "caption": "Plugin Manager: Add Repository",
-        "command": "add_repository"
+        "caption": "Plugin Manager: Create Package",
+        "command": "create_package"
     },
     {
-        "caption": "Preferences: Plugin Manager Settings",
-        "command": "open_file", "args":
-        {
-            "file": "${packages}/Plugin Manager/Plugin Manager.sublime-settings"} },
+        "caption": "Plugin Manager: Install Plugin",
+        "command": "install_package"
+    },
     {
-        "caption": "Preferences: Plugin Manager Key Bindings",
+        "caption": "Plugin Manager: Remove Plugin",
+        "command": "remove_package"
+    },
+    {
+        "caption": "Plugin Manager: Upgrade Plugin",
+        "command": "upgrade_package"
+    },
+    {
+        "caption": "Preferences: Plugin Manager Settings – Default",
         "command": "open_file", "args":
         {
-            "file": "${packages}/Plugin Manager/Default (Windows).sublime-keymap",
-            "platform": "Windows"
+            "file": "${packages}/Plugin Manager/Plugin Manager.sublime-settings"
         }
     },
     {
-        "caption": "Preferences: Plugin Manager Key Bindings",
+        "caption": "Preferences: Plugin Manager Settings – User",
         "command": "open_file", "args":
         {
-            "file": "${packages}/Plugin Manager/Default (OSX).sublime-keymap",
-            "platform": "OSX"
-        }
-    },
-    {
-        "caption": "Preferences: Plugin Manager Key Bindings",
-        "command": "open_file", "args":
-        {
-            "file": "${packages}/Plugin Manager/Default (Linux).sublime-keymap",
-            "platform": "Linux"
+            "file": "${packages}/User/Plugin Manager.sublime-settings"
         }
     }
 ]

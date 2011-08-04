@@ -21,5 +21,15 @@
 	"auto_upgrade": true,
 
 	// Timeout for downloading channels, repositories and packages
-	"timeout": 3
+	"timeout": 3,
+
+	// Directories to ignore when creating a package
+	"dirs_to_ignore": [
+		".hg", ".git", ".svn", "_darcs"
+	],
+    // Files to ignore when creating a package
+	"files_to_ignore": [
+    	".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
+    	"*.tmTheme.cache"
+    ]
 }

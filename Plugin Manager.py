@@ -351,10 +351,6 @@ class RepositoryDownloader(threading.Thread):
 
 
 class PluginManager():
-    # Dirs and files to ignore when creating a package
-    dirs_to_ignore = ['.hg', '.git', '.svn', '_darcs']
-    files_to_ignore = ['.hgignore', '.gitignore', '.bzrignore', '*.pyc',
-        '*.sublime-project', '*.tmTheme.cache']
 
     def compare_versions(self, version1, version2):
         def normalize(v):
@@ -498,14 +494,17 @@ class PluginManager():
 
         package_file = zipfile.ZipFile(package_filename, "w")
 
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
+        dirs_to_ignore = settings.get('dirs_to_ignore', [])
+        files_to_ignore = settings.get('files_to_ignore', [])
+
         package_dir_regex = re.compile('^' + re.escape(package_dir))
         for root, dirs, files in os.walk(package_dir):
-            [dirs.remove(dir) for dir in dirs if dir in self.dirs_to_ignore]
+            [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
             paths = dirs
             paths.extend(files)
             for path in paths:
-                if any(fnmatch(path, pattern) for pattern in
-                        self.files_to_ignore):
+                if any(fnmatch(path, pattern) for pattern in files_to_ignore):
                     continue
                 full_path = os.path.join(root, path)
                 relative_path = re.sub(package_dir_regex, '', full_path)
@@ -669,7 +668,7 @@ class PackageInstaller():
             return
         package_name = self.package_list[picked][0]
         self.install_package(package_name)
-        sublime.status_message('Package ' + package_name + ' successfully ' +
+        sublime.status_message('Plugin ' + package_name + ' successfully ' +
             self.completion_type)
 
     def install_package(self, name):
@@ -770,7 +769,7 @@ class RemovePackageThread(threading.Thread):
             return
         package = self.package_list[picked][0]
         self.manager.remove_package(package)
-        sublime.status_message('Package ' + package + ' successfully removed')
+        sublime.status_message('Plugin ' + package + ' successfully removed')
 
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):

@@ -1,31 +1,37 @@
 [
     {
         "caption": "Preferences",
-        "mnemonic": "r",
+        "mnemonic": "n",
         "id": "preferences",
         "children":
         [
             {
-                "caption": "Package Settings",
+                "caption": "Plugin Settings",
                 "mnemonic": "P",
-                "id": "package-settings",
+                "id": "plugin-settings",
                 "children":
                 [
                     {
-                        "command": "open_file", "args":
-                        {
-                            "file": "${packages}/Plugin Manager/Plugin Manager.sublime-settings"
-                        },
-                        "caption": "Plugin Manager Settings – Default"
-                    },
-                    {
-                        "command": "open_file", "args":
-                        {
-                            "file": "${packages}/User/Plugin Manager.sublime-settings"
-                        },
-                        "caption": "Plugin Manager Settings – User"
-                    },
-                    { "caption": "-" }
+                        "caption": "Plugin Manager",
+                        "children":
+                        [
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/Plugin Manager/Plugin Manager.sublime-settings"
+                                },
+                                "caption": "Settings – Default"
+                            },
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/User/Plugin Manager.sublime-settings"
+                                },
+                                "caption": "Settings – User"
+                            },
+                            { "caption": "-" }
+                        ]
+                    }
                 ]
             }
         ]
