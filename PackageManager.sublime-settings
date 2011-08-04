@@ -12,5 +12,8 @@
 	],
 
 	// If packages should be automatically upgraded when ST2 starts
-	"auto_upgrade": true
+	"auto_upgrade": true,
+
+	// Timeout for downloading channels, repositories and packages
+	"timeout": 3
 }

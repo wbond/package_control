@@ -1,9 +1,5 @@
 [
     {
-        "caption": "Package Manager: List Packages",
-        "command": "list_packages"
-    },
-    {
         "caption": "Package Manager: Create Package",
         "command": "create_package"
     },
