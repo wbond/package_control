@@ -69,7 +69,7 @@ pallete.
 By default Plugin Control checks for new versions on startup. This setting,
 plus the list of channels and repositories are managed through the settings.
 Settings can be opened via the command pallete, or the //Preferences > Plugin
-Settings > Plugin Control Settings – User// menu entry.
+Settings > Plugin Control > Settings – User// menu entry.
 
 === Channels and Repositories
 
