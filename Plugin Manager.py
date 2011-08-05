@@ -321,11 +321,12 @@ class CurlDownloader(CliDownloader):
 
 
 class RepositoryDownloader(threading.Thread):
-    def __init__(self, plugin_manager, installed_packages, repo):
+    def __init__(self, plugin_manager, installed_packages, name_map, repo):
         self.plugin_manager = plugin_manager
         self.installed_packages = installed_packages
         self.repo = repo
         self.packages = {}
+        self.name_map = name_map
         threading.Thread.__init__(self)
 
     def run(self):
@@ -337,6 +338,13 @@ class RepositoryDownloader(threading.Thread):
         if not packages:
             self.packages = {}
             return
+
+        mapped_packages = {}
+        for package in packages.keys():
+            mapped_package = self.name_map.get(package, package)
+            mapped_packages[mapped_package] = packages[package]
+            mapped_packages[mapped_package]['name'] = mapped_package
+        packages = mapped_packages
 
         for package in packages.keys():
             if package in self.installed_packages:
@@ -424,7 +432,7 @@ class PluginManager():
         # on the list will overwrite those last on the list
         for repo in repositories[::-1]:
             downloader = RepositoryDownloader(self, installed_packages,
-                repo)
+                self.settings.get('plugin_name_map', {}), repo)
             downloader.start()
             downloaders.append(downloader)
 
@@ -443,13 +451,7 @@ class PluginManager():
                 continue
             packages.update(repository_packages)
 
-        mapped_packages = {}
-        for package in packages.keys():
-            mapped_package = self.get_mapped_name(package)
-            mapped_packages[mapped_package] = packages[package]
-            mapped_packages[mapped_package]['name'] = mapped_package
-
-        return mapped_packages
+        return packages
 
     def list_packages(self):
         package_names = os.listdir(sublime.packages_path())
@@ -539,6 +541,22 @@ class PluginManager():
         package_dir = self.get_package_dir(package_name)
         if not os.path.exists(package_dir):
             os.mkdir(package_dir)
+
+        # Here we clean out the directory to preven issues with old files
+        # however don't just recursively delete the whole package dir since
+        # that will fail on Windows if a user has explorer open to it
+        try:
+            for path in os.listdir(package_dir):
+                full_path = os.path.join(package_dir, path)
+                if os.path.isdir(full_path):
+                    shutil.rmtree(full_path)
+                else:
+                    os.remove(full_path)
+        except (OSError, WindowsError) as (exception):
+            sublime.error_message('Plugin Manager: An error occurred while' +
+                ' trying to remove the package directory for %s. %s' %
+                (package_name, str(exception)))
+            return False
 
         package_zip = zipfile.ZipFile(package_path, 'r')
         for path in package_zip.namelist():
