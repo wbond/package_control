@@ -1,5 +1,5 @@
 {
-	"version": "0.5",
-	"url": "http://wbond.net/sublime_plugins/plugin_manager",
+	"version": "0.6",
+	"url": "http://wbond.net/sublime_plugins/plugin_control",
 	"description": "A full-featured plugin manager"
 }

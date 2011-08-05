@@ -12,20 +12,20 @@
                 "children":
                 [
                     {
-                        "caption": "Plugin Manager",
+                        "caption": "Plugin Control",
                         "children":
                         [
                             {
                                 "command": "open_file", "args":
                                 {
-                                    "file": "${packages}/Plugin Manager/Plugin Manager.sublime-settings"
+                                    "file": "${packages}/Plugin Control/Plugin Control.sublime-settings"
                                 },
                                 "caption": "Settings – Default"
                             },
                             {
                                 "command": "open_file", "args":
                                 {
-                                    "file": "${packages}/User/Plugin Manager.sublime-settings"
+                                    "file": "${packages}/User/Plugin Control.sublime-settings"
                                 },
                                 "caption": "Settings – User"
                             },

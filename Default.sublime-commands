@@ -1,44 +1,44 @@
 [
     {
-        "caption": "Plugin Manager: Add Repository",
+        "caption": "Plugin Control: Add Repository",
         "command": "add_repository"
     },
     {
-        "caption": "Plugin Manager: Add Repository Channel",
+        "caption": "Plugin Control: Add Repository Channel",
         "command": "add_repository_channel"
     },
     {
-        "caption": "Plugin Manager: Create Package",
+        "caption": "Plugin Control: Create Package",
         "command": "create_package"
     },
     {
-        "caption": "Plugin Manager: Install Plugin",
+        "caption": "Plugin Control: Install Plugin",
         "command": "install_plugin"
     },
     {
-        "caption": "Plugin Manager: List Plugins",
+        "caption": "Plugin Control: List Plugins",
         "command": "list_plugins"
     },
     {
-        "caption": "Plugin Manager: Remove Plugin",
+        "caption": "Plugin Control: Remove Plugin",
         "command": "remove_plugin"
     },
     {
-        "caption": "Plugin Manager: Upgrade Plugin",
+        "caption": "Plugin Control: Upgrade Plugin",
         "command": "upgrade_plugin"
     },
     {
-        "caption": "Preferences: Plugin Manager Settings – Default",
+        "caption": "Preferences: Plugin Control Settings – Default",
         "command": "open_file", "args":
         {
-            "file": "${packages}/Plugin Manager/Plugin Manager.sublime-settings"
+            "file": "${packages}/Plugin Control/Plugin Control.sublime-settings"
         }
     },
     {
-        "caption": "Preferences: Plugin Manager Settings – User",
+        "caption": "Preferences: Plugin Control Settings – User",
         "command": "open_file", "args":
         {
-            "file": "${packages}/User/Plugin Manager.sublime-settings"
+            "file": "${packages}/User/Plugin Control.sublime-settings"
         }
     }
 ]

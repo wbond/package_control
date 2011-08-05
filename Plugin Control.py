@@ -34,7 +34,7 @@ class ChannelProvider():
         try:
             channel_info = json.loads(channel_json)
         except (ValueError):
-            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+            sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' channel ' + channel + '.')
             return False
         return channel_info['repositories']
@@ -55,7 +55,7 @@ class PackageProvider():
         try:
             repo_info = json.loads(repository_json)
         except (ValueError):
-            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+            sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' repository ' + repo + '.')
             return False
 
@@ -97,7 +97,7 @@ class GitHubPackageProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+            sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' repository ' + repo + '.')
             return False
 
@@ -137,7 +137,7 @@ class GitHubUserProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+            sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' repository ' + repo + '.')
             return False
 
@@ -180,7 +180,7 @@ class BitBucketPackageProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+            sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' repository ' + repo + '.')
             return False
 
@@ -191,7 +191,7 @@ class BitBucketPackageProvider():
         try:
             last_commit = json.loads(changeset_json)
         except (ValueError):
-            sublime.error_message('Plugin Manager: Error parsing JSON from ' +
+            sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' repository ' + repo + '.')
             return False
         commit_date = last_commit['changesets'][0]['timestamp']
@@ -261,11 +261,11 @@ class UrlLib2Downloader():
             return http_file.read()
 
         except (urllib2.HTTPError) as (e):
-            sublime.error_message('Plugin Manager: ' + error_message +
+            sublime.error_message(__name__ + ': ' + error_message +
                 ' HTTP error ' + str(e.code) + ' downloading ' +
                 url + '.')
         except (urllib2.URLError) as (e):
-            sublime.error_message('Plugin Manager: ' + error_message +
+            sublime.error_message(__name__ + ': ' + error_message +
                 ' URL error ' + str(e.reason) + ' downloading ' +
                 url + '.')
         return False
@@ -289,7 +289,7 @@ class WgetDownloader(CliDownloader):
             else:
                 error_string = 'unknown connection error'
 
-            sublime.error_message('Plugin Manager: ' + error_message +
+            sublime.error_message(__name__ + ': ' + error_message +
                 ' ' + error_string + ' downloading ' +
                 url + '.')
 
@@ -315,10 +315,11 @@ class CurlDownloader(CliDownloader):
             else:
                 error_string = 'unknown connection error'
 
-            sublime.error_message('Plugin Manager: ' + error_message +
+            sublime.error_message(__name__ + ': ' + error_message +
                 ' ' + error_string + ' downloading ' +
                 url + '.')
 
+_channel_repository_cache = {}
 
 class RepositoryDownloader(threading.Thread):
     def __init__(self, plugin_manager, installed_packages, name_map, repo):
@@ -364,9 +365,12 @@ class PluginManager():
         # Here we manually copy the settings since sublime doesn't like
         # code accessing settings from threads
         self.settings = {}
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
+        settings = sublime.load_settings(__name__ + '.sublime-settings')
         for setting in ['timeout', 'repositories', 'repository_channels',
-                'plugin_name_map', 'dirs_to_ignore', 'files_to_ignore']:
+                'plugin_name_map', 'dirs_to_ignore', 'files_to_ignore',
+                'copy_package_to', 'cache_length']:
+            if settings.get(setting) == None:
+                continue
             self.settings[setting] = settings.get(setting)
 
     def compare_versions(self, version1, version2):
@@ -389,7 +393,7 @@ class PluginManager():
                     pass
 
         if not downloader:
-            sublime.error_message('Plugin Manager: Unable to download ' +
+            sublime.error_message(__name__ + ': Unable to download ' +
                 url + ' due to no ssl module available and no capable ' +
                 'program found. Please install curl or wget.')
             return False
@@ -412,13 +416,28 @@ class PluginManager():
         repositories = self.settings.get('repositories')
         repository_channels = self.settings.get('repository_channels')
         for channel in repository_channels:
-            for provider_class in _channel_providers:
-                provider = provider_class()
-                if provider.match_url(channel):
-                    break
-            channel_repositories = provider.get_repositories(channel, self)
-            if channel_repositories == False:
-                continue
+            channel_repositories = None
+
+            cache_key = channel + '.repositories'
+            repositories_cache = _channel_repository_cache.get(cache_key)
+            if repositories_cache and repositories_cache.get('time') > \
+                    time.time():
+                channel_repositories = repositories_cache.get('data')
+
+            if not channel_repositories:
+                for provider_class in _channel_providers:
+                    provider = provider_class()
+                    if provider.match_url(channel):
+                        break
+                channel_repositories = provider.get_repositories(channel, self)
+                if channel_repositories == False:
+                    continue
+                _channel_repository_cache[cache_key] = {
+                    'time': time.time() + self.settings.get('cache_length',
+                        300),
+                    'data': channel_repositories
+                }
+
             repositories.extend(channel_repositories)
         return repositories
 
@@ -431,10 +450,20 @@ class PluginManager():
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
         for repo in repositories[::-1]:
-            downloader = RepositoryDownloader(self, installed_packages,
-                self.settings.get('plugin_name_map', {}), repo)
-            downloader.start()
-            downloaders.append(downloader)
+            repository_packages = None
+
+            cache_key = repo + '.packages'
+            packages_cache = _channel_repository_cache.get(cache_key)
+            if packages_cache and packages_cache.get('time') > \
+                    time.time():
+                repository_packages = packages_cache.get('data')
+                packages.update(repository_packages)
+
+            if not repository_packages:
+                downloader = RepositoryDownloader(self, installed_packages,
+                    self.settings.get('plugin_name_map', {}), repo)
+                downloader.start()
+                downloaders.append(downloader)
 
         # Wait until all of the downloaders have completed
         while True:
@@ -449,6 +478,11 @@ class PluginManager():
             repository_packages = downloader.packages
             if not repository_packages:
                 continue
+            cache_key = downloader.repo + '.packages'
+            _channel_repository_cache[cache_key] = {
+                'time': time.time() + self.settings.get('cache_length', 300),
+                'data': repository_packages
+            }
             packages.update(repository_packages)
 
         return packages
@@ -475,25 +509,26 @@ class PluginManager():
     def get_mapped_name(self, package):
         return self.settings.get('plugin_name_map', {}).get(package, package)
 
-    def create_package(self, package_name):
+    def create_package(self, package_name, perform_copy=False):
         package_dir = self.get_package_dir(package_name) + '/'
 
         if not os.path.exists(package_dir):
-            sublime.error_message('Plugin Manager: The folder for the ' +
+            sublime.error_message(__name__ + ': The folder for the ' +
                 'package name specified, %s, does not exist in %s' %
                 (package_name, sublime.packages_path()))
             return False
 
-        package_filename = os.path.join(sublime.installed_packages_path(),
-            package_name + '.sublime-package')
+        package_filename = package_name + '.sublime-package'
+        package_path = os.path.join(sublime.installed_packages_path(),
+            package_filename)
 
         if not os.path.exists(sublime.installed_packages_path()):
             os.mkdir(sublime.installed_packages_path())
 
-        if os.path.exists(package_filename):
-            os.remove(package_filename)
+        if os.path.exists(package_path):
+            os.remove(package_path)
 
-        package_file = zipfile.ZipFile(package_filename, "w",
+        package_file = zipfile.ZipFile(package_path, "w",
             compression=zipfile.ZIP_DEFLATED)
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
@@ -513,6 +548,16 @@ class PluginManager():
                     continue
                 package_file.write(full_path, relative_path)
         package_file.close()
+
+        copy_package_to = self.settings.get('copy_package_to')
+        if copy_package_to and perform_copy:
+            try:
+                shutil.copy(package_path,
+                    os.path.join(copy_package_to, package_filename))
+            except (OSError) as (exception):
+                sublime.error_message(__name__ + ': An error occurred ' +
+                    'copying %s to %s. %s' % (package_filename,
+                    copy_package_to, str(exception)))
         return True
 
     def install_package(self, package_name):
@@ -520,7 +565,7 @@ class PluginManager():
         packages = self.list_available_packages()
 
         if package_name not in packages.keys():
-            sublime.error_message('Plugin Manager: The package specified,' +
+            sublime.error_message(__name__ + ': The package specified,' +
                 ' %s, is not available.' % (package_name,))
             return False
 
@@ -552,8 +597,8 @@ class PluginManager():
                     shutil.rmtree(full_path)
                 else:
                     os.remove(full_path)
-        except (OSError, WindowsError) as (exception):
-            sublime.error_message('Plugin Manager: An error occurred while' +
+        except (OSError) as (exception):
+            sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package directory for %s. %s' %
                 (package_name, str(exception)))
             return False
@@ -561,7 +606,7 @@ class PluginManager():
         package_zip = zipfile.ZipFile(package_path, 'r')
         for path in package_zip.namelist():
             if path[0] == '/' or path.find('..') != -1:
-                sublime.error_message('Plugin Manager: The package ' +
+                sublime.error_message(__name__ + ': The package ' +
                     'specified, %s, contains files outside of the package ' +
                     'dir and cannot be safely installed.' % (package_name,))
                 return False
@@ -603,7 +648,7 @@ class PluginManager():
         installed_packages = self.list_packages()
 
         if package_name not in installed_packages:
-            sublime.error_message('Plugin Manager: The package specified,' +
+            sublime.error_message(__name__ + ': The package specified,' +
                 ' %s, is not installed.' % (package_name,))
             return False
 
@@ -616,7 +661,7 @@ class PluginManager():
             if os.path.exists(package_path):
                 os.remove(package_path)
         except (OSError) as (exception):
-            sublime.error_message('Plugin Manager: An error occurred while' +
+            sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package file for %s. %s' %
                 (package_name, str(exception)))
             return False
@@ -624,7 +669,7 @@ class PluginManager():
         try:
             shutil.rmtree(package_dir)
         except (OSError) as (exception):
-            sublime.error_message('Plugin Manager: An error occurred while' +
+            sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package directory for %s. %s' %
                 (package_name, str(exception)))
             return False
@@ -642,7 +687,7 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
         if picked == -1:
             return
         package_name = self.packages[picked]
-        if self.manager.create_package(package_name):
+        if self.manager.create_package(package_name, True):
             self.window.run_command('open_dir', {"dir":
                 sublime.installed_packages_path(), "file": package_name +
                 '.sublime-package'})
@@ -839,13 +884,13 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
+        settings = sublime.load_settings(__name__ + '.sublime-settings')
         repository_channels = settings.get('repository_channels', [])
         if not repository_channels:
             repository_channels = []
         repository_channels.append(input)
         settings.set('repository_channels', repository_channels)
-        sublime.save_settings('Plugin Manager.sublime-settings')
+        sublime.save_settings(__name__ + '.sublime-settings')
 
     def on_change(self, input):
         pass
@@ -860,13 +905,13 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
             self.on_change, self.on_cancel)
 
     def on_done(self, input):
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
+        settings = sublime.load_settings(__name__ + '.sublime-settings')
         repositories = settings.get('repositories', [])
         if not repositories:
             repositories = []
         repositories.append(input)
         settings.set('repositories', repositories)
-        sublime.save_settings('Plugin Manager.sublime-settings')
+        sublime.save_settings(__name__ + '.sublime-settings')
 
     def on_change(self, input):
         pass
@@ -888,10 +933,10 @@ class AutomaticUpgrader(threading.Thread):
             if not packages:
                 return
 
-            print 'Plugin Manager: Installing %s upgrades' % len(packages)
+            print __name__ + ': Installing %s upgrades' % len(packages)
             for package in packages:
                 self.installer.install_package(package[0])
-                print 'Plugin Manager: Upgraded %s to %s' % (package[0],
+                print __name__ + ': Upgraded %s to %s' % (package[0],
                     re.sub(' .*$', '', package[1]))
 
 AutomaticUpgrader().start()

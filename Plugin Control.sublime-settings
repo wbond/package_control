@@ -23,6 +23,9 @@
 	// Timeout for downloading channels, repositories and packages
 	"timeout": 3,
 
+	// The number of seconds to cache repository and package info for
+	"cache_length": 300,
+
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
 		".hg", ".git", ".svn", "_darcs", "CVS"
@@ -31,5 +34,7 @@
 	"files_to_ignore": [
     	".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
     	"*.tmTheme.cache"
-    ]
+    ],
+    // When a package is created, copy it to this folder also
+    "copy_package_to": ""
 }

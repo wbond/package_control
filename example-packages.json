@@ -14,13 +14,13 @@
 			}
 		},
 		{
-			"name": "Plugin Manager",
+			"name": "Plugin Control",
 			"description": "A full-featured plugin manager",
 			"platforms": {
 				"*": [
 					{
-						"version": "0.5",
-						"url": "http://sublime.wbond.net/Plugin Manager.sublime-package"
+						"version": "0.6",
+						"url": "http://sublime.wbond.net/Plugin Control.sublime-package"
 					}
 				]
 			}

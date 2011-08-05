@@ -1,4 +1,4 @@
-= Sublime Plugin Manager
+= Sublime Plugin Control
 
 A Sublime Text 2 (http://www.sublimetext.com/2) plugin manager for easily
 discovering, install, upgrading and removing plugins. Also includes an automatic
@@ -18,7 +18,7 @@ accessed via the ctrl+` shortcut. Once open, paste the following command
 into the console:
 
 {{{
-import urllib2,os;pf='Plugin Manager.sublime-package';ipp=sublime.installed_packages_path();os.makedirs(ipp) if not os.path.exists(ipp) else None;open(os.path.join(ipp,pf),'wb').write(urllib2.urlopen('http://sublime.wbond.net/'+pf.replace(' ','%20')).read())
+import urllib2,os;pf='Plugin Control.sublime-package';ipp=sublime.installed_packages_path();os.makedirs(ipp) if not os.path.exists(ipp) else None;open(os.path.join(ipp,pf),'wb').write(urllib2.urlopen('http://sublime.wbond.net/'+pf.replace(' ','%20')).read())
 }}}
 
 This command creates the //Installed Packages// directory for you, and then
@@ -39,9 +39,9 @@ restart Sublime Text 2.
 
 == Usage
 
-The plugin manager is driven by the //Command Pallete//. To open the pallete,
-press ctrl+shift+p (Windows, Linux) or cmd+shift+p (OS X). All Plugin Manager
-commands begin with {{{Plugin Manager: }}}, so start by typing {{{Plugin}}}.
+Plugin Control is driven by the //Command Pallete//. To open the pallete,
+press ctrl+shift+p (Windows, Linux) or cmd+shift+p (OS X). All Plugin Control
+commands begin with {{{Plugin Control: }}}, so start by typing {{{Plugin}}}.
 
 The command pallete will now show a number of commands:
 
@@ -52,24 +52,24 @@ The command pallete will now show a number of commands:
 * List Plugins
 * Remove Plugin
 * Upgrade Plugin
-* Plugin Manager Settings – Default
-* Plugin Manager Settings – User
+* Plugin Control Settings – Default
+* Plugin Control Settings – User
 
 Well skip the concept of Repositories and Channels for now and dive into
 installing your first plugin!
 
 Select the //Install Plugin// command. A quick-panel (like Goto Anything) will
-appear listing all available plugins. Select a plugin and the plugin manager
+appear listing all available plugins. Select a plugin and Plugin Control
 will download the package file and install the plugin into the running
 instance of Sublime Text 2.
 
 Once a plugin is installed is can be removed or upgraded via the command
 pallete.
 
-By default the plugin manager checks for new versions on startup. This setting,
+By default Plugin Control checks for new versions on startup. This setting,
 plus the list of channels and repositories are managed through the settings.
 Settings can be opened via the command pallete, or the //Preferences > Plugin
-Settings > Plugin Manager Settings – User// menu entry.
+Settings > Plugin Control Settings – User// menu entry.
 
 === Channels and Repositories
 
@@ -83,15 +83,15 @@ See {{{example-packages.json}}} for the format. The custom format allows
 specifying platforms (windows, osx, linux) for packages and provides a
 description and version.
 
-In addition to supporting a custom JSON format for repositories, the plugin
-manager support GitHub and BitBucket URLs:
+In addition to supporting a custom JSON format for repositories, Plugin
+Control supports GitHub and BitBucket URLs:
 
 * https://github.com/user/repo
 * https://github.com/organization_or_user
 * https://bitbucket.org/user/repo
 
-With these URLs, no work is necessary by the plugin developer to support the
-plugin manager. The plugin manager parses JSON from the GitHub and BitBucket
+With these URLs, no work is necessary by the plugin developer to support
+Plugin Control. Plugin Control parses JSON from the GitHub and BitBucket
 APIs and uses their zip download functionality to fetch the plugin.
 
 There is an option {{{plugin_name_map}}} in the settings to allow for
@@ -99,15 +99,15 @@ mapping repository names to plugin names. For instance, the {{{sode-theme}}}
 repository on GitHub needs to be installed as {{{Theme - Soda}}} to function
 properly.
 
-The plugin manager comes with a single default channel installed. If you would
+Plugin Control comes with a single default channel installed. If you would
 like one or more of your repositories added to the default channel, please fork
-https://github.com/wbond/sublime_plugin_manager_default_channel on GitHub or
-https://bitbucket.org/wbond/sublime_plugin_manager_default_channel on BitBucket
+https://github.com/wbond/plugin_control_channel on GitHub or
+https://bitbucket.org/wbond/plugin_control_channel on BitBucket
 and send a pull request. You can also email me at will@wbond.net.
 
 === Creating a Package
 
-If you are developing a plugin, the plugin manager includes a command to
+If you are developing a plugin, Plugin Control includes a command to
 create a {{{.sublime-package}}} file for you from one of your plugin
 directories. Just run the //Create Package// command and you can select what
 plugin you would like to package. The packager exlcudes various VCS metadata,
@@ -116,7 +116,7 @@ files can be tweaking through the settings.
 
 == License
 
-All of Sublime Plugin Manager is licensed under the MIT license.
+All of Sublime Plugin Control is licensed under the MIT license.
 
   Copyright (c) 2011 Will Bond <will@wbond.net>
 
