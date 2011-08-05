@@ -14,16 +14,15 @@ were manually installed.
 === Via Console
 
 The simplest installation is through the Sublime Text 2 console. This is
-accessed via the ctrl+` shortcut. Once open, paste the following two commands
+accessed via the ctrl+` shortcut. Once open, paste the following command
 into the console:
 
 {{{
-import os;os.makedirs(sublime.installed_packages_path()) if not os.path.exists(sublime.installed_packages_path()) else None
-import urllib2,os;open(os.path.join(sublime.installed_packages_path(),'Plugin Manager.sublime-package'),'w').write(urllib2.urlopen('http://sublime.wbond.net/Plugin%20Manager.sublime-package').read())
+import urllib2,os;pf='Plugin Manager.sublime-package';ipp=sublime.installed_packages_path();os.makedirs(ipp) if not os.path.exists(ipp) else None;open(os.path.join(ipp,pf),'wb').write(urllib2.urlopen('http://sublime.wbond.net/'+pf.replace(' ','%20')).read())
 }}}
 
-The first one creates the //Installed Packages// directory for you, and the
-second one downloads the {{{Package Manager.sublime-package}}} into it.
+This command creates the //Installed Packages// directory for you, and then
+downloads the {{{Package Manager.sublime-package}}} into it.
 
 Finally, restart Sublime Text 2.
 

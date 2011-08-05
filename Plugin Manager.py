@@ -387,7 +387,7 @@ class PluginManager():
             return False
 
         timeout = self.settings.get('timeout', 3)
-        return downloader.download(url, error_message, timeout)
+        return downloader.download(url.replace(' ', '%20'), error_message, timeout)
 
     def get_metadata(self, package):
         metadata_filename = os.path.join(self.get_package_dir(package),
@@ -491,7 +491,8 @@ class PluginManager():
         if os.path.exists(package_filename):
             os.remove(package_filename)
 
-        package_file = zipfile.ZipFile(package_filename, "w")
+        package_file = zipfile.ZipFile(package_filename, "w",
+            compression=zipfile.ZIP_DEFLATED)
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
         files_to_ignore = self.settings.get('files_to_ignore', [])
@@ -508,9 +509,7 @@ class PluginManager():
                 relative_path = re.sub(package_dir_regex, '', full_path)
                 if os.path.isdir(full_path):
                     continue
-                package_file.write(full_path,
-                    relative_path , zipfile.ZIP_DEFLATED)
-
+                package_file.write(full_path, relative_path)
         package_file.close()
         return True
 
@@ -534,7 +533,7 @@ class PluginManager():
         package_bytes = self.download_url(url, 'Error downloading package.')
         if package_bytes == False:
             return False
-        with open(package_path, "w") as package_file:
+        with open(package_path, "wb") as package_file:
             package_file.write(package_bytes)
 
         package_dir = self.get_package_dir(package_name)
@@ -557,6 +556,7 @@ class PluginManager():
                 os.makedirs(os.path.join(package_dir, path))
             else:
                 package_zip.extract(path)
+        package_zip.close()
 
         # If the zip contained a single directory, pop everything up a level
         # and repackage the zip file
