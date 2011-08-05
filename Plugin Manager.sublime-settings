@@ -25,7 +25,7 @@
 
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
-		".hg", ".git", ".svn", "_darcs"
+		".hg", ".git", ".svn", "_darcs", "CVS"
 	],
     // Files to ignore when creating a package
 	"files_to_ignore": [

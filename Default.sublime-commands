@@ -13,15 +13,19 @@
     },
     {
         "caption": "Plugin Manager: Install Plugin",
-        "command": "install_package"
+        "command": "install_plugin"
+    },
+    {
+        "caption": "Plugin Manager: List Plugins",
+        "command": "list_plugins"
     },
     {
         "caption": "Plugin Manager: Remove Plugin",
-        "command": "remove_package"
+        "command": "remove_plugin"
     },
     {
         "caption": "Plugin Manager: Upgrade Plugin",
-        "command": "upgrade_package"
+        "command": "upgrade_plugin"
     },
     {
         "caption": "Preferences: Plugin Manager Settings – Default",

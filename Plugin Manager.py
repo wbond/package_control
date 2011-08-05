@@ -14,6 +14,7 @@ import threading
 import datetime
 import time
 import shutil
+import _strptime
 
 try:
     import ssl
@@ -351,6 +352,15 @@ class RepositoryDownloader(threading.Thread):
 
 
 class PluginManager():
+    def __init__(self):
+        self.settings = {}
+        self.refresh_settings()
+
+    def refresh_settings(self):
+        settings = sublime.load_settings('Plugin Manager.sublime-settings')
+        for setting in ['timeout', 'repositories', 'repository_channels',
+                'package_name_to_dir_map', 'dirs_to_ignore', 'files_to_ignore']:
+            self.settings[setting] = settings.get(setting)
 
     def compare_versions(self, version1, version2):
         def normalize(v):
@@ -358,8 +368,7 @@ class PluginManager():
         return cmp(normalize(version1), normalize(version2))
 
     def download_url(self, url, error_message):
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
-        timeout = settings.get('timeout', 3)
+        timeout = self.settings.get('timeout', 3)
         has_ssl = 'ssl' in sys.modules
         is_ssl = re.search('^https://', url) != None
 
@@ -393,9 +402,8 @@ class PluginManager():
         return {}
 
     def list_repositories(self):
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
-        repositories = settings.get('repositories')
-        repository_channels = settings.get('repository_channels')
+        repositories = self.settings.get('repositories')
+        repository_channels = self.settings.get('repository_channels')
         for channel in repository_channels:
             for provider_class in _channel_providers:
                 provider = provider_class()
@@ -438,8 +446,7 @@ class PluginManager():
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
 
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
-        map_dict = settings.get('package_name_to_dir_map', {})
+        map_dict = self.settings.get('package_name_to_dir_map', {})
         flipped_map_dict = dict(zip(map_dict.values(), map_dict.keys()))
         package_names = [flipped_map_dict.get(name, name) for name in package_names]
 
@@ -460,8 +467,7 @@ class PluginManager():
             self.get_mapped_name(package))
 
     def get_mapped_name(self, package):
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
-        map_dict = settings.get('package_name_to_dir_map', {})
+        map_dict = self.settings.get('package_name_to_dir_map', {})
         return map_dict.get(package, package)
 
     def md5sum(self, file):
@@ -494,9 +500,8 @@ class PluginManager():
 
         package_file = zipfile.ZipFile(package_filename, "w")
 
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
-        dirs_to_ignore = settings.get('dirs_to_ignore', [])
-        files_to_ignore = settings.get('files_to_ignore', [])
+        dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
+        files_to_ignore = self.settings.get('files_to_ignore', [])
 
         package_dir_regex = re.compile('^' + re.escape(package_dir))
         for root, dirs, files in os.walk(package_dir):
@@ -508,6 +513,8 @@ class PluginManager():
                     continue
                 full_path = os.path.join(root, path)
                 relative_path = re.sub(package_dir_regex, '', full_path)
+                if os.path.isdir(full_path):
+                    continue
                 package_file.write(full_path,
                     relative_path , zipfile.ZIP_DEFLATED)
 
@@ -551,11 +558,17 @@ class PluginManager():
                 return False
 
         os.chdir(package_dir)
-        package_zip.extractall()
+
+        for path in package_zip.namelist():
+            if path.endswith('/'):
+                os.makedirs(os.path.join(package_dir, path))
+            else:
+                package_zip.extract(path)
 
         # If the zip contained a single directory, pop everything up a level
         # and repackage the zip file
         extracted_paths = os.listdir(package_dir)
+        extracted_paths = list(set(extracted_paths) - set(['.DS_Store']))
         if len(extracted_paths) == 1 and os.path.isdir(extracted_paths[0]):
             single_dir = os.path.join(package_dir, extracted_paths[0])
             for path in os.listdir(single_dir):
@@ -568,7 +581,8 @@ class PluginManager():
         with open(package_metadata_file, 'w') as f:
             metadata = {
                 "version": packages[package_name]['downloads'][0]['version'],
-                "url": packages[package_name]['url']
+                "url": packages[package_name]['url'],
+                "description": packages[package_name]['description']
             }
             json.dump(metadata, f)
         return True
@@ -625,8 +639,10 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
 
 
 class PackageInstaller():
-    def make_package_list(self, ignore_actions=[]):
+    def __init__(self):
         self.manager = PluginManager()
+
+    def make_package_list(self, ignore_actions=[]):
         packages = self.manager.list_available_packages()
 
         package_list = []
@@ -675,20 +691,21 @@ class PackageInstaller():
         self.manager.install_package(name)
 
 
-class InstallPackageCommand(sublime_plugin.WindowCommand):
+class InstallPluginCommand(sublime_plugin.WindowCommand):
     def run(self):
         sublime.status_message(u'Loading repositories, please wait…')
-        InstallPackageThread(self.window).start()
+        InstallPluginThread(self.window).start()
 
     def on_done(self, picked):
         return
 
 
-class InstallPackageThread(threading.Thread, PackageInstaller):
+class InstallPluginThread(threading.Thread, PackageInstaller):
     def __init__(self, window):
         self.window = window
         self.completion_type = 'installed'
         threading.Thread.__init__(self)
+        PackageInstaller.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list(['upgrade', 'downgrade',
@@ -698,48 +715,40 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
         sublime.set_timeout(show_quick_panel, 0)
 
 
-class UpgradePackageCommand(sublime_plugin.WindowCommand):
+class UpgradePluginCommand(sublime_plugin.WindowCommand):
     def run(self):
-        UpgradePackageThread(self.window).start()
+        sublime.status_message(u'Loading repositories, please wait…')
+        UpgradePluginThread(self.window).start()
 
 
-class UpgradePackageThread(threading.Thread, PackageInstaller):
+class UpgradePluginThread(threading.Thread, PackageInstaller):
     def __init__(self, window):
         self.window = window
         self.completion_type = 'upgraded'
         threading.Thread.__init__(self)
+        PackageInstaller.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list(['install'])
         def show_quick_panel():
-            self.window.run_command('hide_overlay')
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
 
-class RemovePackageCommand(sublime_plugin.WindowCommand):
-    def run(self):
-        RemovePackageThread(self.window).start()
-
-
-class RemovePackageThread(threading.Thread):
-    def __init__(self, window):
-        self.window = window
-        threading.Thread.__init__(self)
-
-    def run(self):
+class ExistingPluginsCommand():
+    def __init__(self):
         self.manager = PluginManager()
-        available_packages = self.manager.list_available_packages()
+
+    def make_package_list(self):
         packages = self.manager.list_packages()
 
         package_list = []
         for package in sorted(packages):
             package_entry = [package]
-            info = available_packages.get(package, {})
             metadata = self.manager.get_metadata(package)
 
-            package_entry.append(info.get('description', 'No description ' + \
-                'provided'))
+            package_entry.append(metadata.get('description',
+                'No description provided'))
 
             version = metadata.get('version')
             if version:
@@ -747,7 +756,7 @@ class RemovePackageThread(threading.Thread):
             else:
                 version = 'unknown version'
 
-            url = info.get('url', metadata.get('url'))
+            url = metadata.get('url')
             if url:
                 url = re.sub('^https?://', '', url)
                 url += '; '
@@ -757,11 +766,53 @@ class RemovePackageThread(threading.Thread):
             package_entry.append(version + '; ' + url + 'action: remove')
             package_list.append(package_entry)
 
-        self.package_list = package_list
+        return package_list
+
+
+class ListPluginsCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        ListPluginsThread(self.window).start()
+
+
+class ListPluginsThread(threading.Thread, ExistingPluginsCommand):
+    def __init__(self, window):
+        self.window = window
+        threading.Thread.__init__(self)
+        ExistingPluginsCommand.__init__(self)
+
+    def run(self):
+        self.package_list = self.make_package_list()
 
         def show_quick_panel():
-            self.window.run_command('hide_overlay')
-            self.window.show_quick_panel(package_list, self.on_done)
+            self.window.show_quick_panel(self.package_list, self.on_done)
+        sublime.set_timeout(show_quick_panel, 0)
+
+    def on_done(self, picked):
+        if picked == -1:
+            return
+        package_name = self.package_list[picked][0]
+        def open_dir():
+            self.window.run_command('open_dir',
+                {"dir": os.path.join(sublime.packages_path(), package_name)})
+        sublime.set_timeout(open_dir, 0)
+
+
+class RemovePluginCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        RemovePluginThread(self.window).start()
+
+
+class RemovePluginThread(threading.Thread, ExistingPluginsCommand):
+    def __init__(self, window):
+        self.window = window
+        threading.Thread.__init__(self)
+        ExistingPluginsCommand.__init__(self)
+
+    def run(self):
+        self.package_list = self.make_package_list()
+
+        def show_quick_panel():
+            self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
     def on_done(self, picked):
@@ -815,18 +866,21 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
 
 
 class AutomaticUpgrader(threading.Thread):
+    def __init__(self):
+        self.installer = PackageInstaller()
+        self.auto_upgrade = PluginManager().settings.get('auto_upgrade')
+        threading.Thread.__init__(self)
+
     def run(self):
-        settings = sublime.load_settings('Plugin Manager.sublime-settings')
-        if settings.get('auto_upgrade'):
-            installer = PackageInstaller()
-            packages = installer.make_package_list(['install', 'reinstall',
+        if self.auto_upgrade:
+            packages = self.installer.make_package_list(['install', 'reinstall',
                 'downgrade', 'overwrite unknown'])
             if not packages:
                 return
 
             print 'Plugin Manager: Installing %s upgrades' % len(packages)
             for package in packages:
-                installer.install_package(package[0])
+                self.installer.install_package(package[0])
                 print 'Plugin Manager: Upgraded %s to %s' % (package[0],
                     re.sub(' .*$', '', package[1]))
 
