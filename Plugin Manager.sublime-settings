@@ -12,8 +12,8 @@
 	],
 
 	// This helps solve naming issues where a repository it not named the
-	// same as the package
-	"package_name_to_dir_map": {
+	// same as the plugin should be
+	"plugin_name_map": {
 		"soda-theme": "Theme - Soda"
 	},
 

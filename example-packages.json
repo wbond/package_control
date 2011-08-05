@@ -1,0 +1,53 @@
+{
+	"schema_version": "1.0",
+	"packages": [
+		{
+			"name": "Alignment",
+			"description": "Easy alignment of multiple selections and multi-line selections",
+			"platforms": {
+				"*": [
+					{
+						"version": "0.8",
+						"url": "http://sublime.wbond.net/Alignment.sublime-package"
+					}
+				]
+			}
+		},
+		{
+			"name": "Plugin Manager",
+			"description": "A full-featured plugin manager",
+			"platforms": {
+				"*": [
+					{
+						"version": "0.5",
+						"url": "http://sublime.wbond.net/Plugin Manager.sublime-package"
+					}
+				]
+			}
+		},
+		{
+			"name": "Terminal",
+			"description": "Launch terminals from the current file or the root project folder",
+			"platforms": {
+				"*": [
+					{
+						"version": "0.7",
+						"url": "http://sublime.wbond.net/Terminal.sublime-package"
+					}
+				]
+			}
+		},
+		{
+			"name": "Tortoise",
+			"description": "Keyboard shortcuts and menu entries to execute TortoiseSVN, TortoiseHg and TortoiseGit commands",
+			"platforms": {
+				"windows": [
+					{
+						"version": "1.0",
+						"url": "http://sublime.wbond.net/Tortoise.sublime-package"
+					}
+				]
+			}
+		}
+	]
+}

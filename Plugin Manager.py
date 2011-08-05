@@ -353,13 +353,12 @@ class RepositoryDownloader(threading.Thread):
 
 class PluginManager():
     def __init__(self):
+        # Here we manually copy the settings since sublime doesn't like
+        # code accessing settings from threads
         self.settings = {}
-        self.refresh_settings()
-
-    def refresh_settings(self):
         settings = sublime.load_settings('Plugin Manager.sublime-settings')
         for setting in ['timeout', 'repositories', 'repository_channels',
-                'package_name_to_dir_map', 'dirs_to_ignore', 'files_to_ignore']:
+                'plugin_name_map', 'dirs_to_ignore', 'files_to_ignore']:
             self.settings[setting] = settings.get(setting)
 
     def compare_versions(self, version1, version2):
@@ -368,7 +367,6 @@ class PluginManager():
         return cmp(normalize(version1), normalize(version2))
 
     def download_url(self, url, error_message):
-        timeout = self.settings.get('timeout', 3)
         has_ssl = 'ssl' in sys.modules
         is_ssl = re.search('^https://', url) != None
 
@@ -388,6 +386,7 @@ class PluginManager():
                 'program found. Please install curl or wget.')
             return False
 
+        timeout = self.settings.get('timeout', 3)
         return downloader.download(url, error_message, timeout)
 
     def get_metadata(self, package):
@@ -416,40 +415,46 @@ class PluginManager():
         return repositories
 
     def list_available_packages(self):
-        repos = self.list_repositories()
+        repositories = self.list_repositories()
         installed_packages = self.list_packages()
         packages = {}
-        repo_downloaders = []
-        for repo in repos[::-1]:
-            repo_downloader = RepositoryDownloader(self, installed_packages,
-                repo)
-            repo_downloader.start()
-            repo_downloaders.append(repo_downloader)
+        downloaders = []
 
+        # Repositories are run in reverse order so that the ones first
+        # on the list will overwrite those last on the list
+        for repo in repositories[::-1]:
+            downloader = RepositoryDownloader(self, installed_packages,
+                repo)
+            downloader.start()
+            downloaders.append(downloader)
+
+        # Wait until all of the downloaders have completed
         while True:
             is_alive = False
-            for downloader in repo_downloaders:
+            for downloader in downloaders:
                 is_alive = downloader.is_alive() or is_alive
             if not is_alive:
                 break
             time.sleep(0.01)
 
-        for downloader in repo_downloaders:
-            repo_packages = downloader.packages
-            if not repo_packages:
+        for downloader in downloaders:
+            repository_packages = downloader.packages
+            if not repository_packages:
                 continue
-            packages.update(repo_packages)
-        return packages
+            packages.update(repository_packages)
+
+        mapped_packages = {}
+        for package in packages.keys():
+            mapped_package = self.get_mapped_name(package)
+            mapped_packages[mapped_package] = packages[package]
+            mapped_packages[mapped_package]['name'] = mapped_package
+
+        return mapped_packages
 
     def list_packages(self):
         package_names = os.listdir(sublime.packages_path())
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
-
-        map_dict = self.settings.get('package_name_to_dir_map', {})
-        flipped_map_dict = dict(zip(map_dict.values(), map_dict.keys()))
-        package_names = [flipped_map_dict.get(name, name) for name in package_names]
-
         packages = list(set(package_names) - set(self.list_default_packages()))
         packages.sort()
         return packages
@@ -463,22 +468,10 @@ class PluginManager():
         return packages
 
     def get_package_dir(self, package):
-        return os.path.join(sublime.packages_path(),
-            self.get_mapped_name(package))
+        return os.path.join(sublime.packages_path(), package)
 
     def get_mapped_name(self, package):
-        map_dict = self.settings.get('package_name_to_dir_map', {})
-        return map_dict.get(package, package)
-
-    def md5sum(self, file):
-        with open("filename", 'rb') as file:
-            sum = hashlib.md5()
-            while True:
-                content = file.read(524288)
-                if not content:
-                    break
-                sum.update(content)
-        return sum.hexdigest()
+        return self.settings.get('plugin_name_map', {}).get(package, package)
 
     def create_package(self, package_name):
         package_dir = self.get_package_dir(package_name) + '/'
@@ -533,8 +526,7 @@ class PluginManager():
         download = packages[package_name]['downloads'][0]
         url = download['url']
 
-        mapped_package_name = self.get_mapped_name(package_name)
-        package_filename = mapped_package_name + \
+        package_filename = package_name + \
             '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
@@ -559,6 +551,7 @@ class PluginManager():
 
         os.chdir(package_dir)
 
+        # Here we don’t use .extractall() since it was having issues on OS X
         for path in package_zip.namelist():
             if path.endswith('/'):
                 os.makedirs(os.path.join(package_dir, path))
@@ -574,7 +567,7 @@ class PluginManager():
             for path in os.listdir(single_dir):
                 shutil.move(os.path.join(single_dir, path), package_dir)
             os.rmdir(single_dir)
-            self.create_package(mapped_package_name)
+            self.create_package(package_name)
 
         package_metadata_file = os.path.join(package_dir,
             'package-metadata.json')
@@ -596,8 +589,7 @@ class PluginManager():
                 ' %s, is not installed.' % (package_name,))
             return False
 
-        mapped_package_name = self.get_mapped_name(package_name)
-        package_filename = mapped_package_name + '.sublime-package'
+        package_filename = package_name + '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
         package_dir = self.get_package_dir(package_name)
@@ -638,7 +630,7 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
                 '.sublime-package'})
 
 
-class PackageInstaller():
+class PluginInstaller():
     def __init__(self):
         self.manager = PluginManager()
 
@@ -700,12 +692,12 @@ class InstallPluginCommand(sublime_plugin.WindowCommand):
         return
 
 
-class InstallPluginThread(threading.Thread, PackageInstaller):
+class InstallPluginThread(threading.Thread, PluginInstaller):
     def __init__(self, window):
         self.window = window
         self.completion_type = 'installed'
         threading.Thread.__init__(self)
-        PackageInstaller.__init__(self)
+        PluginInstaller.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list(['upgrade', 'downgrade',
@@ -721,12 +713,12 @@ class UpgradePluginCommand(sublime_plugin.WindowCommand):
         UpgradePluginThread(self.window).start()
 
 
-class UpgradePluginThread(threading.Thread, PackageInstaller):
+class UpgradePluginThread(threading.Thread, PluginInstaller):
     def __init__(self, window):
         self.window = window
         self.completion_type = 'upgraded'
         threading.Thread.__init__(self)
-        PackageInstaller.__init__(self)
+        PluginInstaller.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list(['install'])
@@ -867,7 +859,7 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
 
 class AutomaticUpgrader(threading.Thread):
     def __init__(self):
-        self.installer = PackageInstaller()
+        self.installer = PluginInstaller()
         self.auto_upgrade = PluginManager().settings.get('auto_upgrade')
         threading.Thread.__init__(self)
 

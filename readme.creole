@@ -53,17 +53,17 @@ plus the list of channels and repositories are managed through the settings.
 Settings can be opened via the command pallete, or the //Preferences > Plugin
 Settings > Plugin Manager Settings – User// menu entry.
 
-=== Channels and Repositories ===
+=== Channels and Repositories
 
 Channels are JSON files hosted on a URL that contains a list of
-repository URLs. See example-repositories.json for the format. When a user
+repository URLs. See {{{example-repositories.json}}} for the format. When a user
 requests to install a plugin, their channels are queried for a list of
-repositories. The plugin manager comes with a single default channel installed.
+repositories.
 
 Repositories as JSON files hosted on a URL that contain a list of packages.
-See example-packages.json for the format. The custom format allows specifying
-platforms (windows, osx, linux) for packages and provides a description and
-version.
+See {{{example-packages.json}}} for the format. The custom format allows
+specifying platforms (windows, osx, linux) for packages and provides a
+description and version.
 
 In addition to supporting a custom JSON format for repositories, the plugin
 manager support GitHub and BitBucket URLs:
@@ -76,12 +76,18 @@ With these URLs, no work is necessary by the plugin developer to support the
 plugin manager. The plugin manager parses JSON from the GitHub and BitBucket
 APIs and uses their zip download functionality to fetch the plugin.
 
-There is an option {{{package_name_to_dir_map}}} in the settings to allow for
+There is an option {{{plugin_name_map}}} in the settings to allow for
 mapping repository names to plugin names. For instance, the {{{sode-theme}}}
 repository on GitHub needs to be installed as {{{Theme - Soda}}} to function
 properly.
 
-=== Creating a Package ===
+The plugin manager comes with a single default channel installed. If you would
+like one or more of your repositories added to the default channel, please fork
+https://github.com/wbond/sublime_plugin_manager_default_channel on GitHub or
+https://bitbucket.org/wbond/sublime_plugin_manager_default_channel on BitBucket
+and send a pull request. You can also email me at will@wbond.net.
+
+=== Creating a Package
 
 If you are developing a plugin, the plugin manager includes a command to
 create a {{{.sublime-package}}} file for you from one of your plugin

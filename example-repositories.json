@@ -1,0 +1,8 @@
+{
+	"schema_version": "1.0",
+	"repositories": [
+		"http://sublime.wbond.net/packages.json",
+		"https://github.com/buymeasoda/soda-theme",
+		"https://github.com/SublimeText"
+	]
+}
