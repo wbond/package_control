@@ -6,26 +6,26 @@
         "children":
         [
             {
-                "caption": "Plugin Settings",
+                "caption": "Package Settings",
                 "mnemonic": "P",
-                "id": "plugin-settings",
+                "id": "package-settings",
                 "children":
                 [
                     {
-                        "caption": "Plugin Control",
+                        "caption": "Package Control",
                         "children":
                         [
                             {
                                 "command": "open_file", "args":
                                 {
-                                    "file": "${packages}/Plugin Control/Plugin Control.sublime-settings"
+                                    "file": "${packages}/Package Control/Package Control.sublime-settings"
                                 },
                                 "caption": "Settings – Default"
                             },
                             {
                                 "command": "open_file", "args":
                                 {
-                                    "file": "${packages}/User/Plugin Control.sublime-settings"
+                                    "file": "${packages}/User/Package Control.sublime-settings"
                                 },
                                 "caption": "Settings – User"
                             },

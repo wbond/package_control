@@ -26,8 +26,8 @@ class ChannelProvider():
     def match_url(self, url):
         return True
 
-    def get_repositories(self, channel, plugin_manager):
-        channel_json = plugin_manager.download_url(channel,
+    def get_repositories(self, channel, package_manager):
+        channel_json = package_manager.download_url(channel,
             'Error downloading channel.')
         if channel_json == False:
             return False
@@ -47,8 +47,8 @@ class PackageProvider():
     def match_url(self, url):
         return True
 
-    def get_packages(self, repo, plugin_manager):
-        repository_json = plugin_manager.download_url(repo,
+    def get_packages(self, repo, package_manager):
+        repository_json = package_manager.download_url(repo,
             'Error downloading repository.')
         if repository_json == False:
             return False
@@ -87,10 +87,10 @@ class GitHubPackageProvider():
     def match_url(self, url):
         return re.search('^https?://github.com/[^/]+/[^/]+$', url) != None
 
-    def get_packages(self, repo, plugin_manager):
+    def get_packages(self, repo, package_manager):
         api_url = re.sub('^https?://github.com/',
             'https://api.github.com/repos/', repo)
-        repo_json = plugin_manager.download_url(api_url,
+        repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -127,10 +127,10 @@ class GitHubUserProvider():
     def match_url(self, url):
         return re.search('^https?://github.com/[^/]+$', url) != None
 
-    def get_packages(self, url, plugin_manager):
+    def get_packages(self, url, package_manager):
         api_url = re.sub('^https?://github.com/',
             'https://api.github.com/users/', url) + '/repos'
-        repo_json = plugin_manager.download_url(api_url,
+        repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -170,10 +170,10 @@ class BitBucketPackageProvider():
     def match_url(self, url):
         return re.search('^https?://bitbucket.org', url) != None
 
-    def get_packages(self, repo, plugin_manager):
+    def get_packages(self, repo, package_manager):
         api_url = re.sub('^https?://bitbucket.org/',
             'https://api.bitbucket.org/1.0/repositories/', repo)
-        repo_json = plugin_manager.download_url(api_url,
+        repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -184,7 +184,7 @@ class BitBucketPackageProvider():
                 ' repository ' + repo + '.')
             return False
 
-        changeset_json = plugin_manager.download_url(api_url + \
+        changeset_json = package_manager.download_url(api_url + \
             '/changesets/?limit=1', 'Error downloading repository.')
         if changeset_json == False:
             return False
@@ -322,8 +322,8 @@ class CurlDownloader(CliDownloader):
 _channel_repository_cache = {}
 
 class RepositoryDownloader(threading.Thread):
-    def __init__(self, plugin_manager, installed_packages, name_map, repo):
-        self.plugin_manager = plugin_manager
+    def __init__(self, package_manager, installed_packages, name_map, repo):
+        self.package_manager = package_manager
         self.installed_packages = installed_packages
         self.repo = repo
         self.packages = {}
@@ -335,7 +335,7 @@ class RepositoryDownloader(threading.Thread):
             provider = provider_class()
             if provider.match_url(self.repo):
                 break
-        packages = provider.get_packages(self.repo, self.plugin_manager)
+        packages = provider.get_packages(self.repo, self.package_manager)
         if not packages:
             self.packages = {}
             return
@@ -350,7 +350,7 @@ class RepositoryDownloader(threading.Thread):
         for package in packages.keys():
             if package in self.installed_packages:
                 packages[package]['installed'] = True
-                metadata = self.plugin_manager.get_metadata(package)
+                metadata = self.package_manager.get_metadata(package)
                 if metadata.get('version'):
                     packages[package]['installed_version'] = \
                         metadata['version']
@@ -360,14 +360,14 @@ class RepositoryDownloader(threading.Thread):
         self.packages = packages
 
 
-class PluginManager():
+class PackageManager():
     def __init__(self):
         # Here we manually copy the settings since sublime doesn't like
         # code accessing settings from threads
         self.settings = {}
         settings = sublime.load_settings(__name__ + '.sublime-settings')
         for setting in ['timeout', 'repositories', 'repository_channels',
-                'plugin_name_map', 'dirs_to_ignore', 'files_to_ignore',
+                'package_name_map', 'dirs_to_ignore', 'files_to_ignore',
                 'package_destination', 'cache_length', 'auto_upgrade']:
             if settings.get(setting) == None:
                 continue
@@ -461,7 +461,7 @@ class PluginManager():
 
             if not repository_packages:
                 downloader = RepositoryDownloader(self, installed_packages,
-                    self.settings.get('plugin_name_map', {}), repo)
+                    self.settings.get('package_name_map', {}), repo)
                 downloader.start()
                 downloaders.append(downloader)
 
@@ -513,7 +513,7 @@ class PluginManager():
         return os.path.join(sublime.packages_path(), package)
 
     def get_mapped_name(self, package):
-        return self.settings.get('plugin_name_map', {}).get(package, package)
+        return self.settings.get('package_name_map', {}).get(package, package)
 
     def create_package(self, package_name, package_destination):
         package_dir = self.get_package_dir(package_name) + '/'
@@ -695,10 +695,10 @@ class PluginManager():
 
 class CreatePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.manager = PluginManager()
+        self.manager = PackageManager()
         self.packages = self.manager.list_packages()
         if not self.packages:
-            sublime.error_message(__name__ + ': There are no plugins ' +
+            sublime.error_message(__name__ + ': There are no packages ' +
                 'available to be packaged.')
             return
         self.window.show_quick_panel(self.packages, self.on_done)
@@ -722,9 +722,9 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
                 '.sublime-package'})
 
 
-class PluginInstaller():
+class PackageInstaller():
     def __init__(self):
-        self.manager = PluginManager()
+        self.manager = PackageManager()
 
     def make_package_list(self, ignore_actions=[]):
         packages = self.manager.list_available_packages()
@@ -773,68 +773,68 @@ class PluginInstaller():
             return
         package_name = self.package_list[picked][0]
         self.install_package(package_name)
-        sublime.status_message('Plugin ' + package_name + ' successfully ' +
+        sublime.status_message('Package ' + package_name + ' successfully ' +
             self.completion_type)
 
     def install_package(self, name):
         self.manager.install_package(name)
 
 
-class InstallPluginCommand(sublime_plugin.WindowCommand):
+class InstallPackageCommand(sublime_plugin.WindowCommand):
     def run(self):
         sublime.status_message(u'Loading repositories, please wait…')
-        InstallPluginThread(self.window).start()
+        InstallPackageThread(self.window).start()
 
     def on_done(self, picked):
         return
 
 
-class InstallPluginThread(threading.Thread, PluginInstaller):
+class InstallPackageThread(threading.Thread, PackageInstaller):
     def __init__(self, window):
         self.window = window
         self.completion_type = 'installed'
         threading.Thread.__init__(self)
-        PluginInstaller.__init__(self)
+        PackageInstaller.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list(['upgrade', 'downgrade',
             'reinstall'])
         def show_quick_panel():
             if not self.package_list:
-                sublime.error_message(__name__ + ': There are no plugins ' +
+                sublime.error_message(__name__ + ': There are no packages ' +
                     'available for installation.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
 
-class UpgradePluginCommand(sublime_plugin.WindowCommand):
+class UpgradePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
         sublime.status_message(u'Loading repositories, please wait…')
-        UpgradePluginThread(self.window).start()
+        UpgradePackageThread(self.window).start()
 
 
-class UpgradePluginThread(threading.Thread, PluginInstaller):
+class UpgradePackageThread(threading.Thread, PackageInstaller):
     def __init__(self, window):
         self.window = window
         self.completion_type = 'upgraded'
         threading.Thread.__init__(self)
-        PluginInstaller.__init__(self)
+        PackageInstaller.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list(['install'])
         def show_quick_panel():
             if not self.package_list:
-                sublime.error_message(__name__ + ': There are no plugins ' +
+                sublime.error_message(__name__ + ': There are no packages ' +
                     'ready for upgrade.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
 
-class ExistingPluginsCommand():
+class ExistingPackagesCommand():
     def __init__(self):
-        self.manager = PluginManager()
+        self.manager = PackageManager()
 
     def make_package_list(self, action=''):
         packages = self.manager.list_packages()
@@ -865,23 +865,23 @@ class ExistingPluginsCommand():
         return package_list
 
 
-class ListPluginsCommand(sublime_plugin.WindowCommand):
+class ListPackagesCommand(sublime_plugin.WindowCommand):
     def run(self):
-        ListPluginsThread(self.window).start()
+        ListPackagesThread(self.window).start()
 
 
-class ListPluginsThread(threading.Thread, ExistingPluginsCommand):
+class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
     def __init__(self, window):
         self.window = window
         threading.Thread.__init__(self)
-        ExistingPluginsCommand.__init__(self)
+        ExistingPackagesCommand.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list()
 
         def show_quick_panel():
             if not self.package_list:
-                sublime.error_message(__name__ + ': There are no plugins ' +
+                sublime.error_message(__name__ + ': There are no packages ' +
                     'to list.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
@@ -897,23 +897,23 @@ class ListPluginsThread(threading.Thread, ExistingPluginsCommand):
         sublime.set_timeout(open_dir, 0)
 
 
-class RemovePluginCommand(sublime_plugin.WindowCommand):
+class RemovePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        RemovePluginThread(self.window).start()
+        RemovePackageThread(self.window).start()
 
 
-class RemovePluginThread(threading.Thread, ExistingPluginsCommand):
+class RemovePackageThread(threading.Thread, ExistingPackagesCommand):
     def __init__(self, window):
         self.window = window
         threading.Thread.__init__(self)
-        ExistingPluginsCommand.__init__(self)
+        ExistingPackagesCommand.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list('remove')
 
         def show_quick_panel():
             if not self.package_list:
-                sublime.error_message(__name__ + ': There are no plugins ' +
+                sublime.error_message(__name__ + ': There are no packages ' +
                     'that can be removed.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
@@ -924,7 +924,7 @@ class RemovePluginThread(threading.Thread, ExistingPluginsCommand):
             return
         package = self.package_list[picked][0]
         self.manager.remove_package(package)
-        sublime.status_message('Plugin ' + package + ' successfully removed')
+        sublime.status_message('Package ' + package + ' successfully removed')
 
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
@@ -971,9 +971,9 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
         pass
 
 
-class DisablePluginCommand(sublime_plugin.WindowCommand):
+class DisablePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        manager = PluginManager()
+        manager = PackageManager()
         packages = manager.list_all_packages()
         self.settings = sublime.load_settings('Global.sublime-settings')
         disabled_packages = self.settings.get('ignored_packages')
@@ -983,7 +983,7 @@ class DisablePluginCommand(sublime_plugin.WindowCommand):
         self.package_list.sort()
         if not self.package_list:
             sublime.error_message(__name__ + ': There are no enabled ' +
-            'plugins to disable.')
+            'packages to disable.')
             return
         self.window.show_quick_panel(self.package_list, self.on_done)
 
@@ -997,19 +997,19 @@ class DisablePluginCommand(sublime_plugin.WindowCommand):
         ignored_packages.append(package)
         self.settings.set('ignored_packages', ignored_packages)
         sublime.save_settings('Global.sublime-settings')
-        sublime.status_message('Plugin ' + package + ' successfully added ' +
-            'to list of diabled plugins - restarting Sublime Text may be '
+        sublime.status_message('Package ' + package + ' successfully added ' +
+            'to list of diabled packges - restarting Sublime Text may be '
             'required')
 
 
-class EnablePluginCommand(sublime_plugin.WindowCommand):
+class EnablePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
         self.settings = sublime.load_settings('Global.sublime-settings')
         self.disabled_packages = self.settings.get('ignored_packages')
         self.disabled_packages.sort()
         if not self.disabled_packages:
             sublime.error_message(__name__ + ': There are no disabled ' +
-            'plugins to enable.')
+            'packages to enable.')
             return
         self.window.show_quick_panel(self.disabled_packages, self.on_done)
 
@@ -1021,15 +1021,15 @@ class EnablePluginCommand(sublime_plugin.WindowCommand):
         self.settings.set('ignored_packages',
             list(set(ignored) - set([package])))
         sublime.save_settings('Global.sublime-settings')
-        sublime.status_message('Plugin ' + package + ' successfully removed ' +
-            'from list of diabled plugins - restarting Sublime Text may be '
+        sublime.status_message('Package ' + package + ' successfully removed ' +
+            'from list of diabled packages - restarting Sublime Text may be '
             'required')
 
 
 class AutomaticUpgrader(threading.Thread):
     def __init__(self):
-        self.installer = PluginInstaller()
-        self.auto_upgrade = PluginManager().settings.get('auto_upgrade')
+        self.installer = PackageInstaller()
+        self.auto_upgrade = PackageManager().settings.get('auto_upgrade')
         threading.Thread.__init__(self)
 
     def run(self):
@@ -1037,7 +1037,7 @@ class AutomaticUpgrader(threading.Thread):
             packages = self.installer.make_package_list(['install', 'reinstall',
                 'downgrade', 'overwrite'])
             if not packages:
-                print __name__ + ': No updated plugins'
+                print __name__ + ': No updated packages'
                 return
 
             print __name__ + ': Installing %s upgrades' % len(packages)
