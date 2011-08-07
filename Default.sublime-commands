@@ -12,6 +12,14 @@
         "command": "create_package"
     },
     {
+        "caption": "Plugin Control: Disable Plugin",
+        "command": "disable_plugin"
+    },
+    {
+        "caption": "Plugin Control: Enable Plugin",
+        "command": "enable_plugin"
+    },
+    {
         "caption": "Plugin Control: Install Plugin",
         "command": "install_plugin"
     },

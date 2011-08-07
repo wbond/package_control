@@ -35,6 +35,6 @@
     	".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
     	"*.tmTheme.cache"
     ],
-    // When a package is created, copy it to this folder also
-    "copy_package_to": ""
+    // When a package is created, copy it to this folder - defaults to Desktop 
+    "package_destination": ""
 }

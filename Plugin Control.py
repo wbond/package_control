@@ -368,7 +368,7 @@ class PluginManager():
         settings = sublime.load_settings(__name__ + '.sublime-settings')
         for setting in ['timeout', 'repositories', 'repository_channels',
                 'plugin_name_map', 'dirs_to_ignore', 'files_to_ignore',
-                'copy_package_to', 'cache_length']:
+                'package_destination', 'cache_length', 'auto_upgrade']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -495,6 +495,11 @@ class PluginManager():
         packages.sort()
         return packages
 
+    def list_all_packages(self):
+        packages = os.listdir(sublime.packages_path())
+        packages.sort()
+        return packages
+
     def list_default_packages(self):
         files = os.listdir(os.path.join(os.path.dirname(
             sublime.packages_path()), 'Pristine Packages'))
@@ -510,7 +515,7 @@ class PluginManager():
     def get_mapped_name(self, package):
         return self.settings.get('plugin_name_map', {}).get(package, package)
 
-    def create_package(self, package_name, perform_copy=False):
+    def create_package(self, package_name, package_destination):
         package_dir = self.get_package_dir(package_name) + '/'
 
         if not os.path.exists(package_dir):
@@ -520,7 +525,7 @@ class PluginManager():
             return False
 
         package_filename = package_name + '.sublime-package'
-        package_path = os.path.join(sublime.installed_packages_path(),
+        package_path = os.path.join(package_destination,
             package_filename)
 
         if not os.path.exists(sublime.installed_packages_path()):
@@ -535,31 +540,28 @@ class PluginManager():
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
         files_to_ignore = self.settings.get('files_to_ignore', [])
 
-        package_dir_regex = re.compile('^' + re.escape(package_dir))
-        for root, dirs, files in os.walk(package_dir):
-            [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
-            paths = dirs
-            paths.extend(files)
-            for path in paths:
-                if any(fnmatch.fnmatch(path, pattern) for pattern in
-                        files_to_ignore):
-                    continue
-                full_path = os.path.join(root, path)
-                relative_path = re.sub(package_dir_regex, '', full_path)
-                if os.path.isdir(full_path):
-                    continue
-                package_file.write(full_path, relative_path)
-        package_file.close()
+        try:
+            package_dir_regex = re.compile('^' + re.escape(package_dir))
+            for root, dirs, files in os.walk(package_dir):
+                [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
+                paths = dirs
+                paths.extend(files)
+                for path in paths:
+                    if any(fnmatch.fnmatch(path, pattern) for pattern in
+                            files_to_ignore):
+                        continue
+                    full_path = os.path.join(root, path)
+                    relative_path = re.sub(package_dir_regex, '', full_path)
+                    if os.path.isdir(full_path):
+                        continue
+                    package_file.write(full_path, relative_path)
+            package_file.close()
+        except (OSError) as (exception):
+            sublime.error_message(__name__ + ': An error occurred ' +
+                'copying %s to %s. %s' % (package_filename,
+                package_destination, str(exception)))
+            return False
 
-        copy_package_to = self.settings.get('copy_package_to')
-        if copy_package_to and perform_copy:
-            try:
-                shutil.copy(package_path,
-                    os.path.join(copy_package_to, package_filename))
-            except (OSError) as (exception):
-                sublime.error_message(__name__ + ': An error occurred ' +
-                    'copying %s to %s. %s' % (package_filename,
-                    copy_package_to, str(exception)))
         return True
 
     def install_package(self, package_name):
@@ -632,7 +634,8 @@ class PluginManager():
             for path in os.listdir(single_dir):
                 shutil.move(os.path.join(single_dir, path), package_dir)
             os.rmdir(single_dir)
-            self.create_package(package_name)
+            self.create_package(package_name,
+                sublime.installed_packages_path())
 
         package_metadata_file = os.path.join(package_dir,
             'package-metadata.json')
@@ -694,15 +697,28 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
         self.manager = PluginManager()
         self.packages = self.manager.list_packages()
+        if not self.packages:
+            sublime.error_message(__name__ + ': There are no plugins ' +
+                'available to be packaged.')
+            return
         self.window.show_quick_panel(self.packages, self.on_done)
 
     def on_done(self, picked):
         if picked == -1:
             return
         package_name = self.packages[picked]
-        if self.manager.create_package(package_name, True):
+
+        package_destination = self.manager.settings.get('package_destination')
+
+        # We check package_destination via an if statement instead of using
+        # the dict.get() method since the key may be set, but to a blank value
+        if not package_destination:
+            package_destination = os.path.join(os.path.expanduser('~'),
+                'Desktop')
+
+        if self.manager.create_package(package_name, package_destination):
             self.window.run_command('open_dir', {"dir":
-                sublime.installed_packages_path(), "file": package_name +
+                package_destination, "file": package_name +
                 '.sublime-package'})
 
 
@@ -784,6 +800,10 @@ class InstallPluginThread(threading.Thread, PluginInstaller):
         self.package_list = self.make_package_list(['upgrade', 'downgrade',
             'reinstall'])
         def show_quick_panel():
+            if not self.package_list:
+                sublime.error_message(__name__ + ': There are no plugins ' +
+                    'available for installation.')
+                return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
@@ -804,6 +824,10 @@ class UpgradePluginThread(threading.Thread, PluginInstaller):
     def run(self):
         self.package_list = self.make_package_list(['install'])
         def show_quick_panel():
+            if not self.package_list:
+                sublime.error_message(__name__ + ': There are no plugins ' +
+                    'ready for upgrade.')
+                return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
@@ -856,6 +880,10 @@ class ListPluginsThread(threading.Thread, ExistingPluginsCommand):
         self.package_list = self.make_package_list()
 
         def show_quick_panel():
+            if not self.package_list:
+                sublime.error_message(__name__ + ': There are no plugins ' +
+                    'to list.')
+                return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
@@ -884,6 +912,10 @@ class RemovePluginThread(threading.Thread, ExistingPluginsCommand):
         self.package_list = self.make_package_list('remove')
 
         def show_quick_panel():
+            if not self.package_list:
+                sublime.error_message(__name__ + ': There are no plugins ' +
+                    'that can be removed.')
+                return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
 
@@ -908,6 +940,7 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
         repository_channels.append(input)
         settings.set('repository_channels', repository_channels)
         sublime.save_settings(__name__ + '.sublime-settings')
+        sublime.status_message('Repository channel ' + input + ' successfully added')
 
     def on_change(self, input):
         pass
@@ -929,12 +962,68 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
         repositories.append(input)
         settings.set('repositories', repositories)
         sublime.save_settings(__name__ + '.sublime-settings')
+        sublime.status_message('Repository ' + input + ' successfully added')
 
     def on_change(self, input):
         pass
 
     def on_cancel(self):
         pass
+
+
+class DisablePluginCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        manager = PluginManager()
+        packages = manager.list_all_packages()
+        self.settings = sublime.load_settings('Global.sublime-settings')
+        disabled_packages = self.settings.get('ignored_packages')
+        if not disabled_packages:
+            disabled_packages = []
+        self.package_list = list(set(packages) - set(disabled_packages))
+        self.package_list.sort()
+        if not self.package_list:
+            sublime.error_message(__name__ + ': There are no enabled ' +
+            'plugins to disable.')
+            return
+        self.window.show_quick_panel(self.package_list, self.on_done)
+
+    def on_done(self, picked):
+        if picked == -1:
+            return
+        package = self.package_list[picked]
+        ignored_packages = self.settings.get('ignored_packages')
+        if not ignored_packages:
+            ignored_packages = []
+        ignored_packages.append(package)
+        self.settings.set('ignored_packages', ignored_packages)
+        sublime.save_settings('Global.sublime-settings')
+        sublime.status_message('Plugin ' + package + ' successfully added ' +
+            'to list of diabled plugins - restarting Sublime Text may be '
+            'required')
+
+
+class EnablePluginCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        self.settings = sublime.load_settings('Global.sublime-settings')
+        self.disabled_packages = self.settings.get('ignored_packages')
+        self.disabled_packages.sort()
+        if not self.disabled_packages:
+            sublime.error_message(__name__ + ': There are no disabled ' +
+            'plugins to enable.')
+            return
+        self.window.show_quick_panel(self.disabled_packages, self.on_done)
+
+    def on_done(self, picked):
+        if picked == -1:
+            return
+        package = self.disabled_packages[picked]
+        ignored = self.settings.get('ignored_packages')
+        self.settings.set('ignored_packages',
+            list(set(ignored) - set([package])))
+        sublime.save_settings('Global.sublime-settings')
+        sublime.status_message('Plugin ' + package + ' successfully removed ' +
+            'from list of diabled plugins - restarting Sublime Text may be '
+            'required')
 
 
 class AutomaticUpgrader(threading.Thread):
