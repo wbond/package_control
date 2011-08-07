@@ -718,32 +718,37 @@ class PluginInstaller():
             package_entry = [package]
             info = packages[package]
             download = info['downloads'][0]
+            installed_version = 'v' + info['installed_version'] if \
+                'installed_version' in info else 'unknown version'
+            new_version = 'v' + download['version']
             if info['installed']:
                 if 'installed_version' not in info:
-                    action = 'overwrite unknown'
+                    action = 'overwrite'
+                    extra = ' %s with %s' % (installed_version, new_version)
                 else:
                     res = self.manager.compare_versions(
                         info['installed_version'], download['version'])
                     if res < 0:
                         action = 'upgrade'
+                        extra = ' to %s from %s' % (new_version,
+                            installed_version)
                     elif res > 0:
                         action = 'downgrade'
+                        extra = ' to %s from %s' % (new_version,
+                            installed_version)
                     else:
                         action = 'reinstall'
+                        extra = ' %s' % new_version
             else:
                 action = 'install'
+                extra = ' %s' % new_version
             if action in ignore_actions:
                 continue
 
-            if action in ['upgrade', 'downgrade']:
-                action += ' from v' + info['installed_version']
-            if action == 'overwrite unknown':
-                action += ' version'
-
             package_entry.append(info.get('description', 'No description ' + \
                 'provided'))
-            package_entry.append('v' + download['version'] + '; ' +
-                re.sub('^https?://', '', info['url']) + '; action: ' + action)
+            package_entry.append(action + extra + '; ' +
+                re.sub('^https?://', '', info['url']))
             package_list.append(package_entry)
         return package_list
 
@@ -807,8 +812,11 @@ class ExistingPluginsCommand():
     def __init__(self):
         self.manager = PluginManager()
 
-    def make_package_list(self):
+    def make_package_list(self, action=''):
         packages = self.manager.list_packages()
+
+        if action:
+            action += ' '
 
         package_list = []
         for package in sorted(packages):
@@ -819,19 +827,15 @@ class ExistingPluginsCommand():
                 'No description provided'))
 
             version = metadata.get('version')
-            if version:
-                version = 'v' + version
-            else:
-                version = 'unknown version'
+            installed_version = 'v' + version if version else 'unknown version'
 
             url = metadata.get('url')
             if url:
-                url = re.sub('^https?://', '', url)
-                url += '; '
+                url = '; ' + re.sub('^https?://', '', url)
             else:
                 url = ''
 
-            package_entry.append(version + '; ' + url + 'action: remove')
+            package_entry.append(action + installed_version + url)
             package_list.append(package_entry)
 
         return package_list
@@ -877,7 +881,7 @@ class RemovePluginThread(threading.Thread, ExistingPluginsCommand):
         ExistingPluginsCommand.__init__(self)
 
     def run(self):
-        self.package_list = self.make_package_list()
+        self.package_list = self.make_package_list('remove')
 
         def show_quick_panel():
             self.window.show_quick_panel(self.package_list, self.on_done)
@@ -942,8 +946,9 @@ class AutomaticUpgrader(threading.Thread):
     def run(self):
         if self.auto_upgrade:
             packages = self.installer.make_package_list(['install', 'reinstall',
-                'downgrade', 'overwrite unknown'])
+                'downgrade', 'overwrite'])
             if not packages:
+                print __name__ + ': No updated plugins'
                 return
 
             print __name__ + ': Installing %s upgrades' % len(packages)
