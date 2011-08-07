@@ -8,7 +8,7 @@ import zipfile
 import urllib2
 import hashlib
 import json
-from fnmatch import fnmatch
+import fnmatch
 import re
 import threading
 import datetime
@@ -496,7 +496,8 @@ class PluginManager():
         return packages
 
     def list_default_packages(self):
-        files = os.listdir(sublime.packages_path() + '/../Pristine Packages/')
+        files = os.listdir(os.path.join(os.path.dirname(
+            sublime.packages_path()), 'Pristine Packages'))
         files = list(set(files) - set(os.listdir(
             sublime.installed_packages_path())))
         packages = [file.replace('.sublime-package', '') for file in files]
@@ -540,7 +541,8 @@ class PluginManager():
             paths = dirs
             paths.extend(files)
             for path in paths:
-                if any(fnmatch(path, pattern) for pattern in files_to_ignore):
+                if any(fnmatch.fnmatch(path, pattern) for pattern in
+                        files_to_ignore):
                     continue
                 full_path = os.path.join(root, path)
                 relative_path = re.sub(package_dir_regex, '', full_path)
@@ -655,6 +657,8 @@ class PluginManager():
         package_filename = package_name + '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
+        pristine_package_path = os.path.join(os.path.dirname(
+            sublime.packages_path()), 'Pristine Packages', package_filename)
         package_dir = self.get_package_dir(package_name)
 
         try:
@@ -663,6 +667,15 @@ class PluginManager():
         except (OSError) as (exception):
             sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package file for %s. %s' %
+                (package_name, str(exception)))
+            return False
+
+        try:
+            if os.path.exists(pristine_package_path):
+                os.remove(pristine_package_path)
+        except (OSError) as (exception):
+            sublime.error_message(__name__ + ': An error occurred while' +
+                ' trying to remove the pristine package file for %s. %s' %
                 (package_name, str(exception)))
             return False
 
