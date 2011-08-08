@@ -522,33 +522,33 @@ class PackageManager():
         if os.path.exists(package_path):
             os.remove(package_path)
 
-        package_file = zipfile.ZipFile(package_path, "w",
-            compression=zipfile.ZIP_DEFLATED)
+        try:
+            package_file = zipfile.ZipFile(package_path, "w",
+                compression=zipfile.ZIP_DEFLATED)
+        except (OSError, IOError) as (exception):
+            sublime.error_message(__name__ + ': An error occurred ' +
+                'creating the package file %s in %s. %s' % (package_filename,
+                package_destination, str(exception)))
+            return False
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
         files_to_ignore = self.settings.get('files_to_ignore', [])
 
-        try:
-            package_dir_regex = re.compile('^' + re.escape(package_dir))
-            for root, dirs, files in os.walk(package_dir):
-                [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
-                paths = dirs
-                paths.extend(files)
-                for path in paths:
-                    if any(fnmatch.fnmatch(path, pattern) for pattern in
-                            files_to_ignore):
-                        continue
-                    full_path = os.path.join(root, path)
-                    relative_path = re.sub(package_dir_regex, '', full_path)
-                    if os.path.isdir(full_path):
-                        continue
-                    package_file.write(full_path, relative_path)
-            package_file.close()
-        except (OSError) as (exception):
-            sublime.error_message(__name__ + ': An error occurred ' +
-                'copying %s to %s. %s' % (package_filename,
-                package_destination, str(exception)))
-            return False
+        package_dir_regex = re.compile('^' + re.escape(package_dir))
+        for root, dirs, files in os.walk(package_dir):
+            [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
+            paths = dirs
+            paths.extend(files)
+            for path in paths:
+                if any(fnmatch.fnmatch(path, pattern) for pattern in
+                        files_to_ignore):
+                    continue
+                full_path = os.path.join(root, path)
+                relative_path = re.sub(package_dir_regex, '', full_path)
+                if os.path.isdir(full_path):
+                    continue
+                package_file.write(full_path, relative_path)
+        package_file.close()
 
         return True
 
@@ -589,7 +589,7 @@ class PackageManager():
                     shutil.rmtree(full_path)
                 else:
                     os.remove(full_path)
-        except (OSError) as (exception):
+        except (OSError, IOError) as (exception):
             sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package directory for %s. %s' %
                 (package_name, str(exception)))
@@ -657,7 +657,7 @@ class PackageManager():
         try:
             if os.path.exists(package_path):
                 os.remove(package_path)
-        except (OSError) as (exception):
+        except (OSError, IOError) as (exception):
             sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package file for %s. %s' %
                 (package_name, str(exception)))
@@ -666,7 +666,7 @@ class PackageManager():
         try:
             if os.path.exists(pristine_package_path):
                 os.remove(pristine_package_path)
-        except (OSError) as (exception):
+        except (OSError, IOError) as (exception):
             sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the pristine package file for %s. %s' %
                 (package_name, str(exception)))
@@ -681,7 +681,7 @@ class PackageManager():
                     shutil.rmtree(full_path)
                 else:
                     os.remove(full_path)
-        except (OSError) as (exception):
+        except (OSError, IOError) as (exception):
             sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package directory for %s. %s' %
                 (package_name, str(exception)))
