@@ -322,9 +322,8 @@ class CurlDownloader(CliDownloader):
 _channel_repository_cache = {}
 
 class RepositoryDownloader(threading.Thread):
-    def __init__(self, package_manager, installed_packages, name_map, repo):
+    def __init__(self, package_manager, name_map, repo):
         self.package_manager = package_manager
-        self.installed_packages = installed_packages
         self.repo = repo
         self.packages = {}
         self.name_map = name_map
@@ -346,16 +345,6 @@ class RepositoryDownloader(threading.Thread):
             mapped_packages[mapped_package] = packages[package]
             mapped_packages[mapped_package]['name'] = mapped_package
         packages = mapped_packages
-
-        for package in packages.keys():
-            if package in self.installed_packages:
-                packages[package]['installed'] = True
-                metadata = self.package_manager.get_metadata(package)
-                if metadata.get('version'):
-                    packages[package]['installed_version'] = \
-                        metadata['version']
-            else:
-                packages[package]['installed'] = False
 
         self.packages = packages
 
@@ -443,7 +432,6 @@ class PackageManager():
 
     def list_available_packages(self):
         repositories = self.list_repositories()
-        installed_packages = self.list_packages()
         packages = {}
         downloaders = []
 
@@ -460,7 +448,7 @@ class PackageManager():
                 packages.update(repository_packages)
 
             if not repository_packages:
-                downloader = RepositoryDownloader(self, installed_packages,
+                downloader = RepositoryDownloader(self,
                     self.settings.get('package_name_map', {}), repo)
                 downloader.start()
                 downloaders.append(downloader)
@@ -646,6 +634,8 @@ class PackageManager():
                 "description": packages[package_name]['description']
             }
             json.dump(metadata, f)
+
+        os.chdir(sublime.packages_path())
         return True
 
 
@@ -683,12 +673,25 @@ class PackageManager():
             return False
 
         try:
-            shutil.rmtree(package_dir)
+            # We don't delete the actual package dir immediately due to a bug
+            # in sublime_plugin.py
+            for path in os.listdir(package_dir):
+                full_path = os.path.join(package_dir, path)
+                if os.path.isdir(full_path):
+                    shutil.rmtree(full_path)
+                else:
+                    os.remove(full_path)
         except (OSError) as (exception):
             sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package directory for %s. %s' %
                 (package_name, str(exception)))
             return False
+
+        # Here we clean up the package dir
+        def remove_package_dir():
+            os.chdir(sublime.packages_path())
+            os.rmdir(package_dir)
+        sublime.set_timeout(remove_package_dir, 2000)
 
         return True
 
@@ -728,36 +731,51 @@ class PackageInstaller():
 
     def make_package_list(self, ignore_actions=[]):
         packages = self.manager.list_available_packages()
+        installed_packages = self.manager.list_packages()
 
         package_list = []
         for package in sorted(packages.iterkeys()):
             package_entry = [package]
             info = packages[package]
             download = info['downloads'][0]
-            installed_version = 'v' + info['installed_version'] if \
-                'installed_version' in info else 'unknown version'
+
+            if package in installed_packages:
+                installed = True
+                metadata = self.manager.get_metadata(package)
+                if metadata.get('version'):
+                    installed_version = metadata['version']
+                else:
+                    installed_version = None
+            else:
+                installed = False
+
+            installed_version_name = 'v' + installed_version if \
+                installed and installed_version else 'unknown version'
             new_version = 'v' + download['version']
-            if info['installed']:
-                if 'installed_version' not in info:
+
+            if installed:
+                if not installed_version:
                     action = 'overwrite'
-                    extra = ' %s with %s' % (installed_version, new_version)
+                    extra = ' %s with %s' % (installed_version_name,
+                        new_version)
                 else:
                     res = self.manager.compare_versions(
-                        info['installed_version'], download['version'])
+                        installed_version, download['version'])
                     if res < 0:
                         action = 'upgrade'
                         extra = ' to %s from %s' % (new_version,
-                            installed_version)
+                            installed_version_name)
                     elif res > 0:
                         action = 'downgrade'
                         extra = ' to %s from %s' % (new_version,
-                            installed_version)
+                            installed_version_name)
                     else:
                         action = 'reinstall'
                         extra = ' %s' % new_version
             else:
                 action = 'install'
                 extra = ' %s' % new_version
+
             if action in ignore_actions:
                 continue
 
@@ -897,27 +915,19 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         sublime.set_timeout(open_dir, 0)
 
 
-class RemovePackageCommand(sublime_plugin.WindowCommand):
-    def run(self):
-        RemovePackageThread(self.window).start()
-
-
-class RemovePackageThread(threading.Thread, ExistingPackagesCommand):
+class RemovePackageCommand(sublime_plugin.WindowCommand,
+        ExistingPackagesCommand):
     def __init__(self, window):
         self.window = window
-        threading.Thread.__init__(self)
         ExistingPackagesCommand.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list('remove')
-
-        def show_quick_panel():
-            if not self.package_list:
-                sublime.error_message(__name__ + ': There are no packages ' +
-                    'that can be removed.')
-                return
-            self.window.show_quick_panel(self.package_list, self.on_done)
-        sublime.set_timeout(show_quick_panel, 0)
+        if not self.package_list:
+            sublime.error_message(__name__ + ': There are no packages ' +
+                'that can be removed.')
+            return
+        self.window.show_quick_panel(self.package_list, self.on_done)
 
     def on_done(self, picked):
         if picked == -1:
