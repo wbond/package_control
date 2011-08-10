@@ -1,21 +1,21 @@
 {
-	// A list of URLs that contain a packages JSON file. These repositories
-	// are placed in order before repositories from the "repository_channels"
-	// setting
-	"repositories": [],
-
 	// A list of URLs that each contain a JSON file with a list of repositories.
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
 	"repository_channels": [
 		"http://sublime.wbond.net/repositories.json"
 	],
+	
+	// A list of URLs that contain a packages JSON file. These repositories
+	// are placed in order before repositories from the "repository_channels"
+	// setting
+	"repositories": [],
 
 	// This helps solve naming issues where a repository it not named the
-	// same as the package should be
-	"package_name_map": {
-		"soda-theme": "Theme - Soda"
-	},
+	// same as the package should be. This is primarily only useful for
+	// GitHub and BitBucket repositories. This mapping will override the
+	// mapping that is retrieved from the repository channels.
+	"package_name_map": {},
 
 	// If packages should be automatically upgraded when ST2 starts
 	"auto_upgrade": true,

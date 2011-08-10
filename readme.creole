@@ -99,7 +99,7 @@ APIs and uses their zip download functionality to fetch the package.
 There is an option {{{package_name_map}}} in the settings to allow for
 mapping repository names to package names. For instance, the {{{sode-theme}}}
 repository on GitHub needs to be installed as {{{Theme - Soda}}} to function
-properly.
+properly. Channels may also specify name mapping.
 
 Package Control comes with a single default channel installed. If you would
 like one or more of your repositories added to the default channel, please fork

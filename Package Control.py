@@ -23,21 +23,42 @@ except (ImportError):
 
 
 class ChannelProvider():
+    def __init__(self, channel, package_manager):
+        self.channel_info = None
+        self.channel = channel
+        self.package_manager = package_manager
+
     def match_url(self, url):
         return True
 
-    def get_repositories(self, channel, package_manager):
-        channel_json = package_manager.download_url(channel,
+    def fetch_channel(self):
+        channel_json = self.package_manager.download_url(self.channel,
             'Error downloading channel.')
         if channel_json == False:
-            return False
+            self.channel_info = False
+            return
         try:
             channel_info = json.loads(channel_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' channel ' + channel + '.')
+                ' channel ' + self.channel + '.')
+            self.channel_info = False
+            return
+        self.channel_info = channel_info
+
+    def get_name_map(self):
+        if self.channel_info == None:
+            self.fetch_channel()
+        if self.channel_info == False:
             return False
-        return channel_info['repositories']
+        return self.channel_info['package_name_map']
+
+    def get_repositories(self):
+        if self.channel_info == None:
+            self.fetch_channel()
+        if self.channel_info == False:
+            return False
+        return self.channel_info['repositories']
 
 
 _channel_providers = [ChannelProvider]
@@ -195,12 +216,13 @@ class BitBucketPackageProvider():
                 ' repository ' + repo + '.')
             return False
         commit_date = last_commit['changesets'][0]['timestamp']
-        timestamp = datetime.strptime('%Y-%m-%d %H-%M-%S')
+        timestamp = datetime.datetime.strptime(commit_date[0:19],
+            '%Y-%m-%d %H:%M:%S')
         utc_timestamp = timestamp.strftime(
             '%Y.%m.%d.%H.%M.%S')
 
         package = {
-            'name': repo_info['name'],
+            'name': repo_info['slug'],
             'description': repo_info['description'],
             'url': repo,
             'downloads': [
@@ -415,10 +437,10 @@ class PackageManager():
 
             if not channel_repositories:
                 for provider_class in _channel_providers:
-                    provider = provider_class()
+                    provider = provider_class(channel, self)
                     if provider.match_url(channel):
                         break
-                channel_repositories = provider.get_repositories(channel, self)
+                channel_repositories = provider.get_repositories()
                 if channel_repositories == False:
                     continue
                 _channel_repository_cache[cache_key] = {
@@ -426,6 +448,10 @@ class PackageManager():
                         300),
                     'data': channel_repositories
                 }
+                # Have the local name map override the one from the channel
+                name_map = provider.get_name_map()
+                name_map.update(self.settings['package_name_map'])
+                self.settings['package_name_map'] = name_map
 
             repositories.extend(channel_repositories)
         return repositories

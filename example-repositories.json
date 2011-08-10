@@ -4,5 +4,8 @@
 		"http://sublime.wbond.net/packages.json",
 		"https://github.com/buymeasoda/soda-theme",
 		"https://github.com/SublimeText"
-	]
+	],
+	"package_name_map": {
+		"soda-theme": "Theme - Soda"
+	}
 }
