@@ -96,6 +96,7 @@ class PackageProvider():
                     'name': package['name'],
                     'description': package.get('description'),
                     'url': package.get('url', repo),
+                    'author': package.get('author'),
                     'downloads': downloads
                 }
 
@@ -128,10 +129,14 @@ class GitHubPackageProvider():
         utc_timestamp = timestamp.strftime(
             '%Y.%m.%d.%H.%M.%S')
 
+        homepage = repo_info['homepage']
+        if not homepage:
+            homepage = repo_info['html_url']
         package = {
             'name': repo_info['name'],
             'description': repo_info['description'],
-            'url': repo,
+            'url': homepage,
+            'author': repo_info['owner']['login'],
             'downloads': [
                 {
                     'version': utc_timestamp,
@@ -170,10 +175,14 @@ class GitHubUserProvider():
             utc_timestamp = timestamp.strftime(
                 '%Y.%m.%d.%H.%M.%S')
 
+            homepage = package_info['homepage']
+            if not homepage:
+                homepage = package_info['html_url']
             package = {
                 'name': package_info['name'],
                 'description': package_info['description'],
-                'url': package_info['html_url'],
+                'url': homepage,
+                'author': package_info['owner']['login'],
                 'downloads': [
                     {
                         'version': utc_timestamp,
@@ -221,10 +230,14 @@ class BitBucketPackageProvider():
         utc_timestamp = timestamp.strftime(
             '%Y.%m.%d.%H.%M.%S')
 
+        homepage = repo_info['website']
+        if not homepage:
+            homepage = repo
         package = {
             'name': repo_info['slug'],
             'description': repo_info['description'],
-            'url': repo,
+            'url': homepage,
+            'author': repo_info['owner'],
             'downloads': [
                 {
                     'version': utc_timestamp,
@@ -379,7 +392,8 @@ class PackageManager():
         settings = sublime.load_settings(__name__ + '.sublime-settings')
         for setting in ['timeout', 'repositories', 'repository_channels',
                 'package_name_map', 'dirs_to_ignore', 'files_to_ignore',
-                'package_destination', 'cache_length', 'auto_upgrade']:
+                'package_destination', 'cache_length', 'auto_upgrade',
+                'files_to_ignore_binary']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -529,7 +543,8 @@ class PackageManager():
     def get_mapped_name(self, package):
         return self.settings.get('package_name_map', {}).get(package, package)
 
-    def create_package(self, package_name, package_destination):
+    def create_package(self, package_name, package_destination,
+            binary_package=False):
         package_dir = self.get_package_dir(package_name) + '/'
 
         if not os.path.exists(package_dir):
@@ -558,7 +573,10 @@ class PackageManager():
             return False
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
-        files_to_ignore = self.settings.get('files_to_ignore', [])
+        if not binary_package:
+            files_to_ignore = self.settings.get('files_to_ignore', [])
+        else:
+            files_to_ignore = self.settings.get('files_to_ignore_binary', [])
 
         package_dir_regex = re.compile('^' + re.escape(package_dir))
         for root, dirs, files in os.walk(package_dir):
@@ -574,6 +592,11 @@ class PackageManager():
                 if os.path.isdir(full_path):
                     continue
                 package_file.write(full_path, relative_path)
+
+        init_script = os.path.join(package_dir, '__init__.py')
+        if binary_package and os.path.exists(init_script):
+            package_file.write(init_script, re.sub(package_dir_regex, '',
+                init_script))
         package_file.close()
 
         return True
@@ -722,8 +745,8 @@ class PackageManager():
         return True
 
 
-class CreatePackageCommand(sublime_plugin.WindowCommand):
-    def run(self):
+class PackageCreator():
+    def show_panel(self):
         self.manager = PackageManager()
         self.packages = self.manager.list_packages()
         if not self.packages:
@@ -732,20 +755,50 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
             return
         self.window.show_quick_panel(self.packages, self.on_done)
 
+    def get_package_destination(self):
+        destination = self.manager.settings.get('package_destination')
+
+        # We check destination via an if statement instead of using
+        # the dict.get() method since the key may be set, but to a blank value
+        if not destination:
+            destination = os.path.join(os.path.expanduser('~'),
+                'Desktop')
+
+        return destination
+
+    def on_done(self):
+        print 'Hi!'
+        pass
+
+
+class CreatePackageCommand(sublime_plugin.WindowCommand, PackageCreator):
+    def run(self):
+        self.show_panel()
+
     def on_done(self, picked):
         if picked == -1:
             return
         package_name = self.packages[picked]
-
-        package_destination = self.manager.settings.get('package_destination')
-
-        # We check package_destination via an if statement instead of using
-        # the dict.get() method since the key may be set, but to a blank value
-        if not package_destination:
-            package_destination = os.path.join(os.path.expanduser('~'),
-                'Desktop')
+        package_destination = self.get_package_destination()
 
         if self.manager.create_package(package_name, package_destination):
+            self.window.run_command('open_dir', {"dir":
+                package_destination, "file": package_name +
+                '.sublime-package'})
+
+
+class CreateBinaryPackageCommand(sublime_plugin.WindowCommand, PackageCreator):
+    def run(self):
+        self.show_panel()
+
+    def on_done(self, picked):
+        if picked == -1:
+            return
+        package_name = self.packages[picked]
+        package_destination = self.get_package_destination()
+
+        if self.manager.create_package(package_name, package_destination,
+                binary_package=True):
             self.window.run_command('open_dir', {"dir":
                 package_destination, "file": package_name +
                 '.sublime-package'})
@@ -850,6 +903,43 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
+
+
+class DiscoverPackagesCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        sublime.status_message(u'Loading repositories, please wait…')
+        DiscoverPackagesThread(self.window).start()
+
+    def on_done(self, picked):
+        return
+
+
+class DiscoverPackagesThread(threading.Thread, PackageInstaller):
+    def __init__(self, window):
+        self.window = window
+        self.completion_type = 'installed'
+        threading.Thread.__init__(self)
+        PackageInstaller.__init__(self)
+
+    def run(self):
+        self.package_list = self.make_package_list()
+        def show_quick_panel():
+            if not self.package_list:
+                sublime.error_message(__name__ + ': There are no packages ' +
+                    'available for discovery.')
+                return
+            self.window.show_quick_panel(self.package_list, self.on_done)
+        sublime.set_timeout(show_quick_panel, 0)
+
+    def on_done(self, picked):
+        if picked == -1:
+            return
+        package_name = self.package_list[picked][0]
+        packages = self.manager.list_available_packages()
+        def open_url():
+            sublime.active_window().run_command('open_url',
+                {"url": packages.get(package_name).get('url')})
+        sublime.set_timeout(open_url, 0)
 
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):

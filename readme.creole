@@ -47,8 +47,10 @@ The command pallete will now show a number of commands:
 
 * Add Repository
 * Add Repository Channel
-* Create Package
+* Create Package File
+* Create Binary Package File
 * Disable Package
+* Discover Packages
 * Enable Package
 * Install Package
 * List Packages
@@ -58,12 +60,16 @@ The command pallete will now show a number of commands:
 * Package Control Settings – User
 
 Well skip the concept of Repositories and Channels for now and dive into
-installing your first package!
+discovering and installing your first package!
 
-Select the //Install Package// command. A quick-panel (like Goto Anything) will
-appear listing all available packages. Select a package and Package Control
-will download the package file and install the package into the running
-instance of Sublime Text 2.
+To learn about plugins, run the //Discover Packages// command. A list of all
+available packages will be presented. Selecting a package will open its
+homepage in your browser.
+
+Once you have found a package you wish to install, run the //Install Package//
+command. A quick-panel (like Goto Anything) will appear listing all available
+packages. Select a package and Package Control will download the package file
+and install the package into the running instance of Sublime Text 2.
 
 Once a package is installed is can be removed or upgraded via the command
 pallete.

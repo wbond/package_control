@@ -30,11 +30,19 @@
 	"dirs_to_ignore": [
 		".hg", ".git", ".svn", "_darcs", "CVS"
 	],
-    // Files to ignore when creating a package
+	// Files to ignore when creating a package
 	"files_to_ignore": [
-    	".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
-    	"*.tmTheme.cache"
-    ],
-    // When a package is created, copy it to this folder - defaults to Desktop 
-    "package_destination": ""
+		".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
+		"*.tmTheme.cache"
+	],
+	// Files to ignore when creating a binary package. By default binary
+	// packages ship with .pyc files instead of .py files. If an __init__.py
+	// file exists, it will always be included, even if it matches one of
+	// these patterns.
+	"files_to_ignore_binary": [
+		".hgignore", ".gitignore", ".bzrignore", "*.py", "*.sublime-project",
+		"*.tmTheme.cache"
+	],
+	// When a package is created, copy it to this folder - defaults to Desktop 
+	"package_destination": ""
 }
