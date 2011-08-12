@@ -1176,6 +1176,6 @@ class AutomaticUpgrader(threading.Thread):
             for package in packages:
                 self.installer.install_package(package[0])
                 print __name__ + ': Upgraded %s to %s' % (package[0],
-                    re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[1]))
+                    re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2]))
 
 AutomaticUpgrader().start()
