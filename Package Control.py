@@ -327,6 +327,7 @@ class WgetDownloader(CliDownloader):
             sublime.error_message(__name__ + ': ' + error_message +
                 ' ' + error_string + ' downloading ' +
                 url + '.')
+        return False
 
 
 class CurlDownloader(CliDownloader):
@@ -353,6 +354,7 @@ class CurlDownloader(CliDownloader):
             sublime.error_message(__name__ + ': ' + error_message +
                 ' ' + error_string + ' downloading ' +
                 url + '.')
+        return False
 
 _channel_repository_cache = {}
 
@@ -683,6 +685,10 @@ class PackageManager():
                 "description": packages[package_name]['description']
             }
             json.dump(metadata, f)
+
+        # Here we delete the package file from the installed packages directory
+        # since we don't want to accidentally overwrite user changes
+        os.remove(package_path)
 
         os.chdir(sublime.packages_path())
         return True
