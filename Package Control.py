@@ -21,6 +21,34 @@ try:
 except (ImportError):
     pass
 
+class ThreadProgress():
+    def __init__(self, thread, message, success_message):
+        self.thread = thread
+        self.message = message
+        self.success_message = success_message
+        self.addend = 1
+        self.size = 8
+        sublime.set_timeout(lambda: self.run(0), 100)
+
+    def run(self, i):
+        if not self.thread.is_alive():
+            if hasattr(self.thread, 'result') and not self.thread.result:
+                sublime.status_message('')
+                return
+            sublime.status_message(self.success_message)
+            return
+
+        before = i % self.size
+        after = (self.size - 1) - before
+        sublime.status_message('%s [%s=%s]' % \
+            (self.message, ' ' * before, ' ' * after))
+        if not after:
+            self.addend = -1
+        if not before:
+            self.addend = 1
+        i += self.addend
+        sublime.set_timeout(lambda: self.run(i), 100)
+
 
 class ChannelProvider():
     def __init__(self, channel, package_manager):
@@ -292,7 +320,9 @@ class CliDownloader():
 class UrlLib2Downloader():
     def download(self, url, error_message, timeout):
         try:
-            http_file = urllib2.urlopen(url, None, timeout)
+            request = urllib2.Request(url, headers={"User-Agent":
+                "Sublime Package Control"})
+            http_file = urllib2.urlopen(request, timeout=timeout)
             return http_file.read()
 
         except (urllib2.HTTPError) as (e):
@@ -312,7 +342,7 @@ class WgetDownloader(CliDownloader):
 
     def download(self, url, error_message, timeout):
         command = [self.binary, '--timeout', str(int(timeout)), '-o',
-            '/dev/null', '-O', '-', url]
+            '/dev/null', '-O', '-', '-U', 'Sublime Package Control', url]
 
         try:
             return self.execute(command)
@@ -338,8 +368,8 @@ class CurlDownloader(CliDownloader):
         curl = self.find_binary('curl')
         if not curl:
             return False
-        command = [curl, '-f', '--connect-timeout', str(int(timeout)), '-s',
-            url]
+        command = [curl, '-f', '--user-agent', 'Sublime Package Control',
+            '--connect-timeout', str(int(timeout)), '-s', url]
 
         try:
             return self.execute(command)
@@ -372,8 +402,8 @@ class RepositoryDownloader(threading.Thread):
             if provider.match_url(self.repo):
                 break
         packages = provider.get_packages(self.repo, self.package_manager)
-        if not packages:
-            self.packages = {}
+        if packages == False:
+            self.packages = False
             return
 
         mapped_packages = {}
@@ -476,6 +506,8 @@ class PackageManager():
         repositories = self.list_repositories()
         packages = {}
         downloaders = []
+        pending_downloaders = []
+        domain_downloaders = {}
 
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
@@ -489,15 +521,26 @@ class PackageManager():
                 repository_packages = packages_cache.get('data')
                 packages.update(repository_packages)
 
-            if not repository_packages:
+            if repository_packages == None:
                 downloader = RepositoryDownloader(self,
                     self.settings.get('package_name_map', {}), repo)
-                downloader.start()
+                domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1', repo)
                 downloaders.append(downloader)
+                pending_downloaders.append([domain, downloader])
 
         # Wait until all of the downloaders have completed
         while True:
-            is_alive = False
+            # Ensure there is only one downloader per domain at a time
+            for pending in pending_downloaders:
+                can_start = not pending[0] in domain_downloaders
+                can_start = can_start or \
+                    not domain_downloaders[pending[0]].is_alive()
+                if can_start:
+                    domain_downloaders[pending[0]] = pending[1]
+                    pending[1].start()
+                    pending_downloaders.remove(pending)
+
+            is_alive = len(pending_downloaders) > 0
             for downloader in downloaders:
                 is_alive = downloader.is_alive() or is_alive
             if not is_alive:
@@ -506,7 +549,7 @@ class PackageManager():
 
         for downloader in downloaders:
             repository_packages = downloader.packages
-            if not repository_packages:
+            if repository_packages == False:
                 continue
             cache_key = downloader.repo + '.packages'
             _channel_repository_cache[cache_key] = {
@@ -693,7 +736,6 @@ class PackageManager():
         os.chdir(sublime.packages_path())
         return True
 
-
     def remove_package(self, package_name):
         installed_packages = self.list_packages()
 
@@ -701,6 +743,11 @@ class PackageManager():
             sublime.error_message(__name__ + ': The package specified,' +
                 ' %s, is not installed.' % (package_name,))
             return False
+
+        os.chdir(sublime.packages_path())
+
+        # Give Sublime Text some time to ignore the package
+        time.sleep(2)
 
         package_filename = package_name + '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
@@ -730,23 +777,31 @@ class PackageManager():
         try:
             # We don't delete the actual package dir immediately due to a bug
             # in sublime_plugin.py
+
+            # There may be a better way to handle this - this is basically
+            # all to work around issues on Windows where is likes to lock files
+
+            # First we remove all root py files so they unload
+            for path in os.listdir(package_dir):
+                full_path = os.path.join(package_dir, path)
+                if not os.path.isdir(full_path):
+                    os.remove(full_path)
+
+            # Then we remove the directories
             for path in os.listdir(package_dir):
                 full_path = os.path.join(package_dir, path)
                 if os.path.isdir(full_path):
                     shutil.rmtree(full_path)
-                else:
-                    os.remove(full_path)
         except (OSError, IOError) as (exception):
+            extra = ''
+            if os.name == 'nt':
+                extra = ' Please restart Sublime Text and try again.'
             sublime.error_message(__name__ + ': An error occurred while' +
-                ' trying to remove the package directory for %s. %s' %
-                (package_name, str(exception)))
+                ' trying to remove the package directory for %s.%s %s' %
+                (package_name, extra, str(exception)))
             return False
 
-        # Here we clean up the package dir
-        def remove_package_dir():
-            os.chdir(sublime.packages_path())
-            os.rmdir(package_dir)
-        sublime.set_timeout(remove_package_dir, 2000)
+        os.rmdir(package_dir)
 
         return True
 
@@ -771,10 +826,6 @@ class PackageCreator():
                 'Desktop')
 
         return destination
-
-    def on_done(self):
-        print 'Hi!'
-        pass
 
 
 class CreatePackageCommand(sublime_plugin.WindowCommand, PackageCreator):
@@ -874,22 +925,28 @@ class PackageInstaller():
     def on_done(self, picked):
         if picked == -1:
             return
-        package_name = self.package_list[picked][0]
-        self.install_package(package_name)
-        sublime.status_message('Package ' + package_name + ' successfully ' +
-            self.completion_type)
+        name = self.package_list[picked][0]
+        thread = PackageInstallerThread(self.manager, name)
+        thread.start()
+        ThreadProgress(thread, 'Installing package %s' % name,
+            'Package %s successfully %s' % (name, self.completion_type))
 
-    def install_package(self, name):
-        self.manager.install_package(name)
+
+class PackageInstallerThread(threading.Thread):
+    def __init__(self, manager, package):
+        self.package = package
+        self.manager = manager
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.result = self.manager.install_package(self.package)
 
 
 class InstallPackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        sublime.status_message(u'Loading repositories, please wait…')
-        InstallPackageThread(self.window).start()
-
-    def on_done(self, picked):
-        return
+        thread = InstallPackageThread(self.window)
+        thread.start()
+        ThreadProgress(thread, 'Loading repositories', '')
 
 
 class InstallPackageThread(threading.Thread, PackageInstaller):
@@ -913,11 +970,9 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
 class DiscoverPackagesCommand(sublime_plugin.WindowCommand):
     def run(self):
-        sublime.status_message(u'Loading repositories, please wait…')
-        DiscoverPackagesThread(self.window).start()
-
-    def on_done(self, picked):
-        return
+        thread = DiscoverPackagesThread(self.window)
+        thread.start()
+        ThreadProgress(thread, 'Loading repositories', '')
 
 
 class DiscoverPackagesThread(threading.Thread, PackageInstaller):
@@ -950,8 +1005,9 @@ class DiscoverPackagesThread(threading.Thread, PackageInstaller):
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        sublime.status_message(u'Loading repositories, please wait…')
-        UpgradePackageThread(self.window).start()
+        thread = UpgradePackageThread(self.window)
+        thread.start()
+        ThreadProgress(thread, 'Loading repositories', '')
 
 
 class UpgradePackageThread(threading.Thread, PackageInstaller):
@@ -962,7 +1018,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         PackageInstaller.__init__(self)
 
     def run(self):
-        self.package_list = self.make_package_list(['install'])
+        self.package_list = self.make_package_list(['install', 'reinstall'])
         def show_quick_panel():
             if not self.package_list:
                 sublime.error_message(__name__ + ': There are no packages ' +
@@ -970,6 +1026,28 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
+
+
+class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        thread = UpgradeAllPackagesThread(self.window)
+        thread.start()
+        ThreadProgress(thread, 'Loading repositories', '')
+
+
+class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
+    def __init__(self, window):
+        self.window = window
+        self.completion_type = 'upgraded'
+        threading.Thread.__init__(self)
+        PackageInstaller.__init__(self)
+
+    def run(self):
+        for info in self.make_package_list(['install', 'reinstall']):
+            thread = PackageInstallerThread(self.manager, info[0])
+            thread.start()
+            ThreadProgress(thread, 'Upgrading package %s' % info[0],
+                'Package %s successfully %s' % (info[0], self.completion_type))
 
 
 class ExistingPackagesCommand():
@@ -1055,8 +1133,37 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
         if picked == -1:
             return
         package = self.package_list[picked][0]
-        self.manager.remove_package(package)
-        sublime.status_message('Package ' + package + ' successfully removed')
+        settings = sublime.load_settings('Global.sublime-settings')
+        ignored_packages = settings.get('ignored_packages')
+        if not ignored_packages:
+            ignored_packages = []
+        if not package in ignored_packages:
+            ignored_packages.append(package)
+            settings.set('ignored_packages', ignored_packages)
+            sublime.save_settings('Global.sublime-settings')
+
+        ignored_packages.remove(package)
+        thread = RemovePackageThread(self.manager, package,
+            ignored_packages)
+        thread.start()
+        ThreadProgress(thread, 'Removing package %s' % package,
+            'Package %s successfully removed' % package)
+
+
+class RemovePackageThread(threading.Thread):
+    def __init__(self, manager, package, ignored_packages):
+        self.manager = manager
+        self.package = package
+        self.ignored_packages = ignored_packages
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.result = self.manager.remove_package(self.package)
+        def unignore_package():
+            settings = sublime.load_settings('Global.sublime-settings')
+            settings.set('ignored_packages', self.ignored_packages)
+            sublime.save_settings('Global.sublime-settings')
+        sublime.set_timeout(unignore_package, 0)
 
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
@@ -1174,7 +1281,7 @@ class AutomaticUpgrader(threading.Thread):
 
             print __name__ + ': Installing %s upgrades' % len(packages)
             for package in packages:
-                self.installer.install_package(package[0])
+                self.installer.manager.install_package(package[0])
                 print __name__ + ': Upgraded %s to %s' % (package[0],
                     re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2]))
 

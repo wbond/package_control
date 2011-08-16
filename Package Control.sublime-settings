@@ -21,7 +21,7 @@
 	"auto_upgrade": true,
 
 	// Timeout for downloading channels, repositories and packages
-	"timeout": 3,
+	"timeout": 5,
 
 	// The number of seconds to cache repository and package info for
 	"cache_length": 300,
