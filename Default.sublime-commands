@@ -44,7 +44,7 @@
         "command": "upgrade_package"
     },
     {
-        "caption": "Package Control: Upgrade All Packages",
+        "caption": "Package Control: Upgrade/Overwrite All Packages",
         "command": "upgrade_all_packages"
     },
     {

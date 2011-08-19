@@ -123,7 +123,7 @@ class PackageProvider():
                 info = {
                     'name': package['name'],
                     'description': package.get('description'),
-                    'url': package.get('url', repo),
+                    'url': package.get('homepage', repo),
                     'author': package.get('author'),
                     'downloads': downloads
                 }
@@ -318,21 +318,30 @@ class CliDownloader():
 
 
 class UrlLib2Downloader():
-    def download(self, url, error_message, timeout):
-        try:
-            request = urllib2.Request(url, headers={"User-Agent":
-                "Sublime Package Control"})
-            http_file = urllib2.urlopen(request, timeout=timeout)
-            return http_file.read()
+    def download(self, url, error_message, timeout, tries):
+        while tries > 0:
+            tries -= 1
+            try:
+                request = urllib2.Request(url, headers={"User-Agent":
+                    "Sublime Package Control"})
+                http_file = urllib2.urlopen(request, timeout=timeout)
+                return http_file.read()
 
-        except (urllib2.HTTPError) as (e):
-            sublime.error_message(__name__ + ': ' + error_message +
-                ' HTTP error ' + str(e.code) + ' downloading ' +
-                url + '.')
-        except (urllib2.URLError) as (e):
-            sublime.error_message(__name__ + ': ' + error_message +
-                ' URL error ' + str(e.reason) + ' downloading ' +
-                url + '.')
+            except (urllib2.HTTPError) as (e):
+                sublime.error_message(__name__ + ': ' + error_message +
+                    ' HTTP error ' + str(e.code) + ' downloading ' +
+                    url + '.')
+            except (urllib2.URLError) as (e):
+                # Bitbucket and Github timeout a decent amount
+                if str(e.reason) == 'The read operation timed out' or \
+                        str(e.reason) == 'timed out':
+                    print (__name__ + ': Downloading %s timed out, trying ' + \
+                        'again') % url
+                    continue
+                sublime.error_message(__name__ + ': ' + error_message +
+                    ' URL error ' + str(e.reason) + ' downloading ' +
+                    url + '.')
+            break
         return False
 
 
@@ -340,23 +349,30 @@ class WgetDownloader(CliDownloader):
     def __init__(self):
         self.binary = self.find_binary('wget')
 
-    def download(self, url, error_message, timeout):
+    def download(self, url, error_message, timeout, tries):
         command = [self.binary, '--timeout', str(int(timeout)), '-o',
             '/dev/null', '-O', '-', '-U', 'Sublime Package Control', url]
 
-        try:
-            return self.execute(command)
-        except (NonCleanExitError) as (e):
-            if e.returncode == 8:
-                error_string = 'HTTP error 404'
-            elif e.returncode == 4:
-                error_string = 'URL error host not found'
-            else:
-                error_string = 'unknown connection error'
+        while tries > 1:
+            tries -= 1
+            try:
+                return self.execute(command)
+            except (NonCleanExitError) as (e):
+                if e.returncode == 8:
+                    error_string = 'HTTP error 404'
+                elif e.returncode == 4:
+                    error_string = 'URL error host not found'
+                else:
+                    # GitHub and BitBucket seem to time out a lot
+                    print (__name__ + ': Downloading %s timed out, trying ' + \
+                        'again') % url
+                    continue
+                    #error_string = 'unknown connection error'
 
-            sublime.error_message(__name__ + ': ' + error_message +
-                ' ' + error_string + ' downloading ' +
-                url + '.')
+                sublime.error_message(__name__ + ': ' + error_message +
+                    ' ' + error_string + ' downloading ' +
+                    url + '.')
+            break
         return False
 
 
@@ -364,26 +380,33 @@ class CurlDownloader(CliDownloader):
     def __init__(self):
         self.binary = self.find_binary('curl')
 
-    def download(self, url, error_message, timeout):
+    def download(self, url, error_message, timeout, tries):
         curl = self.find_binary('curl')
         if not curl:
             return False
         command = [curl, '-f', '--user-agent', 'Sublime Package Control',
             '--connect-timeout', str(int(timeout)), '-s', url]
 
-        try:
-            return self.execute(command)
-        except (NonCleanExitError) as (e):
-            if e.returncode == 22:
-                error_string = 'HTTP error 404'
-            elif e.returncode == 6:
-                error_string = 'URL error host not found'
-            else:
-                error_string = 'unknown connection error'
+        while tries > 1:
+            tries -= 1
+            try:
+                return self.execute(command)
+            except (NonCleanExitError) as (e):
+                if e.returncode == 22:
+                    error_string = 'HTTP error 404'
+                elif e.returncode == 6:
+                    error_string = 'URL error host not found'
+                else:
+                    # GitHub and BitBucket seem to time out a lot
+                    print (__name__ + ': Downloading %s timed out, trying ' + \
+                        'again') % url
+                    continue
+                    #error_string = 'unknown connection error'
 
-            sublime.error_message(__name__ + ': ' + error_message +
-                ' ' + error_string + ' downloading ' +
-                url + '.')
+                sublime.error_message(__name__ + ': ' + error_message +
+                    ' ' + error_string + ' downloading ' +
+                    url + '.')
+            break
         return False
 
 _channel_repository_cache = {}
@@ -416,6 +439,140 @@ class RepositoryDownloader(threading.Thread):
         self.packages = packages
 
 
+class VcsUpgrader():
+    def __init__(self, vcs_binary, update_command, working_copy, cache_length):
+        self.binary = vcs_binary
+        self.update_command = update_command
+        self.working_copy = working_copy
+        self.cache_length = cache_length
+
+    def execute(self, args, dir):
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        proc = subprocess.Popen(args, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            startupinfo=startupinfo, cwd=dir)
+
+        return proc.stdout.read().replace('\r\n', '\n').rstrip(' \n\r')
+
+    def find_binary(self, name):
+        if self.binary:
+            return self.binary
+
+        if os.name == 'nt':
+            dirs = ['C:\\Program Files\\Git\\bin',
+                'C:\\Program Files (x86)\\Git\\bin',
+                'C:\\Program Files\\Mercurial',
+                'C:\\Program Files (x86)\\Mercurial',
+                'C:\\Program Files (x86)\\TortoiseHg',
+                'C:\\Program Files\\TortoiseHg']
+        else:
+            dirs = ['/usr/local/git/bin', '/usr/local/sbin',
+                '/usr/local/bin', '/usr/sbin',
+                '/usr/bin', '/sbin', '/bin']
+
+        for dir in dirs:
+            path = os.path.join(dir, name)
+            if os.path.exists(path):
+                return path
+
+        return None
+
+
+class GitUpgrader(VcsUpgrader):
+    def retrieve_binary(self):
+        name = 'git'
+        if os.name == 'nt':
+            name += '.exe'
+        binary = self.find_binary(name)
+        if not binary:
+            sublime.error_message((__name__ + ': Unable to find %s. ' +
+                'Please set the git_binary setting in %s.') % (name,
+                os.path.join(sublime.packages_path(), 'User', __name__ +
+                '.sublime-settings')))
+            return False
+        return binary
+
+    def run(self):
+        binary = self.retrieve_binary()
+        if not binary:
+            return False
+        args = [binary]
+        args.extend(self.update_command)
+        output = self.execute(args, self.working_copy)
+        return True
+
+    def incoming(self):
+        cache_key = self.working_copy + '.incoming'
+        working_copy_cache = _channel_repository_cache.get(cache_key)
+        if working_copy_cache and working_copy_cache.get('time') > \
+                time.time():
+            return working_copy_cache.get('data')
+
+        binary = self.retrieve_binary()
+        if not binary:
+            return False
+        self.execute([binary, 'fetch'], self.working_copy)
+        args = [binary, 'log']
+        args.append('..' + '/'.join(self.update_command[-2:]))
+        output = self.execute(args, self.working_copy)
+        incoming = len(output) > 0
+
+        _channel_repository_cache[cache_key] = {
+            'time': time.time() + self.cache_length,
+            'data': incoming
+        }
+        return incoming
+
+
+class HgUpgrader(VcsUpgrader):
+    def retrieve_binary(self):
+        name = 'hg'
+        if os.name == 'nt':
+            name += '.exe'
+        binary = self.find_binary(name)
+        if not binary:
+            sublime.error_message((__name__ + ': Unable to find %s. ' +
+                'Please set the hg_binary setting in %s.') % (name,
+                os.path.join(sublime.packages_path(), 'User', __name__ +
+                '.sublime-settings')))
+            return False
+        return binary
+
+    def run(self):
+        binary = self.retrieve_binary()
+        if not binary:
+            return False
+        args = [binary]
+        args.extend(self.update_command)
+        output = self.execute(args, self.working_copy)
+        return True
+
+    def incoming(self):
+        cache_key = self.working_copy + '.incoming'
+        working_copy_cache = _channel_repository_cache.get(cache_key)
+        if working_copy_cache and working_copy_cache.get('time') > \
+                time.time():
+            return working_copy_cache.get('data')
+
+        binary = self.retrieve_binary()
+        if not binary:
+            return False
+        args = [binary, 'in', '-q']
+        args.append(self.update_command[-1])
+        output = self.execute(args, self.working_copy)
+        incoming = len(output) > 0
+
+        _channel_repository_cache[cache_key] = {
+            'time': time.time() + self.cache_length,
+            'data': incoming
+        }
+        return incoming
+
+
 class PackageManager():
     def __init__(self):
         # Here we manually copy the settings since sublime doesn't like
@@ -425,7 +582,9 @@ class PackageManager():
         for setting in ['timeout', 'repositories', 'repository_channels',
                 'package_name_map', 'dirs_to_ignore', 'files_to_ignore',
                 'package_destination', 'cache_length', 'auto_upgrade',
-                'files_to_ignore_binary']:
+                'files_to_ignore_binary', 'files_to_keep', 'dirs_to_keep',
+                'git_binary', 'git_update_command', 'hg_binary',
+                'hg_update_command']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -456,7 +615,8 @@ class PackageManager():
             return False
 
         timeout = self.settings.get('timeout', 3)
-        return downloader.download(url.replace(' ', '%20'), error_message, timeout)
+        return downloader.download(url.replace(' ', '%20'), error_message,
+            timeout, 3)
 
     def get_metadata(self, package):
         metadata_filename = os.path.join(self.get_package_dir(package),
@@ -524,7 +684,8 @@ class PackageManager():
             if repository_packages == None:
                 downloader = RepositoryDownloader(self,
                     self.settings.get('package_name_map', {}), repo)
-                domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1', repo)
+                domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1',
+                    repo)
                 downloaders.append(downloader)
                 pending_downloaders.append([domain, downloader])
 
@@ -564,7 +725,15 @@ class PackageManager():
         package_names = os.listdir(sublime.packages_path())
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
-        packages = list(set(package_names) - set(self.list_default_packages()))
+        # Ignore things to be deleted
+        ignored_packages = []
+        for package in package_names:
+            cleanup_file = os.path.join(sublime.packages_path(), package,
+                'package-control.cleanup')
+            if os.path.exists(cleanup_file):
+                ignored_packages.append(package)
+        packages = list(set(package_names) - set(ignored_packages) -
+            set(self.list_default_packages()))
         packages.sort()
         return packages
 
@@ -670,17 +839,48 @@ class PackageManager():
             package_file.write(package_bytes)
 
         package_dir = self.get_package_dir(package_name)
+
+        if os.path.exists(os.path.join(package_dir, '.git')):
+            return GitUpgrader(self.settings['git_binary'],
+                self.settings['git_update_command'], package_dir,
+                self.settings['cache_length']).run()
+        elif os.path.exists(os.path.join(package_dir, '.hg')):
+            return HgUpgrader(self.settings['hg_binary'],
+                self.settings['hg_update_command'], package_dir,
+                self.settings['cache_length']).run()
+
         if not os.path.exists(package_dir):
             os.mkdir(package_dir)
+
+        # We create a backup copy incase something was edited
+        else:
+            try:
+                backup_dir = os.path.join(os.path.dirname(
+                    sublime.packages_path()), 'Backup',
+                    datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+                if not os.path.exists(backup_dir):
+                    os.mkdir(backup_dir)
+                package_backup_dir = os.path.join(backup_dir, package_name)
+                shutil.copytree(package_dir, package_backup_dir)
+            except (OSError, IOError) as (exception):
+                sublime.error_message(__name__ + ': An error occurred while' +
+                    ' trying to backup the package directory for %s. %s' %
+                    (package_name, str(exception)))
+                shutil.rmtree(package_backup_dir)
+                return False
 
         # Here we clean out the directory to preven issues with old files
         # however don't just recursively delete the whole package dir since
         # that will fail on Windows if a user has explorer open to it
+        def slow_delete(function, path, excinfo):
+            if function == os.remove:
+                time.sleep(0.2)
+                os.remove(path)
         try:
             for path in os.listdir(package_dir):
                 full_path = os.path.join(package_dir, path)
                 if os.path.isdir(full_path):
-                    shutil.rmtree(full_path)
+                    shutil.rmtree(full_path, onerror=slow_delete)
                 else:
                     os.remove(full_path)
         except (OSError, IOError) as (exception):
@@ -690,34 +890,42 @@ class PackageManager():
             return False
 
         package_zip = zipfile.ZipFile(package_path, 'r')
+        root_level_paths = []
+        last_path = None
         for path in package_zip.namelist():
+            last_path = path
+            if path.find('/') in [len(path)-1, -1]:
+                root_level_paths.append(path)
             if path[0] == '/' or path.find('..') != -1:
                 sublime.error_message(__name__ + ': The package ' +
                     'specified, %s, contains files outside of the package ' +
                     'dir and cannot be safely installed.' % (package_name,))
                 return False
 
+        if last_path and len(root_level_paths) == 0:
+            root_level_paths.append(last_path[0:last_path.find('/')+1])
+
         os.chdir(package_dir)
 
         # Here we don’t use .extractall() since it was having issues on OS X
+        skip_root_dir = len(root_level_paths) == 1 and \
+            root_level_paths[0].endswith('/')
         for path in package_zip.namelist():
+            dest = path
+            # If there was only a single directory in the package, we remove
+            # that folder name from the paths as we extract entries
+            if skip_root_dir:
+                dest = dest[len(root_level_paths[0]):]
+            dest = os.path.join(package_dir, dest)
             if path.endswith('/'):
-                os.makedirs(os.path.join(package_dir, path))
+                if not os.path.exists(dest):
+                    os.makedirs(dest)
             else:
-                package_zip.extract(path)
+                dest_dir = os.path.dirname(dest)
+                if not os.path.exists(dest_dir):
+                    os.makedirs(dest_dir)
+                open(dest, 'wb').write(package_zip.read(path))
         package_zip.close()
-
-        # If the zip contained a single directory, pop everything up a level
-        # and repackage the zip file
-        extracted_paths = os.listdir(package_dir)
-        extracted_paths = list(set(extracted_paths) - set(['.DS_Store']))
-        if len(extracted_paths) == 1 and os.path.isdir(extracted_paths[0]):
-            single_dir = os.path.join(package_dir, extracted_paths[0])
-            for path in os.listdir(single_dir):
-                shutil.move(os.path.join(single_dir, path), package_dir)
-            os.rmdir(single_dir)
-            self.create_package(package_name,
-                sublime.installed_packages_path())
 
         package_metadata_file = os.path.join(package_dir,
             'package-metadata.json')
@@ -747,7 +955,7 @@ class PackageManager():
         os.chdir(sublime.packages_path())
 
         # Give Sublime Text some time to ignore the package
-        time.sleep(2)
+        time.sleep(1)
 
         package_filename = package_name + '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
@@ -774,34 +982,25 @@ class PackageManager():
                 (package_name, str(exception)))
             return False
 
-        try:
-            # We don't delete the actual package dir immediately due to a bug
-            # in sublime_plugin.py
-
-            # There may be a better way to handle this - this is basically
-            # all to work around issues on Windows where is likes to lock files
-
-            # First we remove all root py files so they unload
-            for path in os.listdir(package_dir):
+        # We don't delete the actual package dir immediately due to a bug
+        # in sublime_plugin.py
+        can_delete_dir = True
+        for path in os.listdir(package_dir):
+            try:
                 full_path = os.path.join(package_dir, path)
                 if not os.path.isdir(full_path):
                     os.remove(full_path)
-
-            # Then we remove the directories
-            for path in os.listdir(package_dir):
-                full_path = os.path.join(package_dir, path)
-                if os.path.isdir(full_path):
+                else:
                     shutil.rmtree(full_path)
-        except (OSError, IOError) as (exception):
-            extra = ''
-            if os.name == 'nt':
-                extra = ' Please restart Sublime Text and try again.'
-            sublime.error_message(__name__ + ': An error occurred while' +
-                ' trying to remove the package directory for %s.%s %s' %
-                (package_name, extra, str(exception)))
-            return False
+            except (OSError, IOError) as (exception):
+                # If there is an error deleting now, we will mark it for
+                # cleanup the next time Sublime Text starts
+                open(os.path.join(package_dir, 'package-control.cleanup'),
+                    'w').close()
+                can_delete_dir = False
 
-        os.rmdir(package_dir)
+        if can_delete_dir:
+            os.rmdir(package_dir)
 
         return True
 
@@ -865,7 +1064,7 @@ class PackageInstaller():
     def __init__(self):
         self.manager = PackageManager()
 
-    def make_package_list(self, ignore_actions=[]):
+    def make_package_list(self, ignore_actions=[], override_action=None):
         packages = self.manager.list_available_packages()
         installed_packages = self.manager.list_packages()
 
@@ -889,11 +1088,35 @@ class PackageInstaller():
                 installed and installed_version else 'unknown version'
             new_version = 'v' + download['version']
 
+            vcs = None
+            package_dir = self.manager.get_package_dir(package)
+            settings = self.manager.settings
+            if os.path.exists(os.path.join(sublime.packages_path(), package,
+                    '.git')):
+                vcs = 'git'
+                incoming = GitUpgrader(settings.get('git_binary'),
+                    settings.get('git_update_command'), package_dir,
+                    settings.get('cache_length')).incoming()
+            elif os.path.exists(os.path.join(sublime.packages_path(), package,
+                    '.hg')):
+                vcs = 'hg'
+                incoming = HgUpgrader(settings.get('hg_binary'),
+                    settings.get('hg_update_command'), package_dir,
+                    settings.get('cache_length')).incoming()
+
             if installed:
                 if not installed_version:
-                    action = 'overwrite'
-                    extra = ' %s with %s' % (installed_version_name,
-                        new_version)
+                    if vcs:
+                        if incoming:
+                            action = 'pull'
+                            extra = ' with ' + vcs
+                        else:
+                            action = 'none'
+                            extra = ''
+                    else:
+                        action = 'overwrite'
+                        extra = ' %s with %s' % (installed_version_name,
+                            new_version)
                 else:
                     res = self.manager.compare_versions(
                         installed_version, download['version'])
@@ -911,13 +1134,18 @@ class PackageInstaller():
             else:
                 action = 'install'
                 extra = ' %s' % new_version
+            extra += ';'
 
             if action in ignore_actions:
                 continue
 
+            if override_action:
+                action = override_action
+                extra = ''
+
             package_entry.append(info.get('description', 'No description ' + \
                 'provided'))
-            package_entry.append(action + extra + '; ' +
+            package_entry.append(action + extra + ' ' +
                 re.sub('^https?://', '', info['url']))
             package_list.append(package_entry)
         return package_list
@@ -958,7 +1186,7 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
     def run(self):
         self.package_list = self.make_package_list(['upgrade', 'downgrade',
-            'reinstall'])
+            'reinstall', 'pull', 'none'])
         def show_quick_panel():
             if not self.package_list:
                 sublime.error_message(__name__ + ': There are no packages ' +
@@ -983,7 +1211,7 @@ class DiscoverPackagesThread(threading.Thread, PackageInstaller):
         PackageInstaller.__init__(self)
 
     def run(self):
-        self.package_list = self.make_package_list()
+        self.package_list = self.make_package_list(override_action='visit')
         def show_quick_panel():
             if not self.package_list:
                 sublime.error_message(__name__ + ': There are no packages ' +
@@ -1018,7 +1246,8 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         PackageInstaller.__init__(self)
 
     def run(self):
-        self.package_list = self.make_package_list(['install', 'reinstall'])
+        self.package_list = self.make_package_list(['install', 'reinstall',
+            'none'])
         def show_quick_panel():
             if not self.package_list:
                 sublime.error_message(__name__ + ': There are no packages ' +
@@ -1026,6 +1255,15 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 0)
+
+    def on_done(self, picked):
+        if picked == -1:
+            return
+        name = self.package_list[picked][0]
+        thread = PackageInstallerThread(self.manager, name)
+        thread.start()
+        ThreadProgress(thread, 'Upgrading package %s' % name,
+            'Package %s successfully %s' % (name, self.completion_type))
 
 
 class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
@@ -1043,7 +1281,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
         PackageInstaller.__init__(self)
 
     def run(self):
-        for info in self.make_package_list(['install', 'reinstall']):
+        for info in self.make_package_list(['install', 'reinstall', 'none']):
             thread = PackageInstallerThread(self.manager, info[0])
             thread.start()
             ThreadProgress(thread, 'Upgrading package %s' % info[0],
@@ -1064,12 +1302,18 @@ class ExistingPackagesCommand():
         for package in sorted(packages):
             package_entry = [package]
             metadata = self.manager.get_metadata(package)
+            package_dir = os.path.join(sublime.packages_path(), package)
 
             package_entry.append(metadata.get('description',
                 'No description provided'))
 
             version = metadata.get('version')
-            installed_version = 'v' + version if version else 'unknown version'
+            if not version and os.path.exists(os.path.join(package_dir, '.git')):
+                installed_version = 'git repository'
+            elif not version and os.path.exists(os.path.join(package_dir, '.hg')):
+                installed_version = 'hg repository'
+            else:
+                installed_version = 'v' + version if version else 'unknown version'
 
             url = metadata.get('url')
             if url:
@@ -1179,7 +1423,8 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
         repository_channels.append(input)
         settings.set('repository_channels', repository_channels)
         sublime.save_settings(__name__ + '.sublime-settings')
-        sublime.status_message('Repository channel ' + input + ' successfully added')
+        sublime.status_message('Repository channel ' + input +
+            ' successfully added')
 
     def on_change(self, input):
         pass
@@ -1260,8 +1505,8 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
         self.settings.set('ignored_packages',
             list(set(ignored) - set([package])))
         sublime.save_settings('Global.sublime-settings')
-        sublime.status_message('Package ' + package + ' successfully removed ' +
-            'from list of diabled packages - restarting Sublime Text may be '
+        sublime.status_message('Package ' + package + ' successfully removed' +
+            ' from list of diabled packages - restarting Sublime Text may be '
             'required')
 
 
@@ -1273,8 +1518,8 @@ class AutomaticUpgrader(threading.Thread):
 
     def run(self):
         if self.auto_upgrade:
-            packages = self.installer.make_package_list(['install', 'reinstall',
-                'downgrade', 'overwrite'])
+            packages = self.installer.make_package_list(['install',
+                'reinstall', 'downgrade', 'overwrite', 'none'])
             if not packages:
                 print __name__ + ': No updated packages'
                 return
@@ -1282,7 +1527,26 @@ class AutomaticUpgrader(threading.Thread):
             print __name__ + ': Installing %s upgrades' % len(packages)
             for package in packages:
                 self.installer.manager.install_package(package[0])
-                print __name__ + ': Upgraded %s to %s' % (package[0],
-                    re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2]))
+                version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2])
+                if version == package[2] and version.find('pull with') != -1:
+                    vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
+                    version = 'latest %s commit' % vcs
+                print __name__ + ': Upgraded %s to %s' % (package[0], version)
 
-AutomaticUpgrader().start()
+
+class PackageCleanup(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+        for path in os.listdir(sublime.packages_path()):
+            package_dir = os.path.join(sublime.packages_path(), path)
+            if os.path.exists(os.path.join(package_dir,
+                    'package-control.cleanup')):
+                shutil.rmtree(package_dir)
+                print __name__ + ': Removed old directory for package %s' % \
+                    path
+        sublime.set_timeout(lambda: AutomaticUpgrader().start(), 0)
+
+
+PackageCleanup().start()

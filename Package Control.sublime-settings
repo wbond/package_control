@@ -21,10 +21,19 @@
 	"auto_upgrade": true,
 
 	// Timeout for downloading channels, repositories and packages
-	"timeout": 5,
+	"timeout": 3,
 
 	// The number of seconds to cache repository and package info for
 	"cache_length": 300,
+
+	// Custom paths to VCS binaries for when they can't be automatically
+	// found on the system and a package includes a VCS metadata directory
+	"git_binary": "",
+	"git_update_command": ["pull", "origin", "master"],
+	
+	"hg_binary": "",
+	// Be sure to keep the remote name as the last argument
+	"hg_update_command": ["pull", "--update", "default"],
 
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
