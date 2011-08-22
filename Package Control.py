@@ -859,7 +859,7 @@ class PackageManager():
                     sublime.packages_path()), 'Backup',
                     datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
                 if not os.path.exists(backup_dir):
-                    os.mkdir(backup_dir)
+                    os.makedirs(backup_dir)
                 package_backup_dir = os.path.join(backup_dir, package_name)
                 shutil.copytree(package_dir, package_backup_dir)
             except (OSError, IOError) as (exception):
