@@ -468,7 +468,8 @@ class VcsUpgrader():
                 'C:\\Program Files\\Mercurial',
                 'C:\\Program Files (x86)\\Mercurial',
                 'C:\\Program Files (x86)\\TortoiseHg',
-                'C:\\Program Files\\TortoiseHg']
+                'C:\\Program Files\\TortoiseHg',
+                'C:\\cygwin\\bin']
         else:
             dirs = ['/usr/local/git/bin', '/usr/local/sbin',
                 '/usr/local/bin', '/usr/sbin',
@@ -488,11 +489,17 @@ class GitUpgrader(VcsUpgrader):
         if os.name == 'nt':
             name += '.exe'
         binary = self.find_binary(name)
+        if os.path.isdir(binary):
+            full_path = os.path.join(binary, name)
+            if os.path.exists(full_path):
+                binary = full_path
         if not binary:
-            sublime.error_message((__name__ + ': Unable to find %s. ' +
-                'Please set the git_binary setting in %s.') % (name,
-                os.path.join(sublime.packages_path(), 'User', __name__ +
-                '.sublime-settings')))
+            sublime.error_message(('%s: Unable to find %s. ' +
+                'Please set the git_binary setting by accessing the ' +
+                'Preferences > Package Settings > %s > ' +
+                'Settings – User menu entry. The Settings – Default entry ' +
+                'can be used for reference, but changes to that will be ' +
+                'overwritten upon next upgrade.') % (__name__, name, __name__))
             return False
         return binary
 
@@ -534,11 +541,17 @@ class HgUpgrader(VcsUpgrader):
         if os.name == 'nt':
             name += '.exe'
         binary = self.find_binary(name)
+        if os.path.isdir(binary):
+            full_path = os.path.join(binary, name)
+            if os.path.exists(full_path):
+                binary = full_path
         if not binary:
-            sublime.error_message((__name__ + ': Unable to find %s. ' +
-                'Please set the hg_binary setting in %s.') % (name,
-                os.path.join(sublime.packages_path(), 'User', __name__ +
-                '.sublime-settings')))
+            sublime.error_message(('%s: Unable to find %s. ' +
+                'Please set the hg_binary setting by accessing the ' +
+                'Preferences > Package Settings > %s > ' +
+                'Settings – User menu entry. The Settings – Default entry ' +
+                'can be used for reference, but changes to that will be ' +
+                'overwritten upon next upgrade.') % (__name__, name, __name__))
             return False
         return binary
 
