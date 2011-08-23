@@ -844,6 +844,8 @@ class PackageManager():
             '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
+        pristine_package_path = os.path.join(os.path.dirname(
+            sublime.packages_path()), 'Pristine Packages', package_filename)
 
         package_bytes = self.download_url(url, 'Error downloading package.')
         if package_bytes == False:
@@ -953,6 +955,10 @@ class PackageManager():
         # Here we delete the package file from the installed packages directory
         # since we don't want to accidentally overwrite user changes
         os.remove(package_path)
+        # We have to remove the pristine package too or else Sublime Text 2
+        # will silently delete the package
+        if os.path.exists(pristine_package_path):
+            os.remove(pristine_package_path)
 
         os.chdir(sublime.packages_path())
         return True
