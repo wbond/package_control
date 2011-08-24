@@ -465,6 +465,7 @@ class VcsUpgrader():
         if os.name == 'nt':
             dirs = ['C:\\Program Files\\Git\\bin',
                 'C:\\Program Files (x86)\\Git\\bin',
+                'C:\\Program Files\\TortoiseGit\\bin',
                 'C:\\Program Files\\Mercurial',
                 'C:\\Program Files (x86)\\Mercurial',
                 'C:\\Program Files (x86)\\TortoiseHg',
@@ -501,6 +502,11 @@ class GitUpgrader(VcsUpgrader):
                 'can be used for reference, but changes to that will be ' +
                 'overwritten upon next upgrade.') % (__name__, name, __name__))
             return False
+
+        if os.name == 'nt':
+            tortoise_plink = self.find_binary('TortoisePlink.exe')
+            if tortoise_plink:
+                os.putenv('GIT_SSH', tortoise_plink)
         return binary
 
     def run(self):
@@ -927,6 +933,16 @@ class PackageManager():
             root_level_paths[0].endswith('/')
         for path in package_zip.namelist():
             dest = path
+            if os.name == 'nt':
+                regex = ':|\*|\?|"|<|>|\|'
+                if re.search(regex, dest) != None:
+                    print ('%s: Skipping file from package ' +
+                        'named %s due to an invalid filename') % (__name__,
+                        path)
+                    continue
+            regex = '[\x00-\x1F\x7F-\xFF]'
+            if re.search(regex, dest) != None:
+                dest = dest.decode('utf-8')
             # If there was only a single directory in the package, we remove
             # that folder name from the paths as we extract entries
             if skip_root_dir:
@@ -939,7 +955,12 @@ class PackageManager():
                 dest_dir = os.path.dirname(dest)
                 if not os.path.exists(dest_dir):
                     os.makedirs(dest_dir)
-                open(dest, 'wb').write(package_zip.read(path))
+                try:
+                    open(dest, 'wb').write(package_zip.read(path))
+                except (IOError, UnicodeDecodeError):
+                    print ('%s: Skipping file from package ' +
+                        'named %s due to an invalid filename') % (__name__,
+                        path)
         package_zip.close()
 
         package_metadata_file = os.path.join(package_dir,
