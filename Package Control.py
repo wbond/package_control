@@ -1480,7 +1480,7 @@ class RemovePackageThread(threading.Thread):
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.window.show_input_panel('Repository Channel URL', '',
+        self.window.show_input_panel('Repository Channel JSON URL', '',
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
@@ -1503,7 +1503,7 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
 
 class AddRepositoryCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.window.show_input_panel('Repository URL', '', self.on_done,
+        self.window.show_input_panel('GitHub or BitBucket Web URL, or Custom JSON Repository URL', '', self.on_done,
             self.on_change, self.on_cancel)
 
     def on_done(self, input):
