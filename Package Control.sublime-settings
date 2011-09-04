@@ -26,6 +26,12 @@
 	// The number of seconds to cache repository and package info for
 	"cache_length": 300,
 
+	// An HTTP proxy server to use for requests
+	"http_proxy": "",
+	// An HTTPS proxy server to use for requests - if not specified, but
+	// http_proxy is, http_proxy will be used for https_proxy also
+	"https_proxy": "",
+
 	// Custom paths to VCS binaries for when they can't be automatically
 	// found on the system and a package includes a VCS metadata directory
 	"git_binary": "",

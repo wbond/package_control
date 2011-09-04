@@ -294,6 +294,9 @@ class NonCleanExitError(Exception):
 
 
 class CliDownloader():
+    def __init__(self, settings):
+        self.settings = settings
+
     def find_binary(self, name):
         dirs = ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin',
             '/sbin', '/bin']
@@ -318,7 +321,21 @@ class CliDownloader():
 
 
 class UrlLib2Downloader():
+    def __init__(self, settings):
+        self.settings = settings
+
     def download(self, url, error_message, timeout, tries):
+        if self.settings.get('http_proxy') or self.settings.get('https_proxy'):
+            proxies = {}
+            if self.settings.get('http_proxy'):
+                proxies['http'] = self.settings.get('http_proxy')
+                if not self.settings.get('https_proxy'):
+                    proxies['https'] = self.settings.get('http_proxy')
+            if self.settings.get('https_proxy'):
+                proxies['https'] = self.settings.get('https_proxy')
+            proxy_handler = urllib2.ProxyHandler(proxies)
+            urllib2.install_opener(urllib2.build_opener(proxy_handler))
+
         while tries > 0:
             tries -= 1
             try:
@@ -346,12 +363,19 @@ class UrlLib2Downloader():
 
 
 class WgetDownloader(CliDownloader):
-    def __init__(self):
-        self.binary = self.find_binary('wget')
-
     def download(self, url, error_message, timeout, tries):
-        command = [self.binary, '--timeout', str(int(timeout)), '-o',
+        wget = self.find_binary('wget')
+        if not wget:
+            return False
+        command = [wget, '--timeout', str(int(timeout)), '-o',
             '/dev/null', '-O', '-', '-U', 'Sublime Package Control', url]
+
+        if self.settings.get('http_proxy'):
+            os.putenv('http_proxy', self.settings.get('http_proxy'))
+            if not self.settings.get('https_proxy'):
+                os.putenv('https_proxy', self.settings.get('http_proxy'))
+        if self.settings.get('https_proxy'):
+            os.putenv('https_proxy', self.settings.get('https_proxy'))
 
         while tries > 1:
             tries -= 1
@@ -377,15 +401,19 @@ class WgetDownloader(CliDownloader):
 
 
 class CurlDownloader(CliDownloader):
-    def __init__(self):
-        self.binary = self.find_binary('curl')
-
     def download(self, url, error_message, timeout, tries):
         curl = self.find_binary('curl')
         if not curl:
             return False
         command = [curl, '-f', '--user-agent', 'Sublime Package Control',
             '--connect-timeout', str(int(timeout)), '-s', url]
+
+        if self.settings.get('http_proxy'):
+            os.putenv('http_proxy', self.settings.get('http_proxy'))
+            if not self.settings.get('https_proxy'):
+                os.putenv('HTTPS_PROXY', self.settings.get('http_proxy'))
+        if self.settings.get('https_proxy'):
+            os.putenv('HTTPS_PROXY', self.settings.get('https_proxy'))
 
         while tries > 1:
             tries -= 1
@@ -603,7 +631,7 @@ class PackageManager():
                 'package_destination', 'cache_length', 'auto_upgrade',
                 'files_to_ignore_binary', 'files_to_keep', 'dirs_to_keep',
                 'git_binary', 'git_update_command', 'hg_binary',
-                'hg_update_command']:
+                'hg_update_command', 'http_proxy', 'https_proxy']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -618,11 +646,11 @@ class PackageManager():
         is_ssl = re.search('^https://', url) != None
 
         if (is_ssl and has_ssl) or not is_ssl:
-            downloader = UrlLib2Downloader()
+            downloader = UrlLib2Downloader(self.settings)
         else:
             for downloader_class in [CurlDownloader, WgetDownloader]:
                 try:
-                    downloader = downloader_class()
+                    downloader = downloader_class(self.settings)
                     break
                 except (BinaryNotFoundError):
                     pass
