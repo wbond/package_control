@@ -518,7 +518,7 @@ class GitUpgrader(VcsUpgrader):
         if os.name == 'nt':
             name += '.exe'
         binary = self.find_binary(name)
-        if os.path.isdir(binary):
+        if binary and os.path.isdir(binary):
             full_path = os.path.join(binary, name)
             if os.path.exists(full_path):
                 binary = full_path
@@ -575,7 +575,7 @@ class HgUpgrader(VcsUpgrader):
         if os.name == 'nt':
             name += '.exe'
         binary = self.find_binary(name)
-        if os.path.isdir(binary):
+        if binary and os.path.isdir(binary):
             full_path = os.path.join(binary, name)
             if os.path.exists(full_path):
                 binary = full_path
