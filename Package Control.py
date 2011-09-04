@@ -631,7 +631,8 @@ class PackageManager():
                 'package_destination', 'cache_length', 'auto_upgrade',
                 'files_to_ignore_binary', 'files_to_keep', 'dirs_to_keep',
                 'git_binary', 'git_update_command', 'hg_binary',
-                'hg_update_command', 'http_proxy', 'https_proxy']:
+                'hg_update_command', 'http_proxy', 'https_proxy',
+                'auto_upgrade_ignore']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -1132,12 +1133,15 @@ class PackageInstaller():
     def __init__(self):
         self.manager = PackageManager()
 
-    def make_package_list(self, ignore_actions=[], override_action=None):
+    def make_package_list(self, ignore_actions=[], override_action=None,
+            ignore_packages=[]):
         packages = self.manager.list_available_packages()
         installed_packages = self.manager.list_packages()
 
         package_list = []
         for package in sorted(packages.iterkeys()):
+            if ignore_packages and package in ignore_packages:
+                continue
             package_entry = [package]
             info = packages[package]
             download = info['downloads'][0]
@@ -1581,13 +1585,17 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
 class AutomaticUpgrader(threading.Thread):
     def __init__(self):
         self.installer = PackageInstaller()
-        self.auto_upgrade = PackageManager().settings.get('auto_upgrade')
+        settings = PackageManager().settings
+        self.auto_upgrade = settings.get('auto_upgrade')
+        self.auto_upgrade_ignore = settings.get('auto_upgrade_ignore')
         threading.Thread.__init__(self)
 
     def run(self):
         if self.auto_upgrade:
             packages = self.installer.make_package_list(['install',
-                'reinstall', 'downgrade', 'overwrite', 'none'])
+                'reinstall', 'downgrade', 'overwrite', 'none'],
+                ignore_packages=self.auto_upgrade_ignore)
+
             if not packages:
                 print __name__ + ': No updated packages'
                 return
