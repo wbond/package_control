@@ -632,7 +632,7 @@ class PackageManager():
                 'files_to_ignore_binary', 'files_to_keep', 'dirs_to_keep',
                 'git_binary', 'git_update_command', 'hg_binary',
                 'hg_update_command', 'http_proxy', 'https_proxy',
-                'auto_upgrade_ignore']:
+                'auto_upgrade_ignore', 'auto_upgrade_frequency']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -1585,12 +1585,36 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
 class AutomaticUpgrader(threading.Thread):
     def __init__(self):
         self.installer = PackageInstaller()
-        settings = PackageManager().settings
+
+        settings = sublime.load_settings(__name__ + '.sublime-settings')
         self.auto_upgrade = settings.get('auto_upgrade')
         self.auto_upgrade_ignore = settings.get('auto_upgrade_ignore')
+
+        self.next_run = int(time.time())
+        self.last_run = settings.get('auto_upgrade_last_run')
+        frequency = settings.get('auto_upgrade_frequency')
+        if frequency:
+            if self.last_run:
+                self.next_run = int(self.last_run) + (frequency * 60 * 60)
+            else:
+                self.next_run = time.time()
+
+        if self.auto_upgrade and self.next_run <= time.time():
+            settings.set('auto_upgrade_last_run', int(time.time()))
+            sublime.save_settings(__name__ + '.sublime-settings')
+
         threading.Thread.__init__(self)
 
     def run(self):
+        if self.next_run > time.time():
+            last_run = datetime.datetime.fromtimestamp(self.last_run)
+            next_run = datetime.datetime.fromtimestamp(self.next_run)
+            date_format = '%Y-%m-%d %H:%M:%S'
+            print (__name__ + ': Skipping automatic upgrade, last run at ' +
+                '%s, next run at %s or after') % (last_run.strftime(
+                    date_format), next_run.strftime(date_format))
+            return
+
         if self.auto_upgrade:
             packages = self.installer.make_package_list(['install',
                 'reinstall', 'downgrade', 'overwrite', 'none'],
