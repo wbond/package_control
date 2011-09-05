@@ -32,10 +32,17 @@ class PanelPrinter():
 
     def __init__(self):
         self.name = 'package_control'
-        self.window = sublime.active_window()
-        self.panel  = self.window.get_output_panel(self.name)
-        self.panel.settings().set("word_wrap", True)
-        self.write('Package Control Messages\n========================')
+        self.window = None
+        self.init()
+
+    def init(self):
+        if not self.window:
+            self.window = sublime.active_window()
+
+        if self.window != None:
+            self.panel  = self.window.get_output_panel(self.name)
+            self.panel.settings().set("word_wrap", True)
+            self.write('Package Control Messages\n========================')
 
     def show(self):
         sublime.set_timeout(self.show_callback, 0)
@@ -48,6 +55,7 @@ class PanelPrinter():
         sublime.set_timeout(callback, 0)
 
     def write_callback(self, string):
+        self.init()
         self.panel.set_read_only(False)
         edit = self.panel.begin_edit()
 
