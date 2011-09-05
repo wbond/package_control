@@ -192,7 +192,7 @@ class GitHubPackageProvider():
             repo_info = json.loads(repo_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + repo + '.')
+                ' repository ' + api_url + '.')
             return False
 
         commit_date = repo_info['pushed_at']
@@ -236,7 +236,7 @@ class GitHubUserProvider():
             repo_info = json.loads(repo_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + repo_info + '.')
+                ' repository ' + api_url + '.')
             return False
 
         packages = {}
@@ -283,18 +283,19 @@ class BitBucketPackageProvider():
             repo_info = json.loads(repo_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + repo + '.')
+                ' repository ' + api_url + '.')
             return False
 
-        changeset_json = package_manager.download_url(api_url + \
-            '/changesets/?limit=1', 'Error downloading repository.')
+        changeset_url = api_url + '/changesets/?limit=1'
+        changeset_json = package_manager.download_url(changeset_url,
+            'Error downloading repository.')
         if changeset_json == False:
             return False
         try:
             last_commit = json.loads(changeset_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + repo + '.')
+                ' repository ' + changeset_url + '.')
             return False
         commit_date = last_commit['changesets'][0]['timestamp']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
