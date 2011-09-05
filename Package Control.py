@@ -570,7 +570,7 @@ class GitUpgrader(VcsUpgrader):
             sublime.error_message(('%s: Unable to find %s. ' +
                 'Please set the git_binary setting by accessing the ' +
                 'Preferences > Package Settings > %s > ' +
-                'Settings – User menu entry. The Settings – Default entry ' +
+                u'Settings – User menu entry. The Settings – Default entry ' +
                 'can be used for reference, but changes to that will be ' +
                 'overwritten upon next upgrade.') % (__name__, name, __name__))
             return False
@@ -627,7 +627,7 @@ class HgUpgrader(VcsUpgrader):
             sublime.error_message(('%s: Unable to find %s. ' +
                 'Please set the hg_binary setting by accessing the ' +
                 'Preferences > Package Settings > %s > ' +
-                'Settings – User menu entry. The Settings – Default entry ' +
+                u'Settings – User menu entry. The Settings – Default entry ' +
                 'can be used for reference, but changes to that will be ' +
                 'overwritten upon next upgrade.') % (__name__, name, __name__))
             return False
