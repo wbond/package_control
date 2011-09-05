@@ -882,12 +882,6 @@ class PackageManager():
         pristine_package_path = os.path.join(os.path.dirname(
             sublime.packages_path()), 'Pristine Packages', package_filename)
 
-        package_bytes = self.download_url(url, 'Error downloading package.')
-        if package_bytes == False:
-            return False
-        with open(package_path, "wb") as package_file:
-            package_file.write(package_bytes)
-
         package_dir = self.get_package_dir(package_name)
 
         if os.path.exists(os.path.join(package_dir, '.git')):
@@ -898,6 +892,12 @@ class PackageManager():
             return HgUpgrader(self.settings['hg_binary'],
                 self.settings['hg_update_command'], package_dir,
                 self.settings['cache_length']).run()
+
+        package_bytes = self.download_url(url, 'Error downloading package.')
+        if package_bytes == False:
+            return False
+        with open(package_path, "wb") as package_file:
+            package_file.write(package_bytes)
 
         if not os.path.exists(package_dir):
             os.mkdir(package_dir)
