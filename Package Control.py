@@ -236,7 +236,7 @@ class GitHubUserProvider():
             repo_info = json.loads(repo_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + repo + '.')
+                ' repository ' + repo_info + '.')
             return False
 
         packages = {}
@@ -578,7 +578,7 @@ class GitUpgrader(VcsUpgrader):
         if os.name == 'nt':
             tortoise_plink = self.find_binary('TortoisePlink.exe')
             if tortoise_plink:
-                os.putenv('GIT_SSH', tortoise_plink)
+                os.environ.setdefault('GIT_SSH', tortoise_plink)
         return binary
 
     def run(self):
