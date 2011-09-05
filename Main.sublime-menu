@@ -33,6 +33,12 @@
                         ]
                     }
                 ]
+            },
+            {
+                "caption": "Package Control",
+                "mnemonic": "C",
+                "command": "show_overlay",
+                "args": {"overlay": "command_palette", "text": "Package Control: "}
             }
         ]
     }
