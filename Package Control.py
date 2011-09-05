@@ -21,6 +21,42 @@ try:
 except (ImportError):
     pass
 
+class PanelPrinter():
+    instance = None
+
+    @classmethod
+    def get(cls):
+        if cls.instance == None:
+            cls.instance = PanelPrinter()
+        return cls.instance
+
+    def __init__(self):
+        self.name = 'package_control'
+        self.window = sublime.active_window()
+        self.panel  = self.window.get_output_panel(self.name)
+        self.panel.settings().set("word_wrap", True)
+        self.write('Package Control Messages\n========================')
+
+    def show(self):
+        sublime.set_timeout(self.show_callback, 0)
+
+    def show_callback(self):
+        self.window.run_command("show_panel", {"panel": "output." + self.name})
+
+    def write(self, string):
+        callback = lambda: self.write_callback(string)
+        sublime.set_timeout(callback, 0)
+
+    def write_callback(self, string):
+        self.panel.set_read_only(False)
+        edit = self.panel.begin_edit()
+
+        self.panel.insert(edit, self.panel.size(), string)
+        self.panel.show(self.panel.size())
+        self.panel.end_edit(edit)
+        self.panel.set_read_only(True)
+
+
 class ThreadProgress():
     def __init__(self, thread, message, success_message):
         self.thread = thread
@@ -622,6 +658,7 @@ class HgUpgrader(VcsUpgrader):
 
 class PackageManager():
     def __init__(self):
+        self.printer = PanelPrinter.get()
         # Here we manually copy the settings since sublime doesn't like
         # code accessing settings from threads
         self.settings = {}
@@ -884,6 +921,9 @@ class PackageManager():
 
         package_dir = self.get_package_dir(package_name)
 
+        package_metadata_file = os.path.join(package_dir,
+            'package-metadata.json')
+
         if os.path.exists(os.path.join(package_dir, '.git')):
             return GitUpgrader(self.settings['git_binary'],
                 self.settings['git_update_command'], package_dir,
@@ -892,6 +932,11 @@ class PackageManager():
             return HgUpgrader(self.settings['hg_binary'],
                 self.settings['hg_update_command'], package_dir,
                 self.settings['cache_length']).run()
+
+        is_upgrade = os.path.exists(package_metadata_file)
+        old_version = None
+        if is_upgrade:
+            old_version = self.get_metadata(package_name).get('version')
 
         package_bytes = self.download_url(url, 'Error downloading package.')
         if package_bytes == False:
@@ -992,8 +1037,8 @@ class PackageManager():
                         path)
         package_zip.close()
 
-        package_metadata_file = os.path.join(package_dir,
-            'package-metadata.json')
+        self.print_messages(package_name, package_dir, is_upgrade, old_version)
+
         with open(package_metadata_file, 'w') as f:
             metadata = {
                 "version": packages[package_name]['downloads'][0]['version'],
@@ -1012,6 +1057,45 @@ class PackageManager():
 
         os.chdir(sublime.packages_path())
         return True
+
+    def print_messages(self, package, package_dir, is_upgrade, old_version):
+        messages_file = os.path.join(package_dir, 'messages.json')
+        if os.path.exists(messages_file):
+            messages_fp = open(messages_file, 'r')
+            message_info = json.load(messages_fp)
+            messages_fp.close()
+
+            shown = False
+            if not is_upgrade and message_info.get('install'):
+                install_messages = os.path.join(package_dir,
+                    message_info.get('install'))
+                message = '\n\n' + package + ':\n  '
+                with open(install_messages, 'r') as f:
+                    message += f.read().replace('\n', '\n  ')
+                self.printer.write(message)
+                shown = True
+
+            elif is_upgrade and old_version:
+                upgrade_messages = list(set(message_info.keys()) -
+                    set(['install']))
+                upgrade_messages = sorted(upgrade_messages,
+                    cmp=self.compare_versions, reverse=True)
+                for version in upgrade_messages:
+                    if self.compare_versions(old_version, version) >= 0:
+                        break
+                    if not shown:
+                        message = '\n\n' + package + ':'
+                        self.printer.write(message)
+                    upgrade_messages = os.path.join(package_dir,
+                        message_info.get(version))
+                    message = '\n  '
+                    with open(upgrade_messages, 'r') as f:
+                        message += f.read().replace('\n', '\n  ')
+                    self.printer.write(message)
+                    shown = True
+
+            if shown:
+                self.printer.show()
 
     def remove_package(self, package_name):
         installed_packages = self.list_packages()
