@@ -1029,6 +1029,8 @@ class PackageManager():
         package_filename = package_name + '.sublime-package'
         package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
+        installed_package_path = os.path.join(os.path.dirname(
+            sublime.packages_path()), 'Installed Packages', package_filename)
         pristine_package_path = os.path.join(os.path.dirname(
             sublime.packages_path()), 'Pristine Packages', package_filename)
         package_dir = self.get_package_dir(package_name)
@@ -1039,6 +1041,15 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(__name__ + ': An error occurred while' +
                 ' trying to remove the package file for %s. %s' %
+                (package_name, str(exception)))
+            return False
+
+        try:
+            if os.path.exists(installed_package_path):
+                os.remove(installed_package_path)
+        except (OSError, IOError) as (exception):
+            sublime.error_message(__name__ + ': An error occurred while' +
+                ' trying to remove the installed package file for %s. %s' %
                 (package_name, str(exception)))
             return False
 
