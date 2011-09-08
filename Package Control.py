@@ -760,8 +760,7 @@ class PackageManager():
         repositories = self.list_repositories()
         packages = {}
         downloaders = []
-        pending_downloaders = []
-        domain_downloaders = {}
+        grouped_downloaders = {}
 
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
@@ -780,29 +779,34 @@ class PackageManager():
                     self.settings.get('package_name_map', {}), repo)
                 domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1',
                     repo)
+                if not grouped_downloaders.get(domain):
+                    grouped_downloaders[domain] = []
+                grouped_downloaders[domain].append(downloader)
+
+        def schedule(downloader, delay):
+            downloader.has_started = False
+            def inner():
+                downloader.start()
+                downloader.has_started = True
+            sublime.set_timeout(inner, delay)
+
+        for domain_downloaders in grouped_downloaders.values():
+            for i in range(len(domain_downloaders)):
+                downloader = domain_downloaders[i]
                 downloaders.append(downloader)
-                pending_downloaders.append([domain, downloader])
+                schedule(downloader, i * 150)
 
-        # Wait until all of the downloaders have completed
-        while True:
-            # Ensure there is only one downloader per domain at a time
-            for pending in pending_downloaders:
-                can_start = not pending[0] in domain_downloaders
-                can_start = can_start or \
-                    not domain_downloaders[pending[0]].is_alive()
-                if can_start:
-                    domain_downloaders[pending[0]] = pending[1]
-                    pending[1].start()
-                    pending_downloaders.remove(pending)
+        complete = []
 
-            is_alive = len(pending_downloaders) > 0
-            for downloader in downloaders:
-                is_alive = downloader.is_alive() or is_alive
-            if not is_alive:
-                break
-            time.sleep(0.01)
+        while downloaders:
+            downloader = downloaders.pop()
+            if downloader.has_started:
+                downloader.join()
+                complete.append(downloader)
+            else:
+                downloaders.insert(0, downloader)
 
-        for downloader in downloaders:
+        for downloader in complete:
             repository_packages = downloader.packages
             if repository_packages == False:
                 continue
