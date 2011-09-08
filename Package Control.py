@@ -45,14 +45,14 @@ class PanelPrinter():
             self.write('Package Control Messages\n========================')
 
     def show(self):
-        sublime.set_timeout(self.show_callback, 0)
+        sublime.set_timeout(self.show_callback, 10)
 
     def show_callback(self):
         self.window.run_command("show_panel", {"panel": "output." + self.name})
 
     def write(self, string):
         callback = lambda: self.write_callback(string)
-        sublime.set_timeout(callback, 0)
+        sublime.set_timeout(callback, 10)
 
     def write_callback(self, string):
         self.init()
@@ -1371,7 +1371,7 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
                     'available for installation.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
-        sublime.set_timeout(show_quick_panel, 0)
+        sublime.set_timeout(show_quick_panel, 10)
 
 
 class DiscoverPackagesCommand(sublime_plugin.WindowCommand):
@@ -1396,7 +1396,7 @@ class DiscoverPackagesThread(threading.Thread, PackageInstaller):
                     'available for discovery.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
-        sublime.set_timeout(show_quick_panel, 0)
+        sublime.set_timeout(show_quick_panel, 10)
 
     def on_done(self, picked):
         if picked == -1:
@@ -1406,7 +1406,7 @@ class DiscoverPackagesThread(threading.Thread, PackageInstaller):
         def open_url():
             sublime.active_window().run_command('open_url',
                 {"url": packages.get(package_name).get('url')})
-        sublime.set_timeout(open_url, 0)
+        sublime.set_timeout(open_url, 10)
 
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):
@@ -1432,7 +1432,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
                     'ready for upgrade.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
-        sublime.set_timeout(show_quick_panel, 0)
+        sublime.set_timeout(show_quick_panel, 10)
 
     def on_done(self, picked):
         if picked == -1:
@@ -1525,7 +1525,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
                     'to list.')
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
-        sublime.set_timeout(show_quick_panel, 0)
+        sublime.set_timeout(show_quick_panel, 10)
 
     def on_done(self, picked):
         if picked == -1:
@@ -1534,7 +1534,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         def open_dir():
             self.window.run_command('open_dir',
                 {"dir": os.path.join(sublime.packages_path(), package_name)})
-        sublime.set_timeout(open_dir, 0)
+        sublime.set_timeout(open_dir, 10)
 
 
 class RemovePackageCommand(sublime_plugin.WindowCommand,
@@ -1585,7 +1585,7 @@ class RemovePackageThread(threading.Thread):
             settings = sublime.load_settings('Global.sublime-settings')
             settings.set('ignored_packages', self.ignored_packages)
             sublime.save_settings('Global.sublime-settings')
-        sublime.set_timeout(unignore_package, 0)
+        sublime.set_timeout(unignore_package, 10)
 
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
@@ -1752,7 +1752,7 @@ class PackageCleanup(threading.Thread):
                 shutil.rmtree(package_dir)
                 print __name__ + ': Removed old directory for package %s' % \
                     path
-        sublime.set_timeout(lambda: AutomaticUpgrader().start(), 0)
+        sublime.set_timeout(lambda: AutomaticUpgrader().start(), 10)
 
 
 PackageCleanup().start()
