@@ -1267,57 +1267,59 @@ class PackageInstaller():
             vcs = None
             package_dir = self.manager.get_package_dir(package)
             settings = self.manager.settings
-            if os.path.exists(os.path.join(sublime.packages_path(), package,
-                    '.git')):
-                vcs = 'git'
-                incoming = GitUpgrader(settings.get('git_binary'),
-                    settings.get('git_update_command'), package_dir,
-                    settings.get('cache_length')).incoming()
-            elif os.path.exists(os.path.join(sublime.packages_path(), package,
-                    '.hg')):
-                vcs = 'hg'
-                incoming = HgUpgrader(settings.get('hg_binary'),
-                    settings.get('hg_update_command'), package_dir,
-                    settings.get('cache_length')).incoming()
-
-            if installed:
-                if not installed_version:
-                    if vcs:
-                        if incoming:
-                            action = 'pull'
-                            extra = ' with ' + vcs
-                        else:
-                            action = 'none'
-                            extra = ''
-                    else:
-                        action = 'overwrite'
-                        extra = ' %s with %s' % (installed_version_name,
-                            new_version)
-                else:
-                    res = self.manager.compare_versions(
-                        installed_version, download['version'])
-                    if res < 0:
-                        action = 'upgrade'
-                        extra = ' to %s from %s' % (new_version,
-                            installed_version_name)
-                    elif res > 0:
-                        action = 'downgrade'
-                        extra = ' to %s from %s' % (new_version,
-                            installed_version_name)
-                    else:
-                        action = 'reinstall'
-                        extra = ' %s' % new_version
-            else:
-                action = 'install'
-                extra = ' %s' % new_version
-            extra += ';'
-
-            if action in ignore_actions:
-                continue
 
             if override_action:
                 action = override_action
                 extra = ''
+
+            else:
+                if os.path.exists(os.path.join(sublime.packages_path(), package,
+                        '.git')):
+                    vcs = 'git'
+                    incoming = GitUpgrader(settings.get('git_binary'),
+                        settings.get('git_update_command'), package_dir,
+                        settings.get('cache_length')).incoming()
+                elif os.path.exists(os.path.join(sublime.packages_path(), package,
+                        '.hg')):
+                    vcs = 'hg'
+                    incoming = HgUpgrader(settings.get('hg_binary'),
+                        settings.get('hg_update_command'), package_dir,
+                        settings.get('cache_length')).incoming()
+
+                if installed:
+                    if not installed_version:
+                        if vcs:
+                            if incoming:
+                                action = 'pull'
+                                extra = ' with ' + vcs
+                            else:
+                                action = 'none'
+                                extra = ''
+                        else:
+                            action = 'overwrite'
+                            extra = ' %s with %s' % (installed_version_name,
+                                new_version)
+                    else:
+                        res = self.manager.compare_versions(
+                            installed_version, download['version'])
+                        if res < 0:
+                            action = 'upgrade'
+                            extra = ' to %s from %s' % (new_version,
+                                installed_version_name)
+                        elif res > 0:
+                            action = 'downgrade'
+                            extra = ' to %s from %s' % (new_version,
+                                installed_version_name)
+                        else:
+                            action = 'reinstall'
+                            extra = ' %s' % new_version
+                else:
+                    action = 'install'
+                    extra = ' %s' % new_version
+                extra += ';'
+
+                if action in ignore_actions:
+                    continue
 
             package_entry.append(info.get('description', 'No description ' + \
                 'provided'))
