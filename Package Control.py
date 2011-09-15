@@ -286,7 +286,7 @@ class BitBucketPackageProvider():
                 ' repository ' + api_url + '.')
             return False
 
-        changeset_url = api_url + '/changesets/?limit=1'
+        changeset_url = api_url + '/changesets/default'
         changeset_json = package_manager.download_url(changeset_url,
             'Error downloading repository.')
         if changeset_json == False:
