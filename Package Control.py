@@ -297,7 +297,7 @@ class BitBucketPackageProvider():
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' repository ' + changeset_url + '.')
             return False
-        commit_date = last_commit['changesets'][0]['timestamp']
+        commit_date = last_commit['timestamp']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
             '%Y-%m-%d %H:%M:%S')
         utc_timestamp = timestamp.strftime(
@@ -315,7 +315,7 @@ class BitBucketPackageProvider():
                 {
                     'version': utc_timestamp,
                     'url': repo + '/get/' + \
-                        last_commit['changesets'][0]['node'] + '.zip'
+                        last_commit['node'] + '.zip'
                 }
             ]
         }
