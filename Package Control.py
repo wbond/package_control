@@ -412,7 +412,7 @@ class WgetDownloader(CliDownloader):
         wget = self.find_binary('wget')
         if not wget:
             return False
-        command = [wget, '--timeout', str(int(timeout)), '-o',
+        command = [wget, '--no-check-certificate',  '--timeout', str(int(timeout)), '-o',
             '/dev/null', '-O', '-', '-U', 'Sublime Package Control', url]
 
         if self.settings.get('http_proxy'):
@@ -450,7 +450,7 @@ class CurlDownloader(CliDownloader):
         curl = self.find_binary('curl')
         if not curl:
             return False
-        command = [curl, '-f', '--user-agent', 'Sublime Package Control',
+        command = [curl, '-k', '-f', '--user-agent', 'Sublime Package Control',
             '--connect-timeout', str(int(timeout)), '-s', url]
 
         if self.settings.get('http_proxy'):
