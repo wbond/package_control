@@ -40,7 +40,7 @@ class PanelPrinter():
             self.window = sublime.active_window()
 
         if self.window != None:
-            self.panel  = self.window.get_output_panel(self.name)
+            self.panel = self.window.get_output_panel(self.name)
             self.panel.settings().set("word_wrap", True)
             self.write('Package Control Messages\n========================')
 
@@ -412,8 +412,11 @@ class WgetDownloader(CliDownloader):
         wget = self.find_binary('wget')
         if not wget:
             return False
-        command = [wget, '--no-check-certificate',  '--timeout', str(int(timeout)), '-o',
+        command = [wget, '--timeout', str(int(timeout)), '-o',
             '/dev/null', '-O', '-', '-U', 'Sublime Package Control', url]
+
+        if self.settings.get('ignore_ssl_certificates'):
+            command.append('--no-check-certificate')
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
@@ -450,8 +453,11 @@ class CurlDownloader(CliDownloader):
         curl = self.find_binary('curl')
         if not curl:
             return False
-        command = [curl, '-k', '-f', '--user-agent', 'Sublime Package Control',
+        command = [curl, '-f', '--user-agent', 'Sublime Package Control',
             '--connect-timeout', str(int(timeout)), '-s', url]
+
+        if self.settings.get('ignore_ssl_certificates'):
+            command.append('-k')
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
