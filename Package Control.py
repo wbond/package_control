@@ -408,11 +408,14 @@ class UrlLib2Downloader():
 
 
 class WgetDownloader(CliDownloader):
+    def __init__(self, settings):
+        self.settings = settings
+        self.wget = self.find_binary('wget')
+
     def download(self, url, error_message, timeout, tries):
-        wget = self.find_binary('wget')
-        if not wget:
+        if not self.wget:
             return False
-        command = [wget, '--timeout', str(int(timeout)), '-o',
+        command = [self.wget, '--timeout', str(int(timeout)), '-o',
             '/dev/null', '-O', '-', '-U', 'Sublime Package Control', url]
 
         if self.settings.get('http_proxy'):
@@ -446,11 +449,14 @@ class WgetDownloader(CliDownloader):
 
 
 class CurlDownloader(CliDownloader):
+    def __init__(self, settings):
+        self.settings = settings
+        self.curl = self.find_binary('curl')
+
     def download(self, url, error_message, timeout, tries):
-        curl = self.find_binary('curl')
-        if not curl:
+        if not self.curl:
             return False
-        command = [curl, '-f', '--user-agent', 'Sublime Package Control',
+        command = [self.curl, '-f', '--user-agent', 'Sublime Package Control',
             '--connect-timeout', str(int(timeout)), '-s', url]
 
         if self.settings.get('http_proxy'):
