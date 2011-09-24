@@ -39,6 +39,10 @@
 	// http_proxy is, http_proxy will be used for https_proxy also
 	"https_proxy": "",
 
+	// For some configurations, wget/curl ssl certficate check fail,
+	// causing the package control not to download all the available repositories
+	"ignore_ssl_certificates": false,
+
 	// Custom paths to VCS binaries for when they can't be automatically
 	// found on the system and a package includes a VCS metadata directory
 	"git_binary": "",
