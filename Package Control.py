@@ -179,11 +179,12 @@ class PackageProvider():
 
 class GitHubPackageProvider():
     def match_url(self, url):
-        return re.search('^https?://github.com/[^/]+/[^/]+$', url) != None
+        return re.search('^https?://github.com/[^/]+/[^/]+/?$', url) != None
 
     def get_packages(self, repo, package_manager):
         api_url = re.sub('^https?://github.com/',
             'https://api.github.com/repos/', repo)
+        api_url = api_url.rstrip('/')
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
@@ -223,11 +224,12 @@ class GitHubPackageProvider():
 
 class GitHubUserProvider():
     def match_url(self, url):
-        return re.search('^https?://github.com/[^/]+$', url) != None
+        return re.search('^https?://github.com/[^/]+/?$', url) != None
 
     def get_packages(self, url, package_manager):
         api_url = re.sub('^https?://github.com/',
-            'https://api.github.com/users/', url) + '/repos'
+            'https://api.github.com/users/', url)
+        api_url = api_url.rstrip('/') + '/repos'
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
@@ -275,6 +277,7 @@ class BitBucketPackageProvider():
     def get_packages(self, repo, package_manager):
         api_url = re.sub('^https?://bitbucket.org/',
             'https://api.bitbucket.org/1.0/repositories/', repo)
+        api_url = api_url.rstrip('/')
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
