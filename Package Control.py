@@ -15,6 +15,7 @@ import datetime
 import time
 import shutil
 import _strptime
+import tempfile
 
 try:
     import ssl
@@ -363,7 +364,9 @@ class CliDownloader():
         output = proc.stdout.read()
         returncode = proc.wait()
         if returncode != 0:
-            raise NonCleanExitError(returncode)
+            error = NonCleanExitError(returncode)
+            error.output = output
+            raise error
         return output
 
 
@@ -393,6 +396,11 @@ class UrlLib2Downloader():
                 return http_file.read()
 
             except (urllib2.HTTPError) as (e):
+                # Bitbucket and Github ratelimit using 503 a decent amount
+                if str(e.code) == '503':
+                    print (__name__ + ': Downloading %s was rate limited, ' + \
+                        'trying again') % url
+                    continue
                 sublime.error_message(__name__ + ': ' + error_message +
                     ' HTTP error ' + str(e.code) + ' downloading ' +
                     url + '.')
@@ -415,11 +423,16 @@ class WgetDownloader(CliDownloader):
         self.settings = settings
         self.wget = self.find_binary('wget')
 
+    def clean_tmp_file(self):
+        os.remove(self.tmp_file)
+
     def download(self, url, error_message, timeout, tries):
         if not self.wget:
             return False
-        command = [self.wget, '--timeout', str(int(timeout)), '-o',
-            '/dev/null', '-O', '-', '-U', 'Sublime Package Control', url]
+
+        self.tmp_file = tempfile.NamedTemporaryFile().name
+        command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
+            self.tmp_file, '-O', '-', '-U', 'Sublime Package Control', url]
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
@@ -431,22 +444,42 @@ class WgetDownloader(CliDownloader):
         while tries > 1:
             tries -= 1
             try:
-                return self.execute(command)
+                result = self.execute(command)
+                self.clean_tmp_file()
+                return result
             except (NonCleanExitError) as (e):
-                if e.returncode == 8:
-                    error_string = 'HTTP error 404'
-                elif e.returncode == 4:
-                    error_string = 'URL error host not found'
-                else:
-                    # GitHub and BitBucket seem to time out a lot
-                    print (__name__ + ': Downloading %s timed out, trying ' + \
-                        'again') % url
-                    continue
-                    #error_string = 'unknown connection error'
+                error_line = ''
+                with open(self.tmp_file) as f:
+                    for line in list(f):
+                        if re.search('ERROR[: ]|failed: ', line):
+                            error_line = line
+                            break
 
+                if e.returncode == 8:
+                    regex = re.compile('^.*ERROR (\d+):.*', re.S)
+                    if re.sub(regex, '\\1', error_line) == '503':
+                        # GitHub and BitBucket seem to rate limit via 503
+                        print (__name__ + ': Downloading %s was rate limited, trying ' + \
+                            'again') % url
+                        continue
+                    error_string = 'HTTP error ' + re.sub('^.*? ERROR ', '', error_line)
+
+                elif e.returncode == 4:
+                    error_string = re.sub('^.*?failed: ', '', error_line)
+                    # GitHub and BitBucket seem to time out a lot
+                    if error_string.find('timed out') != -1:
+                        print (__name__ + ': Downloading %s timed out, trying ' + \
+                            'again') % url
+                        continue
+
+                else:
+                    error_string = re.sub('^.*?(ERROR[: ]|failed: )', '\\1', error_line)
+
+                error_string = re.sub('\\.?\s*\n\s*$', '', error_string)
                 sublime.error_message(__name__ + ': ' + error_message +
                     ' ' + error_string + ' downloading ' +
                     url + '.')
+            self.clean_tmp_file()
             break
         return False
 
@@ -460,7 +493,7 @@ class CurlDownloader(CliDownloader):
         if not self.curl:
             return False
         command = [self.curl, '-f', '--user-agent', 'Sublime Package Control',
-            '--connect-timeout', str(int(timeout)), '-s', url]
+            '--connect-timeout', str(int(timeout)), '-sS', url]
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
@@ -475,15 +508,22 @@ class CurlDownloader(CliDownloader):
                 return self.execute(command)
             except (NonCleanExitError) as (e):
                 if e.returncode == 22:
-                    error_string = 'HTTP error 404'
+                    code = re.sub('^.*?(\d+)\s*$', '\\1', e.output)
+                    if code == '503':
+                        # GitHub and BitBucket seem to rate limit via 503
+                        print (__name__ + ': Downloading %s was rate limited, trying ' + \
+                            'again') % url
+                        continue
+                    error_string = 'HTTP error ' + code
                 elif e.returncode == 6:
                     error_string = 'URL error host not found'
-                else:
+                elif e.returncode == 28:
                     # GitHub and BitBucket seem to time out a lot
                     print (__name__ + ': Downloading %s timed out, trying ' + \
                         'again') % url
                     continue
-                    #error_string = 'unknown connection error'
+                else:
+                    error_string = e.output
 
                 sublime.error_message(__name__ + ': ' + error_message +
                     ' ' + error_string + ' downloading ' +
