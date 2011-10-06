@@ -1673,7 +1673,7 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
         self.settings.set('ignored_packages', ignored_packages)
         sublime.save_settings('Global.sublime-settings')
         sublime.status_message('Package ' + package + ' successfully added ' +
-            'to list of diabled packges - restarting Sublime Text may be '
+            'to list of disabled packages - restarting Sublime Text may be '
             'required')
 
 
@@ -1697,7 +1697,7 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
             list(set(ignored) - set([package])))
         sublime.save_settings('Global.sublime-settings')
         sublime.status_message('Package ' + package + ' successfully removed' +
-            ' from list of diabled packages - restarting Sublime Text may be '
+            ' from list of disabled packages - restarting Sublime Text may be '
             'required')
 
 
