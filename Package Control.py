@@ -6,7 +6,6 @@ import sys
 import subprocess
 import zipfile
 import urllib2
-import hashlib
 import json
 import fnmatch
 import re
@@ -42,7 +41,8 @@ class PanelPrinter():
             self.panel  = self.window.get_output_panel(self.name)
             if self.panel.size() == 0:
                 self.panel.settings().set("word_wrap", True)
-                self.write_callback('Package Control Messages\n========================')
+                self.write_callback('Package Control Messages\n' +
+                    '========================')
 
     def show(self):
         sublime.set_timeout(self.show_callback, 10)
@@ -354,7 +354,7 @@ class CliDownloader():
             if os.path.exists(path):
                 return path
 
-        raise BinaryNotFoundError('The binary ' + name + ' could not be ' + \
+        raise BinaryNotFoundError('The binary ' + name + ' could not be ' +
             'located')
 
     def execute(self, args):
@@ -398,7 +398,7 @@ class UrlLib2Downloader():
             except (urllib2.HTTPError) as (e):
                 # Bitbucket and Github ratelimit using 503 a decent amount
                 if str(e.code) == '503':
-                    print (__name__ + ': Downloading %s was rate limited, ' + \
+                    print (__name__ + ': Downloading %s was rate limited, ' +
                         'trying again') % url
                     continue
                 sublime.error_message(__name__ + ': ' + error_message +
@@ -408,7 +408,7 @@ class UrlLib2Downloader():
                 # Bitbucket and Github timeout a decent amount
                 if str(e.reason) == 'The read operation timed out' or \
                         str(e.reason) == 'timed out':
-                    print (__name__ + ': Downloading %s timed out, trying ' + \
+                    print (__name__ + ': Downloading %s timed out, trying ' +
                         'again') % url
                     continue
                 sublime.error_message(__name__ + ': ' + error_message +
@@ -459,21 +459,23 @@ class WgetDownloader(CliDownloader):
                     regex = re.compile('^.*ERROR (\d+):.*', re.S)
                     if re.sub(regex, '\\1', error_line) == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        print (__name__ + ': Downloading %s was rate limited, trying ' + \
-                            'again') % url
+                        print (__name__ + ': Downloading %s was rate limited' +
+                            ', trying again') % url
                         continue
-                    error_string = 'HTTP error ' + re.sub('^.*? ERROR ', '', error_line)
+                    error_string = 'HTTP error ' + re.sub('^.*? ERROR ', '',
+                        error_line)
 
                 elif e.returncode == 4:
                     error_string = re.sub('^.*?failed: ', '', error_line)
                     # GitHub and BitBucket seem to time out a lot
                     if error_string.find('timed out') != -1:
-                        print (__name__ + ': Downloading %s timed out, trying ' + \
-                            'again') % url
+                        print (__name__ + ': Downloading %s timed out, ' +
+                            'trying again') % url
                         continue
 
                 else:
-                    error_string = re.sub('^.*?(ERROR[: ]|failed: )', '\\1', error_line)
+                    error_string = re.sub('^.*?(ERROR[: ]|failed: )', '\\1',
+                        error_line)
 
                 error_string = re.sub('\\.?\s*\n\s*$', '', error_string)
                 sublime.error_message(__name__ + ': ' + error_message +
@@ -511,15 +513,15 @@ class CurlDownloader(CliDownloader):
                     code = re.sub('^.*?(\d+)\s*$', '\\1', e.output)
                     if code == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        print (__name__ + ': Downloading %s was rate limited, trying ' + \
-                            'again') % url
+                        print (__name__ + ': Downloading %s was rate limited' +
+                            ', trying again') % url
                         continue
                     error_string = 'HTTP error ' + code
                 elif e.returncode == 6:
                     error_string = 'URL error host not found'
                 elif e.returncode == 28:
                     # GitHub and BitBucket seem to time out a lot
-                    print (__name__ + ': Downloading %s timed out, trying ' + \
+                    print (__name__ + ': Downloading %s timed out, trying ' +
                         'again') % url
                     continue
                 else:
@@ -637,7 +639,7 @@ class GitUpgrader(VcsUpgrader):
             return False
         args = [binary]
         args.extend(self.update_command)
-        output = self.execute(args, self.working_copy)
+        self.execute(args, self.working_copy)
         return True
 
     def incoming(self):
@@ -689,7 +691,7 @@ class HgUpgrader(VcsUpgrader):
             return False
         args = [binary]
         args.extend(self.update_command)
-        output = self.execute(args, self.working_copy)
+        self.execute(args, self.working_copy)
         return True
 
     def incoming(self):
@@ -963,7 +965,6 @@ class PackageManager():
         return True
 
     def install_package(self, package_name):
-        installed_packages = self.list_packages()
         packages = self.list_available_packages()
 
         if package_name not in packages.keys():
@@ -1326,14 +1327,14 @@ class PackageInstaller():
                 extra = ''
 
             else:
-                if os.path.exists(os.path.join(sublime.packages_path(), package,
-                        '.git')):
+                if os.path.exists(os.path.join(sublime.packages_path(),
+                        package, '.git')):
                     vcs = 'git'
                     incoming = GitUpgrader(settings.get('git_binary'),
                         settings.get('git_update_command'), package_dir,
                         settings.get('cache_length')).incoming()
-                elif os.path.exists(os.path.join(sublime.packages_path(), package,
-                        '.hg')):
+                elif os.path.exists(os.path.join(sublime.packages_path(),
+                        package, '.hg')):
                     vcs = 'hg'
                     incoming = HgUpgrader(settings.get('hg_binary'),
                         settings.get('hg_update_command'), package_dir,
@@ -1374,7 +1375,7 @@ class PackageInstaller():
                 if action in ignore_actions:
                     continue
 
-            package_entry.append(info.get('description', 'No description ' + \
+            package_entry.append(info.get('description', 'No description ' +
                 'provided'))
             package_entry.append(action + extra + ' ' +
                 re.sub('^https?://', '', info['url']))
@@ -1539,12 +1540,15 @@ class ExistingPackagesCommand():
                 'No description provided'))
 
             version = metadata.get('version')
-            if not version and os.path.exists(os.path.join(package_dir, '.git')):
+            if not version and os.path.exists(os.path.join(package_dir,
+                    '.git')):
                 installed_version = 'git repository'
-            elif not version and os.path.exists(os.path.join(package_dir, '.hg')):
+            elif not version and os.path.exists(os.path.join(package_dir,
+                    '.hg')):
                 installed_version = 'hg repository'
             else:
-                installed_version = 'v' + version if version else 'unknown version'
+                installed_version = 'v' + version if version else \
+                    'unknown version'
 
             url = metadata.get('url')
             if url:
@@ -1666,7 +1670,8 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
 
 class AddRepositoryCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.window.show_input_panel('GitHub or BitBucket Web URL, or Custom JSON Repository URL', '', self.on_done,
+        self.window.show_input_panel('GitHub or BitBucket Web URL, or Custom' +
+                ' JSON Repository URL', '', self.on_done,
             self.on_change, self.on_cancel)
 
     def on_done(self, input):
