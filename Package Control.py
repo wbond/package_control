@@ -14,7 +14,11 @@ import threading
 import datetime
 import time
 import shutil
+import logging
 import _strptime
+
+
+log = logging.getLogger('sublime_package_control')
 
 try:
     import ssl
@@ -441,7 +445,7 @@ class WgetDownloader(CliDownloader):
                     continue
                     #error_string = 'unknown connection error'
 
-                sublime.error_message(__name__ + ': ' + error_message +
+                log.error(__name__ + ': ' + error_message +
                     ' ' + error_string + ' downloading ' +
                     url + '.')
             break
@@ -482,7 +486,7 @@ class CurlDownloader(CliDownloader):
                     continue
                     #error_string = 'unknown connection error'
 
-                sublime.error_message(__name__ + ': ' + error_message +
+                log.error(__name__ + ': ' + error_message +
                     ' ' + error_string + ' downloading ' +
                     url + '.')
             break
