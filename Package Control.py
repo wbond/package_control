@@ -259,7 +259,7 @@ class GitHubUserProvider():
     def get_packages(self, url, package_manager):
         api_url = re.sub('^https?://github.com/',
             'https://api.github.com/users/', url)
-        api_url = api_url.rstrip('/') + '/repos'
+        api_url = api_url.rstrip('/') + '/repos?per_page=100'
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
