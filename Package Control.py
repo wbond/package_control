@@ -430,9 +430,8 @@ class UrlLib2Downloader():
                     print (__name__ + ': Downloading %s was rate limited, ' +
                         'trying again') % url
                     continue
-                sublime.error_message(__name__ + ': ' + error_message +
-                    ' HTTP error ' + str(e.code) + ' downloading ' +
-                    url + '.')
+                print '%s: %s HTTP error %s downloading %s.' % (__name__,
+                    error_message, str(e.code), url)
             except (urllib2.URLError) as (e):
                 # Bitbucket and Github timeout a decent amount
                 if str(e.reason) == 'The read operation timed out' or \
@@ -440,9 +439,8 @@ class UrlLib2Downloader():
                     print (__name__ + ': Downloading %s timed out, trying ' +
                         'again') % url
                     continue
-                sublime.error_message(__name__ + ': ' + error_message +
-                    ' URL error ' + str(e.reason) + ' downloading ' +
-                    url + '.')
+                print '%s: %s URL error %s downloading %s.' % (__name__,
+                    error_message, str(e.reason), url)
             break
         return False
 
@@ -507,9 +505,8 @@ class WgetDownloader(CliDownloader):
                         error_line)
 
                 error_string = re.sub('\\.?\s*\n\s*$', '', error_string)
-                sublime.error_message(__name__ + ': ' + error_message +
-                    ' ' + error_string + ' downloading ' +
-                    url + '.')
+                print '%s: %s %s downloading %s.' % (__name__, error_message,
+                    error_string, url)
             self.clean_tmp_file()
             break
         return False
@@ -556,9 +553,8 @@ class CurlDownloader(CliDownloader):
                 else:
                     error_string = e.output
 
-                sublime.error_message(__name__ + ': ' + error_message +
-                    ' ' + error_string + ' downloading ' +
-                    url + '.')
+                print '%s: %s %s downloading %s.' % (__name__, error_message,
+                    error_string, url)
             break
         return False
 
