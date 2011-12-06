@@ -922,12 +922,12 @@ class PackageManager():
                 ignored_packages.append(package)
         packages = list(set(package_names) - set(ignored_packages) -
             set(self.list_default_packages()))
-        packages.sort()
+        packages = sorted(packages, key=lambda s: s.lower())
         return packages
 
     def list_all_packages(self):
         packages = os.listdir(sublime.packages_path())
-        packages.sort()
+        packages = sorted(packages, key=lambda s: s.lower())
         return packages
 
     def list_default_packages(self):
@@ -936,7 +936,7 @@ class PackageManager():
         files = list(set(files) - set(os.listdir(
             sublime.installed_packages_path())))
         packages = [file.replace('.sublime-package', '') for file in files]
-        packages.sort()
+        packages = sorted(packages, key=lambda s: s.lower())
         return packages
 
     def get_package_dir(self, package):
@@ -1336,7 +1336,7 @@ class PackageInstaller():
         installed_packages = self.manager.list_packages()
 
         package_list = []
-        for package in sorted(packages.iterkeys()):
+        for package in sorted(packages.iterkeys(), key=lambda s: s.lower()):
             if ignore_packages and package in ignore_packages:
                 continue
             package_entry = [package]
@@ -1570,7 +1570,7 @@ class ExistingPackagesCommand():
             action += ' '
 
         package_list = []
-        for package in sorted(packages):
+        for package in sorted(packages, key=lambda s: s.lower()):
             package_entry = [package]
             metadata = self.manager.get_metadata(package)
             package_dir = os.path.join(sublime.packages_path(), package)
