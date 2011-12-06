@@ -139,9 +139,9 @@ class ChannelProvider():
         self.fetch_channel()
         if self.channel_info == False:
             return False
-        if not self.channel_info.get('packages'):
+        if self.channel_info.get('packages', False) == False:
             return False
-        if not self.channel_info['packages'].get(repo):
+        if self.channel_info['packages'].get(repo, False) == False:
             return False
         output = {}
         for package in self.channel_info['packages'][repo]:
@@ -830,7 +830,7 @@ class PackageManager():
                 }
 
                 for repo in channel_repositories:
-                    if not provider.get_packages(repo):
+                    if provider.get_packages(repo) == False:
                         continue
                     packages_cache_key = repo + '.packages'
                     _channel_repository_cache[packages_cache_key] = {
