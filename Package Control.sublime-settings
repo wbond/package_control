@@ -28,7 +28,7 @@
 	"auto_upgrade_ignore": [],
 
 	// Timeout for downloading channels, repositories and packages
-	"timeout": 3,
+	"timeout": 30,
 
 	// The number of seconds to cache repository and package info for
 	"cache_length": 300,
