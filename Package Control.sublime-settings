@@ -22,7 +22,7 @@
 
 	// The minimum frequency in hours in which to check for automatic upgrades,
 	// setting this to 0 will always check for automatic upgrades
-	"auto_upgrade_frequency": 12,
+	"auto_upgrade_frequency": 6,
 
 	// Packages to not auto upgrade
 	"auto_upgrade_ignore": [],
