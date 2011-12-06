@@ -105,33 +105,62 @@ class ChannelProvider():
         return True
 
     def fetch_channel(self):
+        if self.channel_info != None:
+            return
+
         channel_json = self.package_manager.download_url(self.channel,
             'Error downloading channel.')
         if channel_json == False:
             self.channel_info = False
             return
+
         try:
             channel_info = json.loads(channel_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
                 ' channel ' + self.channel + '.')
-            self.channel_info = False
-            return
+            channel_info = False
+
         self.channel_info = channel_info
 
     def get_name_map(self):
-        if self.channel_info == None:
-            self.fetch_channel()
+        self.fetch_channel()
         if self.channel_info == False:
             return False
         return self.channel_info['package_name_map']
 
     def get_repositories(self):
-        if self.channel_info == None:
-            self.fetch_channel()
+        self.fetch_channel()
         if self.channel_info == False:
             return False
         return self.channel_info['repositories']
+
+    def get_packages(self, repo):
+        self.fetch_channel()
+        if self.channel_info == False:
+            return False
+        if not self.channel_info.get('packages'):
+            return False
+        if not self.channel_info['packages'].get(repo):
+            return False
+        output = {}
+        for package in self.channel_info['packages'][repo]:
+            copy = package.copy()
+
+            platforms = copy['platforms'].keys()
+            if sublime.platform() in platforms:
+                copy['downloads'] = copy['platforms'][sublime.platform()]
+            elif '*' in platforms:
+                copy['downloads'] = copy['platforms']['*']
+            else:
+                continue
+            del copy['platforms']
+
+            copy['url'] = copy['homepage']
+            del copy['homepage']
+
+            output[copy['name']] = copy
+        return output
 
 
 _channel_providers = [ChannelProvider]
@@ -799,6 +828,16 @@ class PackageManager():
                         300),
                     'data': channel_repositories
                 }
+
+                for repo in channel_repositories:
+                    if not provider.get_packages(repo):
+                        continue
+                    packages_cache_key = repo + '.packages'
+                    _channel_repository_cache[packages_cache_key] = {
+                        'time': time.time() + self.settings.get('cache_length',
+                            300),
+                        'data': provider.get_packages(repo)
+                    }
                 # Have the local name map override the one from the channel
                 name_map = provider.get_name_map()
                 name_map.update(self.settings['package_name_map'])
