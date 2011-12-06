@@ -405,16 +405,20 @@ class UrlLib2Downloader():
         self.settings = settings
 
     def download(self, url, error_message, timeout, tries):
-        if self.settings.get('http_proxy') or self.settings.get('https_proxy'):
+        http_proxy = self.settings.get('http_proxy')
+        https_proxy = self.settings.get('https_proxy')
+        if http_proxy or https_proxy:
             proxies = {}
-            if self.settings.get('http_proxy'):
-                proxies['http'] = self.settings.get('http_proxy')
-                if not self.settings.get('https_proxy'):
-                    proxies['https'] = self.settings.get('http_proxy')
-            if self.settings.get('https_proxy'):
-                proxies['https'] = self.settings.get('https_proxy')
+            if http_proxy:
+                proxies['http'] = http_proxy
+                if not https_proxy:
+                    proxies['https'] = http_proxy
+            if https_proxy:
+                proxies['https'] = https_proxy
             proxy_handler = urllib2.ProxyHandler(proxies)
-            urllib2.install_opener(urllib2.build_opener(proxy_handler))
+        else:
+            proxy_handler = urllib2.ProxyHandler()
+        urllib2.install_opener(urllib2.build_opener(proxy_handler))
 
         while tries > 0:
             tries -= 1
