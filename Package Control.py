@@ -199,6 +199,7 @@ class PackageProvider():
                     'description': package.get('description'),
                     'url': package.get('homepage', repo),
                     'author': package.get('author'),
+                    'last_modified': package.get('last_modified'),
                     'downloads': downloads
                 }
 
@@ -240,6 +241,7 @@ class GitHubPackageProvider():
             'description': repo_info['description'],
             'url': homepage,
             'author': repo_info['owner']['login'],
+            'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             'downloads': [
                 {
                     'version': utc_timestamp,
@@ -287,6 +289,7 @@ class GitHubUserProvider():
                 'description': package_info['description'],
                 'url': homepage,
                 'author': package_info['owner']['login'],
+                'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                 'downloads': [
                     {
                         'version': utc_timestamp,
@@ -344,6 +347,7 @@ class BitBucketPackageProvider():
             'description': repo_info['description'],
             'url': homepage,
             'author': repo_info['owner'],
+            'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             'downloads': [
                 {
                     'version': utc_timestamp,
