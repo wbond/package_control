@@ -796,6 +796,8 @@ class PackageManager():
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
+        self.settings['platform'] = sublime.platform()
+        self.settings['version'] = sublime.version()
 
     def compare_versions(self, version1, version2):
         def normalize(v):
@@ -1359,6 +1361,8 @@ class PackageManager():
             return
         params['package_control_version'] = \
             self.get_metadata('Package Control').get('version')
+        params['sublime_platform'] = self.settings.get('platform')
+        params['sublime_version'] = self.settings.get('version')
         url = self.settings.get('submit_url') + '?' + urllib.urlencode(params)
         result = self.download_url(url, 'Error submitting usage information.')
         try:
