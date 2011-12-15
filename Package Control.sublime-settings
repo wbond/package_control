@@ -17,6 +17,13 @@
 	// mapping that is retrieved from the repository channels.
 	"package_name_map": {},
 
+	// If package install, upgrade and removal info should be submitted to
+	// the channel for aggregated statistics
+	"submit_usage": true,
+
+	// The URL to post install, upgrade and removal notices to 
+	"submit_url": "http://sublime.wbond.net/submit",
+
 	// If packages should be automatically upgraded when ST2 starts
 	"auto_upgrade": true,
 
