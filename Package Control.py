@@ -211,12 +211,20 @@ class PackageProvider():
 
 class GitHubPackageProvider():
     def match_url(self, url):
-        return re.search('^https?://github.com/[^/]+/[^/]+/?$', url) != None
+        return re.search('^https?://github.com/[^/]+/[^/]+/?$', url) != None \
+            or re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
+            url) != None
 
     def get_packages(self, repo, package_manager):
-        api_url = re.sub('^https?://github.com/',
-            'https://api.github.com/repos/', repo)
-        api_url = api_url.rstrip('/')
+        branch_match = re.search(
+            '^https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', repo)
+        branch = None
+        if branch_match != None:
+            branch = branch_match.group(1)
+
+        api_url = re.sub('^https?://github.com/([^/]+)/([^/]+)($|/.*$)',
+            'https://api.github.com/repos/\\1/\\2', repo)
+
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
@@ -228,7 +236,29 @@ class GitHubPackageProvider():
                 ' repository ' + api_url + '.')
             return False
 
-        commit_date = repo_info['pushed_at']
+        if branch:
+            commit_api_url = api_url + '/commits?' + \
+                urllib.urlencode({'sha': branch, 'per_page': 1})
+            commit_json = package_manager.download_url(commit_api_url,
+                'Error downloading repository.')
+            if commit_json == False:
+                return False
+            try:
+                commit_info = json.loads(commit_json)
+            except (ValueError):
+                sublime.error_message(__name__ + ': Error parsing JSON from ' +
+                    ' repository ' + commit_api_url + '.')
+                return False
+            commit_date = commit_info[0]['commit']['committer']['date']
+            download_url = 'https://nodeload.github.com/' + \
+                repo_info['owner']['login'] + '/' + \
+                repo_info['name'] + '/zipball/' + urllib.quote(branch)
+        else:
+            commit_date = repo_info['pushed_at']
+            download_url = 'https://nodeload.github.com/' + \
+                repo_info['owner']['login'] + '/' + \
+                repo_info['name'] + '/zipball/master'
+
         timestamp = datetime.datetime.strptime(commit_date[0:19],
             '%Y-%m-%dT%H:%M:%S')
         utc_timestamp = timestamp.strftime(
@@ -246,9 +276,7 @@ class GitHubPackageProvider():
             'downloads': [
                 {
                     'version': utc_timestamp,
-                    'url': 'https://nodeload.github.com/' + \
-                            repo_info['owner']['login'] + '/' + \
-                            repo_info['name'] + '/zipball/master'
+                    'url': download_url
                 }
             ]
         }
