@@ -1288,6 +1288,8 @@ class PackageManager():
             sublime.packages_path()), 'Pristine Packages', package_filename)
         package_dir = self.get_package_dir(package_name)
 
+        version = self.get_metadata(package_name).get('version')
+
         try:
             if os.path.exists(package_path):
                 os.remove(package_path)
@@ -1332,7 +1334,6 @@ class PackageManager():
                     'w').close()
                 can_delete_dir = False
 
-        version = self.get_metadata(package_name).get('version')
         params = {
             'package': package_name,
             'operation': 'remove',
