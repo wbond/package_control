@@ -1591,37 +1591,8 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
 class DiscoverPackagesCommand(sublime_plugin.WindowCommand):
     def run(self):
-        thread = DiscoverPackagesThread(self.window)
-        thread.start()
-        ThreadProgress(thread, 'Loading repositories', '')
-
-
-class DiscoverPackagesThread(threading.Thread, PackageInstaller):
-    def __init__(self, window):
-        self.window = window
-        self.completion_type = 'installed'
-        threading.Thread.__init__(self)
-        PackageInstaller.__init__(self)
-
-    def run(self):
-        self.package_list = self.make_package_list(override_action='visit')
-        def show_quick_panel():
-            if not self.package_list:
-                sublime.error_message(__name__ + ': There are no packages ' +
-                    'available for discovery.')
-                return
-            self.window.show_quick_panel(self.package_list, self.on_done)
-        sublime.set_timeout(show_quick_panel, 10)
-
-    def on_done(self, picked):
-        if picked == -1:
-            return
-        package_name = self.package_list[picked][0]
-        packages = self.manager.list_available_packages()
-        def open_url():
-            sublime.active_window().run_command('open_url',
-                {"url": packages.get(package_name).get('url')})
-        sublime.set_timeout(open_url, 10)
+        self.window.run_command('open_url',
+            {'url': 'http://wbond.net/sublime_packages/community'})
 
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):
