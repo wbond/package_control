@@ -216,9 +216,9 @@ class GitHubPackageProvider():
             url) != None
 
     def get_packages(self, repo, package_manager):
+        branch = 'master'
         branch_match = re.search(
             '^https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', repo)
-        branch = None
         if branch_match != None:
             branch = branch_match.group(1)
 
@@ -229,6 +229,7 @@ class GitHubPackageProvider():
             'Error downloading repository.')
         if repo_json == False:
             return False
+
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
@@ -236,29 +237,26 @@ class GitHubPackageProvider():
                 ' repository ' + api_url + '.')
             return False
 
-        if branch:
-            commit_api_url = api_url + '/commits?' + \
-                urllib.urlencode({'sha': branch, 'per_page': 1})
-            commit_json = package_manager.download_url(commit_api_url,
-                'Error downloading repository.')
-            if commit_json == False:
-                return False
-            try:
-                commit_info = json.loads(commit_json)
-            except (ValueError):
-                sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                    ' repository ' + commit_api_url + '.')
-                return False
-            commit_date = commit_info[0]['commit']['committer']['date']
-            download_url = 'https://nodeload.github.com/' + \
-                repo_info['owner']['login'] + '/' + \
-                repo_info['name'] + '/zipball/' + urllib.quote(branch)
-        else:
-            commit_date = repo_info['pushed_at']
-            download_url = 'https://nodeload.github.com/' + \
-                repo_info['owner']['login'] + '/' + \
-                repo_info['name'] + '/zipball/master'
+        commit_api_url = api_url + '/commits?' + \
+            urllib.urlencode({'sha': branch, 'per_page': 1})
 
+        commit_json = package_manager.download_url(commit_api_url,
+            'Error downloading repository.')
+        if commit_json == False:
+            return False
+
+        try:
+            commit_info = json.loads(commit_json)
+        except (ValueError):
+            sublime.error_message(__name__ + ': Error parsing JSON from ' +
+                ' repository ' + commit_api_url + '.')
+            return False
+
+        download_url = 'https://nodeload.github.com/' + \
+            repo_info['owner']['login'] + '/' + \
+            repo_info['name'] + '/zipball/' + urllib.quote(branch)
+
+        commit_date = commit_info[0]['commit']['committer']['date']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
             '%Y-%m-%dT%H:%M:%S')
         utc_timestamp = timestamp.strftime(
@@ -267,6 +265,7 @@ class GitHubPackageProvider():
         homepage = repo_info['homepage']
         if not homepage:
             homepage = repo_info['html_url']
+
         package = {
             'name': repo_info['name'],
             'description': repo_info['description'],
@@ -288,13 +287,16 @@ class GitHubUserProvider():
         return re.search('^https?://github.com/[^/]+/?$', url) != None
 
     def get_packages(self, url, package_manager):
-        api_url = re.sub('^https?://github.com/',
-            'https://api.github.com/users/', url)
-        api_url = api_url.rstrip('/') + '/repos?per_page=100'
+        user_match = re.search('^https?://github.com/([^/]+)/?$', url)
+        user = user_match.group(1)
+
+        api_url = 'https://api.github.com/users/%s/repos?per_page=100' % user
+
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
+
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
@@ -304,7 +306,22 @@ class GitHubUserProvider():
 
         packages = {}
         for package_info in repo_info:
-            commit_date = package_info['pushed_at']
+            commit_api_url = ('https://api.github.com/repos/%s/%s/commits' + \
+                '?sha=master&per_page=1') % (user, package_info['name'])
+
+            commit_json = package_manager.download_url(commit_api_url,
+                'Error downloading repository.')
+            if commit_json == False:
+                return False
+
+            try:
+                commit_info = json.loads(commit_json)
+            except (ValueError):
+                sublime.error_message(__name__ + ': Error parsing JSON from ' +
+                    ' repository ' + commit_api_url + '.')
+                return False
+
+            commit_date = commit_info[0]['commit']['committer']['date']
             timestamp = datetime.datetime.strptime(commit_date[0:19],
                 '%Y-%m-%dT%H:%M:%S')
             utc_timestamp = timestamp.strftime(
@@ -313,6 +330,7 @@ class GitHubUserProvider():
             homepage = package_info['homepage']
             if not homepage:
                 homepage = package_info['html_url']
+
             package = {
                 'name': package_info['name'],
                 'description': package_info['description'],
