@@ -819,6 +819,11 @@ class PackageManager():
 
     def compare_versions(self, version1, version2):
         def normalize(v):
+            # We prepend 0 to all date-based version numbers so that developers
+            # may switch to explicit versioning from GitHub/BitBucket
+            # versioning based on commit dates
+            if re.match('\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{2}', v):
+                v = '0.' + v
             return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
         return cmp(normalize(version1), normalize(version2))
 
