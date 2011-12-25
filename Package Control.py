@@ -62,12 +62,12 @@ class ChannelProvider():
         return True
 
     def fetch_channel(self):
-        if self.channel_info != None:
+        if self.channel_info is not None:
             return
 
         channel_json = self.package_manager.download_url(self.channel,
             'Error downloading channel.')
-        if channel_json == False:
+        if not channel_json:
             self.channel_info = False
             return
 
@@ -82,23 +82,23 @@ class ChannelProvider():
 
     def get_name_map(self):
         self.fetch_channel()
-        if self.channel_info == False:
+        if not self.channel_info:
             return False
         return self.channel_info['package_name_map']
 
     def get_repositories(self):
         self.fetch_channel()
-        if self.channel_info == False:
+        if not self.channel_info:
             return False
         return self.channel_info['repositories']
 
     def get_packages(self, repo):
         self.fetch_channel()
-        if self.channel_info == False:
+        if not self.channel_info:
             return False
-        if self.channel_info.get('packages', False) == False:
+        if not self.channel_info.get('packages', False):
             return False
-        if self.channel_info['packages'].get(repo, False) == False:
+        if not self.channel_info['packages'].get(repo, False):
             return False
         output = {}
         for package in self.channel_info['packages'][repo]:
@@ -130,7 +130,7 @@ class PackageProvider():
     def get_packages(self, repo, package_manager):
         repository_json = package_manager.download_url(repo,
             'Error downloading repository.')
-        if repository_json == False:
+        if not repository_json:
             return False
         try:
             repo_info = json.loads(repository_json)
@@ -144,7 +144,7 @@ class PackageProvider():
         output = {}
         for package in repo_info['packages']:
             for id in identifiers:
-                if not id in package['platforms']:
+                if id not in package['platforms']:
                     continue
 
                 downloads = []
@@ -175,7 +175,7 @@ class GitHubPackageProvider():
         branch = 'master'
         branch_match = re.search(
             '^https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', repo)
-        if branch_match != None:
+        if branch_match is not None:
             branch = branch_match.group(1)
 
         api_url = re.sub('^https?://github.com/([^/]+)/([^/]+)($|/.*$)',
@@ -183,7 +183,7 @@ class GitHubPackageProvider():
 
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
-        if repo_json == False:
+        if not repo_json:
             return False
 
         try:
@@ -198,7 +198,7 @@ class GitHubPackageProvider():
 
         commit_json = package_manager.download_url(commit_api_url,
             'Error downloading repository.')
-        if commit_json == False:
+        if not commit_json:
             return False
 
         try:
@@ -250,7 +250,7 @@ class GitHubUserProvider():
 
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
-        if repo_json == False:
+        if not repo_json:
             return False
 
         try:
@@ -267,7 +267,7 @@ class GitHubUserProvider():
 
             commit_json = package_manager.download_url(commit_api_url,
                 'Error downloading repository.')
-            if commit_json == False:
+            if not commit_json:
                 return False
 
             try:
@@ -316,7 +316,7 @@ class BitBucketPackageProvider():
         api_url = api_url.rstrip('/')
         repo_json = package_manager.download_url(api_url,
             'Error downloading repository.')
-        if repo_json == False:
+        if not repo_json:
             return False
         try:
             repo_info = json.loads(repo_json)
@@ -328,7 +328,7 @@ class BitBucketPackageProvider():
         changeset_url = api_url + '/changesets/default'
         changeset_json = package_manager.download_url(changeset_url,
             'Error downloading repository.')
-        if changeset_json == False:
+        if not changeset_json:
             return False
         try:
             last_commit = json.loads(changeset_json)
@@ -585,7 +585,7 @@ class RepositoryDownloader(threading.Thread):
             if provider.match_url(self.repo):
                 break
         packages = provider.get_packages(self.repo, self.package_manager)
-        if packages == False:
+        if not packages:
             self.packages = False
             return
 
@@ -766,7 +766,7 @@ class PackageManager():
                 'hg_update_command', 'http_proxy', 'https_proxy',
                 'auto_upgrade_ignore', 'auto_upgrade_frequency',
                 'submit_usage', 'submit_url']:
-            if settings.get(setting) == None:
+            if not settings.get(setting):
                 continue
             self.settings[setting] = settings.get(setting)
         self.settings['platform'] = sublime.platform()
@@ -835,7 +835,7 @@ class PackageManager():
                     if provider.match_url(channel):
                         break
                 channel_repositories = provider.get_repositories()
-                if channel_repositories == False:
+                if not channel_repositories:
                     continue
                 _channel_repository_cache[cache_key] = {
                     'time': time.time() + self.settings.get('cache_length',
@@ -844,7 +844,7 @@ class PackageManager():
                 }
 
                 for repo in channel_repositories:
-                    if provider.get_packages(repo) == False:
+                    if not provider.get_packages(repo):
                         continue
                     packages_cache_key = repo + '.packages'
                     _channel_repository_cache[packages_cache_key] = {
@@ -878,7 +878,7 @@ class PackageManager():
                 repository_packages = packages_cache.get('data')
                 packages.update(repository_packages)
 
-            if repository_packages == None:
+            if not repository_packages:
                 downloader = RepositoryDownloader(self,
                     self.settings.get('package_name_map', {}), repo)
                 domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1',
@@ -912,7 +912,7 @@ class PackageManager():
 
         for downloader in complete:
             repository_packages = downloader.packages
-            if repository_packages == False:
+            if not repository_packages:
                 continue
             cache_key = downloader.repo + '.packages'
             _channel_repository_cache[cache_key] = {
@@ -1055,7 +1055,7 @@ class PackageManager():
             old_version = self.get_metadata(package_name).get('version')
 
         package_bytes = self.download_url(url, 'Error downloading package.')
-        if package_bytes == False:
+        if not package_bytes:
             return False
         with open(package_path, "wb") as package_file:
             package_file.write(package_bytes)
@@ -1125,13 +1125,13 @@ class PackageManager():
             dest = path
             if os.name == 'nt':
                 regex = ':|\*|\?|"|<|>|\|'
-                if re.search(regex, dest) != None:
+                if re.search(regex, dest) is not None:
                     print ('%s: Skipping file from package ' +
                         'named %s due to an invalid filename') % (__name__,
                         path)
                     continue
             regex = '[\x00-\x1F\x7F-\xFF]'
-            if re.search(regex, dest) != None:
+            if re.search(regex, dest) is not None:
                 dest = dest.decode('utf-8')
             # If there was only a single directory in the package, we remove
             # that folder name from the paths as we extract entries
