@@ -2099,5 +2099,6 @@ class PackageCleanup(threading.Thread):
                 lambda: AutomaticUpgrader(found_packages).start(), 10)
         sublime.set_timeout(save_packages, 10)
 
-
-PackageCleanup().start()
+# Start shortly after Sublime starts so package renames don't cause errors
+# with keybindings, settings, etc disappearing in the middle of parsing
+sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
