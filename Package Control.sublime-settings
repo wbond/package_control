@@ -62,7 +62,7 @@
 	// Files to ignore when creating a package
 	"files_to_ignore": [
 		".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
-		"*.tmTheme.cache"
+		"*.sublime-workspace", "*.tmTheme.cache"
 	],
 	// Files to ignore when creating a binary package. By default binary
 	// packages ship with .pyc files instead of .py files. If an __init__.py
@@ -70,7 +70,7 @@
 	// these patterns.
 	"files_to_ignore_binary": [
 		".hgignore", ".gitignore", ".bzrignore", "*.py", "*.sublime-project",
-		"*.tmTheme.cache"
+		"*.sublime-workspace", "*.tmTheme.cache"
 	],
 	// When a package is created, copy it to this folder - defaults to Desktop 
 	"package_destination": ""
