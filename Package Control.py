@@ -1990,9 +1990,6 @@ class PackageCleanup(threading.Thread):
                 print __name__ + ': Removed old directory for package %s' % \
                     package_name
 
-            if os.path.exists(package_dir):
-                found_packages.append(package_name)
-
             # This adds previously installed packages from old versions of PC
             if os.path.exists(metadata_path) and \
                     package_name not in self.installed_packages:
@@ -2005,22 +2002,37 @@ class PackageCleanup(threading.Thread):
                 }
                 self.manager.record_usage(params)
 
+            recorded_as_found = False
+
             # Rename directories for packages that have changed names
-            if package_name in self.renamed_packages:
+            if os.path.exists(metadata_path) and \
+                    package_name in self.renamed_packages:
                 new_package_name = self.renamed_packages[package_name]
                 new_package_dir = os.path.join(sublime.packages_path(),
                     new_package_name)
                 if not os.path.exists(new_package_dir):
                     os.rename(package_dir, new_package_dir)
+                    found_packages.append(new_package_name)
+                    self.installed_packages.append(new_package_name)
+                    try:
+                        self.installed_packages.remove(package_name)
+                    except (ValueError):
+                        pass
+                    recorded_as_found = True
+
+            if not recorded_as_found and os.path.exists(package_dir):
+                found_packages.append(package_name)
 
         def save_packages():
             installed_packages = list(set(self.installed_packages))
             self.installed_packages = sorted(installed_packages,
                 key=lambda s: s.lower())
+
             if self.installed_packages != self.original_installed_packages:
                 self.settings.set('installed_packages',
                     self.installed_packages)
                 sublime.save_settings(__name__ + '.sublime-settings')
+
             sublime.set_timeout(
                 lambda: AutomaticUpgrader(found_packages).start(), 10)
         sublime.set_timeout(save_packages, 10)
