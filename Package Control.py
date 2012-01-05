@@ -406,7 +406,6 @@ class CliDownloader():
         return output
 
 
-
 class UrlLib2Downloader():
     def __init__(self, settings):
         self.settings = settings
@@ -570,6 +569,7 @@ class CurlDownloader(CliDownloader):
         return False
 
 _channel_repository_cache = {}
+
 
 class RepositoryDownloader(threading.Thread):
     def __init__(self, package_manager, name_map, repo):
@@ -779,7 +779,7 @@ class PackageManager():
             # versioning based on commit dates
             if re.match('\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{2}', v):
                 v = '0.' + v
-            return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
+            return [int(x) for x in re.sub(r'(\.0+)*$', '', v).split(".")]
         return cmp(normalize(version1), normalize(version2))
 
     def download_url(self, url, error_message):
@@ -889,6 +889,7 @@ class PackageManager():
 
         def schedule(downloader, delay):
             downloader.has_started = False
+
             def inner():
                 downloader.start()
                 downloader.has_started = True
@@ -1105,7 +1106,7 @@ class PackageManager():
         last_path = None
         for path in package_zip.namelist():
             last_path = path
-            if path.find('/') in [len(path)-1, -1]:
+            if path.find('/') in [len(path) - 1, -1]:
                 root_level_paths.append(path)
             if path[0] == '/' or path.find('..') != -1:
                 sublime.error_message(__name__ + ': The package ' +
@@ -1114,7 +1115,7 @@ class PackageManager():
                 return False
 
         if last_path and len(root_level_paths) == 0:
-            root_level_paths.append(last_path[0:last_path.find('/')+1])
+            root_level_paths.append(last_path[0:last_path.find('/') + 1])
 
         os.chdir(package_dir)
 
@@ -1273,7 +1274,6 @@ class PackageManager():
 
             write(output)
         sublime.set_timeout(print_to_panel, 1)
-
 
     def remove_package(self, package_name):
         installed_packages = self.list_packages()
@@ -1571,6 +1571,7 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
     def run(self):
         self.package_list = self.make_package_list(['upgrade', 'downgrade',
             'reinstall', 'pull', 'none'])
+
         def show_quick_panel():
             if not self.package_list:
                 sublime.error_message(__name__ + ': There are no packages ' +
@@ -1603,6 +1604,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
     def run(self):
         self.package_list = self.make_package_list(['install', 'reinstall',
             'none'])
+
         def show_quick_panel():
             if not self.package_list:
                 sublime.error_message(__name__ + ': There are no packages ' +
@@ -1711,6 +1713,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         if picked == -1:
             return
         package_name = self.package_list[picked][0]
+
         def open_dir():
             self.window.run_command('open_dir',
                 {"dir": os.path.join(sublime.packages_path(), package_name)})
@@ -1761,6 +1764,7 @@ class RemovePackageThread(threading.Thread):
 
     def run(self):
         self.result = self.manager.remove_package(self.package)
+
         def unignore_package():
             settings = sublime.load_settings('Global.sublime-settings')
             settings.set('ignored_packages', self.ignored_packages)
