@@ -1939,16 +1939,25 @@ class PackageCleanup(threading.Thread):
     def __init__(self):
         self.manager = PackageManager()
         self.settings = sublime.load_settings(__name__ + '.sublime-settings')
+
         self.installed_packages = self.settings.get('installed_packages', [])
         if not self.installed_packages:
             self.installed_packages = []
         self.original_installed_packages = list(self.installed_packages)
+
+        self.renamed_packages = self.settings.get('renamed_packages', [])
+        if not self.renamed_packages:
+            self.renamed_packages = []
+
         threading.Thread.__init__(self)
 
     def run(self):
         found_packages = []
         for package_name in os.listdir(sublime.packages_path()):
             package_dir = os.path.join(sublime.packages_path(), package_name)
+            metadata_path = os.path.join(package_dir, 'package-metadata.json')
+
+            # Cleanup packages that could not be removed due to in-use files
             if os.path.exists(os.path.join(package_dir,
                     'package-control.cleanup')):
                 shutil.rmtree(package_dir)
@@ -1959,7 +1968,6 @@ class PackageCleanup(threading.Thread):
                 found_packages.append(package_name)
 
             # This adds previously installed packages from old versions of PC
-            metadata_path = os.path.join(package_dir, 'package-metadata.json')
             if os.path.exists(metadata_path) and \
                     package_name not in self.installed_packages:
                 self.installed_packages.append(package_name)
@@ -1970,6 +1978,14 @@ class PackageCleanup(threading.Thread):
                         self.manager.get_metadata(package_name).get('version')
                 }
                 self.manager.record_usage(params)
+
+            # Rename directories for packages that have changed names
+            if package_name in self.renamed_packages:
+                new_package_name = self.renamed_packages[package_name]
+                new_package_dir = os.path.join(sublime.packages_path(),
+                    new_package_name)
+                if not os.path.exists(new_package_dir):
+                    os.rename(package_dir, new_package_dir)
 
         def save_packages():
             installed_packages = list(set(self.installed_packages))
