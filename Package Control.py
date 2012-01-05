@@ -1081,26 +1081,6 @@ class PackageManager():
                 shutil.rmtree(package_backup_dir)
                 return False
 
-        # Here we clean out the directory to preven issues with old files
-        # however don't just recursively delete the whole package dir since
-        # that will fail on Windows if a user has explorer open to it
-        def slow_delete(function, path, excinfo):
-            if function == os.remove:
-                time.sleep(0.2)
-                os.remove(path)
-        try:
-            for path in os.listdir(package_dir):
-                full_path = os.path.join(package_dir, path)
-                if os.path.isdir(full_path):
-                    shutil.rmtree(full_path, onerror=slow_delete)
-                else:
-                    os.remove(full_path)
-        except (OSError, IOError) as (exception):
-            sublime.error_message(__name__ + ': An error occurred while' +
-                ' trying to remove the package directory for %s. %s' %
-                (package_name, str(exception)))
-            return False
-
         package_zip = zipfile.ZipFile(package_path, 'r')
         root_level_paths = []
         last_path = None
@@ -1122,8 +1102,15 @@ class PackageManager():
         # Here we don’t use .extractall() since it was having issues on OS X
         skip_root_dir = len(root_level_paths) == 1 and \
             root_level_paths[0].endswith('/')
+        extracted_paths = []
         for path in package_zip.namelist():
             dest = path
+            try:
+                if not isinstance(dest, unicode):
+                    dest = unicode(dest, 'utf-8', 'strict')
+            except (UnicodeDecodeError):
+                dest = unicode(dest, 'cp1252', 'replace')
+
             if os.name == 'nt':
                 regex = ':|\*|\?|"|<|>|\|'
                 if re.search(regex, dest) != None:
@@ -1131,21 +1118,36 @@ class PackageManager():
                         'named %s due to an invalid filename') % (__name__,
                         path)
                     continue
-            regex = '[\x00-\x1F\x7F-\xFF]'
-            if re.search(regex, dest) != None:
-                dest = dest.decode('utf-8')
+
             # If there was only a single directory in the package, we remove
             # that folder name from the paths as we extract entries
             if skip_root_dir:
                 dest = dest[len(root_level_paths[0]):]
+
+            if os.name == 'nt':
+                dest = dest.replace('/', '\\')
+            else:
+                dest = dest.replace('\\', '/')
+
             dest = os.path.join(package_dir, dest)
+
+            def add_extracted_dirs(dir):
+                while dir not in extracted_paths:
+                    extracted_paths.append(dir)
+                    dir = os.path.dirname(dir)
+                    if dir == package_dir:
+                        break
+
             if path.endswith('/'):
                 if not os.path.exists(dest):
                     os.makedirs(dest)
+                add_extracted_dirs(dest)
             else:
                 dest_dir = os.path.dirname(dest)
                 if not os.path.exists(dest_dir):
                     os.makedirs(dest_dir)
+                add_extracted_dirs(dest_dir)
+                extracted_paths.append(dest)
                 try:
                     open(dest, 'wb').write(package_zip.read(path))
                 except (IOError, UnicodeDecodeError):
@@ -1153,6 +1155,26 @@ class PackageManager():
                         'named %s due to an invalid filename') % (__name__,
                         path)
         package_zip.close()
+
+        # Here we clean out any files that were not just overwritten
+        try:
+            for root, dirs, files in os.walk(package_dir, topdown=False):
+                paths = [os.path.join(root, f) for f in files]
+                paths.extend([os.path.join(root, d) for d in dirs])
+
+                for path in paths:
+                    if path in extracted_paths:
+                        continue
+                    if os.path.isdir(path):
+                        os.rmdir(path)
+                    else:
+                        os.remove(path)
+
+        except (OSError, IOError) as (e):
+            sublime.error_message(('%s: An error occurred while trying to ' +
+                'remove old files from the %s directory. %s') %
+                (__name__, package_name, str(e)))
+            return False
 
         self.print_messages(package_name, package_dir, is_upgrade, old_version)
 
