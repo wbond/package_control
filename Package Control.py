@@ -84,7 +84,13 @@ class ChannelProvider():
         self.fetch_channel()
         if self.channel_info == False:
             return False
-        return self.channel_info['package_name_map']
+        return self.channel_info.get('package_name_map', {})
+
+    def get_renamed_packages(self):
+        self.fetch_channel()
+        if self.channel_info == False:
+            return False
+        return self.channel_info.get('renamed_packages', {})
 
     def get_repositories(self):
         self.fetch_channel()
@@ -765,7 +771,7 @@ class PackageManager():
                 'git_binary', 'git_update_command', 'hg_binary',
                 'hg_update_command', 'http_proxy', 'https_proxy',
                 'auto_upgrade_ignore', 'auto_upgrade_frequency',
-                'submit_usage', 'submit_url']:
+                'submit_usage', 'submit_url', 'renamed_packages']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -829,12 +835,35 @@ class PackageManager():
                     time.time():
                 channel_repositories = repositories_cache.get('data')
 
-            if not channel_repositories:
+            name_map_cache_key = channel + '.package_name_map'
+            name_map_cache = _channel_repository_cache.get(
+                name_map_cache_key)
+            if name_map_cache and name_map_cache.get('time') > \
+                    time.time():
+                name_map = name_map_cache.get('data')
+                name_map.update(self.settings.get('package_name_map', {}))
+                self.settings['package_name_map'] = name_map
+
+            renamed_cache_key = channel + '.renamed_packages'
+            renamed_cache = _channel_repository_cache.get(
+                renamed_cache_key)
+            if renamed_cache and renamed_cache.get('time') > \
+                    time.time():
+                renamed_packages = renamed_cache.get('data')
+                renamed_packages.update(self.settings.get('renamed_packages',
+                    {}))
+                self.settings['renamed_packages'] = renamed_packages
+
+            if channel_repositories == None or \
+                    self.settings.get('package_name_map') == None or \
+                    self.settings.get('renamed_packages') == None:
                 for provider_class in _channel_providers:
                     provider = provider_class(channel, self)
                     if provider.match_url(channel):
                         break
+
                 channel_repositories = provider.get_repositories()
+
                 if channel_repositories == False:
                     continue
                 _channel_repository_cache[cache_key] = {
@@ -852,10 +881,26 @@ class PackageManager():
                             300),
                         'data': provider.get_packages(repo)
                     }
+
                 # Have the local name map override the one from the channel
                 name_map = provider.get_name_map()
-                name_map.update(self.settings['package_name_map'])
+                name_map.update(self.settings.get('package_name_map', {}))
                 self.settings['package_name_map'] = name_map
+                _channel_repository_cache[name_map_cache_key] = {
+                    'time': time.time() + self.settings.get('cache_length',
+                        300),
+                    'data': name_map
+                }
+
+                renamed_packages = provider.get_renamed_packages()
+                renamed_packages.update(self.settings.get('renamed_packages',
+                    {}))
+                self.settings['renamed_packages'] = renamed_packages
+                _channel_repository_cache[renamed_cache_key] = {
+                    'time': time.time() + self.settings.get('cache_length',
+                        300),
+                    'data': renamed_packages
+                }
 
             repositories.extend(channel_repositories)
         return repositories
@@ -1898,8 +1943,9 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
 class AutomaticUpgrader(threading.Thread):
     def __init__(self, found_packages):
         self.installer = PackageInstaller()
+        self.settings_file = '%s.sublime-settings' % __name__
 
-        settings = sublime.load_settings(__name__ + '.sublime-settings')
+        settings = sublime.load_settings(self.settings_file)
         self.installed_packages = settings.get('installed_packages', [])
 
         self.auto_upgrade = settings.get('auto_upgrade')
@@ -1920,7 +1966,7 @@ class AutomaticUpgrader(threading.Thread):
 
         if self.auto_upgrade and self.next_run <= time.time():
             settings.set('auto_upgrade_last_run', int(time.time()))
-            sublime.save_settings(__name__ + '.sublime-settings')
+            sublime.save_settings(self.settings_file)
 
         threading.Thread.__init__(self)
 
@@ -1947,6 +1993,19 @@ class AutomaticUpgrader(threading.Thread):
                 'reinstall', 'downgrade', 'overwrite', 'none'],
                 ignore_packages=self.auto_upgrade_ignore)
 
+            # If Package Control is being upgraded, just do that and restart
+            for package in packages:
+                if package[0] != __name__:
+                    continue
+
+                def reset_last_run():
+                    settings = sublime.load_settings(self.settings_file)
+                    settings.set('auto_upgrade_last_run', None)
+                    sublime.save_settings(self.settings_file)
+                sublime.set_timeout(reset_last_run, 1)
+                packages = [package]
+                break
+
             if not packages:
                 print __name__ + ': No updated packages'
                 return
@@ -1971,9 +2030,12 @@ class PackageCleanup(threading.Thread):
             self.installed_packages = []
         self.original_installed_packages = list(self.installed_packages)
 
-        self.renamed_packages = self.settings.get('renamed_packages', [])
+        # Fetch the repo info that includes the renamed packages list
+        self.manager.list_repositories()
+        self.renamed_packages = self.manager.settings.get('renamed_packages',
+            {})
         if not self.renamed_packages:
-            self.renamed_packages = []
+            self.renamed_packages = {}
 
         threading.Thread.__init__(self)
 
