@@ -1940,20 +1940,37 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
             'required')
 
 
-class AutomaticUpgrader(threading.Thread):
+class PackageStartup():
+    def load_settings(self):
+        self.settings_file = '%s.sublime-settings' % __name__
+        self.settings = sublime.load_settings(self.settings_file)
+        self.installed_packages = self.settings.get('installed_packages', [])
+        if not isinstance(self.installed_packages, list):
+            self.installed_packages = []
+
+    def save_packages(self, installed_packages):
+        installed_packages = list(set(installed_packages))
+        installed_packages = sorted(installed_packages,
+            key=lambda s: s.lower())
+
+        if installed_packages != self.installed_packages:
+            self.settings.set('installed_packages', installed_packages)
+            sublime.save_settings(self.settings_file)
+
+
+class AutomaticUpgrader(threading.Thread, PackageStartup):
     def __init__(self, found_packages):
         self.installer = PackageInstaller()
-        self.settings_file = '%s.sublime-settings' % __name__
+        self.manager = self.installer.manager
+        self.load_settings()
 
-        settings = sublime.load_settings(self.settings_file)
-        self.installed_packages = settings.get('installed_packages', [])
-
-        self.auto_upgrade = settings.get('auto_upgrade')
-        self.auto_upgrade_ignore = settings.get('auto_upgrade_ignore')
+        self.auto_upgrade = self.settings.get('auto_upgrade')
+        self.auto_upgrade_ignore = self.settings.get('auto_upgrade_ignore')
 
         self.next_run = int(time.time())
-        self.last_run = settings.get('auto_upgrade_last_run')
-        frequency = settings.get('auto_upgrade_frequency')
+        self.last_run = self.settings.get('auto_upgrade_last_run')
+
+        frequency = self.settings.get('auto_upgrade_frequency')
         if frequency:
             if self.last_run:
                 self.next_run = int(self.last_run) + (frequency * 60 * 60)
@@ -1965,82 +1982,119 @@ class AutomaticUpgrader(threading.Thread):
             set(found_packages))
 
         if self.auto_upgrade and self.next_run <= time.time():
-            settings.set('auto_upgrade_last_run', int(time.time()))
+            self.settings.set('auto_upgrade_last_run', int(time.time()))
             sublime.save_settings(self.settings_file)
 
         threading.Thread.__init__(self)
 
     def run(self):
-        if self.missing_packages:
-            print '%s: Installing %s missing packages' % \
-                (__name__, len(self.missing_packages))
-            for package in self.missing_packages:
-                self.installer.manager.install_package(package)
-                print '%s: Installed missing package %s' % \
-                    (__name__, package)
+        self.install_missing()
 
         if self.next_run > time.time():
-            last_run = datetime.datetime.fromtimestamp(self.last_run)
-            next_run = datetime.datetime.fromtimestamp(self.next_run)
-            date_format = '%Y-%m-%d %H:%M:%S'
-            print (__name__ + ': Skipping automatic upgrade, last run at ' +
-                '%s, next run at %s or after') % (last_run.strftime(
-                    date_format), next_run.strftime(date_format))
+            self.print_skip()
             return
 
-        if self.auto_upgrade:
-            packages = self.installer.make_package_list(['install',
-                'reinstall', 'downgrade', 'overwrite', 'none'],
-                ignore_packages=self.auto_upgrade_ignore)
+        self.rename_packages()
+        self.upgrade_packages()
 
-            # If Package Control is being upgraded, just do that and restart
-            for package in packages:
-                if package[0] != __name__:
-                    continue
+    def install_missing(self):
+        if not self.missing_packages:
+            return
 
-                def reset_last_run():
-                    settings = sublime.load_settings(self.settings_file)
-                    settings.set('auto_upgrade_last_run', None)
-                    sublime.save_settings(self.settings_file)
-                sublime.set_timeout(reset_last_run, 1)
-                packages = [package]
-                break
+        print '%s: Installing %s missing packages' % \
+            (__name__, len(self.missing_packages))
+        for package in self.missing_packages:
+            self.installer.manager.install_package(package)
+            print '%s: Installed missing package %s' % \
+                (__name__, package)
 
-            if not packages:
-                print __name__ + ': No updated packages'
-                return
+    def print_skip(self):
+        last_run = datetime.datetime.fromtimestamp(self.last_run)
+        next_run = datetime.datetime.fromtimestamp(self.next_run)
+        date_format = '%Y-%m-%d %H:%M:%S'
+        print ('%s: Skipping automatic upgrade, last run at ' +
+            '%s, next run at %s or after') % (__name__,
+            last_run.strftime(date_format), next_run.strftime(date_format))
 
-            print __name__ + ': Installing %s upgrades' % len(packages)
-            for package in packages:
-                self.installer.manager.install_package(package[0])
-                version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2])
-                if version == package[2] and version.find('pull with') != -1:
-                    vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
-                    version = 'latest %s commit' % vcs
-                print __name__ + ': Upgraded %s to %s' % (package[0], version)
+    def rename_packages(self):
+        # Fetch the packages since that will pull in the renamed packages list
+        self.manager.list_available_packages()
+        renamed_packages = self.manager.settings.get('renamed_packages', {})
+        if not renamed_packages:
+            renamed_packages = {}
+
+        installed_pkgs = self.installed_packages
+
+        # Rename directories for packages that have changed names
+        for package_name in renamed_packages:
+            package_dir = os.path.join(sublime.packages_path(), package_name)
+            metadata_path = os.path.join(package_dir, 'package-metadata.json')
+            if not os.path.exists(metadata_path):
+                continue
+            new_package_name = renamed_packages[package_name]
+            new_package_dir = os.path.join(sublime.packages_path(),
+                new_package_name)
+            if not os.path.exists(new_package_dir):
+                os.rename(package_dir, new_package_dir)
+                installed_pkgs.append(new_package_name)
+                print '%s: Renamed %s to %s' % (__name__, package_name,
+                    new_package_name)
+            else:
+                self.installer.manager.remove_package(package_name)
+                print ('%s: Removed %s since package with new name (%s) ' +
+                    'already exists') % (__name__, package_name,
+                    new_package_name)
+            try:
+                installed_pkgs.remove(package_name)
+            except (ValueError):
+                pass
+
+        sublime.set_timeout(lambda: self.save_packages(installed_pkgs), 10)
+
+    def upgrade_packages(self):
+        if not self.auto_upgrade:
+            return
+
+        packages = self.installer.make_package_list(['install',
+            'reinstall', 'downgrade', 'overwrite', 'none'],
+            ignore_packages=self.auto_upgrade_ignore)
+
+        # If Package Control is being upgraded, just do that and restart
+        for package in packages:
+            if package[0] != __name__:
+                continue
+
+            def reset_last_run():
+                settings = sublime.load_settings(self.settings_file)
+                settings.set('auto_upgrade_last_run', None)
+                sublime.save_settings(self.settings_file)
+            sublime.set_timeout(reset_last_run, 1)
+            packages = [package]
+            break
+
+        if not packages:
+            print '%s: No updated packages' % __name__
+            return
+
+        print '%s: Installing %s upgrades' % (__name__, len(packages))
+        for package in packages:
+            self.installer.manager.install_package(package[0])
+            version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2])
+            if version == package[2] and version.find('pull with') != -1:
+                vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
+                version = 'latest %s commit' % vcs
+            print '%s: Upgraded %s to %s' % (__name__, package[0], version)
 
 
-class PackageCleanup(threading.Thread):
+class PackageCleanup(threading.Thread, PackageStartup):
     def __init__(self):
         self.manager = PackageManager()
-        self.settings = sublime.load_settings(__name__ + '.sublime-settings')
-
-        self.installed_packages = self.settings.get('installed_packages', [])
-        if not self.installed_packages:
-            self.installed_packages = []
-        self.original_installed_packages = list(self.installed_packages)
-
-        # Fetch the repo info that includes the renamed packages list
-        self.manager.list_repositories()
-        self.renamed_packages = self.manager.settings.get('renamed_packages',
-            {})
-        if not self.renamed_packages:
-            self.renamed_packages = {}
-
+        self.load_settings()
         threading.Thread.__init__(self)
 
     def run(self):
-        found_packages = []
+        found_pkgs = []
+        installed_pkgs = self.installed_packages
         for package_name in os.listdir(sublime.packages_path()):
             package_dir = os.path.join(sublime.packages_path(), package_name)
             metadata_path = os.path.join(package_dir, 'package-metadata.json')
@@ -2049,13 +2103,13 @@ class PackageCleanup(threading.Thread):
             if os.path.exists(os.path.join(package_dir,
                     'package-control.cleanup')):
                 shutil.rmtree(package_dir)
-                print __name__ + ': Removed old directory for package %s' % \
-                    package_name
+                print '%s: Removed old directory for package %s' % \
+                    (__name__, package_name)
 
             # This adds previously installed packages from old versions of PC
             if os.path.exists(metadata_path) and \
                     package_name not in self.installed_packages:
-                self.installed_packages.append(package_name)
+                installed_pkgs.append(package_name)
                 params = {
                     'package': package_name,
                     'operation': 'install',
@@ -2064,40 +2118,14 @@ class PackageCleanup(threading.Thread):
                 }
                 self.manager.record_usage(params)
 
-            recorded_as_found = False
+            found_pkgs.append(package_name)
 
-            # Rename directories for packages that have changed names
-            if os.path.exists(metadata_path) and \
-                    package_name in self.renamed_packages:
-                new_package_name = self.renamed_packages[package_name]
-                new_package_dir = os.path.join(sublime.packages_path(),
-                    new_package_name)
-                if not os.path.exists(new_package_dir):
-                    os.rename(package_dir, new_package_dir)
-                    found_packages.append(new_package_name)
-                    self.installed_packages.append(new_package_name)
-                    try:
-                        self.installed_packages.remove(package_name)
-                    except (ValueError):
-                        pass
-                    recorded_as_found = True
+        sublime.set_timeout(lambda: self.finish(installed_pkgs, found_pkgs), 10)
 
-            if not recorded_as_found and os.path.exists(package_dir):
-                found_packages.append(package_name)
+    def finish(self, installed_pkgs, found_pkgs):
+        self.save_packages(installed_pkgs)
+        AutomaticUpgrader(found_pkgs).start()
 
-        def save_packages():
-            installed_packages = list(set(self.installed_packages))
-            self.installed_packages = sorted(installed_packages,
-                key=lambda s: s.lower())
-
-            if self.installed_packages != self.original_installed_packages:
-                self.settings.set('installed_packages',
-                    self.installed_packages)
-                sublime.save_settings(__name__ + '.sublime-settings')
-
-            sublime.set_timeout(
-                lambda: AutomaticUpgrader(found_packages).start(), 10)
-        sublime.set_timeout(save_packages, 10)
 
 # Start shortly after Sublime starts so package renames don't cause errors
 # with keybindings, settings, etc disappearing in the middle of parsing
