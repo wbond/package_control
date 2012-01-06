@@ -58,7 +58,7 @@ class ChannelProvider():
         self.channel = channel
         self.package_manager = package_manager
 
-    def match_url(self, url):
+    def match_url(self):
         return True
 
     def fetch_channel(self):
@@ -130,25 +130,40 @@ _channel_providers = [ChannelProvider]
 
 
 class PackageProvider():
-    def match_url(self, url):
+    def __init__(self, repo, package_manager):
+        self.repo_info = None
+        self.repo = repo
+        self.package_manager = package_manager
+
+    def match_url(self):
         return True
 
-    def get_packages(self, repo, package_manager):
-        repository_json = package_manager.download_url(repo,
+    def fetch_repo(self):
+        if self.repo_info != None:
+            return
+
+        repository_json = self.package_manager.download_url(self.repo,
             'Error downloading repository.')
         if repository_json == False:
-            return False
+            self.repo_info = False
+            return
+
         try:
-            repo_info = json.loads(repository_json)
+            self.repo_info = json.loads(repository_json)
         except (ValueError):
             sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + repo + '.')
+                ' repository ' + self.repo + '.')
+            self.repo_info = False
+
+    def get_packages(self):
+        self.fetch_repo()
+        if self.repo_info == False:
             return False
 
         identifiers = [sublime.platform() + '-' + sublime.arch(),
             sublime.platform(), '*']
         output = {}
-        for package in repo_info['packages']:
+        for package in self.repo_info['packages']:
             for id in identifiers:
                 if not id in package['platforms']:
                     continue
@@ -160,7 +175,7 @@ class PackageProvider():
                 info = {
                     'name': package['name'],
                     'description': package.get('description'),
-                    'url': package.get('homepage', repo),
+                    'url': package.get('homepage', self.repo),
                     'author': package.get('author'),
                     'last_modified': package.get('last_modified'),
                     'downloads': downloads
@@ -170,24 +185,33 @@ class PackageProvider():
                 break
         return output
 
+    def get_renamed_packages(self):
+        return self.repo_info.get('renamed_packages', {})
+
 
 class GitHubPackageProvider():
-    def match_url(self, url):
-        return re.search('^https?://github.com/[^/]+/[^/]+/?$', url) != None \
-            or re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
-            url) != None
+    def __init__(self, repo, package_manager):
+        self.repo_info = None
+        self.repo = repo
+        self.package_manager = package_manager
 
-    def get_packages(self, repo, package_manager):
+    def match_url(self):
+        master = re.search('^https?://github.com/[^/]+/[^/]+/?$', self.repo)
+        branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
+            self.repo)
+        return master != None or branch != None
+
+    def get_packages(self):
         branch = 'master'
         branch_match = re.search(
-            '^https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', repo)
+            '^https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', self.repo)
         if branch_match != None:
             branch = branch_match.group(1)
 
         api_url = re.sub('^https?://github.com/([^/]+)/([^/]+)($|/.*$)',
-            'https://api.github.com/repos/\\1/\\2', repo)
+            'https://api.github.com/repos/\\1/\\2', self.repo)
 
-        repo_json = package_manager.download_url(api_url,
+        repo_json = self.package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -202,7 +226,7 @@ class GitHubPackageProvider():
         commit_api_url = api_url + '/commits?' + \
             urllib.urlencode({'sha': branch, 'per_page': 1})
 
-        commit_json = package_manager.download_url(commit_api_url,
+        commit_json = self.package_manager.download_url(commit_api_url,
             'Error downloading repository.')
         if commit_json == False:
             return False
@@ -243,18 +267,26 @@ class GitHubPackageProvider():
         }
         return {package['name']: package}
 
+    def get_renamed_packages(self):
+        return {}
+
 
 class GitHubUserProvider():
-    def match_url(self, url):
-        return re.search('^https?://github.com/[^/]+/?$', url) != None
+    def __init__(self, repo, package_manager):
+        self.repo_info = None
+        self.repo = repo
+        self.package_manager = package_manager
 
-    def get_packages(self, url, package_manager):
-        user_match = re.search('^https?://github.com/([^/]+)/?$', url)
+    def match_url(self):
+        return re.search('^https?://github.com/[^/]+/?$', self.repo) != None
+
+    def get_packages(self):
+        user_match = re.search('^https?://github.com/([^/]+)/?$', self.repo)
         user = user_match.group(1)
 
         api_url = 'https://api.github.com/users/%s/repos?per_page=100' % user
 
-        repo_json = package_manager.download_url(api_url,
+        repo_json = self.package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -271,7 +303,7 @@ class GitHubUserProvider():
             commit_api_url = ('https://api.github.com/repos/%s/%s/commits' + \
                 '?sha=master&per_page=1') % (user, package_info['name'])
 
-            commit_json = package_manager.download_url(commit_api_url,
+            commit_json = self.package_manager.download_url(commit_api_url,
                 'Error downloading repository.')
             if commit_json == False:
                 return False
@@ -311,16 +343,24 @@ class GitHubUserProvider():
             packages[package['name']] = package
         return packages
 
+    def get_renamed_packages(self):
+        return {}
+
 
 class BitBucketPackageProvider():
-    def match_url(self, url):
-        return re.search('^https?://bitbucket.org', url) != None
+    def __init__(self, repo, package_manager):
+        self.repo_info = None
+        self.repo = repo
+        self.package_manager = package_manager
 
-    def get_packages(self, repo, package_manager):
+    def match_url(self):
+        return re.search('^https?://bitbucket.org', self.repo) != None
+
+    def get_packages(self):
         api_url = re.sub('^https?://bitbucket.org/',
-            'https://api.bitbucket.org/1.0/repositories/', repo)
+            'https://api.bitbucket.org/1.0/repositories/', self.repo)
         api_url = api_url.rstrip('/')
-        repo_json = package_manager.download_url(api_url,
+        repo_json = self.package_manager.download_url(api_url,
             'Error downloading repository.')
         if repo_json == False:
             return False
@@ -332,7 +372,7 @@ class BitBucketPackageProvider():
             return False
 
         changeset_url = api_url + '/changesets/default'
-        changeset_json = package_manager.download_url(changeset_url,
+        changeset_json = self.package_manager.download_url(changeset_url,
             'Error downloading repository.')
         if changeset_json == False:
             return False
@@ -350,7 +390,7 @@ class BitBucketPackageProvider():
 
         homepage = repo_info['website']
         if not homepage:
-            homepage = repo
+            homepage = self.repo
         package = {
             'name': repo_info['slug'],
             'description': repo_info['description'],
@@ -360,12 +400,15 @@ class BitBucketPackageProvider():
             'downloads': [
                 {
                     'version': utc_timestamp,
-                    'url': repo + '/get/' + \
+                    'url': self.repo + '/get/' + \
                         last_commit['node'] + '.zip'
                 }
             ]
         }
         return {package['name']: package}
+
+    def get_renamed_packages(self):
+        return {}
 
 
 _package_providers = [BitBucketPackageProvider, GitHubPackageProvider,
@@ -587,10 +630,10 @@ class RepositoryDownloader(threading.Thread):
 
     def run(self):
         for provider_class in _package_providers:
-            provider = provider_class()
-            if provider.match_url(self.repo):
+            provider = provider_class(self.repo, self.package_manager)
+            if provider.match_url():
                 break
-        packages = provider.get_packages(self.repo, self.package_manager)
+        packages = provider.get_packages()
         if packages == False:
             self.packages = False
             return
@@ -603,6 +646,8 @@ class RepositoryDownloader(threading.Thread):
         packages = mapped_packages
 
         self.packages = packages
+
+        self.renamed_packages = provider.get_renamed_packages()
 
 
 class VcsUpgrader():
@@ -859,7 +904,7 @@ class PackageManager():
                     self.settings.get('renamed_packages') == None:
                 for provider_class in _channel_providers:
                     provider = provider_class(channel, self)
-                    if provider.match_url(channel):
+                    if provider.match_url():
                         break
 
                 channel_repositories = provider.get_repositories()
@@ -893,14 +938,15 @@ class PackageManager():
                 }
 
                 renamed_packages = provider.get_renamed_packages()
-                renamed_packages.update(self.settings.get('renamed_packages',
-                    {}))
-                self.settings['renamed_packages'] = renamed_packages
                 _channel_repository_cache[renamed_cache_key] = {
                     'time': time.time() + self.settings.get('cache_length',
                         300),
                     'data': renamed_packages
                 }
+                if renamed_packages:
+                    self.settings['renamed_packages'] = self.settings.get(
+                        'renamed_packages', {})
+                    self.settings['renamed_packages'].update(renamed_packages)
 
             repositories.extend(channel_repositories)
         return repositories
@@ -966,6 +1012,19 @@ class PackageManager():
                 'data': repository_packages
             }
             packages.update(repository_packages)
+
+            renamed_packages = downloader.renamed_packages
+            if renamed_packages == False:
+                continue
+            renamed_cache_key = downloader.repo + '.renamed_packages'
+            _channel_repository_cache[renamed_cache_key] = {
+                'time': time.time() + self.settings.get('cache_length', 300),
+                'data': renamed_packages
+            }
+            if renamed_packages:
+                self.settings['renamed_packages'] = self.settings.get(
+                    'renamed_packages', {})
+                self.settings['renamed_packages'].update(renamed_packages)
 
         return packages
 

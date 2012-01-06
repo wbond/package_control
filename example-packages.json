@@ -1,5 +1,5 @@
 {
-	"schema_version": "1.1",
+	"schema_version": "1.2",
 	"packages": [
 		{
 			"name": "GitHub Example",
@@ -46,5 +46,9 @@
 				]
 			}
 		}
-	]
+	],
+	"renamed_packages": {
+		"sublime-old-package": "NewPackage",
+		"OldPackage": "NewName"
+	}
 }
