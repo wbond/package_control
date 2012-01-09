@@ -432,9 +432,7 @@ class CliDownloader():
         self.settings = settings
 
     def find_binary(self, name):
-        dirs = ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin',
-            '/sbin', '/bin']
-        for dir in dirs:
+        for dir in os.environ['PATH'].split(os.pathsep):
             path = os.path.join(dir, name)
             if os.path.exists(path):
                 return path
