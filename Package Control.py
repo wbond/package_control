@@ -1194,10 +1194,10 @@ class PackageManager():
             last_path = path
             if path.find('/') in [len(path) - 1, -1]:
                 root_level_paths.append(path)
-            if path[0] == '/' or path.find('..') != -1:
-                sublime.error_message(__name__ + ': The package ' +
+            if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
+                sublime.error_message((__name__ + ': The package ' +
                     'specified, %s, contains files outside of the package ' +
-                    'dir and cannot be safely installed.' % (package_name,))
+                    'dir and cannot be safely installed.') % (package_name,))
                 return False
 
         if last_path and len(root_level_paths) == 0:
