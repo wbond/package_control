@@ -8,7 +8,7 @@ import zipfile
 import urllib
 import urllib2
 import json
-import fnmatch
+from fnmatch import fnmatch
 import re
 import threading
 import datetime
@@ -816,7 +816,8 @@ class PackageManager():
                 'git_binary', 'git_update_command', 'hg_binary',
                 'hg_update_command', 'http_proxy', 'https_proxy',
                 'auto_upgrade_ignore', 'auto_upgrade_frequency',
-                'submit_usage', 'submit_url', 'renamed_packages']:
+                'submit_usage', 'submit_url', 'renamed_packages',
+                'files_to_include', 'files_to_include_binary']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -1096,8 +1097,10 @@ class PackageManager():
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
         if not binary_package:
             files_to_ignore = self.settings.get('files_to_ignore', [])
+            files_to_include = self.settings.get('files_to_include', [])
         else:
             files_to_ignore = self.settings.get('files_to_ignore_binary', [])
+            files_to_include = self.settings.get('files_to_include_binary', [])
 
         package_dir_regex = re.compile('^' + re.escape(package_dir))
         for root, dirs, files in os.walk(package_dir):
@@ -1105,19 +1108,18 @@ class PackageManager():
             paths = dirs
             paths.extend(files)
             for path in paths:
-                if any(fnmatch.fnmatch(path, pattern) for pattern in
-                        files_to_ignore):
-                    continue
                 full_path = os.path.join(root, path)
                 relative_path = re.sub(package_dir_regex, '', full_path)
+
+                ignore_matches = [fnmatch(relative_path, p) for p in files_to_ignore]
+                include_matches = [fnmatch(relative_path, p) for p in files_to_include]
+                if any(ignore_matches) and not any(include_matches):
+                    continue
+
                 if os.path.isdir(full_path):
                     continue
                 package_file.write(full_path, relative_path)
 
-        init_script = os.path.join(package_dir, '__init__.py')
-        if binary_package and os.path.exists(init_script):
-            package_file.write(init_script, re.sub(package_dir_regex, '',
-                init_script))
         package_file.close()
 
         return True

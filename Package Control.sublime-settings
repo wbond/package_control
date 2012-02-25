@@ -52,6 +52,7 @@
 	"git_update_command": ["pull", "origin", "master"],
 	
 	"hg_binary": "",
+	
 	// Be sure to keep the remote name as the last argument
 	"hg_update_command": ["pull", "--update", "default"],
 
@@ -59,11 +60,16 @@
 	"dirs_to_ignore": [
 		".hg", ".git", ".svn", "_darcs", "CVS"
 	],
+
 	// Files to ignore when creating a package
 	"files_to_ignore": [
 		".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
 		"*.sublime-workspace", "*.tmTheme.cache"
 	],
+
+	// Files to include, even if they match a pattern in files_to_ignore
+	"files_to_include": [],
+
 	// Files to ignore when creating a binary package. By default binary
 	// packages ship with .pyc files instead of .py files. If an __init__.py
 	// file exists, it will always be included, even if it matches one of
@@ -72,6 +78,13 @@
 		".hgignore", ".gitignore", ".bzrignore", "*.py", "*.sublime-project",
 		"*.sublime-workspace", "*.tmTheme.cache"
 	],
+
+	// Files to include for a binary package, even if they match a pattern i
+	// files_to_ignore_binary
+	"files_to_include_binary": [
+		"__init__.py"
+	],
+
 	// When a package is created, copy it to this folder - defaults to Desktop 
 	"package_destination": ""
 }
