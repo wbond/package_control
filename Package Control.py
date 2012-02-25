@@ -835,7 +835,7 @@ class PackageManager():
         return cmp(normalize(version1), normalize(version2))
 
     def download_url(self, url, error_message):
-        has_ssl = 'ssl' in sys.modules
+        has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
         is_ssl = re.search('^https://', url) != None
 
         if (is_ssl and has_ssl) or not is_ssl:
