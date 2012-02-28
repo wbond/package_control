@@ -479,7 +479,7 @@ class BitBucketPackageProvider():
         if not homepage:
             homepage = self.repo
         package = {
-            'name': repo_info['slug'],
+            'name': repo_info['name'],
             'description': repo_info['description'] if \
                 repo_info['description'] else 'No description provided',
             'url': homepage,
