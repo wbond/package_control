@@ -1671,7 +1671,11 @@ class PackageManager():
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
         url = self.settings.get('submit_url') + '?' + urllib.urlencode(params)
+
         result = self.download_url(url, 'Error submitting usage information.')
+        if result == False:
+            return
+
         try:
             result = json.loads(result)
             if result['result'] != 'success':
