@@ -1965,7 +1965,7 @@ class ExistingPackagesCommand():
 
             description = metadata.get('description')
             if not description:
-                'No description provided'
+                description = 'No description provided'
             package_entry.append(description)
 
             version = metadata.get('version')
