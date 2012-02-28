@@ -339,7 +339,8 @@ class GitHubPackageProvider():
 
         package = {
             'name': repo_info['name'],
-            'description': repo_info['description'],
+            'description': repo_info['description'] if \
+                repo_info['description'] else 'No description provided',
             'url': homepage,
             'author': repo_info['owner']['login'],
             'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -412,7 +413,8 @@ class GitHubUserProvider():
 
             package = {
                 'name': package_info['name'],
-                'description': package_info['description'],
+                'description': repo_info['description'] if \
+                    repo_info['description'] else 'No description provided',
                 'url': homepage,
                 'author': package_info['owner']['login'],
                 'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -478,7 +480,8 @@ class BitBucketPackageProvider():
             homepage = self.repo
         package = {
             'name': repo_info['slug'],
-            'description': repo_info['description'],
+            'description': repo_info['description'] if \
+                repo_info['description'] else 'No description provided',
             'url': homepage,
             'author': repo_info['owner'],
             'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -1820,8 +1823,10 @@ class PackageInstaller():
                 if action in ignore_actions:
                     continue
 
-            package_entry.append(info.get('description', 'No description ' +
-                'provided'))
+            description = info.get('description')
+            if not description:
+                description = 'No description provided'
+            package_entry.append(description)
             package_entry.append(action + extra + ' ' +
                 re.sub('^https?://', '', info['url']))
             package_list.append(package_entry)
@@ -1954,8 +1959,10 @@ class ExistingPackagesCommand():
             metadata = self.manager.get_metadata(package)
             package_dir = os.path.join(sublime.packages_path(), package)
 
-            package_entry.append(metadata.get('description',
-                'No description provided'))
+            description = metadata.get('description')
+            if not description:
+                'No description provided'
+            package_entry.append(description)
 
             version = metadata.get('version')
             if not version and os.path.exists(os.path.join(package_dir,
