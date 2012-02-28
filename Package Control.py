@@ -153,8 +153,8 @@ class ChannelProvider():
         try:
             channel_info = json.loads(channel_json)
         except (ValueError):
-            sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' channel ' + self.channel + '.')
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'channel %s.') % (__name__, self.channel))
             channel_info = False
 
         self.channel_info = channel_info
@@ -236,8 +236,8 @@ class PackageProvider():
         try:
             self.repo_info = json.loads(repository_json)
         except (ValueError):
-            sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + self.repo + '.')
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, self.repo))
             self.repo_info = False
 
     def get_packages(self):
@@ -304,8 +304,8 @@ class GitHubPackageProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + api_url + '.')
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, api_url))
             return False
 
         commit_api_url = api_url + '/commits?' + \
@@ -319,8 +319,8 @@ class GitHubPackageProvider():
         try:
             commit_info = json.loads(commit_json)
         except (ValueError):
-            sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + commit_api_url + '.')
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, commit_api_url))
             return False
 
         download_url = 'https://nodeload.github.com/' + \
@@ -379,8 +379,8 @@ class GitHubUserProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + api_url + '.')
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, api_url))
             return False
 
         packages = {}
@@ -396,8 +396,8 @@ class GitHubUserProvider():
             try:
                 commit_info = json.loads(commit_json)
             except (ValueError):
-                sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                    ' repository ' + commit_api_url + '.')
+                sublime.error_message(('%s: Error parsing JSON from ' +
+                    'repository %s.') % (__name__, commit_api_url))
                 return False
 
             commit_date = commit_info[0]['commit']['committer']['date']
@@ -452,8 +452,8 @@ class BitBucketPackageProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + api_url + '.')
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, api_url))
             return False
 
         changeset_url = api_url + '/changesets/default'
@@ -464,8 +464,8 @@ class BitBucketPackageProvider():
         try:
             last_commit = json.loads(changeset_json)
         except (ValueError):
-            sublime.error_message(__name__ + ': Error parsing JSON from ' +
-                ' repository ' + changeset_url + '.')
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, changeset_url))
             return False
         commit_date = last_commit['timestamp']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
@@ -549,8 +549,7 @@ class CliDownloader(Downloader):
             if os.path.exists(path):
                 return path
 
-        raise BinaryNotFoundError('The binary ' + name + ' could not be ' +
-            'located')
+        raise BinaryNotFoundError('The binary %s could not be located' % name)
 
     def execute(self, args):
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
@@ -605,17 +604,18 @@ class UrlLib2Downloader(Downloader):
             except (urllib2.HTTPError) as (e):
                 # Bitbucket and Github ratelimit using 503 a decent amount
                 if str(e.code) == '503':
-                    print (__name__ + ': Downloading %s was rate limited, ' +
-                        'trying again') % url
+                    print ('%s: Downloading %s was rate limited, ' +
+                        'trying again') % (__name__, url)
                     continue
                 print '%s: %s HTTP error %s downloading %s.' % (__name__,
                     error_message, str(e.code), url)
+
             except (urllib2.URLError) as (e):
                 # Bitbucket and Github timeout a decent amount
                 if str(e.reason) == 'The read operation timed out' or \
                         str(e.reason) == 'timed out':
-                    print (__name__ + ': Downloading %s timed out, trying ' +
-                        'again') % url
+                    print ('%s: Downloading %s timed out, trying ' +
+                        'again') % (__name__, url)
                     continue
                 print '%s: %s URL error %s downloading %s.' % (__name__,
                     error_message, str(e.reason), url)
@@ -674,8 +674,8 @@ class WgetDownloader(CliDownloader):
                     regex = re.compile('^.*ERROR (\d+):.*', re.S)
                     if re.sub(regex, '\\1', error_line) == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        print (__name__ + ': Downloading %s was rate limited' +
-                            ', trying again') % url
+                        print ('%s: Downloading %s was rate limited' +
+                            ', trying again') % (__name__, url)
                         continue
                     error_string = 'HTTP error ' + re.sub('^.*? ERROR ', '',
                         error_line)
@@ -684,8 +684,8 @@ class WgetDownloader(CliDownloader):
                     error_string = re.sub('^.*?failed: ', '', error_line)
                     # GitHub and BitBucket seem to time out a lot
                     if error_string.find('timed out') != -1:
-                        print (__name__ + ': Downloading %s timed out, ' +
-                            'trying again') % url
+                        print ('%s: Downloading %s timed out, ' +
+                            'trying again') % (__name__, url)
                         continue
 
                 else:
@@ -737,16 +737,16 @@ class CurlDownloader(CliDownloader):
                     code = re.sub('^.*?(\d+)\s*$', '\\1', e.output)
                     if code == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        print (__name__ + ': Downloading %s was rate limited' +
-                            ', trying again') % url
+                        print ('%s: Downloading %s was rate limited' +
+                            ', trying again') % (__name__, url)
                         continue
                     error_string = 'HTTP error ' + code
                 elif e.returncode == 6:
                     error_string = 'URL error host not found'
                 elif e.returncode == 28:
                     # GitHub and BitBucket seem to time out a lot
-                    print (__name__ + ': Downloading %s timed out, trying ' +
-                        'again') % url
+                    print ('%s: Downloading %s timed out, trying ' +
+                        'again') % (__name__, url)
                     continue
                 else:
                     error_string = e.output
@@ -988,9 +988,9 @@ class PackageManager():
                     pass
 
         if not downloader:
-            sublime.error_message(__name__ + ': Unable to download ' +
-                url + ' due to no ssl module available and no capable ' +
-                'program found. Please install curl or wget.')
+            sublime.error_message(('%s: Unable to download %s due to no ' +
+                'ssl module available and no capable program found. Please ' +
+                'install curl or wget.') % (__name__, url))
             return False
 
         timeout = self.settings.get('timeout', 3)
@@ -1226,9 +1226,9 @@ class PackageManager():
         package_dir = self.get_package_dir(package_name) + '/'
 
         if not os.path.exists(package_dir):
-            sublime.error_message(__name__ + ': The folder for the ' +
-                'package name specified, %s, does not exist in %s' %
-                (package_name, sublime.packages_path()))
+            sublime.error_message(('%s: The folder for the package name ' +
+                'specified, %s, does not exist in %s') %
+                (__name__, package_name, sublime.packages_path()))
             return False
 
         package_filename = package_name + '.sublime-package'
@@ -1245,8 +1245,8 @@ class PackageManager():
             package_file = zipfile.ZipFile(package_path, "w",
                 compression=zipfile.ZIP_DEFLATED)
         except (OSError, IOError) as (exception):
-            sublime.error_message(__name__ + ': An error occurred ' +
-                'creating the package file %s in %s. %s' % (package_filename,
+            sublime.error_message(('%s: An error occurred creating the ' +
+                'package file %s in %s. %s') % (__name__, package_filename,
                 package_destination, str(exception)))
             return False
 
@@ -1284,8 +1284,8 @@ class PackageManager():
         packages = self.list_available_packages()
 
         if package_name not in packages.keys():
-            sublime.error_message(__name__ + ': The package specified,' +
-                ' %s, is not available.' % (package_name,))
+            sublime.error_message(('%s: The package specified, %s, is ' +
+                'not available.') % (__name__, package_name))
             return False
 
         download = packages[package_name]['downloads'][0]
@@ -1337,9 +1337,9 @@ class PackageManager():
                 package_backup_dir = os.path.join(backup_dir, package_name)
                 shutil.copytree(package_dir, package_backup_dir)
             except (OSError, IOError) as (exception):
-                sublime.error_message(__name__ + ': An error occurred while' +
-                    ' trying to backup the package directory for %s. %s' %
-                    (package_name, str(exception)))
+                sublime.error_message(('%s: An error occurred while trying ' +
+                    'to backup the package directory for %s. %s') %
+                    (__name__, package_name, str(exception)))
                 shutil.rmtree(package_backup_dir)
                 return False
 
@@ -1348,8 +1348,7 @@ class PackageManager():
         except (zipfile.BadZipfile):
             sublime.error_message(('%s: An error occurred while ' +
                 'trying to unzip the package file for %s. Please try ' +
-                'installing the package again.') %
-                (__name__, package_name))
+                'installing the package again.') % (__name__, package_name))
             return False
 
         root_level_paths = []
@@ -1359,9 +1358,9 @@ class PackageManager():
             if path.find('/') in [len(path) - 1, -1]:
                 root_level_paths.append(path)
             if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
-                sublime.error_message((__name__ + ': The package ' +
-                    'specified, %s, contains files outside of the package ' +
-                    'dir and cannot be safely installed.') % (package_name,))
+                sublime.error_message(('%s: The package specified, %s, ' +
+                    'contains files outside of the package dir and cannot ' +
+                    'be safely installed.') % (__name__, package_name))
                 return False
 
         if last_path and len(root_level_paths) == 0:
@@ -1384,9 +1383,8 @@ class PackageManager():
             if os.name == 'nt':
                 regex = ':|\*|\?|"|<|>|\|'
                 if re.search(regex, dest) != None:
-                    print ('%s: Skipping file from package ' +
-                        'named %s due to an invalid filename') % (__name__,
-                        path)
+                    print ('%s: Skipping file from package named %s due to ' +
+                        'an invalid filename') % (__name__, path)
                     continue
 
             # If there was only a single directory in the package, we remove
@@ -1421,9 +1419,8 @@ class PackageManager():
                 try:
                     open(dest, 'wb').write(package_zip.read(path))
                 except (IOError, UnicodeDecodeError):
-                    print ('%s: Skipping file from package ' +
-                        'named %s due to an invalid filename') % (__name__,
-                        path)
+                    print ('%s: Skipping file from package named %s due to ' +
+                        'an invalid filename') % (__name__, path)
         package_zip.close()
 
         # Here we clean out any files that were not just overwritten
@@ -1571,8 +1568,8 @@ class PackageManager():
         installed_packages = self.list_packages()
 
         if package_name not in installed_packages:
-            sublime.error_message(__name__ + ': The package specified,' +
-                ' %s, is not installed.' % (package_name,))
+            sublime.error_message(('%s: The package specified, %s, is not ' +
+                'installed.') % (__name__, package_name))
             return False
 
         os.chdir(sublime.packages_path())
@@ -1595,27 +1592,27 @@ class PackageManager():
             if os.path.exists(package_path):
                 os.remove(package_path)
         except (OSError, IOError) as (exception):
-            sublime.error_message(__name__ + ': An error occurred while' +
-                ' trying to remove the package file for %s. %s' %
-                (package_name, str(exception)))
+            sublime.error_message(('%s: An error occurred while trying to ' +
+                'remove the package file for %s. %s') % (__name__,
+                package_name, str(exception)))
             return False
 
         try:
             if os.path.exists(installed_package_path):
                 os.remove(installed_package_path)
         except (OSError, IOError) as (exception):
-            sublime.error_message(__name__ + ': An error occurred while' +
-                ' trying to remove the installed package file for %s. %s' %
-                (package_name, str(exception)))
+            sublime.error_message(('%s: An error occurred while trying to ' +
+                'remove the installed package file for %s. %s') % (__name__,
+                package_name, str(exception)))
             return False
 
         try:
             if os.path.exists(pristine_package_path):
                 os.remove(pristine_package_path)
         except (OSError, IOError) as (exception):
-            sublime.error_message(__name__ + ': An error occurred while' +
-                ' trying to remove the pristine package file for %s. %s' %
-                (package_name, str(exception)))
+            sublime.error_message(('%s: An error occurred while trying to ' +
+                'remove the pristine package file for %s. %s') % (__name__,
+                package_name, str(exception)))
             return False
 
         # We don't delete the actual package dir immediately due to a bug
@@ -1644,13 +1641,13 @@ class PackageManager():
 
         # Remove the package from the installed packages list
         def clear_package():
-            settings = sublime.load_settings(__name__ + '.sublime-settings')
+            settings = sublime.load_settings('%s.sublime-settings' % __name__)
             installed_packages = settings.get('installed_packages', [])
             if not installed_packages:
                 installed_packages = []
             installed_packages.remove(package_name)
             settings.set('installed_packages', installed_packages)
-            sublime.save_settings(__name__ + '.sublime-settings')
+            sublime.save_settings('%s.sublime-settings' % __name__)
         sublime.set_timeout(clear_package, 1)
 
         if can_delete_dir:
@@ -1672,8 +1669,8 @@ class PackageManager():
             if result['result'] != 'success':
                 raise ValueError()
         except (ValueError):
-            print '%s: Error submitting usage information for %s' % \
-                (__name__, params['package'])
+            print '%s: Error submitting usage information for %s' % (__name__,
+                params['package'])
 
 
 class PackageCreator():
@@ -1681,8 +1678,8 @@ class PackageCreator():
         self.manager = PackageManager()
         self.packages = self.manager.list_packages()
         if not self.packages:
-            sublime.error_message(__name__ + ': There are no packages ' +
-                'available to be packaged.')
+            sublime.error_message(('%s: There are no packages available to ' +
+                'be packaged.') % (__name__))
             return
         self.window.show_quick_panel(self.packages, self.on_done)
 
@@ -1692,8 +1689,7 @@ class PackageCreator():
         # We check destination via an if statement instead of using
         # the dict.get() method since the key may be set, but to a blank value
         if not destination:
-            destination = os.path.join(os.path.expanduser('~'),
-                'Desktop')
+            destination = os.path.join(os.path.expanduser('~'), 'Desktop')
 
         return destination
 
@@ -1866,8 +1862,8 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
         def show_quick_panel():
             if not self.package_list:
-                sublime.error_message(__name__ + ': There are no packages ' +
-                    'available for installation.')
+                sublime.error_message(('%s: There are no packages ' +
+                    'available for installation.') % __name__)
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 10)
@@ -1899,8 +1895,8 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
         def show_quick_panel():
             if not self.package_list:
-                sublime.error_message(__name__ + ': There are no packages ' +
-                    'ready for upgrade.')
+                sublime.error_message(('%s: There are no packages ' +
+                    'ready for upgrade.') % __name__)
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 10)
@@ -1995,8 +1991,8 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
         def show_quick_panel():
             if not self.package_list:
-                sublime.error_message(__name__ + ': There are no packages ' +
-                    'to list.')
+                sublime.error_message(('%s: There are no packages ' +
+                    'to list.') % __name__)
                 return
             self.window.show_quick_panel(self.package_list, self.on_done)
         sublime.set_timeout(show_quick_panel, 10)
@@ -2021,8 +2017,8 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
     def run(self):
         self.package_list = self.make_package_list('remove')
         if not self.package_list:
-            sublime.error_message(__name__ + ': There are no packages ' +
-                'that can be removed.')
+            sublime.error_message(('%s: There are no packages ' +
+                'that can be removed.') % __name__)
             return
         self.window.show_quick_panel(self.package_list, self.on_done)
 
@@ -2070,15 +2066,15 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
-        settings = sublime.load_settings(__name__ + '.sublime-settings')
+        settings = sublime.load_settings('%s.sublime-settings' % __name__)
         repository_channels = settings.get('repository_channels', [])
         if not repository_channels:
             repository_channels = []
         repository_channels.append(input)
         settings.set('repository_channels', repository_channels)
-        sublime.save_settings(__name__ + '.sublime-settings')
-        sublime.status_message('Repository channel ' + input +
-            ' successfully added')
+        sublime.save_settings('%s.sublime-settings' % __name__)
+        sublime.status_message(('Repository channel %s successfully ' +
+            'added') % input)
 
     def on_change(self, input):
         pass
@@ -2094,14 +2090,14 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
             self.on_change, self.on_cancel)
 
     def on_done(self, input):
-        settings = sublime.load_settings(__name__ + '.sublime-settings')
+        settings = sublime.load_settings('%s.sublime-settings' % __name__)
         repositories = settings.get('repositories', [])
         if not repositories:
             repositories = []
         repositories.append(input)
         settings.set('repositories', repositories)
-        sublime.save_settings(__name__ + '.sublime-settings')
-        sublime.status_message('Repository ' + input + ' successfully added')
+        sublime.save_settings('%s.sublime-settings' % __name__)
+        sublime.status_message('Repository %s successfully added' % input)
 
     def on_change(self, input):
         pass
@@ -2121,8 +2117,8 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
         self.package_list = list(set(packages) - set(disabled_packages))
         self.package_list.sort()
         if not self.package_list:
-            sublime.error_message(__name__ + ': There are no enabled ' +
-            'packages to disable.')
+            sublime.error_message(('%s: There are no enabled packages' +
+                'to disable.') % __name__)
             return
         self.window.show_quick_panel(self.package_list, self.on_done)
 
@@ -2136,9 +2132,9 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
         ignored_packages.append(package)
         self.settings.set('ignored_packages', ignored_packages)
         sublime.save_settings('Global.sublime-settings')
-        sublime.status_message('Package ' + package + ' successfully added ' +
-            'to list of disabled packages - restarting Sublime Text may be '
-            'required')
+        sublime.status_message(('Package %s successfully added to list of ' +
+            'disabled packages - restarting Sublime Text may be required') %
+            package)
 
 
 class EnablePackageCommand(sublime_plugin.WindowCommand):
@@ -2147,8 +2143,8 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
         self.disabled_packages = self.settings.get('ignored_packages')
         self.disabled_packages.sort()
         if not self.disabled_packages:
-            sublime.error_message(__name__ + ': There are no disabled ' +
-            'packages to enable.')
+            sublime.error_message(('%s: There are no disabled packages ' +
+                'to enable.') % __name__)
             return
         self.window.show_quick_panel(self.disabled_packages, self.on_done)
 
@@ -2160,9 +2156,9 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
         self.settings.set('ignored_packages',
             list(set(ignored) - set([package])))
         sublime.save_settings('Global.sublime-settings')
-        sublime.status_message('Package ' + package + ' successfully removed' +
-            ' from list of disabled packages - restarting Sublime Text may be '
-            'required')
+        sublime.status_message(('Package %s successfully removed from list ' +
+            'of disabled packages - restarting Sublime Text may be required') %
+            package)
 
 
 class PackageStartup():
