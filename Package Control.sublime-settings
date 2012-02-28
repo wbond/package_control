@@ -50,6 +50,11 @@
 	// http_proxy is, http_proxy will be used for https_proxy also
 	"https_proxy": "",
 
+	// Setting this to true will cause Package Control to ignore all git
+	// and hg repositories - this may help if trying to list packages to install
+	// hangs
+	"ignore_vcs_packages": false,
+
 	// Custom paths to VCS binaries for when they can't be automatically
 	// found on the system and a package includes a VCS metadata directory
 	"git_binary": "",

@@ -964,7 +964,8 @@ class PackageManager():
                 'hg_update_command', 'http_proxy', 'https_proxy',
                 'auto_upgrade_ignore', 'auto_upgrade_frequency',
                 'submit_usage', 'submit_url', 'renamed_packages',
-                'files_to_include', 'files_to_include_binary', 'certs']:
+                'files_to_include', 'files_to_include_binary', 'certs',
+                'ignore_vcs_packages']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -1312,10 +1313,20 @@ class PackageManager():
             'package-metadata.json')
 
         if os.path.exists(os.path.join(package_dir, '.git')):
+            if settings.get('ignore_vcs_packages'):
+                sublime.error_message(('%s: Skipping git package %s since ' +
+                    'the setting ignore_vcs_packages is set to true') %
+                    (__name__, package_name))
+                return False
             return GitUpgrader(self.settings['git_binary'],
                 self.settings['git_update_command'], package_dir,
                 self.settings['cache_length']).run()
         elif os.path.exists(os.path.join(package_dir, '.hg')):
+            if settings.get('ignore_vcs_packages'):
+                sublime.error_message(('%s: Skipping hg package %s since ' +
+                    'the setting ignore_vcs_packages is set to true') %
+                    (__name__, package_name))
+                return False
             return HgUpgrader(self.settings['hg_binary'],
                 self.settings['hg_update_command'], package_dir,
                 self.settings['cache_length']).run()
@@ -1781,12 +1792,16 @@ class PackageInstaller():
             else:
                 if os.path.exists(os.path.join(sublime.packages_path(),
                         package, '.git')):
+                    if settings.get('ignore_vcs_packages'):
+                        continue
                     vcs = 'git'
                     incoming = GitUpgrader(settings.get('git_binary'),
                         settings.get('git_update_command'), package_dir,
                         settings.get('cache_length')).incoming()
                 elif os.path.exists(os.path.join(sublime.packages_path(),
                         package, '.hg')):
+                    if settings.get('ignore_vcs_packages'):
+                        continue
                     vcs = 'hg'
                     incoming = HgUpgrader(settings.get('hg_binary'),
                         settings.get('hg_update_command'), package_dir,
