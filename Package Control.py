@@ -810,6 +810,15 @@ class VcsUpgrader():
         if self.binary:
             return self.binary
 
+        # Try the path first
+        for dir in os.environ['PATH'].split(os.pathsep):
+            path = os.path.join(dir, name)
+            if os.path.exists(path):
+                return path
+
+        # This is left in for backwards compatibility and for windows
+        # users who may have the binary, albeit in a common dir that may
+        # not be part of the PATH
         if os.name == 'nt':
             dirs = ['C:\\Program Files\\Git\\bin',
                 'C:\\Program Files (x86)\\Git\\bin',
@@ -820,9 +829,7 @@ class VcsUpgrader():
                 'C:\\Program Files\\TortoiseHg',
                 'C:\\cygwin\\bin']
         else:
-            dirs = ['/usr/local/git/bin', '/usr/local/sbin',
-                '/usr/local/bin', '/usr/sbin',
-                '/usr/bin', '/sbin', '/bin']
+            dirs = ['/usr/local/git/bin']
 
         for dir in dirs:
             path = os.path.join(dir, name)
