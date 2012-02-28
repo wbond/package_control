@@ -3,13 +3,17 @@
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
 	"repository_channels": [
-		"http://sublime.wbond.net/repositories.json"
+		"https://sublime.wbond.net/repositories.json"
 	],
 	
 	// A list of URLs that contain a packages JSON file. These repositories
 	// are placed in order before repositories from the "repository_channels"
 	// setting
 	"repositories": [],
+
+	"certs": {
+		"sublime.wbond.net": ["b84a305ed1899ca5c1a31c54836ef7c0", ""]
+	},
 
 	// This helps solve naming issues where a repository it not named the
 	// same as the package should be. This is primarily only useful for
@@ -22,7 +26,7 @@
 	"submit_usage": true,
 
 	// The URL to post install, upgrade and removal notices to 
-	"submit_url": "http://sublime.wbond.net/submit",
+	"submit_url": "https://sublime.wbond.net/submit",
 
 	// If packages should be automatically upgraded when ST2 starts
 	"auto_upgrade": true,

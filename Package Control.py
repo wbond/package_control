@@ -19,6 +19,85 @@ import tempfile
 
 try:
     import ssl
+    import httplib
+    import socket
+
+    class InvalidCertificateException(httplib.HTTPException, urllib2.URLError):
+        def __init__(self, host, cert, reason):
+            httplib.HTTPException.__init__(self)
+            self.host = host
+            self.cert = cert
+            self.reason = reason
+
+        def __str__(self):
+            return ('Host %s returned an invalid certificate (%s) %s\n' %
+                    (self.host, self.reason, self.cert))
+
+    class CertValidatingHTTPSConnection(httplib.HTTPConnection):
+        default_port = httplib.HTTPS_PORT
+
+        def __init__(self, host, port=None, key_file=None, cert_file=None,
+                                 ca_certs=None, strict=None, **kwargs):
+            httplib.HTTPConnection.__init__(self, host, port, strict, **kwargs)
+            self.key_file = key_file
+            self.cert_file = cert_file
+            self.ca_certs = ca_certs
+            if self.ca_certs:
+                self.cert_reqs = ssl.CERT_REQUIRED
+            else:
+                self.cert_reqs = ssl.CERT_NONE
+
+        def _GetValidHostsForCert(self, cert):
+            if 'subjectAltName' in cert:
+                return [x[1] for x in cert['subjectAltName']
+                             if x[0].lower() == 'dns']
+            else:
+                return [x[0][1] for x in cert['subject']
+                                if x[0][0].lower() == 'commonname']
+
+        def _ValidateCertificateHostname(self, cert, hostname):
+            hosts = self._GetValidHostsForCert(cert)
+            for host in hosts:
+                host_re = host.replace('.', '\.').replace('*', '[^.]*')
+                if re.search('^%s$' % (host_re,), hostname, re.I):
+                    return True
+            return False
+
+        def connect(self):
+            sock = socket.create_connection((self.host, self.port))
+            self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
+                                              certfile=self.cert_file,
+                                              cert_reqs=self.cert_reqs,
+                                              ca_certs=self.ca_certs)
+            if self.cert_reqs & ssl.CERT_REQUIRED:
+                cert = self.sock.getpeercert()
+                hostname = self.host.split(':', 0)[0]
+                if not self._ValidateCertificateHostname(cert, hostname):
+                    raise InvalidCertificateException(hostname, cert,
+                                                      'hostname mismatch')
+
+    if hasattr(urllib2, 'HTTPSHandler'):
+        class VerifiedHTTPSHandler(urllib2.HTTPSHandler):
+            def __init__(self, **kwargs):
+                urllib2.AbstractHTTPHandler.__init__(self)
+                self._connection_args = kwargs
+
+            def https_open(self, req):
+                def http_class_wrapper(host, **kwargs):
+                    full_kwargs = dict(self._connection_args)
+                    full_kwargs.update(kwargs)
+                    return CertValidatingHTTPSConnection(host, **full_kwargs)
+
+                try:
+                    return self.do_open(http_class_wrapper, req)
+                except urllib2.URLError, e:
+                    if type(e.reason) == ssl.SSLError and e.reason.args[0] == 1:
+                        raise InvalidCertificateException(req.host, '',
+                                                          e.reason.args[1])
+                    raise
+
+            https_request = urllib2.HTTPSHandler.do_request_
+
 except (ImportError):
     pass
 
@@ -97,6 +176,12 @@ class ChannelProvider():
         if self.channel_info == False:
             return False
         return self.channel_info['repositories']
+
+    def get_certs(self):
+        self.fetch_channel()
+        if self.channel_info == False:
+            return False
+        return self.channel_info.get('certs', {})
 
     def get_packages(self, repo):
         self.fetch_channel()
@@ -427,7 +512,32 @@ class NonCleanExitError(Exception):
         return repr(self.returncode)
 
 
-class CliDownloader():
+class Downloader():
+    def check_certs(self, domain, timeout):
+        cert_info = self.settings.get('certs', {}).get(
+            domain)
+        if not cert_info:
+            print '%s: No CA certs available for %s.' % (__name__,
+                domain)
+            return False
+        cert_path = os.path.join(sublime.packages_path(), 'Package Control',
+            'certs', cert_info[0])
+        ca_bundle_path = os.path.join(sublime.packages_path(),
+            'Package Control', 'certs', 'ca-bundle.crt')
+        if not os.path.exists(cert_path):
+            cert_downloader = self.__class__(self.settings)
+            cert_contents = cert_downloader.download(cert_info[1],
+                'Error downloading CA certs for %s.' % (domain), timeout, 1)
+            if not cert_contents:
+                return False
+            with open(cert_path, 'wb') as f:
+                f.write(cert_contents)
+            with open(ca_bundle_path, 'ab') as f:
+                f.write("\n" + cert_contents)
+        return ca_bundle_path
+
+
+class CliDownloader(Downloader):
     def __init__(self, settings):
         self.settings = settings
 
@@ -455,7 +565,7 @@ class CliDownloader():
         return output
 
 
-class UrlLib2Downloader():
+class UrlLib2Downloader(Downloader):
     def __init__(self, settings):
         self.settings = settings
 
@@ -473,7 +583,16 @@ class UrlLib2Downloader():
             proxy_handler = urllib2.ProxyHandler(proxies)
         else:
             proxy_handler = urllib2.ProxyHandler()
-        urllib2.install_opener(urllib2.build_opener(proxy_handler))
+        handlers = [proxy_handler]
+
+        secure_url_match = re.match('^https://([^/]+)', url)
+        if secure_url_match != None:
+            secure_domain = secure_url_match.group(1)
+            bundle_path = self.check_certs(secure_domain, timeout)
+            if not bundle_path:
+                return False
+            handlers.append(VerifiedHTTPSHandler(ca_certs=bundle_path))
+        urllib2.install_opener(urllib2.build_opener(*handlers))
 
         while tries > 0:
             tries -= 1
@@ -518,7 +637,17 @@ class WgetDownloader(CliDownloader):
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
-            self.tmp_file, '-O', '-', '-U', 'Sublime Package Control', url]
+            self.tmp_file, '-O', '-', '-U', 'Sublime Package Control']
+
+        secure_url_match = re.match('^https://([^/]+)', url)
+        if secure_url_match != None:
+            secure_domain = secure_url_match.group(1)
+            bundle_path = self.check_certs(secure_domain, timeout)
+            if not bundle_path:
+                return False
+            command.append(u'--ca-certificate=' + bundle_path)
+
+        command.append(url)
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
@@ -527,7 +656,7 @@ class WgetDownloader(CliDownloader):
         if self.settings.get('https_proxy'):
             os.putenv('https_proxy', self.settings.get('https_proxy'))
 
-        while tries > 1:
+        while tries > 0:
             tries -= 1
             try:
                 result = self.execute(command)
@@ -580,7 +709,17 @@ class CurlDownloader(CliDownloader):
         if not self.curl:
             return False
         command = [self.curl, '-f', '--user-agent', 'Sublime Package Control',
-            '--connect-timeout', str(int(timeout)), '-sS', url]
+            '--connect-timeout', str(int(timeout)), '-sS']
+
+        secure_url_match = re.match('^https://([^/]+)', url)
+        if secure_url_match != None:
+            secure_domain = secure_url_match.group(1)
+            bundle_path = self.check_certs(secure_domain, timeout)
+            if not bundle_path:
+                return False
+            command.extend(['--cacert', bundle_path])
+
+        command.append(url)
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
@@ -589,7 +728,7 @@ class CurlDownloader(CliDownloader):
         if self.settings.get('https_proxy'):
             os.putenv('HTTPS_PROXY', self.settings.get('https_proxy'))
 
-        while tries > 1:
+        while tries > 0:
             tries -= 1
             try:
                 return self.execute(command)
@@ -817,7 +956,7 @@ class PackageManager():
                 'hg_update_command', 'http_proxy', 'https_proxy',
                 'auto_upgrade_ignore', 'auto_upgrade_frequency',
                 'submit_usage', 'submit_url', 'renamed_packages',
-                'files_to_include', 'files_to_include_binary']:
+                'files_to_include', 'files_to_include_binary', 'certs']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -900,6 +1039,13 @@ class PackageManager():
                     {}))
                 self.settings['renamed_packages'] = renamed_packages
 
+            certs_cache_key = channel + '.certs'
+            certs_cache = _channel_repository_cache.get(certs_cache_key)
+            if certs_cache and certs_cache.get('time') > time.time():
+                certs = self.settings.get('certs', {})
+                certs.update(certs_cache.get('data'))
+                self.settings['certs'] = certs
+
             if channel_repositories == None or \
                     self.settings.get('package_name_map') == None or \
                     self.settings.get('renamed_packages') == None:
@@ -948,6 +1094,16 @@ class PackageManager():
                     self.settings['renamed_packages'] = self.settings.get(
                         'renamed_packages', {})
                     self.settings['renamed_packages'].update(renamed_packages)
+
+                certs = provider.get_certs()
+                _channel_repository_cache[certs_cache_key] = {
+                    'time': time.time() + self.settings.get('cache_length',
+                        300),
+                    'data': certs
+                }
+                if certs:
+                    self.settings['certs'] = self.settings.get('certs', {})
+                    self.settings['certs'].update(certs)
 
             repositories.extend(channel_repositories)
         return repositories
