@@ -53,7 +53,7 @@
 	// Custom paths to VCS binaries for when they can't be automatically
 	// found on the system and a package includes a VCS metadata directory
 	"git_binary": "",
-	"git_update_command": ["pull", "origin", "master"],
+	"git_update_command": ["pull", "origin", "master", "--ff", "--commit"],
 	
 	"hg_binary": "",
 	
