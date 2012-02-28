@@ -12,7 +12,7 @@
 	"repositories": [],
 
 	"certs": {
-		"sublime.wbond.net": ["b84a305ed1899ca5c1a31c54836ef7c0", ""]
+		"sublime.wbond.net": ["7f4f8622b4fd001c7f648e09aae7edaa", ""]
 	},
 
 	// This helps solve naming issues where a repository it not named the
