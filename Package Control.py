@@ -1343,7 +1343,15 @@ class PackageManager():
                 shutil.rmtree(package_backup_dir)
                 return False
 
-        package_zip = zipfile.ZipFile(package_path, 'r')
+        try:
+            package_zip = zipfile.ZipFile(package_path, 'r')
+        except (zipfile.BadZipfile):
+            sublime.error_message(('%s: An error occurred while ' +
+                'trying to unzip the package file for %s. Please try ' +
+                'installing the package again.') %
+                (__name__, package_name))
+            return False
+
         root_level_paths = []
         last_path = None
         for path in package_zip.namelist():
