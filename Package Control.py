@@ -1313,7 +1313,7 @@ class PackageManager():
             'package-metadata.json')
 
         if os.path.exists(os.path.join(package_dir, '.git')):
-            if settings.get('ignore_vcs_packages'):
+            if self.settings.get('ignore_vcs_packages'):
                 sublime.error_message(('%s: Skipping git package %s since ' +
                     'the setting ignore_vcs_packages is set to true') %
                     (__name__, package_name))
@@ -1322,7 +1322,7 @@ class PackageManager():
                 self.settings['git_update_command'], package_dir,
                 self.settings['cache_length']).run()
         elif os.path.exists(os.path.join(package_dir, '.hg')):
-            if settings.get('ignore_vcs_packages'):
+            if self.settings.get('ignore_vcs_packages'):
                 sublime.error_message(('%s: Skipping hg package %s since ' +
                     'the setting ignore_vcs_packages is set to true') %
                     (__name__, package_name))
