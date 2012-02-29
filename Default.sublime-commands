@@ -4,7 +4,7 @@
         "command": "add_repository"
     },
     {
-        "caption": "Package Control: Add Repository Channel",
+        "caption": "Package Control: Add Channel",
         "command": "add_repository_channel"
     },
     {

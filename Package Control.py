@@ -2093,7 +2093,7 @@ class RemovePackageThread(threading.Thread):
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.window.show_input_panel('Repository Channel JSON URL', '',
+        self.window.show_input_panel('Channel JSON URL', '',
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
@@ -2104,7 +2104,7 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
         repository_channels.append(input)
         settings.set('repository_channels', repository_channels)
         sublime.save_settings('%s.sublime-settings' % __name__)
-        sublime.status_message(('Repository channel %s successfully ' +
+        sublime.status_message(('Channel %s successfully ' +
             'added') % input)
 
     def on_change(self, input):
