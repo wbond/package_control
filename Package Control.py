@@ -750,7 +750,7 @@ class CurlDownloader(CliDownloader):
                         'again') % (__name__, url)
                     continue
                 else:
-                    error_string = e.output
+                    error_string = e.output.rstrip()
 
                 print '%s: %s %s downloading %s.' % (__name__, error_message,
                     error_string, url)
