@@ -2352,11 +2352,18 @@ class PackageCleanup(threading.Thread, PackageStartup):
             metadata_path = os.path.join(package_dir, 'package-metadata.json')
 
             # Cleanup packages that could not be removed due to in-use files
-            if os.path.exists(os.path.join(package_dir,
-                    'package-control.cleanup')):
-                shutil.rmtree(package_dir)
-                print '%s: Removed old directory for package %s' % \
-                    (__name__, package_name)
+            cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
+            if os.path.exists(cleanup_file):
+                try:
+                    shutil.rmtree(package_dir)
+                    print '%s: Removed old directory for package %s' % \
+                        (__name__, package_name)
+                except (OSError) as (e):
+                    if not os.path.exists(cleanup_file):
+                        open(cleanup_file, 'w').close()
+                    print ('%s: Unable to remove old directory for package ' +
+                        '%s - deferring until next start: %s') % (__name__,
+                        package_name, str(e))
 
             # This adds previously installed packages from old versions of PC
             if os.path.exists(metadata_path) and \
