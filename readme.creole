@@ -16,7 +16,7 @@ instructions, screenshots and documentation.
 
 All of Sublime Package Control is licensed under the MIT license.
 
-  Copyright (c) 2011 Will Bond <will@wbond.net>
+  Copyright (c) 2011-2012 Will Bond <will@wbond.net>
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
