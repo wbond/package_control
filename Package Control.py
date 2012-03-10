@@ -2057,14 +2057,20 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
         if picked == -1:
             return
         package = self.package_list[picked][0]
-        settings = sublime.load_settings('Global.sublime-settings')
+        if int(sublime.version()) >= 2174:
+            settings = sublime.load_settings('Preferences.sublime-settings')
+        else:
+            settings = sublime.load_settings('Global.sublime-settings')
         ignored_packages = settings.get('ignored_packages')
         if not ignored_packages:
             ignored_packages = []
         if not package in ignored_packages:
             ignored_packages.append(package)
             settings.set('ignored_packages', ignored_packages)
-            sublime.save_settings('Global.sublime-settings')
+            if int(sublime.version()) >= 2174:
+                sublime.save_settings('Preferences.sublime-settings')
+            else:
+                sublime.save_settings('Global.sublime-settings')
 
         ignored_packages.remove(package)
         thread = RemovePackageThread(self.manager, package,
@@ -2085,9 +2091,15 @@ class RemovePackageThread(threading.Thread):
         self.result = self.manager.remove_package(self.package)
 
         def unignore_package():
-            settings = sublime.load_settings('Global.sublime-settings')
+            if int(sublime.version()) >= 2174:
+                settings = sublime.load_settings('Preferences.sublime-settings')
+            else:
+                settings = sublime.load_settings('Global.sublime-settings')
             settings.set('ignored_packages', self.ignored_packages)
-            sublime.save_settings('Global.sublime-settings')
+            if int(sublime.version()) >= 2174:
+                sublime.save_settings('Preferences.sublime-settings')
+            else:
+                sublime.save_settings('Global.sublime-settings')
         sublime.set_timeout(unignore_package, 10)
 
 
@@ -2141,7 +2153,10 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
         manager = PackageManager()
         packages = manager.list_all_packages()
-        self.settings = sublime.load_settings('Global.sublime-settings')
+        if int(sublime.version()) >= 2174:
+            self.settings = sublime.load_settings('Preferences.sublime-settings')
+        else:
+            self.settings = sublime.load_settings('Global.sublime-settings')
         disabled_packages = self.settings.get('ignored_packages')
         if not disabled_packages:
             disabled_packages = []
@@ -2162,7 +2177,10 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
             ignored_packages = []
         ignored_packages.append(package)
         self.settings.set('ignored_packages', ignored_packages)
-        sublime.save_settings('Global.sublime-settings')
+        if int(sublime.version()) >= 2174:
+            sublime.save_settings('Preferences.sublime-settings')
+        else:
+            sublime.save_settings('Global.sublime-settings')
         sublime.status_message(('Package %s successfully added to list of ' +
             'disabled packages - restarting Sublime Text may be required') %
             package)
@@ -2170,7 +2188,10 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
 
 class EnablePackageCommand(sublime_plugin.WindowCommand):
     def run(self):
-        self.settings = sublime.load_settings('Global.sublime-settings')
+        if int(sublime.version()) >= 2174:
+            self.settings = sublime.load_settings('Preferences.sublime-settings')
+        else:
+            self.settings = sublime.load_settings('Global.sublime-settings')
         self.disabled_packages = self.settings.get('ignored_packages')
         self.disabled_packages.sort()
         if not self.disabled_packages:
@@ -2186,7 +2207,10 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
         ignored = self.settings.get('ignored_packages')
         self.settings.set('ignored_packages',
             list(set(ignored) - set([package])))
-        sublime.save_settings('Global.sublime-settings')
+        if int(sublime.version()) >= 2174:
+            sublime.save_settings('Preferences.sublime-settings')
+        else:
+            sublime.save_settings('Global.sublime-settings')
         sublime.status_message(('Package %s successfully removed from list ' +
             'of disabled packages - restarting Sublime Text may be required') %
             package)
