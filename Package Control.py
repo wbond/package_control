@@ -64,8 +64,8 @@ try:
             return False
 
         def connect(self):
-            sock = socket.create_connection((self.host, self.port))
-            self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
+            httplib.HTTPConnection.connect(self)
+            self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                                               certfile=self.cert_file,
                                               cert_reqs=self.cert_reqs,
                                               ca_certs=self.ca_certs)
