@@ -257,6 +257,18 @@ class PackageProvider():
                 for download in package['platforms'][id]:
                     downloads.append(download)
 
+                version_orig = None
+                if 'version' in downloads[0]:
+                    version_orig = downloads[0]['version']
+
+                for provider_class in _single_package_providers:
+                    provider = provider_class(downloads[0]['url'], self.package_manager)
+                    if provider.match_url():
+                        downloads = provider.get_packages().popitem()[1]['downloads']
+
+                if version_orig != None:
+                    downloads[0]['version'] = version_orig
+
                 info = {
                     'name': package['name'],
                     'description': package.get('description'),
@@ -501,6 +513,8 @@ class BitBucketPackageProvider():
 
 _package_providers = [BitBucketPackageProvider, GitHubPackageProvider,
     GitHubUserProvider, PackageProvider]
+
+_single_package_providers = [BitBucketPackageProvider, GitHubPackageProvider]
 
 
 class BinaryNotFoundError(Exception):
