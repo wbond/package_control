@@ -7,6 +7,7 @@ import subprocess
 import zipfile
 import urllib
 import urllib2
+import base64
 import json
 from fnmatch import fnmatch
 import re
@@ -337,6 +338,49 @@ class GitHubPackageProvider():
         if not homepage:
             homepage = repo_info['html_url']
 
+        downloads = []
+        downloads.append({
+                    'version': utc_timestamp,
+                    'url': download_url
+                })
+        trees_url = api_url + "/git/trees/" + branch
+        trees_json = self.package_manager.download_url(trees_url, 'Error downloading repository')
+        try:
+            trees_info = json.loads(trees_json)
+        except (ValueError):
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, trees_url))
+            return False
+
+        gitmodules = None
+        for entry in trees_info["tree"]:
+            if entry["path"] == ".gitmodules":
+                blob_json = self.package_manager.download_url(entry["url"], 'Error downloading repository')
+                try:
+                    blob_info = json.loads(blob_json)
+                except (ValueError):
+                    sublime.error_message(('%s: Error parsing JSON from ' +
+                        'repository %s.') % (__name__, entry["url"]))
+                    return False
+
+                gitmodules = base64.b64decode(blob_info["content"])
+                gitmodules = dict(re.findall("\[submodule\s+\".*?\"\]\s+path\s*=\s*(.*?)\n\s*url\s*=\s*(.*?)\n", gitmodules, re.MULTILINE|re.DOTALL))
+                break
+
+        for entry in trees_info["tree"]:
+            if entry["type"] == "commit" and entry["path"] in gitmodules:
+                suburl = re.sub("^.*?github.com/(.*?).git", "https://github.com/\\1/tree/%s" % entry["sha"], gitmodules[entry["path"]])
+                subpack = GitHubPackageProvider(suburl, self.package_manager)
+                subpackage = subpack.get_packages()
+                if subpackage != False:
+                    for name in subpackage:
+                        # TODO: is there every more than one name in a subpackage?
+                        add = {
+                            'submodule': entry['path'],
+                            'downloads': subpackage[name]["downloads"]
+                        }
+                        downloads.append(add)
+
         package = {
             'name': repo_info['name'],
             'description': repo_info['description'] if \
@@ -344,12 +388,7 @@ class GitHubPackageProvider():
             'url': homepage,
             'author': repo_info['owner']['login'],
             'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'downloads': [
-                {
-                    'version': utc_timestamp,
-                    'url': download_url
-                }
-            ]
+            'downloads': downloads
         }
         return {package['name']: package}
 
