@@ -374,7 +374,7 @@ class GitHubPackageProvider():
                 subpackage = subpack.get_packages()
                 if subpackage != False:
                     for name in subpackage:
-                        # TODO: is there every more than one name in a subpackage?
+                        # TODO: is there ever more than one name in a subpackage?
                         add = {
                             'submodule': entry['path'],
                             'downloads': subpackage[name]["downloads"]
@@ -1328,6 +1328,53 @@ class PackageManager():
 
         return True
 
+    def _add_submodules(self, pack_zip, root_name, path, modules=[]):
+        for module in modules:
+            if "url" in module:
+                try:
+                    tmp = tempfile.TemporaryFile()
+                    module_bytes = self.download_url(module["url"], 'Error downloading repository')
+                    if module_bytes == False:
+                        return False
+                    tmp.write(module_bytes)
+                    tmp.seek(0)
+                    modzip = zipfile.ZipFile(tmp, "r")
+                    for name in modzip.namelist():
+                        data = modzip.read(name)
+                        name = name[name.find("/")+1:]
+                        target = "%s/%s/%s" % (root_name, "/".join(path), name)
+                        pack_zip.writestr(target, data)
+                except:
+                    return False
+            elif "submodule" in module:
+                path.append(module["submodule"])
+                self._add_submodules(pack_zip, root_name, path, module["downloads"])
+                path.pop()
+        return True
+
+    def add_submodules(self, targetzip, package):
+        modules = package["downloads"][1:]
+        if len(modules):
+            try:
+                pack_zip = zipfile.ZipFile(targetzip, 'r')
+                root_name = ""
+                for name in pack_zip.namelist():
+                    if "/" in name:
+                        root_name = name[:name.find("/")]
+                        break
+                pack_zip.close()
+                pack_zip = zipfile.ZipFile(targetzip, 'a')
+                if self._add_submodules(pack_zip, root_name, [], modules) == False:
+                    return False
+            except:
+                return False
+            finally:
+                try:
+                    pack_zip.close()
+                except:
+                    pass
+        return True
+
     def install_package(self, package_name):
         packages = self.list_available_packages()
 
@@ -1400,6 +1447,11 @@ class PackageManager():
                     (__name__, package_name, str(exception)))
                 shutil.rmtree(package_backup_dir)
                 return False
+
+        if self.add_submodules(package_path, packages[package_name]) == False:
+            sublime.error_message(('%s: An error occurred while ' +
+                'trying to fetch the submodules for %s. Please try ' +
+                'installing the package again.') % (__name__, package_name))
 
         try:
             package_zip = zipfile.ZipFile(package_path, 'r')
