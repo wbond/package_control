@@ -201,6 +201,7 @@ class ChannelProvider():
             elif '*' in platforms:
                 copy['downloads'] = copy['platforms']['*']
             else:
+                self.package_manager.packages_other_platform.add(copy['name'])
                 continue
             del copy['platforms']
 
@@ -972,6 +973,8 @@ class PackageManager():
         self.settings['platform'] = sublime.platform()
         self.settings['version'] = sublime.version()
 
+        self.packages_other_platform = set()
+
     def compare_versions(self, version1, version2):
         def normalize(v):
             # We prepend 0 to all date-based version numbers so that developers
@@ -1291,6 +1294,11 @@ class PackageManager():
 
     def install_package(self, package_name):
         packages = self.list_available_packages()
+
+        if package_name in self.packages_other_platform:
+            print ('%s: The package "%s" is not available ' +
+                   'on this platform.') % (__name__, package_name)
+            return False
 
         if package_name not in packages.keys():
             sublime.error_message(('%s: The package specified, %s, is ' +
@@ -2256,9 +2264,9 @@ class AutomaticUpgrader(threading.Thread, PackageStartup):
         print '%s: Installing %s missing packages' % \
             (__name__, len(self.missing_packages))
         for package in self.missing_packages:
-            self.installer.manager.install_package(package)
-            print '%s: Installed missing package %s' % \
-                (__name__, package)
+            if self.installer.manager.install_package(package):
+                print '%s: Installed missing package %s' % \
+                    (__name__, package)
 
     def print_skip(self):
         last_run = datetime.datetime.fromtimestamp(self.last_run)
