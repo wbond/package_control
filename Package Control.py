@@ -20,7 +20,6 @@ import tempfile
 try:
     import ssl
     import httplib
-    import socket
 
     class InvalidCertificateException(httplib.HTTPException, urllib2.URLError):
         def __init__(self, host, cert, reason):
