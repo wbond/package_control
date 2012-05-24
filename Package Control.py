@@ -14,7 +14,6 @@ import threading
 import datetime
 import time
 import shutil
-import _strptime
 import tempfile
 
 try:
