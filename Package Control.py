@@ -513,7 +513,6 @@ class RequestsDownloader(Downloader):
             return False
         else:
             return ret.content
-        return False
 
 
 class WgetDownloader(CliDownloader):
