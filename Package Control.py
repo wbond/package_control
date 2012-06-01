@@ -16,6 +16,9 @@ import time
 import shutil
 import _strptime
 import tempfile
+import urlparse
+
+import requests
 
 try:
     import ssl
@@ -565,6 +568,38 @@ class CliDownloader(Downloader):
         return output
 
 
+class RequestsDownloader(Downloader):
+    def __init__(self, settings):
+        self.settings = settings
+
+    def download(self, url, error_message, timeout, tries):
+        proxies = dict()
+        http_proxy = self.settings.get('http_proxy')
+        https_proxy = self.settings.get('https_proxy')
+        if http_proxy:
+            proxies['http'] = http_proxy
+        if https_proxy:
+            proxies['https'] = https_proxy
+
+        kwargs = dict()
+        if proxies:
+            kwargs['proxies'] = proxies
+
+        res = urlparse.urlparse(url)
+        if res.scheme == 'https':
+            kwargs['verify'] = self.check_certs(res.hostname, timeout)
+
+        kwargs['headers'] = {'User-Agent': 'Sublime Package Control'}
+        kwargs['config'] = {'max_retries': tries}
+        try:
+            ret = requests.get(url, **kwargs)
+        except requests.RequestException:
+            return False
+        else:
+            return ret.content
+        return False
+
+
 class UrlLib2Downloader(Downloader):
     def __init__(self, settings):
         self.settings = settings
@@ -987,7 +1022,7 @@ class PackageManager():
         is_ssl = re.search('^https://', url) != None
 
         if (is_ssl and has_ssl) or not is_ssl:
-            downloader = UrlLib2Downloader(self.settings)
+            downloader = RequestsDownloader(self.settings)
         else:
             for downloader_class in [CurlDownloader, WgetDownloader]:
                 try:
