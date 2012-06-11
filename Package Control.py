@@ -2245,7 +2245,7 @@ class AutomaticUpgrader(threading.Thread, PackageStartup):
         self.next_run = int(time.time())
         self.last_run = None
         last_run_file = os.path.join(sublime.packages_path(), 'User',
-                                     '.package_control_last_run')
+            'Package Control.last-run')
 
         if os.path.isfile(last_run_file):
             with open(last_run_file) as fobj:
