@@ -595,6 +595,7 @@ class UrlLib2Downloader(Downloader):
             bundle_path = self.check_certs(secure_domain, timeout)
             if not bundle_path:
                 return False
+            bundle_path = bundle_path.encode(sys.getfilesystemencoding())
             handlers.append(VerifiedHTTPSHandler(ca_certs=bundle_path))
         urllib2.install_opener(urllib2.build_opener(*handlers))
 
