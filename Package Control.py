@@ -19,7 +19,6 @@ import tempfile
 try:
     import ssl
     import httplib
-    import socket
 
     class InvalidCertificateException(httplib.HTTPException, urllib2.URLError):
         def __init__(self, host, cert, reason):
@@ -63,8 +62,8 @@ try:
             return False
 
         def connect(self):
-            sock = socket.create_connection((self.host, self.port))
-            self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
+            httplib.HTTPConnection.connect(self)
+            self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                                               certfile=self.cert_file,
                                               cert_reqs=self.cert_reqs,
                                               ca_certs=self.ca_certs)
