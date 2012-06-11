@@ -1529,7 +1529,7 @@ class PackageManager():
             message = '\n\n%s:\n%s\n\n  ' % (package,
                         ('-' * len(package)))
             with open(install_messages, 'r') as f:
-                message += f.read().replace('\n', '\n  ')
+                message += unicode(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
             output += message + '\n'
 
         elif is_upgrade and old_version:
@@ -1548,7 +1548,7 @@ class PackageManager():
                     message_info.get(version))
                 message = '\n  '
                 with open(upgrade_messages, 'r') as f:
-                    message += f.read().replace('\n', '\n  ')
+                    message += unicode(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
                 output += message + '\n'
 
         if not output:
