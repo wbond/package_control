@@ -984,6 +984,7 @@ class PackageManager():
     def download_url(self, url, error_message):
         has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
         is_ssl = re.search('^https://', url) != None
+        downloader = None
 
         if (is_ssl and has_ssl) or not is_ssl:
             downloader = UrlLib2Downloader(self.settings)
