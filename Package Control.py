@@ -1204,13 +1204,13 @@ class PackageManager():
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
         # Ignore things to be deleted
-        ignored_packages = []
+        ignored = []
         for package in package_names:
             cleanup_file = os.path.join(sublime.packages_path(), package,
                 'package-control.cleanup')
             if os.path.exists(cleanup_file):
-                ignored_packages.append(package)
-        packages = list(set(package_names) - set(ignored_packages) -
+                ignored.append(package)
+        packages = list(set(package_names) - set(ignored) -
             set(self.list_default_packages()))
         packages = sorted(packages, key=lambda s: s.lower())
         return packages
@@ -1856,24 +1856,51 @@ class PackageInstaller():
             package_list.append(package_entry)
         return package_list
 
+    def disable_package(self, package):
+        settings = sublime.load_settings(preferences_filename())
+        ignored = settings.get('ignored_packages')
+        if not ignored:
+            ignored = []
+        if not package in ignored:
+            ignored.append(package)
+            settings.set('ignored_packages', ignored)
+            sublime.save_settings(preferences_filename())
+
+    def reenable_package(self, package):
+        settings = sublime.load_settings(preferences_filename())
+        ignored = settings.get('ignored_packages')
+        if not ignored:
+            return
+        if package in ignored:
+            settings.set('ignored_packages',
+                list(set(ignored) - set([package])))
+            sublime.save_settings(preferences_filename())
+
     def on_done(self, picked):
         if picked == -1:
             return
         name = self.package_list[picked][0]
-        thread = PackageInstallerThread(self.manager, name)
+
+        def on_complete():
+            self.reenable_package(name)
+        self.disable_package(name)
+
+        thread = PackageInstallerThread(self.manager, name, on_complete)
         thread.start()
         ThreadProgress(thread, 'Installing package %s' % name,
             'Package %s successfully %s' % (name, self.completion_type))
 
 
 class PackageInstallerThread(threading.Thread):
-    def __init__(self, manager, package):
+    def __init__(self, manager, package, on_complete):
         self.package = package
         self.manager = manager
+        self.on_complete = on_complete
         threading.Thread.__init__(self)
 
     def run(self):
         self.result = self.manager.install_package(self.package)
+        sublime.set_timeout(self.on_complete, 1)
 
 
 class InstallPackageCommand(sublime_plugin.WindowCommand):
@@ -1939,7 +1966,12 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         if picked == -1:
             return
         name = self.package_list[picked][0]
-        thread = PackageInstallerThread(self.manager, name)
+
+        def on_complete():
+            self.reenable_package(name)
+        self.disable_package(name)
+
+        thread = PackageInstallerThread(self.manager, name, on_complete)
         thread.start()
         ThreadProgress(thread, 'Upgrading package %s' % name,
             'Package %s successfully %s' % (name, self.completion_type))
@@ -1961,7 +1993,11 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
 
     def run(self):
         for info in self.make_package_list(['install', 'reinstall', 'none']):
-            thread = PackageInstallerThread(self.manager, info[0])
+            def on_complete():
+                self.reenable_package(info[0])
+            self.disable_package(info[0])
+
+            thread = PackageInstallerThread(self.manager, info[0], on_complete)
             thread.start()
             ThreadProgress(thread, 'Upgrading package %s' % info[0],
                 'Package %s successfully %s' % (info[0], self.completion_type))
@@ -2063,27 +2099,27 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
             return
         package = self.package_list[picked][0]
         settings = sublime.load_settings(preferences_filename())
-        ignored_packages = settings.get('ignored_packages')
-        if not ignored_packages:
-            ignored_packages = []
-        if not package in ignored_packages:
-            ignored_packages.append(package)
-            settings.set('ignored_packages', ignored_packages)
+        ignored = settings.get('ignored_packages')
+        if not ignored:
+            ignored = []
+        if not package in ignored:
+            ignored.append(package)
+            settings.set('ignored_packages', ignored)
             sublime.save_settings(preferences_filename())
 
-        ignored_packages.remove(package)
+        ignored.remove(package)
         thread = RemovePackageThread(self.manager, package,
-            ignored_packages)
+            ignored)
         thread.start()
         ThreadProgress(thread, 'Removing package %s' % package,
             'Package %s successfully removed' % package)
 
 
 class RemovePackageThread(threading.Thread):
-    def __init__(self, manager, package, ignored_packages):
+    def __init__(self, manager, package, ignored):
         self.manager = manager
         self.package = package
-        self.ignored_packages = ignored_packages
+        self.ignored = ignored
         threading.Thread.__init__(self)
 
     def run(self):
@@ -2091,7 +2127,7 @@ class RemovePackageThread(threading.Thread):
 
         def unignore_package():
             settings = sublime.load_settings(preferences_filename())
-            settings.set('ignored_packages', self.ignored_packages)
+            settings.set('ignored_packages', self.ignored)
             sublime.save_settings(preferences_filename())
         sublime.set_timeout(unignore_package, 10)
 
@@ -2147,10 +2183,10 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
         manager = PackageManager()
         packages = manager.list_all_packages()
         self.settings = sublime.load_settings(preferences_filename)
-        disabled_packages = self.settings.get('ignored_packages')
-        if not disabled_packages:
-            disabled_packages = []
-        self.package_list = list(set(packages) - set(disabled_packages))
+        ignored = self.settings.get('ignored_packages')
+        if not ignored:
+            ignored = []
+        self.package_list = list(set(packages) - set(ignored))
         self.package_list.sort()
         if not self.package_list:
             sublime.error_message(('%s: There are no enabled packages' +
@@ -2162,11 +2198,11 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
         if picked == -1:
             return
         package = self.package_list[picked]
-        ignored_packages = self.settings.get('ignored_packages')
-        if not ignored_packages:
-            ignored_packages = []
-        ignored_packages.append(package)
-        self.settings.set('ignored_packages', ignored_packages)
+        ignored = self.settings.get('ignored_packages')
+        if not ignored:
+            ignored = []
+        ignored.append(package)
+        self.settings.set('ignored_packages', ignored)
         sublime.save_settings(preferences_filename())
         sublime.status_message(('Package %s successfully added to list of ' +
             'disabled packages - restarting Sublime Text may be required') %
