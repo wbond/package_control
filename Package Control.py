@@ -549,6 +549,10 @@ class CliDownloader(Downloader):
             if os.path.exists(path):
                 return path
 
+            if sys.platform == 'win32':
+                if os.path.exists(path + '.exe'):
+                    return path
+
         raise BinaryNotFoundError('The binary %s could not be located' % name)
 
     def execute(self, args):
