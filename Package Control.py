@@ -1461,7 +1461,12 @@ class PackageManager():
                 (__name__, package_name, str(e)))
             return False
 
-        self.print_messages(package_name, package_dir, is_upgrade, old_version)
+        try:
+            self.print_messages(package_name, package_dir, is_upgrade, old_version)
+        except (UnicodeDecodeError) as (e):
+            sublime.error_message(('%s: An error occurred while printing update ' +
+                'messages for %s. %s') %
+                (__name__, package_name, str(e)))
 
         with open(package_metadata_file, 'w') as f:
             metadata = {
