@@ -2243,7 +2243,16 @@ class AutomaticUpgrader(threading.Thread, PackageStartup):
         self.auto_upgrade_ignore = self.settings.get('auto_upgrade_ignore')
 
         self.next_run = int(time.time())
-        self.last_run = self.settings.get('auto_upgrade_last_run')
+        self.last_run = None
+        last_run_file = os.path.join(sublime.packages_path(), 'User',
+                                     '.package_control_last_run')
+
+        if os.path.isfile(last_run_file):
+            with open(last_run_file) as fobj:
+                try:
+                    self.last_run = int(fobj.read())
+                except ValueError:
+                    pass
 
         frequency = self.settings.get('auto_upgrade_frequency')
         if frequency:
@@ -2257,8 +2266,8 @@ class AutomaticUpgrader(threading.Thread, PackageStartup):
             set(found_packages))
 
         if self.auto_upgrade and self.next_run <= time.time():
-            self.settings.set('auto_upgrade_last_run', int(time.time()))
-            sublime.save_settings(self.settings_file)
+            with open(last_run_file, 'w') as fobj:
+                fobj.write(str(int(time.time())))
 
         threading.Thread.__init__(self)
 
