@@ -1526,7 +1526,11 @@ class PackageManager():
             return
 
         messages_fp = open(messages_file, 'r')
-        message_info = json.load(messages_fp)
+        try:
+            message_info = json.load(messages_fp)
+        except (ValueError):
+            print '%s: Error parsing messages.json for %s' % (__name__, package)
+            return
         messages_fp.close()
 
         output = ''
