@@ -462,7 +462,19 @@ class BitBucketPackageProvider():
                 api_url)
             return False
 
-        changeset_url = api_url + '/changesets/default'
+        main_branch_url = api_url + '/main-branch/'
+        main_branch_json = self.package_manager.download_url(main_branch_url,
+            'Error downloading repository.')
+        if main_branch_json == False:
+            return False
+        try:
+            main_branch_info = json.loads(main_branch_json)
+        except (ValueError):
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                main_branch_url)
+            return False
+
+        changeset_url = api_url + '/changesets/' + main_branch_info['name']
         changeset_json = self.package_manager.download_url(changeset_url,
             'Error downloading repository.')
         if changeset_json == False:
