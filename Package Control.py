@@ -1862,6 +1862,9 @@ class PackageInstaller():
         return package_list
 
     def disable_package(self, package):
+        # Don't disable Package Control so it does not get stuck disabled
+        if package == 'Package Control':
+            return
         settings = sublime.load_settings(preferences_filename())
         ignored = settings.get('ignored_packages')
         if not ignored:
@@ -2103,14 +2106,17 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
         if picked == -1:
             return
         package = self.package_list[picked][0]
-        settings = sublime.load_settings(preferences_filename())
-        ignored = settings.get('ignored_packages')
-        if not ignored:
-            ignored = []
-        if not package in ignored:
-            ignored.append(package)
-            settings.set('ignored_packages', ignored)
-            sublime.save_settings(preferences_filename())
+
+        # Don't disable Package Control so it does not get stuck disabled
+        if package != 'Package Control':
+            settings = sublime.load_settings(preferences_filename())
+            ignored = settings.get('ignored_packages')
+            if not ignored:
+                ignored = []
+            if not package in ignored:
+                ignored.append(package)
+                settings.set('ignored_packages', ignored)
+                sublime.save_settings(preferences_filename())
 
         ignored.remove(package)
         thread = RemovePackageThread(self.manager, package,
