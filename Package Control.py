@@ -278,9 +278,22 @@ class PackageProvider():
         return self.repo_info.get('renamed_packages', {})
 
 
-class GitHubPackageProvider():
+class NonCachingProvider():
+    def fetch_json(self, url):
+        repository_json = self.package_manager.download_url(url,
+            'Error downloading repository.')
+        if repository_json == False:
+            return False
+        try:
+            return json.loads(repository_json)
+        except (ValueError):
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                url)
+        return False
+
+
+class GitHubPackageProvider(NonCachingProvider):
     def __init__(self, repo, package_manager):
-        self.repo_info = None
         self.repo = repo
         self.package_manager = package_manager
 
@@ -300,31 +313,15 @@ class GitHubPackageProvider():
         api_url = re.sub('^https?://github.com/([^/]+)/([^/]+)($|/.*$)',
             'https://api.github.com/repos/\\1/\\2', self.repo)
 
-        repo_json = self.package_manager.download_url(api_url,
-            'Error downloading repository.')
-        if repo_json == False:
-            return False
-
-        try:
-            repo_info = json.loads(repo_json)
-        except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                api_url)
+        repo_info = self.fetch_json(api_url)
+        if repo_info == False:
             return False
 
         commit_api_url = api_url + '/commits?' + \
             urllib.urlencode({'sha': branch, 'per_page': 1})
 
-        commit_json = self.package_manager.download_url(commit_api_url,
-            'Error downloading repository.')
-        if commit_json == False:
-            return False
-
-        try:
-            commit_info = json.loads(commit_json)
-        except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                commit_api_url)
+        commit_info = self.fetch_json(commit_api_url)
+        if commit_info == False:
             return False
 
         download_url = 'https://nodeload.github.com/' + \
@@ -361,9 +358,8 @@ class GitHubPackageProvider():
         return {}
 
 
-class GitHubUserProvider():
+class GitHubUserProvider(NonCachingProvider):
     def __init__(self, repo, package_manager):
-        self.repo_info = None
         self.repo = repo
         self.package_manager = package_manager
 
@@ -376,16 +372,8 @@ class GitHubUserProvider():
 
         api_url = 'https://api.github.com/users/%s/repos?per_page=100' % user
 
-        repo_json = self.package_manager.download_url(api_url,
-            'Error downloading repository.')
-        if repo_json == False:
-            return False
-
-        try:
-            repo_info = json.loads(repo_json)
-        except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                api_url)
+        repo_info = self.fetch_json(api_url)
+        if repo_info == False:
             return False
 
         packages = {}
@@ -393,16 +381,8 @@ class GitHubUserProvider():
             commit_api_url = ('https://api.github.com/repos/%s/%s/commits' + \
                 '?sha=master&per_page=1') % (user, package_info['name'])
 
-            commit_json = self.package_manager.download_url(commit_api_url,
-                'Error downloading repository.')
-            if commit_json == False:
-                return False
-
-            try:
-                commit_info = json.loads(commit_json)
-            except (ValueError):
-                print '%s: Error parsing JSON from repository %s.' % (__name__,
-                    commit_api_url)
+            commit_info = self.fetch_json(commit_api_url)
+            if commit_info == False:
                 return False
 
             commit_date = commit_info[0]['commit']['committer']['date']
@@ -417,8 +397,8 @@ class GitHubUserProvider():
 
             package = {
                 'name': package_info['name'],
-                'description': repo_info['description'] if \
-                    repo_info['description'] else 'No description provided',
+                'description': package_info['description'] if \
+                    package_info['description'] else 'No description provided',
                 'url': homepage,
                 'author': package_info['owner']['login'],
                 'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -438,9 +418,8 @@ class GitHubUserProvider():
         return {}
 
 
-class BitBucketPackageProvider():
+class BitBucketPackageProvider(NonCachingProvider):
     def __init__(self, repo, package_manager):
-        self.repo_info = None
         self.repo = repo
         self.package_manager = package_manager
 
@@ -451,40 +430,21 @@ class BitBucketPackageProvider():
         api_url = re.sub('^https?://bitbucket.org/',
             'https://api.bitbucket.org/1.0/repositories/', self.repo)
         api_url = api_url.rstrip('/')
-        repo_json = self.package_manager.download_url(api_url,
-            'Error downloading repository.')
-        if repo_json == False:
-            return False
-        try:
-            repo_info = json.loads(repo_json)
-        except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                api_url)
+
+        repo_info = self.fetch_json(api_url)
+        if repo_info == False:
             return False
 
         main_branch_url = api_url + '/main-branch/'
-        main_branch_json = self.package_manager.download_url(main_branch_url,
-            'Error downloading repository.')
-        if main_branch_json == False:
-            return False
-        try:
-            main_branch_info = json.loads(main_branch_json)
-        except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                main_branch_url)
+        main_branch_info = self.fetch_json(main_branch_url)
+        if main_branch_info == False:
             return False
 
         changeset_url = api_url + '/changesets/' + main_branch_info['name']
-        changeset_json = self.package_manager.download_url(changeset_url,
-            'Error downloading repository.')
-        if changeset_json == False:
+        last_commit = self.fetch_json(changeset_url)
+        if last_commit == False:
             return False
-        try:
-            last_commit = json.loads(changeset_json)
-        except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                changeset_url)
-            return False
+
         commit_date = last_commit['timestamp']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
             '%Y-%m-%d %H:%M:%S')
