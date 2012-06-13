@@ -157,8 +157,8 @@ class ChannelProvider():
         try:
             channel_info = json.loads(channel_json)
         except (ValueError):
-            sublime.error_message(('%s: Error parsing JSON from ' +
-                'channel %s.') % (__name__, self.channel))
+            print '%s: Error parsing JSON from channel %s.' % (__name__,
+                self.channel)
             channel_info = False
 
         self.channel_info = channel_info
@@ -240,8 +240,8 @@ class PackageProvider():
         try:
             self.repo_info = json.loads(repository_json)
         except (ValueError):
-            sublime.error_message(('%s: Error parsing JSON from ' +
-                'repository %s.') % (__name__, self.repo))
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                self.repo)
             self.repo_info = False
 
     def get_packages(self):
@@ -308,8 +308,8 @@ class GitHubPackageProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message(('%s: Error parsing JSON from ' +
-                'repository %s.') % (__name__, api_url))
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                api_url)
             return False
 
         commit_api_url = api_url + '/commits?' + \
@@ -323,8 +323,8 @@ class GitHubPackageProvider():
         try:
             commit_info = json.loads(commit_json)
         except (ValueError):
-            sublime.error_message(('%s: Error parsing JSON from ' +
-                'repository %s.') % (__name__, commit_api_url))
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                commit_api_url)
             return False
 
         download_url = 'https://nodeload.github.com/' + \
@@ -384,8 +384,8 @@ class GitHubUserProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message(('%s: Error parsing JSON from ' +
-                'repository %s.') % (__name__, api_url))
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                api_url)
             return False
 
         packages = {}
@@ -401,8 +401,8 @@ class GitHubUserProvider():
             try:
                 commit_info = json.loads(commit_json)
             except (ValueError):
-                sublime.error_message(('%s: Error parsing JSON from ' +
-                    'repository %s.') % (__name__, commit_api_url))
+                print '%s: Error parsing JSON from repository %s.' % (__name__,
+                    commit_api_url)
                 return False
 
             commit_date = commit_info[0]['commit']['committer']['date']
@@ -458,8 +458,8 @@ class BitBucketPackageProvider():
         try:
             repo_info = json.loads(repo_json)
         except (ValueError):
-            sublime.error_message(('%s: Error parsing JSON from ' +
-                'repository %s.') % (__name__, api_url))
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                api_url)
             return False
 
         changeset_url = api_url + '/changesets/default'
@@ -470,8 +470,8 @@ class BitBucketPackageProvider():
         try:
             last_commit = json.loads(changeset_json)
         except (ValueError):
-            sublime.error_message(('%s: Error parsing JSON from ' +
-                'repository %s.') % (__name__, changeset_url))
+            print '%s: Error parsing JSON from repository %s.' % (__name__,
+                changeset_url)
             return False
         commit_date = last_commit['timestamp']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
