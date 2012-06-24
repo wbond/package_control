@@ -7,6 +7,7 @@ import subprocess
 import zipfile
 import urllib
 import urllib2
+import base64
 import json
 from fnmatch import fnmatch
 import re
@@ -338,6 +339,49 @@ class GitHubPackageProvider(NonCachingProvider):
         if not homepage:
             homepage = repo_info['html_url']
 
+        downloads = []
+        downloads.append({
+                    'version': utc_timestamp,
+                    'url': download_url
+                })
+        trees_url = api_url + "/git/trees/" + branch
+        trees_json = self.package_manager.download_url(trees_url, 'Error downloading repository')
+        try:
+            trees_info = json.loads(trees_json)
+        except (ValueError):
+            sublime.error_message(('%s: Error parsing JSON from ' +
+                'repository %s.') % (__name__, trees_url))
+            return False
+
+        gitmodules = None
+        for entry in trees_info["tree"]:
+            if entry["path"] == ".gitmodules":
+                blob_json = self.package_manager.download_url(entry["url"], 'Error downloading repository')
+                try:
+                    blob_info = json.loads(blob_json)
+                except (ValueError):
+                    sublime.error_message(('%s: Error parsing JSON from ' +
+                        'repository %s.') % (__name__, entry["url"]))
+                    return False
+
+                gitmodules = base64.b64decode(blob_info["content"])
+                gitmodules = dict(re.findall("\[submodule\s+\".*?\"\]\s+path\s*=\s*(.*?)\n\s*url\s*=\s*(.*?)\n", gitmodules, re.MULTILINE|re.DOTALL))
+                break
+
+        for entry in trees_info["tree"]:
+            if entry["type"] == "commit" and entry["path"] in gitmodules:
+                suburl = re.sub("^.*?github.com/(.*?).git", "https://github.com/\\1/tree/%s" % entry["sha"], gitmodules[entry["path"]])
+                subpack = GitHubPackageProvider(suburl, self.package_manager)
+                subpackage = subpack.get_packages()
+                if subpackage != False:
+                    for name in subpackage:
+                        # TODO: is there ever more than one name in a subpackage?
+                        add = {
+                            'submodule': entry['path'],
+                            'downloads': subpackage[name]["downloads"]
+                        }
+                        downloads.append(add)
+
         package = {
             'name': repo_info['name'],
             'description': repo_info['description'] if \
@@ -345,12 +389,7 @@ class GitHubPackageProvider(NonCachingProvider):
             'url': homepage,
             'author': repo_info['owner']['login'],
             'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'downloads': [
-                {
-                    'version': utc_timestamp,
-                    'url': download_url
-                }
-            ]
+            'downloads': downloads
         }
         return {package['name']: package}
 
@@ -1267,6 +1306,53 @@ class PackageManager():
 
         return True
 
+    def _add_submodules(self, pack_zip, root_name, path, modules=[]):
+        for module in modules:
+            if "url" in module:
+                try:
+                    tmp = tempfile.TemporaryFile()
+                    module_bytes = self.download_url(module["url"], 'Error downloading repository')
+                    if module_bytes == False:
+                        return False
+                    tmp.write(module_bytes)
+                    tmp.seek(0)
+                    modzip = zipfile.ZipFile(tmp, "r")
+                    for name in modzip.namelist():
+                        data = modzip.read(name)
+                        name = name[name.find("/")+1:]
+                        target = "%s/%s/%s" % (root_name, "/".join(path), name)
+                        pack_zip.writestr(target, data)
+                except:
+                    return False
+            elif "submodule" in module:
+                path.append(module["submodule"])
+                self._add_submodules(pack_zip, root_name, path, module["downloads"])
+                path.pop()
+        return True
+
+    def add_submodules(self, targetzip, package):
+        modules = package["downloads"][1:]
+        if len(modules):
+            try:
+                pack_zip = zipfile.ZipFile(targetzip, 'r')
+                root_name = ""
+                for name in pack_zip.namelist():
+                    if "/" in name:
+                        root_name = name[:name.find("/")]
+                        break
+                pack_zip.close()
+                pack_zip = zipfile.ZipFile(targetzip, 'a')
+                if self._add_submodules(pack_zip, root_name, [], modules) == False:
+                    return False
+            except:
+                return False
+            finally:
+                try:
+                    pack_zip.close()
+                except:
+                    pass
+        return True
+
     def install_package(self, package_name):
         packages = self.list_available_packages()
 
@@ -1339,6 +1425,11 @@ class PackageManager():
                     (__name__, package_name, str(exception)))
                 shutil.rmtree(package_backup_dir)
                 return False
+
+        if self.add_submodules(package_path, packages[package_name]) == False:
+            sublime.error_message(('%s: An error occurred while ' +
+                'trying to fetch the submodules for %s. Please try ' +
+                'installing the package again.') % (__name__, package_name))
 
         try:
             package_zip = zipfile.ZipFile(package_path, 'r')
