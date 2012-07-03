@@ -442,7 +442,8 @@ class Downloader():
             print '%s: No CA certs available for %s.' % (__name__,
                 domain)
             return False
-        cert_path = os.path.join(sublime.packages_path(), 'Package Control',
+        packages = sublime.packages_path().encode(sys.getfilesystemencoding())
+        cert_path = os.path.join(packages, 'Package Control',
             'certs', cert_info[0])
         ca_bundle_path = os.path.join(sublime.packages_path(),
             'Package Control', 'certs', 'ca-bundle.crt')
