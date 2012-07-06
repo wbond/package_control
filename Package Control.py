@@ -1889,7 +1889,7 @@ class PackageInstaller():
     def disable_package(self, package):
         # Don't disable Package Control so it does not get stuck disabled
         if package == 'Package Control':
-            return
+            return False
         settings = sublime.load_settings(preferences_filename())
         ignored = settings.get('ignored_packages')
         if not ignored:
@@ -1898,6 +1898,8 @@ class PackageInstaller():
             ignored.append(package)
             settings.set('ignored_packages', ignored)
             sublime.save_settings(preferences_filename())
+            return True
+        return False
 
     def reenable_package(self, package):
         settings = sublime.load_settings(preferences_filename())
@@ -1914,9 +1916,10 @@ class PackageInstaller():
             return
         name = self.package_list[picked][0]
 
-        def on_complete():
-            self.reenable_package(name)
-        self.disable_package(name)
+        if self.disable_package(name):
+            on_complete = lambda: self.reenable_package(name)
+        else:
+            on_complete = None
 
         thread = PackageInstallerThread(self.manager, name, on_complete)
         thread.start()
@@ -1933,7 +1936,8 @@ class PackageInstallerThread(threading.Thread):
 
     def run(self):
         self.result = self.manager.install_package(self.package)
-        sublime.set_timeout(self.on_complete, 1)
+        if self.on_complete:
+            sublime.set_timeout(self.on_complete, 1)
 
 
 class InstallPackageCommand(sublime_plugin.WindowCommand):
@@ -2006,9 +2010,10 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
             return
         name = self.package_list[picked][0]
 
-        def on_complete():
-            self.reenable_package(name)
-        self.disable_package(name)
+        if self.disable_package(name):
+            on_complete = lambda: self.reenable_package(name)
+        else:
+            on_complete = None
 
         thread = PackageInstallerThread(self.manager, name, on_complete)
         thread.start()
@@ -2036,16 +2041,29 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
 
     def run(self):
         self.package_renamer.rename_packages(self)
+        package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
-        for info in self.make_package_list(['install', 'reinstall', 'none']):
-            def on_complete():
-                self.reenable_package(info[0])
-            self.disable_package(info[0])
+        disabled_packages = {}
+            
+        def do_upgrades():
+            # Pause so packages can be disabled
+            time.sleep(0.5)
+            for info in package_list:
+                if disabled_packages.get(info[0]):
+                    on_complete = lambda: self.reenable_package(info[0])
+                else:
+                    on_complete = None
+                thread = PackageInstallerThread(self.manager, info[0], on_complete)
+                thread.start()
+                ThreadProgress(thread, 'Upgrading package %s' % info[0],
+                    'Package %s successfully %s' % (info[0], self.completion_type))
 
-            thread = PackageInstallerThread(self.manager, info[0], on_complete)
-            thread.start()
-            ThreadProgress(thread, 'Upgrading package %s' % info[0],
-                'Package %s successfully %s' % (info[0], self.completion_type))
+        def disable_packages():
+            for info in package_list:
+                disabled_packages[info[0]] = self.disable_package(info[0])
+            threading.Thread(target=do_upgrades).start()
+
+        sublime.set_timeout(disable_packages, 1)
 
 
 class ExistingPackagesCommand():
