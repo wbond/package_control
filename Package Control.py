@@ -2,7 +2,13 @@
 import sublime
 import sublime_plugin
 import os
+// fix problem @UnicodeEncodeError: 'ascii' codec can't encode characters in position 9-13: ordinal not in range(128)@
 import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
+import locale
+sys.setdefaultencoding(locale.getpreferredencoding())
+
 import subprocess
 import zipfile
 import urllib
