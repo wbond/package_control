@@ -49,6 +49,9 @@
 	// An HTTPS proxy server to use for requests - if not specified, but
 	// http_proxy is, http_proxy will be used for https_proxy also
 	"https_proxy": "",
+	// Username and password for proxy
+	"proxy_username": "",
+	"proxy_password": "",
 
 	// Setting this to true will cause Package Control to ignore all git
 	// and hg repositories - this may help if trying to list packages to install
