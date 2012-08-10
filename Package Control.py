@@ -17,6 +17,9 @@ import shutil
 import tempfile
 
 if os.name == 'nt':
+    # Python 2.x on Windows can't properly import from non-ASCII paths, so
+    # this code added the DOC 8.3 version of the lib folder to the path in
+    # case the user's username includes non-ASCII characters
     from ctypes import windll, create_unicode_buffer
 
     lib_path = os.path.join(sublime.packages_path(), 'Package Control', 'lib', 'windows')
@@ -25,8 +28,13 @@ if os.name == 'nt':
         lib_path = buf.value
     if lib_path not in sys.path:
         sys.path.append(lib_path)
+
     from ntlm import HTTPNtlmAuthHandler
 
+
+# The following code is wrapped in a try because the Linux versions of Sublime
+# Text do not include the ssl module due to the fact that different distros
+# have different versions
 try:
     import ssl
     import httplib
@@ -42,6 +50,7 @@ try:
             return ('Host %s returned an invalid certificate (%s) %s\n' %
                     (self.host, self.reason, self.cert))
 
+    # Adds SSL certificate checking for urllib2 to help prevents MITM attacks
     class CertValidatingHTTPSConnection(httplib.HTTPConnection):
         default_port = httplib.HTTPS_PORT
 
@@ -112,12 +121,27 @@ except (ImportError):
 
 
 def preferences_filename():
+    """:return: The appropriate settings filename based on the version of Sublime Text"""
+
     if int(sublime.version()) >= 2174:
         return 'Preferences.sublime-settings'
     return 'Global.sublime-settings'
 
 
 class ThreadProgress():
+    """
+    Animates an indicator, [=   ], in the status area while a thread runs
+
+    :param thread:
+        The thread to track for activity
+
+    :param message:
+        The message to display next to the activity indicator
+
+    :param success_message:
+        The message to display once the thread is complete
+    """
+
     def __init__(self, thread, message, success_message):
         self.thread = thread
         self.message = message
@@ -136,26 +160,48 @@ class ThreadProgress():
 
         before = i % self.size
         after = (self.size - 1) - before
+
         sublime.status_message('%s [%s=%s]' % \
             (self.message, ' ' * before, ' ' * after))
+
         if not after:
             self.addend = -1
         if not before:
             self.addend = 1
         i += self.addend
+
         sublime.set_timeout(lambda: self.run(i), 100)
 
 
 class ChannelProvider():
+    """
+    Retrieves a channel and provides an API into the information
+
+    The current channel/repository infrastructure caches repository info into
+    the channel to improve the Package Control client performance. This also
+    has the side effect of lessening the load on the GitHub and BitBucket APIs
+    and getting around not-infrequent HTTP 503 errors from those APIs.
+
+    :param channel:
+        The URL of the channel
+
+    :param package_manager:
+        An instance of :class:`PackageManager` used to download the file
+    """
+
     def __init__(self, channel, package_manager):
         self.channel_info = None
         self.channel = channel
         self.package_manager = package_manager
 
     def match_url(self):
+        """Indicates if this provider can handle the provided channel"""
+
         return True
 
     def fetch_channel(self):
+        """Retrieves and loads the JSON for other methods to use"""
+
         if self.channel_info != None:
             return
 
@@ -175,30 +221,86 @@ class ChannelProvider():
         self.channel_info = channel_info
 
     def get_name_map(self):
+        """:return: A dict of the mapping for URL slug -> package name"""
+
         self.fetch_channel()
         if self.channel_info == False:
             return False
         return self.channel_info.get('package_name_map', {})
 
     def get_renamed_packages(self):
+        """:return: A dict of the packages that have been renamed"""
+
         self.fetch_channel()
         if self.channel_info == False:
             return False
         return self.channel_info.get('renamed_packages', {})
 
     def get_repositories(self):
+        """:return: A list of the repository URLs"""
+
         self.fetch_channel()
         if self.channel_info == False:
             return False
         return self.channel_info['repositories']
 
     def get_certs(self):
+        """
+        Provides a secure way for distribution of SSL CA certificates
+
+        Unfortunately Python does not include a bundle of CA certs with urllib2
+        to perform SSL certificate validation. To circumvent this issue,
+        Package Control acts as a distributor of the CA certs for all HTTPS
+        URLs of package downloads.
+
+        The default channel scrapes and caches info about all packages
+        periodically, and in the process it checks the CA certs for all of
+        the HTTPS URLs listed in the repositories. The contents of the CA cert
+        files are then hashed, and the CA cert is stored in a filename with
+        that hash. This is a fingerprint to ensure that Package Control has
+        the appropriate CA cert for a domain name.
+
+        Next, the default channel file serves up a JSON object of the domain
+        names and the hashes of their current CA cert files. If Package Control
+        does not have the appropriate hash for a domain, it may retrieve it
+        from the channel server. To ensure that Package Control is talking to
+        a trusted authority to get the CA certs from, the CA cert for
+        sublime.wbond.net is bundled with Package Control. Then when downloading
+        the channel file, Package Control can ensure that the channel file's
+        SSL certificate is valid, thus ensuring the resulting CA certs are
+        legitimate.
+
+        As a matter of optimization, the distribution of Package Control also
+        includes the current CA certs for all known HTTPS domains that are
+        included in the channel, as of the time when Package Control was
+        last released.
+
+        :return: A dict of {'Domain Name': ['cert_file_hash', 'cert_file_download_url']}
+        """
+
         self.fetch_channel()
         if self.channel_info == False:
             return False
         return self.channel_info.get('certs', {})
 
     def get_packages(self, repo):
+        """
+        Provides access to the repository info that is cached in a channel
+
+        :param repo:
+            The URL of the repository to get the cached info of
+
+        :return:
+            A dict in the format:
+            {
+                'Package Name': {
+                    # Package details - see example-packages.json for format
+                },
+                ...
+            }
+            or False if there is an error
+        """
+
         self.fetch_channel()
         if self.channel_info == False:
             return False
@@ -206,6 +308,7 @@ class ChannelProvider():
             return False
         if self.channel_info['packages'].get(repo, False) == False:
             return False
+
         output = {}
         for package in self.channel_info['packages'][repo]:
             copy = package.copy()
@@ -223,22 +326,44 @@ class ChannelProvider():
             del copy['homepage']
 
             output[copy['name']] = copy
+
         return output
 
 
+# The providers (in order) to check when trying to download a channel
 _channel_providers = [ChannelProvider]
 
 
 class PackageProvider():
+    """
+    Generic repository downloader that fetches package info
+
+    With the current channel/repository architecture where the channel file
+    caches info from all includes repositories, these package providers just
+    serve the purpose of downloading packages not in the default channel.
+
+    The structure of the JSON a repository should contain is located in
+    example-packages.json.
+
+    :param repo:
+        The URL of the package repository
+
+    :param package_manager:
+        An instance of :class:`PackageManager` used to download the file
+    """
     def __init__(self, repo, package_manager):
         self.repo_info = None
         self.repo = repo
         self.package_manager = package_manager
 
     def match_url(self):
+        """Indicates if this provider can handle the provided repo"""
+
         return True
 
     def fetch_repo(self):
+        """Retrieves and loads the JSON for other methods to use"""
+
         if self.repo_info != None:
             return
 
@@ -256,6 +381,20 @@ class PackageProvider():
             self.repo_info = False
 
     def get_packages(self):
+        """
+        Provides access to the repository info that is cached in a channel
+
+        :return:
+            A dict in the format:
+            {
+                'Package Name': {
+                    # Package details - see example-packages.json for format
+                },
+                ...
+            }
+            or False if there is an error
+        """
+
         self.fetch_repo()
         if self.repo_info == False:
             return False
@@ -286,11 +425,23 @@ class PackageProvider():
         return output
 
     def get_renamed_packages(self):
+        """:return: A dict of the packages that have been renamed"""
+
         return self.repo_info.get('renamed_packages', {})
 
 
 class NonCachingProvider():
+    """
+    Base for package providers that do not need to cache the JSON
+    """
+
     def fetch_json(self, url):
+        """
+        Retrieves and parses the JSON from a URL
+
+        :return: A dict or list from the JSON, or False on error
+        """
+
         repository_json = self.package_manager.download_url(url,
             'Error downloading repository.')
         if repository_json == False:
@@ -304,17 +455,34 @@ class NonCachingProvider():
 
 
 class GitHubPackageProvider(NonCachingProvider):
+    """
+    Allows using a public GitHub repository as the source for a single package
+
+    :param repo:
+        The public web URL to the GitHub repository. Should be in the format
+        `https://github.com/user/package` for the master branch, or
+        `https://github.com/user/package/tree/{branch_name}` for any other
+        branch.
+
+    :param package_manager:
+        An instance of :class:`PackageManager` used to access the API
+    """
+
     def __init__(self, repo, package_manager):
         self.repo = repo
         self.package_manager = package_manager
 
     def match_url(self):
+        """Indicates if this provider can handle the provided repo"""
+
         master = re.search('^https?://github.com/[^/]+/[^/]+/?$', self.repo)
         branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
             self.repo)
         return master != None or branch != None
 
     def get_packages(self):
+        """Uses the GitHub API to construct necessary info for a package"""
+
         branch = 'master'
         branch_match = re.search(
             '^https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', self.repo)
@@ -328,6 +496,9 @@ class GitHubPackageProvider(NonCachingProvider):
         if repo_info == False:
             return False
 
+        # In addition to hitting the main API endpoint for this repo, we
+        # also have to list the commits to get the timestamp of the last
+        # commit since we use that to generate a version number
         commit_api_url = api_url + '/commits?' + \
             urllib.urlencode({'sha': branch, 'per_page': 1})
 
@@ -335,6 +506,9 @@ class GitHubPackageProvider(NonCachingProvider):
         if commit_info == False:
             return False
 
+        # We specifically use nodeload.github.com here because the download
+        # URLs all redirect there, and some of the downloaders don't follow
+        # HTTP redirect headers
         download_url = 'https://nodeload.github.com/' + \
             repo_info['owner']['login'] + '/' + \
             repo_info['name'] + '/zipball/' + urllib.quote(branch)
@@ -366,18 +540,35 @@ class GitHubPackageProvider(NonCachingProvider):
         return {package['name']: package}
 
     def get_renamed_packages(self):
+        """For API-compatibility with :class:`PackageProvider`"""
+
         return {}
 
 
 class GitHubUserProvider(NonCachingProvider):
+    """
+    Allows using a GitHub user/organization as the source for multiple packages
+
+    :param repo:
+        The public web URL to the GitHub user/org. Should be in the format
+        `https://github.com/user`.
+
+    :param package_manager:
+        An instance of :class:`PackageManager` used to access the API
+    """
+
     def __init__(self, repo, package_manager):
         self.repo = repo
         self.package_manager = package_manager
 
     def match_url(self):
+        """Indicates if this provider can handle the provided repo"""
+
         return re.search('^https?://github.com/[^/]+/?$', self.repo) != None
 
     def get_packages(self):
+        """Uses the GitHub API to construct necessary info for all packages"""
+
         user_match = re.search('^https?://github.com/([^/]+)/?$', self.repo)
         user = user_match.group(1)
 
@@ -389,6 +580,8 @@ class GitHubUserProvider(NonCachingProvider):
 
         packages = {}
         for package_info in repo_info:
+            # All packages for the user are made available, and always from
+            # the master branch. Anything else requires a custom packages.json
             commit_api_url = ('https://api.github.com/repos/%s/%s/commits' + \
                 '?sha=master&per_page=1') % (user, package_info['name'])
 
@@ -416,6 +609,9 @@ class GitHubUserProvider(NonCachingProvider):
                 'downloads': [
                     {
                         'version': utc_timestamp,
+                        # We specifically use nodeload.github.com here because
+                        # the download URLs all redirect there, and some of the
+                        # downloaders don't follow HTTP redirect headers
                         'url': 'https://nodeload.github.com/' + \
                             package_info['owner']['login'] + '/' + \
                             package_info['name'] + '/zipball/master'
@@ -426,18 +622,35 @@ class GitHubUserProvider(NonCachingProvider):
         return packages
 
     def get_renamed_packages(self):
+        """For API-compatibility with :class:`PackageProvider`"""
+
         return {}
 
 
 class BitBucketPackageProvider(NonCachingProvider):
+    """
+    Allows using a public BitBucket repository as the source for a single package
+
+    :param repo:
+        The public web URL to the BitBucket repository. Should be in the format
+        `https://bitbucket.org/user/package`.
+
+    :param package_manager:
+        An instance of :class:`PackageManager` used to access the API
+    """
+
     def __init__(self, repo, package_manager):
         self.repo = repo
         self.package_manager = package_manager
 
     def match_url(self):
+        """Indicates if this provider can handle the provided repo"""
+
         return re.search('^https?://bitbucket.org', self.repo) != None
 
     def get_packages(self):
+        """Uses the BitBucket API to construct necessary info for a package"""
+
         api_url = re.sub('^https?://bitbucket.org/',
             'https://api.bitbucket.org/1.0/repositories/', self.repo)
         api_url = api_url.rstrip('/')
@@ -446,11 +659,15 @@ class BitBucketPackageProvider(NonCachingProvider):
         if repo_info == False:
             return False
 
+        # Since HG allows for arbitrary main branch names, we have to hit
+        # this URL just to get that info
         main_branch_url = api_url + '/main-branch/'
         main_branch_info = self.fetch_json(main_branch_url)
         if main_branch_info == False:
             return False
 
+        # Grabbing the changesets is necessary because we construct the
+        # version number from the last commit timestamp
         changeset_url = api_url + '/changesets/' + main_branch_info['name']
         last_commit = self.fetch_json(changeset_url)
         if last_commit == False:
@@ -483,18 +700,30 @@ class BitBucketPackageProvider(NonCachingProvider):
         return {package['name']: package}
 
     def get_renamed_packages(self):
+        """For API-compatibility with :class:`PackageProvider`"""
+
         return {}
 
 
+# The providers (in order) to check when trying to download repository info
 _package_providers = [BitBucketPackageProvider, GitHubPackageProvider,
     GitHubUserProvider, PackageProvider]
 
 
 class BinaryNotFoundError(Exception):
+    """If a necessary executable is not found in the PATH on the system"""
+
     pass
 
 
 class NonCleanExitError(Exception):
+    """
+    When an subprocess does not exit cleanly
+
+    :param returncode:
+        The command line integer return code of the subprocess
+    """
+
     def __init__(self, returncode):
         self.returncode = returncode
 
@@ -503,7 +732,28 @@ class NonCleanExitError(Exception):
 
 
 class Downloader():
+    """
+    A base downloader that actually performs downloading URLs
+
+    The SSL module is not included with the bundled Python for Linux
+    users of Sublime Text, so Linux machines will fall back to using curl
+    or wget for HTTPS URLs.
+    """
+
     def check_certs(self, domain, timeout):
+        """
+        Ensures that the SSL CA cert for a domain is present on the machine
+
+        :param domain:
+            The domain to ensure there is a CA cert for
+
+        :param timeout:
+            The int timeout for downloading the CA cert from the channel
+
+        :return:
+            The CA cert bundle path on success, or False on error
+        """
+
         cert_info = self.settings.get('certs', {}).get(
             domain)
         if not cert_info:
@@ -528,10 +778,31 @@ class Downloader():
 
 
 class CliDownloader(Downloader):
+    """
+    Base for downloaders that use a command line program
+
+    :param settings:
+        A dict of the various Package Control settings. The Sublime Text
+        Settings API is not used because this code is run in a thread.
+    """
+
     def __init__(self, settings):
         self.settings = settings
 
     def find_binary(self, name):
+        """
+        Finds the given executable name in the system PATH
+
+        :param name:
+            The exact name of the executable to find
+
+        :return:
+            The absolute path to the executable
+
+        :raises:
+            BinaryNotFoundError when the executable can not be found
+        """
+
         for dir in os.environ['PATH'].split(os.pathsep):
             path = os.path.join(dir, name)
             if os.path.exists(path):
@@ -540,6 +811,19 @@ class CliDownloader(Downloader):
         raise BinaryNotFoundError('The binary %s could not be located' % name)
 
     def execute(self, args):
+        """
+        Runs the executable and args and returns the result
+
+        :param args:
+            A list of the executable path and all arguments to be passed to it
+
+        :return:
+            The text output of the executable
+
+        :raises:
+            NonCleanExitError when the executable exits with an error
+        """
+
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -553,10 +837,43 @@ class CliDownloader(Downloader):
 
 
 class UrlLib2Downloader(Downloader):
+    """
+    A downloader that uses the Python urllib2 module
+
+    :param settings:
+        A dict of the various Package Control settings. The Sublime Text
+        Settings API is not used because this code is run in a thread.
+    """
+
     def __init__(self, settings):
         self.settings = settings
 
     def download(self, url, error_message, timeout, tries):
+        """
+        Downloads a URL and returns the contents
+
+        Uses the proxy settings from the Package Control.sublime-settings file,
+        however there seem to be a decent number of proxies that this code
+        does not work with. Patches welcome!
+
+        :param url:
+            The URL to download
+
+        :param error_message:
+            A string to include in the console error that is printed
+            when an error occurs
+
+        :param timeout:
+            The int number of seconds to set the timeout to
+
+        :param tries:
+            The int number of times to try and download the URL in the case of
+            a timeout or HTTP 503 error
+
+        :return:
+            The string contents of the URL, or False on error
+        """
+
         http_proxy = self.settings.get('http_proxy')
         https_proxy = self.settings.get('https_proxy')
         if http_proxy or https_proxy:
@@ -621,18 +938,26 @@ class UrlLib2Downloader(Downloader):
 
             except (urllib2.URLError) as (e):
                 # Bitbucket and Github timeout a decent amount
-                if str(e.reason) == 'The read operation timed out' or \
-                        str(e.reason) == 'timed out':
-                    print ('%s: Downloading %s timed out, trying ' +
-                        'again') % (__name__, url)
+                if unicode(e.reason) == 'The read operation timed out' or \
+                        unicode(e.reason) == 'timed out':
+                    print (u'%s: Downloading %s timed out, trying ' +
+                        u'again') % (__name__, url)
                     continue
-                print '%s: %s URL error %s downloading %s.' % (__name__,
-                    error_message, str(e.reason), url)
+                print u'%s: %s URL error %s downloading %s.' % (__name__,
+                    error_message, unicode(e.reason), url)
             break
         return False
 
 
 class WgetDownloader(CliDownloader):
+    """
+    A downloader that uses the command line program wget
+
+    :param settings:
+        A dict of the various Package Control settings. The Sublime Text
+        Settings API is not used because this code is run in a thread.
+    """
+
     def __init__(self, settings):
         self.settings = settings
         self.wget = self.find_binary('wget')
@@ -641,6 +966,27 @@ class WgetDownloader(CliDownloader):
         os.remove(self.tmp_file)
 
     def download(self, url, error_message, timeout, tries):
+        """
+        Downloads a URL and returns the contents
+
+        :param url:
+            The URL to download
+
+        :param error_message:
+            A string to include in the console error that is printed
+            when an error occurs
+
+        :param timeout:
+            The int number of seconds to set the timeout to
+
+        :param tries:
+            The int number of times to try and download the URL in the case of
+            a timeout or HTTP 503 error
+
+        :return:
+            The string contents of the URL, or False on error
+        """
+
         if not self.wget:
             return False
 
@@ -710,11 +1056,40 @@ class WgetDownloader(CliDownloader):
 
 
 class CurlDownloader(CliDownloader):
+    """
+    A downloader that uses the command line program curl
+
+    :param settings:
+        A dict of the various Package Control settings. The Sublime Text
+        Settings API is not used because this code is run in a thread.
+    """
+
     def __init__(self, settings):
         self.settings = settings
         self.curl = self.find_binary('curl')
 
     def download(self, url, error_message, timeout, tries):
+        """
+        Downloads a URL and returns the contents
+
+        :param url:
+            The URL to download
+
+        :param error_message:
+            A string to include in the console error that is printed
+            when an error occurs
+
+        :param timeout:
+            The int number of seconds to set the timeout to
+
+        :param tries:
+            The int number of times to try and download the URL in the case of
+            a timeout or HTTP 503 error
+
+        :return:
+            The string contents of the URL, or False on error
+        """
+
         if not self.curl:
             return False
         command = [self.curl, '-f', '--user-agent', 'Sublime Package Control',
@@ -765,10 +1140,27 @@ class CurlDownloader(CliDownloader):
             break
         return False
 
+
+# A cache of channel and repository info to allow users to install multiple
+# packages without having to wait for the metadata to be downloaded more
+# than once. The keys are managed locally by the utilizing code.
 _channel_repository_cache = {}
 
 
 class RepositoryDownloader(threading.Thread):
+    """
+    Downloads information about a repository in the background
+
+    :param package_manager:
+        An instance of :class:`PackageManager` used to download files
+
+    :param name_map:
+        The dict of name mapping for URL slug -> package name
+
+    :param repo:
+        The URL of the repository to download info about
+    """
+
     def __init__(self, package_manager, name_map, repo):
         self.package_manager = package_manager
         self.repo = repo
@@ -799,6 +1191,24 @@ class RepositoryDownloader(threading.Thread):
 
 
 class VcsUpgrader():
+    """
+    Base class for updating packages that are a version control repository on local disk
+
+    :param vcs_binary:
+        The full filesystem path to the executable for the version control
+        system. May be set to None to allow the code to try and find it.
+
+    :param update_command:
+        The command to pass to the version control executable to update the
+        repository.
+
+    :param working_copy:
+        The local path to the working copy/package directory
+
+    :param cache_length:
+        The lenth of time to cache if incoming changesets are available
+    """
+
     def __init__(self, vcs_binary, update_command, working_copy, cache_length):
         self.binary = vcs_binary
         self.update_command = update_command
@@ -806,6 +1216,18 @@ class VcsUpgrader():
         self.cache_length = cache_length
 
     def execute(self, args, dir):
+        """
+        Creates a subprocess with the executable/args
+
+        :param args:
+            A list of the executable path and all arguments to it
+
+        :param dir:
+            The directory in which to run the executable
+
+        :return: A string of the executable output
+        """
+
         startupinfo = None
         if os.name == 'nt':
             startupinfo = subprocess.STARTUPINFO()
@@ -818,6 +1240,15 @@ class VcsUpgrader():
         return proc.stdout.read().replace('\r\n', '\n').rstrip(' \n\r')
 
     def find_binary(self, name):
+        """
+        Locates the executable by looking in the PATH and well-known directories
+
+        :param name:
+            The string filename of the executable
+
+        :return: The filesystem path to the executable, or None if not found
+        """
+
         if self.binary:
             return self.binary
 
@@ -851,7 +1282,17 @@ class VcsUpgrader():
 
 
 class GitUpgrader(VcsUpgrader):
+    """
+    Allows upgrading a local git-repository-based package
+    """
+
     def retrieve_binary(self):
+        """
+        Returns the path to the git executable
+
+        :return: The string path to the executable or False on error
+        """
+
         name = 'git'
         if os.name == 'nt':
             name += '.exe'
@@ -876,6 +1317,12 @@ class GitUpgrader(VcsUpgrader):
         return binary
 
     def run(self):
+        """
+        Updates the repository with remote changes
+
+        :return: False or error, or True on success
+        """
+
         binary = self.retrieve_binary()
         if not binary:
             return False
@@ -885,6 +1332,8 @@ class GitUpgrader(VcsUpgrader):
         return True
 
     def incoming(self):
+        """:return: bool if remote revisions are available"""
+
         cache_key = self.working_copy + '.incoming'
         working_copy_cache = _channel_repository_cache.get(cache_key)
         if working_copy_cache and working_copy_cache.get('time') > \
@@ -908,7 +1357,17 @@ class GitUpgrader(VcsUpgrader):
 
 
 class HgUpgrader(VcsUpgrader):
+    """
+    Allows upgrading a local mercurial-repository-based package
+    """
+
     def retrieve_binary(self):
+        """
+        Returns the path to the hg executable
+
+        :return: The string path to the executable or False on error
+        """
+
         name = 'hg'
         if os.name == 'nt':
             name += '.exe'
@@ -928,6 +1387,12 @@ class HgUpgrader(VcsUpgrader):
         return binary
 
     def run(self):
+        """
+        Updates the repository with remote changes
+
+        :return: False or error, or True on success
+        """
+
         binary = self.retrieve_binary()
         if not binary:
             return False
@@ -937,6 +1402,8 @@ class HgUpgrader(VcsUpgrader):
         return True
 
     def incoming(self):
+        """:return: bool if remote revisions are available"""
+
         cache_key = self.working_copy + '.incoming'
         working_copy_cache = _channel_repository_cache.get(cache_key)
         if working_copy_cache and working_copy_cache.get('time') > \
