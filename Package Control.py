@@ -1426,6 +1426,18 @@ class HgUpgrader(VcsUpgrader):
 
 
 class PackageManager():
+    """
+    Allows downloading, creating, installing, upgrading, and deleting packages
+
+    Delegates metadata retrieval to the _channel_providers and
+    _package_providers classes. Uses VcsUpgrader-based classes for handling
+    git and hg repositories in the Packages folder. Downloader classes are
+    utilized to fetch contents of URLs.
+
+    Also handles displaying package messaging, and sending usage information to
+    the usage server.
+    """
+
     def __init__(self):
         # Here we manually copy the settings since sublime doesn't like
         # code accessing settings from threads
@@ -1448,6 +1460,19 @@ class PackageManager():
         self.settings['version'] = sublime.version()
 
     def compare_versions(self, version1, version2):
+        """
+        Compares to version strings to see which is greater
+
+        Date-based version numbers (used by GitHub and BitBucket providers)
+        are automatically pre-pended with a 0 so they are always less than
+        version 1.0.
+
+        :return:
+            -1  if version1 is less than version2
+             0  if they are equal
+             1  if version1 is greater than version2
+        """
+
         def normalize(v):
             # We prepend 0 to all date-based version numbers so that developers
             # may switch to explicit versioning from GitHub/BitBucket
@@ -1458,6 +1483,19 @@ class PackageManager():
         return cmp(normalize(version1), normalize(version2))
 
     def download_url(self, url, error_message):
+        """
+        Downloads a URL and returns the contents
+
+        :param url:
+            The string URL to download
+
+        :param error_message:
+            The error message to include if the download fails
+
+        :return:
+            The string contents of the URL, or False on error
+        """
+
         has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
         is_ssl = re.search('^https://', url) != None
         downloader = None
@@ -1483,6 +1521,17 @@ class PackageManager():
             timeout, 3)
 
     def get_metadata(self, package):
+        """
+        Returns the package metadata for an installed package
+
+        :return:
+            A dict with the keys:
+                version
+                url
+                description
+            or an empty dict on error
+        """
+
         metadata_filename = os.path.join(self.get_package_dir(package),
             'package-metadata.json')
         if os.path.exists(metadata_filename):
@@ -1494,11 +1543,23 @@ class PackageManager():
         return {}
 
     def list_repositories(self):
+        """
+        Returns a master list of all repositories pulled from all sources
+
+        These repositories come from the channels specified in the
+        "repository_channels" setting, plus any repositories listed in the
+        "repositories" setting.
+
+        :return:
+            A list of all available repositories
+        """
+
         repositories = self.settings.get('repositories')
         repository_channels = self.settings.get('repository_channels')
         for channel in repository_channels:
             channel_repositories = None
 
+            # Caches various info from channels for performance
             cache_key = channel + '.repositories'
             repositories_cache = _channel_repository_cache.get(cache_key)
             if repositories_cache and repositories_cache.get('time') > \
@@ -1531,9 +1592,12 @@ class PackageManager():
                 certs.update(certs_cache.get('data'))
                 self.settings['certs'] = certs
 
+            # If any of the info was not retrieved from the cache, we need to
+            # grab the channel to get it
             if channel_repositories == None or \
                     self.settings.get('package_name_map') == None or \
                     self.settings.get('renamed_packages') == None:
+
                 for provider_class in _channel_providers:
                     provider = provider_class(channel, self)
                     if provider.match_url():
@@ -1594,6 +1658,19 @@ class PackageManager():
         return repositories
 
     def list_available_packages(self):
+        """
+        Returns a master list of every available package from all sources
+
+        :return:
+            A dict in the format:
+            {
+                'Package Name': {
+                    # Package details - see example-packages.json for format
+                },
+                ...
+            }
+        """
+
         repositories = self.list_repositories()
         packages = {}
         downloaders = []
@@ -1616,10 +1693,16 @@ class PackageManager():
                     self.settings.get('package_name_map', {}), repo)
                 domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1',
                     repo)
+
+                # downloaders are grouped by domain so that multiple can
+                # be run in parallel without running into API access limits
                 if not grouped_downloaders.get(domain):
                     grouped_downloaders[domain] = []
                 grouped_downloaders[domain].append(downloader)
 
+        # Allows creating a separate named function for each downloader
+        # delay. Not having this contained in a function causes all of the
+        # schedules to reference the same downloader.start()
         def schedule(downloader, delay):
             downloader.has_started = False
 
@@ -1628,6 +1711,8 @@ class PackageManager():
                 downloader.has_started = True
             sublime.set_timeout(inner, delay)
 
+        # Grabs every repo grouped by domain and delays the start
+        # of each download from that domain by a fixed amount
         for domain_downloaders in grouped_downloaders.values():
             for i in range(len(domain_downloaders)):
                 downloader = domain_downloaders[i]
@@ -1636,6 +1721,7 @@ class PackageManager():
 
         complete = []
 
+        # Wait for all of the downloaders to finish
         while downloaders:
             downloader = downloaders.pop()
             if downloader.has_started:
@@ -1644,6 +1730,7 @@ class PackageManager():
             else:
                 downloaders.insert(0, downloader)
 
+        # Grabs the results and stuff if all in the cache
         for downloader in complete:
             repository_packages = downloader.packages
             if repository_packages == False:
@@ -1671,9 +1758,12 @@ class PackageManager():
         return packages
 
     def list_packages(self):
+        """ :return: A list of all installed, non-default, package names"""
+
         package_names = os.listdir(sublime.packages_path())
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
+
         # Ignore things to be deleted
         ignored = []
         for package in package_names:
@@ -1681,17 +1771,23 @@ class PackageManager():
                 'package-control.cleanup')
             if os.path.exists(cleanup_file):
                 ignored.append(package)
+
         packages = list(set(package_names) - set(ignored) -
             set(self.list_default_packages()))
         packages = sorted(packages, key=lambda s: s.lower())
+
         return packages
 
     def list_all_packages(self):
+        """ :return: A list of all installed package names, including default packages"""
+
         packages = os.listdir(sublime.packages_path())
         packages = sorted(packages, key=lambda s: s.lower())
         return packages
 
     def list_default_packages(self):
+        """ :return: A list of all default package names"""
+
         files = os.listdir(os.path.join(os.path.dirname(
             sublime.packages_path()), 'Pristine Packages'))
         files = list(set(files) - set(os.listdir(
@@ -1701,13 +1797,36 @@ class PackageManager():
         return packages
 
     def get_package_dir(self, package):
+        """:return: The full filesystem path to the package directory"""
+
         return os.path.join(sublime.packages_path(), package)
 
     def get_mapped_name(self, package):
+        """:return: The name of the package after passing through mapping rules"""
+
         return self.settings.get('package_name_map', {}).get(package, package)
 
     def create_package(self, package_name, package_destination,
             binary_package=False):
+        """
+        Creates a .sublime-package file from the running Packages directory
+
+        :param package_name:
+            The package to create a .sublime-package file for
+
+        :param package_destination:
+            The full filesystem path of the directory to save the new
+            .sublime-package file in.
+
+        :param binary_package:
+            If the created package should follow the binary package include/
+            exclude patterns from the settings. These normally include a setup
+            to exclude .py files and include .pyc files, but that can be
+            changed via settings.
+
+        :return: bool if the package file was successfully created
+        """
+
         package_dir = self.get_package_dir(package_name) + '/'
 
         if not os.path.exists(package_dir):
@@ -1766,6 +1885,27 @@ class PackageManager():
         return True
 
     def install_package(self, package_name):
+        """
+        Downloads and installs (or upgrades) a package
+
+        Uses the self.list_available_packages() method to determine where to
+        retrieve the package file from.
+
+        The install process consists of:
+
+        1. Finding the package
+        2. Downloading the .sublime-package/.zip file
+        3. Extracting the package file
+        4. Showing install/upgrade messaging
+        5. Submitting usage info
+        6. Recording that the package is installed
+
+        :param package_name:
+            The package to download and install
+
+        :return: bool if the package was successfully installed
+        """
+
         packages = self.list_available_packages()
 
         if package_name not in packages.keys():
@@ -1991,6 +2131,26 @@ class PackageManager():
         return True
 
     def print_messages(self, package, package_dir, is_upgrade, old_version):
+        """
+        Prints out package install and upgrade messages
+
+        The functionality provided by this allows package maintainers to
+        show messages to the user when a package is installed, or when
+        certain version upgrade occur.
+
+        :param package:
+            The name of the package the message is for
+
+        :param package_dir:
+            The full filesystem path to the package directory
+
+        :param is_upgrade:
+            If the install was actually an upgrade
+
+        :param old_version:
+            The string version of the package before the upgrade occurred
+        """
+
         messages_file = os.path.join(package_dir, 'messages.json')
         if not os.path.exists(messages_file):
             return
@@ -2064,6 +2224,21 @@ class PackageManager():
         sublime.set_timeout(print_to_panel, 1)
 
     def remove_package(self, package_name):
+        """
+        Deletes a package
+
+        The deletion process consists of:
+
+        1. Deleting the directory (or marking it for deletion if deletion fails)
+        2. Submitting usage info
+        3. Removing the package from the list of installed packages
+
+        :param package_name:
+            The package to delete
+
+        :return: bool if the package was successfully deleted
+        """
+
         installed_packages = self.list_packages()
 
         if package_name not in installed_packages:
@@ -2155,6 +2330,16 @@ class PackageManager():
         return True
 
     def record_usage(self, params):
+        """
+        Submits install, upgrade and delete actions to a usage server
+
+        The usage information is currently displayed on the Package Control
+        community package list at http://wbond.net/sublime_packages/community
+
+        :param params:
+            A dict of the information to submit
+        """
+
         if not self.settings.get('submit_usage'):
             return
         params['package_control_version'] = \
