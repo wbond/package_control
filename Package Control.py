@@ -880,8 +880,6 @@ class UrlLib2Downloader(Downloader):
             proxies = {}
             if http_proxy:
                 proxies['http'] = http_proxy
-                if not https_proxy:
-                    proxies['https'] = http_proxy
             if https_proxy:
                 proxies['https'] = https_proxy
             proxy_handler = urllib2.ProxyHandler(proxies)
@@ -1006,8 +1004,6 @@ class WgetDownloader(CliDownloader):
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
-            if not self.settings.get('https_proxy'):
-                os.putenv('https_proxy', self.settings.get('http_proxy'))
         if self.settings.get('https_proxy'):
             os.putenv('https_proxy', self.settings.get('https_proxy'))
 
@@ -1107,8 +1103,6 @@ class CurlDownloader(CliDownloader):
 
         if self.settings.get('http_proxy'):
             os.putenv('http_proxy', self.settings.get('http_proxy'))
-            if not self.settings.get('https_proxy'):
-                os.putenv('HTTPS_PROXY', self.settings.get('http_proxy'))
         if self.settings.get('https_proxy'):
             os.putenv('HTTPS_PROXY', self.settings.get('https_proxy'))
 
