@@ -46,8 +46,7 @@
 
 	// An HTTP proxy server to use for requests
 	"http_proxy": "",
-	// An HTTPS proxy server to use for requests - if not specified, but
-	// http_proxy is, http_proxy will be used for https_proxy also
+	// An HTTPS proxy server to use for requests
 	"https_proxy": "",
 	// Username and password for proxy
 	"proxy_username": "",
