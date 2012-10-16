@@ -925,6 +925,10 @@ class UrlLib2Downloader(Downloader):
                 http_file = urllib2.urlopen(request, timeout=timeout)
                 return http_file.read()
 
+            except (httplib.HTTPException) as (e):
+                print '%s: %s HTTP exception %s (%s) downloading %s.' % (
+                    __name__, error_message, e.__class__.__name__, str(e), url)
+
             except (urllib2.HTTPError) as (e):
                 # Bitbucket and Github ratelimit using 503 a decent amount
                 if str(e.code) == '503':
