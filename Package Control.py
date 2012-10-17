@@ -1059,16 +1059,17 @@ class UrlLib2Downloader(Downloader):
 
             except (httplib.HTTPException) as (e):
                 print '%s: %s HTTP exception %s (%s) downloading %s.' % (
-                    __name__, error_message, e.__class__.__name__, str(e), url)
+                    __name__, error_message, e.__class__.__name__, unicode(e),
+                    url)
 
             except (urllib2.HTTPError) as (e):
                 # Bitbucket and Github ratelimit using 503 a decent amount
-                if str(e.code) == '503':
+                if unicode(e.code) == '503':
                     print ('%s: Downloading %s was rate limited, ' +
                         'trying again') % (__name__, url)
                     continue
                 print '%s: %s HTTP error %s downloading %s.' % (__name__,
-                    error_message, str(e.code), url)
+                    error_message, unicode(e.code), url)
 
             except (urllib2.URLError) as (e):
 
@@ -2085,7 +2086,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred creating the ' +
                 'package file %s in %s. %s') % (__name__, package_filename,
-                package_destination, str(exception)))
+                package_destination, unicode(exception)))
             return False
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
@@ -2208,7 +2209,7 @@ class PackageManager():
             except (OSError, IOError) as (exception):
                 sublime.error_message(('%s: An error occurred while trying ' +
                     'to backup the package directory for %s. %s') %
-                    (__name__, package_name, str(exception)))
+                    (__name__, package_name, unicode(exception)))
                 shutil.rmtree(package_backup_dir)
                 return False
 
@@ -2309,7 +2310,7 @@ class PackageManager():
         except (OSError, IOError) as (e):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove old files from the %s directory. %s') %
-                (__name__, package_name, str(e)))
+                (__name__, package_name, unicode(e)))
             return False
 
         self.print_messages(package_name, package_dir, is_upgrade, old_version)
@@ -2502,7 +2503,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the package file for %s. %s') % (__name__,
-                package_name, str(exception)))
+                package_name, unicode(exception)))
             return False
 
         try:
@@ -2511,7 +2512,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the installed package file for %s. %s') % (__name__,
-                package_name, str(exception)))
+                package_name, unicode(exception)))
             return False
 
         try:
@@ -2520,7 +2521,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the pristine package file for %s. %s') % (__name__,
-                package_name, str(exception)))
+                package_name, unicode(exception)))
             return False
 
         # We don't delete the actual package dir immediately due to a bug
@@ -3355,7 +3356,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                         open(cleanup_file, 'w').close()
                     print ('%s: Unable to remove old directory for package ' +
                         '%s - deferring until next start: %s') % (__name__,
-                        package_name, str(e))
+                        package_name, unicode(e))
 
             # This adds previously installed packages from old versions of PC
             if os.path.exists(metadata_path) and \
