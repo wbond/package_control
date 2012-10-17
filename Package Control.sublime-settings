@@ -15,6 +15,10 @@
 		"sublime.wbond.net": ["7f4f8622b4fd001c7f648e09aae7edaa", ""]
 	},
 
+	// If debugging information for HTTP/HTTPS connections should be printed
+	// to the Sublime Text console
+	"debug": false,
+
 	// This helps solve naming issues where a repository it not named the
 	// same as the package should be. This is primarily only useful for
 	// GitHub and BitBucket repositories. This mapping will override the

@@ -15,6 +15,7 @@ import datetime
 import time
 import shutil
 import tempfile
+import httplib
 
 if os.name == 'nt':
     # Python 2.x on Windows can't properly import from non-ASCII paths, so
@@ -32,12 +33,82 @@ if os.name == 'nt':
     from ntlm import HTTPNtlmAuthHandler
 
 
+class DebuggableHTTPResponse(httplib.HTTPResponse):
+    """
+    A custom HTTPResponse that formats debugging info for Sublime Text
+    """
+
+    def __init__(self, sock, debuglevel=0, strict=0, method=None):
+        # We have to use a positive debuglevel to get it passed to here,
+        # however we don't want to use it because by default debugging prints
+        # to the stdout and we can't capture it, so we use a special -1 value
+        if debuglevel == 5:
+            debuglevel = -1
+        httplib.HTTPResponse.__init__(self, sock, debuglevel, strict, method)
+
+    def begin(self):
+        return_value = httplib.HTTPResponse.begin(self)
+        if self.debuglevel == -1:
+            print '%s: HTTP Debug Read' % __name__
+            headers = self.msg.headers
+            versions = {
+                9: 'HTTP/0.9',
+                10: 'HTTP/1.0',
+                11: 'HTTP/1.1'
+            }
+            status_line = versions[self.version] + ' ' + str(self.status) + ' ' + self.reason + "\r\n"
+            headers.insert(0, status_line)
+            for line in headers:
+                print '  ' + line.rstrip()
+        return return_value
+
+
+class DebuggableHTTPConnection(httplib.HTTPConnection):
+    """
+    A custom HTTPConnection that formats debugging info for Sublime Text
+    """
+
+    response_class = DebuggableHTTPResponse
+
+    def send(self, string):
+        # We have to use a positive debuglevel to get it passed to the
+        # HTTPResponse object, however we don't want to use it because by
+        # default debugging prints to the stdout and we can't capture it, so
+        # we temporarily set it to -1 for the standard httplib code
+        reset_debug = False
+        if self.debuglevel == 5:
+            reset_debug = 5
+            self.debuglevel = -1
+        httplib.HTTPConnection.send(self, string)
+        if reset_debug:
+            print '%s: HTTP Debug Write' % __name__
+            for line in string.strip().splitlines():
+                print '  ' + line
+            self.debuglevel = reset_debug
+
+
+class DebuggableHTTPHandler(urllib2.HTTPHandler):
+    """
+    A custom HTTPHandler that formats debugging info for Sublime Text
+    """
+
+    def __init__(self, debuglevel=0, debug=False, **kwargs):
+        # This is a special value that will not trigger the standard debug
+        # functionality, but custom code where we can format the output
+        if debug:
+            self._debuglevel = 5
+        else:
+            self._debuglevel = debuglevel
+
+    def http_open(self, req):
+        return self.do_open(DebuggableHTTPConnection, req)
+
+
 # The following code is wrapped in a try because the Linux versions of Sublime
 # Text do not include the ssl module due to the fact that different distros
 # have different versions
 try:
     import ssl
-    import httplib
 
     class InvalidCertificateException(httplib.HTTPException, urllib2.URLError):
         def __init__(self, host, cert, reason):
@@ -51,12 +122,16 @@ try:
                     (self.host, self.reason, self.cert))
 
     # Adds SSL certificate checking for urllib2 to help prevents MITM attacks
-    class CertValidatingHTTPSConnection(httplib.HTTPConnection):
+    class CertValidatingHTTPSConnection(DebuggableHTTPConnection):
         default_port = httplib.HTTPS_PORT
 
         def __init__(self, host, port=None, key_file=None, cert_file=None,
                                  ca_certs=None, strict=None, **kwargs):
-            httplib.HTTPConnection.__init__(self, host, port, strict, **kwargs)
+            passed_args = {}
+            if 'timeout' in kwargs:
+                passed_args['timeout'] = kwargs['timeout']
+            DebuggableHTTPConnection.__init__(self, host, port, strict, **passed_args)
+
             self.key_file = key_file
             self.cert_file = cert_file
             self.ca_certs = ca_certs
@@ -82,22 +157,73 @@ try:
             return False
 
         def connect(self):
-            httplib.HTTPConnection.connect(self)
+            DebuggableHTTPConnection.connect(self)
+            if self.debuglevel == -1:
+                print u"%s: HTTPS Debug General" % __name__
+                print u"  Connecting to %s on port %s" % (self.host, self.port)
+                print u"  CA certs file at %s" % (self.ca_certs)
+
             self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                                               certfile=self.cert_file,
                                               cert_reqs=self.cert_reqs,
                                               ca_certs=self.ca_certs)
+
+            if self.debuglevel == -1:
+                print u"  Successfully upgraded connection to %s:%s with SSL" % (
+                    self.host, self.port)
+
             if self.cert_reqs & ssl.CERT_REQUIRED:
                 cert = self.sock.getpeercert()
+
+                if self.debuglevel == -1:
+                    subjectMap = {
+                        'organizationName': 'O',
+                        'commonName': 'CN',
+                        'organizationalUnitName': 'OU',
+                        'countryName': 'C',
+                        'serialNumber': 'serialNumber',
+                        'commonName': 'CN',
+                        'localityName': 'L',
+                        'stateOrProvinceName': 'S'
+                    }
+                    subject_list = list(cert['subject'])
+                    subject_list.reverse()
+                    subject_parts = []
+                    for pair in subject_list:
+                        if pair[0][0] in subjectMap:
+                            field_name = subjectMap[pair[0][0]]
+                        else:
+                            field_name = pair[0][0]
+                        subject_parts.append(field_name + '=' + pair[0][1])
+
+                    print u"  Server SSL certificate:"
+                    print u"    subject: " + ','.join(subject_parts)
+                    if 'subjectAltName' in cert:
+                        print u"    common name: " + cert['subjectAltName'][0][1]
+                    if 'notAfter' in cert:
+                        print u"    expire date: " + cert['notAfter']
+
                 hostname = self.host.split(':', 0)[0]
+
                 if not self._ValidateCertificateHostname(cert, hostname):
+                    if self.debuglevel == -1:
+                        print u"  Certificate INVALID"
+
                     raise InvalidCertificateException(hostname, cert,
                                                       'hostname mismatch')
+
+                if self.debuglevel == -1:
+                    print u"  Certificate validated for %s" % hostname
 
     if hasattr(urllib2, 'HTTPSHandler'):
         class VerifiedHTTPSHandler(urllib2.HTTPSHandler):
             def __init__(self, **kwargs):
-                urllib2.AbstractHTTPHandler.__init__(self)
+                # This is a special value that will not trigger the standard debug
+                # functionality, but custom code where we can format the output
+                if 'debug' in kwargs and kwargs['debug']:
+                    self._debuglevel = 5
+                elif 'debuglevel' in kwargs:
+                    self._debuglevel = kwargs['debuglevel']
                 self._connection_args = kwargs
 
             def https_open(self, req):
@@ -114,7 +240,7 @@ try:
                                                           e.reason.args[1])
                     raise
 
-            https_request = urllib2.HTTPSHandler.do_request_
+            https_request = urllib2.AbstractHTTPHandler.do_request_
 
 except (ImportError):
     pass
@@ -825,13 +951,14 @@ class CliDownloader(Downloader):
         """
 
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         output = proc.stdout.read()
+        self.stderr = proc.stderr.read()
         returncode = proc.wait()
         if returncode != 0:
             error = NonCleanExitError(returncode)
-            error.output = output
+            error.output = self.stderr
             raise error
         return output
 
@@ -907,6 +1034,8 @@ class UrlLib2Downloader(Downloader):
         digest_auth_handler = urllib2.ProxyDigestAuthHandler(password_manager)
         handlers.extend([digest_auth_handler, basic_auth_handler])
 
+        debug = self.settings.get('debug')
+
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
             secure_domain = secure_url_match.group(1)
@@ -914,7 +1043,10 @@ class UrlLib2Downloader(Downloader):
             if not bundle_path:
                 return False
             bundle_path = bundle_path.encode(sys.getfilesystemencoding())
-            handlers.append(VerifiedHTTPSHandler(ca_certs=bundle_path))
+            handlers.append(VerifiedHTTPSHandler(ca_certs=bundle_path,
+                debug=debug))
+        else:
+            handlers.append(DebuggableHTTPHandler(debug=debug))
         urllib2.install_opener(urllib2.build_opener(*handlers))
 
         while tries > 0:
@@ -939,6 +1071,7 @@ class UrlLib2Downloader(Downloader):
                     error_message, str(e.code), url)
 
             except (urllib2.URLError) as (e):
+
                 # Bitbucket and Github timeout a decent amount
                 if unicode(e.reason) == 'The read operation timed out' or \
                         unicode(e.reason) == 'timed out':
@@ -994,7 +1127,7 @@ class WgetDownloader(CliDownloader):
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
-            self.tmp_file, '-O', '-', '-U', 'Sublime Package Control']
+            self.tmp_file, '-q', '-O', '-', '-U', 'Sublime Package Control']
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
@@ -1003,6 +1136,9 @@ class WgetDownloader(CliDownloader):
             if not bundle_path:
                 return False
             command.append(u'--ca-certificate=' + bundle_path)
+
+        if self.settings.get('debug'):
+            command.append('-d')
 
         command.append(url)
 
@@ -1015,14 +1151,30 @@ class WgetDownloader(CliDownloader):
             tries -= 1
             try:
                 result = self.execute(command)
+                if self.settings.get('debug'):
+                    self.print_debug()
+
                 self.clean_tmp_file()
                 return result
+
             except (NonCleanExitError) as (e):
+
+                if self.settings.get('debug'):
+                    self.print_debug()
+
                 error_line = ''
                 with open(self.tmp_file) as f:
                     for line in list(f):
                         if re.search('ERROR[: ]|failed: ', line):
                             error_line = line
+                            break
+
+                        # Handles situation when debug mode is on, and emulates
+                        # the error message from non-debug mode
+                        match = re.search('^HTTP/\d\.\d (\d+) (.*)', line, re.I)
+                        if match:
+                            error_line = 'WGET ERROR %s: %s' % (match.group(1),
+                                match.group(2))
                             break
 
                 if e.returncode == 8:
@@ -1053,6 +1205,34 @@ class WgetDownloader(CliDownloader):
             self.clean_tmp_file()
             break
         return False
+
+    def print_debug(self):
+        with open(self.tmp_file, 'r') as f:
+            debug_content = f.read()
+
+        section = 'General'
+        last_section = None
+        for line in debug_content.splitlines():
+            if line == '---request begin---':
+                section = 'Write'
+                continue
+            elif line == '---request end---':
+                continue
+            elif line == '---response begin---':
+                section = 'Read'
+                continue
+            elif line == '---response end---':
+                section = 'General'
+                continue
+
+            if line.strip() == '':
+                continue
+
+            if section != last_section:
+                print "%s: Wget HTTP Debug %s" % (__name__, section)
+
+            print '  ' + line
+            last_section = section
 
 
 class CurlDownloader(CliDownloader):
@@ -1103,6 +1283,9 @@ class CurlDownloader(CliDownloader):
                 return False
             command.extend(['--cacert', bundle_path])
 
+        if self.settings.get('debug'):
+            command.append('-v')
+
         command.append(url)
 
         if self.settings.get('http_proxy'):
@@ -1113,10 +1296,21 @@ class CurlDownloader(CliDownloader):
         while tries > 0:
             tries -= 1
             try:
-                return self.execute(command)
+                output = self.execute(command)
+
+                if self.settings.get('debug'):
+                    self.print_debug(self.stderr)
+
+                return output
+
             except (NonCleanExitError) as (e):
+                # Stderr is used for both the error message and the debug info
+                # so we need to process it to extra the debug info
+                if self.settings.get('debug'):
+                    e.output = self.print_debug(e.output)
+
                 if e.returncode == 22:
-                    code = re.sub('^.*?(\d+)\s*$', '\\1', e.output)
+                    code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.output)
                     if code == '503':
                         # GitHub and BitBucket seem to rate limit via 503
                         print ('%s: Downloading %s was rate limited' +
@@ -1137,6 +1331,47 @@ class CurlDownloader(CliDownloader):
                     error_string, url)
             break
         return False
+
+    def print_debug(self, string):
+        section = 'General'
+        last_section = None
+
+        output = ''
+
+        for line in string.splitlines():
+            # Placeholder for body of request
+            if line and line[0:2] == '{ ':
+                continue
+
+            if len(line) > 1:
+                subtract = 0
+                if line[0:2] == '* ':
+                    section = 'General'
+                    subtract = 2
+                elif line[0:2] == '> ':
+                    section = 'Write'
+                    subtract = 2
+                elif line[0:2] == '< ':
+                    section = 'Read'
+                    subtract = 2
+                line = line[subtract:]
+
+                # If the line does not start with "* ", "< ", "> " or "  "
+                # then it is a real stderr message
+                if subtract == 0 and line[0:2] != '  ':
+                    output += line
+                    continue
+
+            if line.strip() == '':
+                continue
+
+            if section != last_section:
+                print "%s: Curl HTTP Debug %s" % (__name__, section)
+
+            print '  ' + line
+            last_section = section
+
+        return output
 
 
 # A cache of channel and repository info to allow users to install multiple
@@ -1450,7 +1685,8 @@ class PackageManager():
                 'auto_upgrade_ignore', 'auto_upgrade_frequency',
                 'submit_usage', 'submit_url', 'renamed_packages',
                 'files_to_include', 'files_to_include_binary', 'certs',
-                'ignore_vcs_packages', 'proxy_username', 'proxy_password']:
+                'ignore_vcs_packages', 'proxy_username', 'proxy_password',
+                'debug']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
