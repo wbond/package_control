@@ -595,7 +595,8 @@ class GitHubPackageProvider(NonCachingProvider):
     """
 
     def __init__(self, repo, package_manager):
-        self.repo = repo
+        # Clean off the trailing .git to be more forgiving
+        self.repo = re.sub('\.git$', '', repo)
         self.package_manager = package_manager
 
     def match_url(self):
@@ -1792,6 +1793,8 @@ class PackageManager():
         repositories = self.settings.get('repositories')
         repository_channels = self.settings.get('repository_channels')
         for channel in repository_channels:
+            channel = channel.strip()
+
             channel_repositories = None
 
             # Caches various info from channels for performance
@@ -1890,7 +1893,7 @@ class PackageManager():
                     self.settings['certs'].update(certs)
 
             repositories.extend(channel_repositories)
-        return repositories
+        return [repo.strip() for repo in repositories]
 
     def list_available_packages(self):
         """
