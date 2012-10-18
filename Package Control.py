@@ -220,6 +220,7 @@ try:
             def __init__(self, **kwargs):
                 # This is a special value that will not trigger the standard debug
                 # functionality, but custom code where we can format the output
+                self._debuglevel = 0
                 if 'debug' in kwargs and kwargs['debug']:
                     self._debuglevel = 5
                 elif 'debuglevel' in kwargs:
@@ -299,7 +300,19 @@ class ThreadProgress():
         sublime.set_timeout(lambda: self.run(i), 100)
 
 
-class ChannelProvider():
+class PlatformComparator():
+    def get_best_platform(self, platforms):
+        ids = [sublime.platform() + '-' + sublime.arch(), sublime.platform(),
+            '*']
+
+        for id in ids:
+            if id in platforms:
+                return id
+
+        return None
+
+
+class ChannelProvider(PlatformComparator):
     """
     Retrieves a channel and provides an API into the information
 
@@ -319,6 +332,7 @@ class ChannelProvider():
         self.channel_info = None
         self.channel = channel
         self.package_manager = package_manager
+        self.unavailable_packages = []
 
     def match_url(self):
         """Indicates if this provider can handle the provided channel"""
@@ -440,12 +454,14 @@ class ChannelProvider():
             copy = package.copy()
 
             platforms = copy['platforms'].keys()
-            if sublime.platform() in platforms:
-                copy['downloads'] = copy['platforms'][sublime.platform()]
-            elif '*' in platforms:
-                copy['downloads'] = copy['platforms']['*']
-            else:
+            best_platform = self.get_best_platform(platforms)
+
+            if not best_platform:
+                self.unavailable_packages.append(copy['name'])
                 continue
+
+            copy['downloads'] = copy['platforms'][best_platform]
+
             del copy['platforms']
 
             copy['url'] = copy['homepage']
@@ -455,12 +471,24 @@ class ChannelProvider():
 
         return output
 
+    def get_unavailable_packages(self):
+        """
+        Provides a list of packages that are unavailable for the current
+        platform/architecture that Sublime Text is running on.
+
+        This list will be empty unless get_packages() is called first.
+
+        :return: A list of package names
+        """
+
+        return self.unavailable_packages
+
 
 # The providers (in order) to check when trying to download a channel
 _channel_providers = [ChannelProvider]
 
 
-class PackageProvider():
+class PackageProvider(PlatformComparator):
     """
     Generic repository downloader that fetches package info
 
@@ -481,6 +509,7 @@ class PackageProvider():
         self.repo_info = None
         self.repo = repo
         self.package_manager = package_manager
+        self.unavailable_packages = []
 
     def match_url(self):
         """Indicates if this provider can handle the provided repo"""
@@ -528,32 +557,45 @@ class PackageProvider():
         identifiers = [sublime.platform() + '-' + sublime.arch(),
             sublime.platform(), '*']
         output = {}
+
         for package in self.repo_info['packages']:
-            for id in identifiers:
-                if not id in package['platforms']:
-                    continue
 
-                downloads = []
-                for download in package['platforms'][id]:
-                    downloads.append(download)
+            platforms = package['platforms'].keys()
+            best_platform = self.get_best_platform(platforms)
 
-                info = {
-                    'name': package['name'],
-                    'description': package.get('description'),
-                    'url': package.get('homepage', self.repo),
-                    'author': package.get('author'),
-                    'last_modified': package.get('last_modified'),
-                    'downloads': downloads
-                }
+            if not best_platform:
+                self.unavailable_packages.append(package['name'])
+                continue
 
-                output[package['name']] = info
-                break
+            info = {
+                'name': package['name'],
+                'description': package.get('description'),
+                'url': package.get('homepage', self.repo),
+                'author': package.get('author'),
+                'last_modified': package.get('last_modified'),
+                'downloads': package['platforms'][best_platform]
+            }
+
+            output[package['name']] = info
+
         return output
 
     def get_renamed_packages(self):
         """:return: A dict of the packages that have been renamed"""
 
         return self.repo_info.get('renamed_packages', {})
+
+    def get_unavailable_packages(self):
+        """
+        Provides a list of packages that are unavailable for the current
+        platform/architecture that Sublime Text is running on.
+
+        This list will be empty unless get_packages() is called first.
+
+        :return: A list of package names
+        """
+
+        return self.unavailable_packages
 
 
 class NonCachingProvider():
@@ -578,6 +620,17 @@ class NonCachingProvider():
             print '%s: Error parsing JSON from repository %s.' % (__name__,
                 url)
         return False
+
+    def get_unavailable_packages(self):
+        """
+        Method for compatibility with PackageProvider class. These providers
+        are based on API calls, and thus do not support different platform
+        downloads, making it impossible for there to be unavailable packages.
+
+        :return: An empty list
+        """
+
+        return []
 
 
 class GitHubPackageProvider(NonCachingProvider):
@@ -1421,8 +1474,8 @@ class RepositoryDownloader(threading.Thread):
         packages = mapped_packages
 
         self.packages = packages
-
         self.renamed_packages = provider.get_renamed_packages()
+        self.unavailable_packages = provider.get_unavailable_packages()
 
 
 class VcsUpgrader():
@@ -1823,6 +1876,16 @@ class PackageManager():
                     {}))
                 self.settings['renamed_packages'] = renamed_packages
 
+            unavailable_cache_key = channel + '.unavailable_packages'
+            unavailable_cache = _channel_repository_cache.get(
+                unavailable_cache_key)
+            if unavailable_cache and unavailable_cache.get('time') > \
+                    time.time():
+                unavailable_packages = unavailable_cache.get('data')
+                unavailable_packages.extend(self.settings.get('unavailable_packages',
+                    []))
+                self.settings['unavailable_packages'] = unavailable_packages
+
             certs_cache_key = channel + '.certs'
             certs_cache = _channel_repository_cache.get(certs_cache_key)
             if certs_cache and certs_cache.get('time') > time.time():
@@ -1881,6 +1944,17 @@ class PackageManager():
                     self.settings['renamed_packages'] = self.settings.get(
                         'renamed_packages', {})
                     self.settings['renamed_packages'].update(renamed_packages)
+
+                unavailable_packages = provider.get_unavailable_packages()
+                _channel_repository_cache[unavailable_cache_key] = {
+                    'time': time.time() + self.settings.get('cache_length',
+                        300),
+                    'data': unavailable_packages
+                }
+                if unavailable_packages:
+                    self.settings['unavailable_packages'] = self.settings.get(
+                        'unavailable_packages', [])
+                    self.settings['unavailable_packages'].extend(unavailable_packages)
 
                 certs = provider.get_certs()
                 _channel_repository_cache[certs_cache_key] = {
@@ -1992,6 +2066,17 @@ class PackageManager():
                 self.settings['renamed_packages'] = self.settings.get(
                     'renamed_packages', {})
                 self.settings['renamed_packages'].update(renamed_packages)
+
+            unavailable_packages = downloader.unavailable_packages
+            unavailable_cache_key = downloader.repo + '.unavailable_packages'
+            _channel_repository_cache[unavailable_cache_key] = {
+                'time': time.time() + self.settings.get('cache_length', 300),
+                'data': unavailable_packages
+            }
+            if unavailable_packages:
+                self.settings['unavailable_packages'] = self.settings.get(
+                    'unavailable_packages', [])
+                self.settings['unavailable_packages'].extend(unavailable_packages)
 
         return packages
 
@@ -2145,6 +2230,11 @@ class PackageManager():
         """
 
         packages = self.list_available_packages()
+
+        if package_name in self.settings['unavailable_packages']:
+            print ('%s: The package "%s" is not available ' +
+                   'on this platform.') % (__name__, package_name)
+            return False
 
         if package_name not in packages.keys():
             sublime.error_message(('%s: The package specified, %s, is ' +
@@ -3285,9 +3375,9 @@ class AutomaticUpgrader(threading.Thread):
         print '%s: Installing %s missing packages' % \
             (__name__, len(self.missing_packages))
         for package in self.missing_packages:
-            self.installer.manager.install_package(package)
-            print '%s: Installed missing package %s' % \
-                (__name__, package)
+            if self.installer.manager.install_package(package):
+                print '%s: Installed missing package %s' % \
+                    (__name__, package)
 
     def print_skip(self):
         last_run = datetime.datetime.fromtimestamp(self.last_run)
