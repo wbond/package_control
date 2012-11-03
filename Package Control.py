@@ -1255,33 +1255,40 @@ class WgetDownloader(CliDownloader):
 
                         # Handles situation when debug mode is on, and emulates
                         # the error message from non-debug mode
-                        match = re.search('^HTTP/\d\.\d (\d+) (.*)', line, re.I)
-                        if match:
-                            error_line = 'WGET ERROR %s: %s' % (match.group(1),
-                                match.group(2))
-                            break
+                        if debug:
+                            match = re.search('^HTTP/\d\.\d (\d+) (.*)', line,
+                                re.I)
+                            if match:
+                                error_line = 'WGET ERROR %s: %s' % (
+                                    match.group(1), match.group(2))
+                                break
 
-                if e.returncode == 8:
-                    regex = re.compile('^.*ERROR (\d+):.*', re.S)
-                    if re.sub(regex, '\\1', error_line) == '503':
+                            # Handles proxy errors
+                            match = re.search('^proxy responded with: \[' + \
+                                'HTTP/\d\.\d (\d+) (.*)', line, re.I)
+                            if match:
+                                error_line = 'WGET ERROR %s: %s' % (
+                                    match.group(1), match.group(2))
+                                break
+
+                status_code_regex = re.compile('^.*ERROR (\d+):(.*)$', re.S)
+                status_match = re.search(status_code_regex, error_line)
+                if status_match != None:
+                    if status_match.group(1) == '503':
                         # GitHub and BitBucket seem to rate limit via 503
                         print ('%s: Downloading %s was rate limited' +
                             ', trying again') % (__name__, url)
                         continue
-                    error_string = 'HTTP error ' + re.sub('^.*? ERROR ', '',
-                        error_line)
-
-                elif e.returncode == 4:
-                    error_string = re.sub('^.*?failed: ', '', error_line)
+                    error_string = 'HTTP error ' + status_match.group(1) + \
+                        status_match.group(2).rstrip()
+                else:
+                    error_string = re.sub('^.*?(ERROR:? |failed: )',
+                        '\\1', error_line)
                     # GitHub and BitBucket seem to time out a lot
                     if error_string.find('timed out') != -1:
                         print ('%s: Downloading %s timed out, ' +
                             'trying again') % (__name__, url)
                         continue
-
-                else:
-                    error_string = re.sub('^.*?(ERROR[: ]|failed: )', '\\1',
-                        error_line)
 
                 error_string = re.sub('\\.?\s*\n\s*$', '', error_string)
                 print '%s: %s %s downloading %s.' % (__name__, error_message,
