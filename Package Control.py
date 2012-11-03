@@ -49,7 +49,7 @@ class DebuggableHTTPResponse(httplib.HTTPResponse):
     def begin(self):
         return_value = httplib.HTTPResponse.begin(self)
         if self.debuglevel == -1:
-            print '%s: HTTP Debug Read' % __name__
+            print '%s: Urllib2 HTTP Debug Read' % __name__
             headers = self.msg.headers
             versions = {
                 9: 'HTTP/0.9',
@@ -70,6 +70,12 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
 
     response_class = DebuggableHTTPResponse
 
+    def connect(self):
+        if self.debuglevel == -1:
+            print '%s: Urllib2 HTTP Debug General' % __name__
+            print u"  Connecting to %s on port %s" % (self.host, self.port)
+        httplib.HTTPConnection.connect(self)
+
     def send(self, string):
         # We have to use a positive debuglevel to get it passed to the
         # HTTPResponse object, however we don't want to use it because by
@@ -81,7 +87,7 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
             self.debuglevel = -1
         httplib.HTTPConnection.send(self, string)
         if reset_debug:
-            print '%s: HTTP Debug Write' % __name__
+            print '%s: Urllib2 HTTP Debug Write' % __name__
             for line in string.strip().splitlines():
                 print '  ' + line
             self.debuglevel = reset_debug
@@ -159,7 +165,7 @@ try:
         def connect(self):
             DebuggableHTTPConnection.connect(self)
             if self.debuglevel == -1:
-                print u"%s: HTTPS Debug General" % __name__
+                print u"%s: Urllib2 HTTPS Debug General" % __name__
                 print u"  Connecting to %s on port %s" % (self.host, self.port)
                 print u"  CA certs file at %s" % (self.ca_certs)
 
@@ -1088,6 +1094,13 @@ class UrlLib2Downloader(Downloader):
 
         debug = self.settings.get('debug')
 
+        if debug:
+            print u"%s: Urllib2 Debug Proxy" % __name__
+            print u"  http_proxy: %s" % http_proxy
+            print u"  https_proxy: %s" % https_proxy
+            print u"  proxy_username: %s" % proxy_username
+            print u"  proxy_password: %s" % proxy_password
+
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
             secure_domain = secure_url_match.group(1)
@@ -1203,6 +1216,13 @@ class WgetDownloader(CliDownloader):
             command.append(u"--proxy-user=%s" % proxy_username)
         if proxy_password:
             command.append(u"--proxy-password=%s" % proxy_password)
+
+        if debug:
+            print u"%s: Wget Debug Proxy" % __name__
+            print u"  http_proxy: %s" % http_proxy
+            print u"  https_proxy: %s" % https_proxy
+            print u"  proxy_username: %s" % proxy_username
+            print u"  proxy_password: %s" % proxy_password
 
         command.append(url)
 
@@ -1355,6 +1375,13 @@ class CurlDownloader(CliDownloader):
         https_proxy = self.settings.get('https_proxy')
         proxy_username = self.settings.get('proxy_username')
         proxy_password = self.settings.get('proxy_password')
+
+        if debug:
+            print u"%s: Curl Debug Proxy" % __name__
+            print u"  http_proxy: %s" % http_proxy
+            print u"  https_proxy: %s" % https_proxy
+            print u"  proxy_username: %s" % proxy_username
+            print u"  proxy_password: %s" % proxy_password
 
         if http_proxy or https_proxy:
             command.append('--proxy-anyauth')
