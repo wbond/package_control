@@ -2252,7 +2252,7 @@ class PackageManager():
 
         packages = self.list_available_packages()
 
-        if package_name in self.settings['unavailable_packages']:
+        if package_name in self.settings.get('unavailable_packages', []):
             print ('%s: The package "%s" is not available ' +
                    'on this platform.') % (__name__, package_name)
             return False
