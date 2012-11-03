@@ -554,8 +554,6 @@ class PackageProvider(PlatformComparator):
         if self.repo_info == False:
             return False
 
-        identifiers = [sublime.platform() + '-' + sublime.arch(),
-            sublime.platform(), '*']
         output = {}
 
         for package in self.repo_info['packages']:
