@@ -1806,7 +1806,7 @@ class PackageManager():
             return False
 
         timeout = self.settings.get('timeout', 3)
-        return downloader.download(url.replace(' ', '%20'), error_message,
+        return downloader.download(url.replace(' ', '%20').replace('zipball','legacy.zip'), error_message,
             timeout, 3)
 
     def get_metadata(self, package):
