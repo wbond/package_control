@@ -1190,21 +1190,32 @@ class WgetDownloader(CliDownloader):
                 return False
             command.append(u'--ca-certificate=' + bundle_path)
 
-        if self.settings.get('debug'):
+        debug = self.settings.get('debug')
+        if debug:
             command.append('-d')
+
+        http_proxy = self.settings.get('http_proxy')
+        https_proxy = self.settings.get('https_proxy')
+        proxy_username = self.settings.get('proxy_username')
+        proxy_password = self.settings.get('proxy_password')
+
+        if proxy_username:
+            command.append(u"--proxy-user=%s" % proxy_username)
+        if proxy_password:
+            command.append(u"--proxy-password=%s" % proxy_password)
 
         command.append(url)
 
-        if self.settings.get('http_proxy'):
-            os.putenv('http_proxy', self.settings.get('http_proxy'))
-        if self.settings.get('https_proxy'):
-            os.putenv('https_proxy', self.settings.get('https_proxy'))
+        if http_proxy:
+            os.putenv('http_proxy', http_proxy)
+        if https_proxy:
+            os.putenv('https_proxy', https_proxy)
 
         while tries > 0:
             tries -= 1
             try:
                 result = self.execute(command)
-                if self.settings.get('debug'):
+                if debug:
                     self.print_debug()
 
                 self.clean_tmp_file()
@@ -1212,7 +1223,7 @@ class WgetDownloader(CliDownloader):
 
             except (NonCleanExitError) as (e):
 
-                if self.settings.get('debug'):
+                if debug:
                     self.print_debug()
 
                 error_line = ''
@@ -1336,22 +1347,34 @@ class CurlDownloader(CliDownloader):
                 return False
             command.extend(['--cacert', bundle_path])
 
-        if self.settings.get('debug'):
+        debug = self.settings.get('debug')
+        if debug:
             command.append('-v')
 
-        command.append(url)
+        http_proxy = self.settings.get('http_proxy')
+        https_proxy = self.settings.get('https_proxy')
+        proxy_username = self.settings.get('proxy_username')
+        proxy_password = self.settings.get('proxy_password')
 
-        if self.settings.get('http_proxy'):
-            os.putenv('http_proxy', self.settings.get('http_proxy'))
-        if self.settings.get('https_proxy'):
-            os.putenv('HTTPS_PROXY', self.settings.get('https_proxy'))
+        if http_proxy or https_proxy:
+            command.append('--proxy-anyauth')
+
+        if proxy_username or proxy_password:
+            command.extend(['-U', u"%s:%s" % (proxy_username, proxy_password)])
+
+        if http_proxy:
+            os.putenv('http_proxy', http_proxy)
+        if https_proxy:
+            os.putenv('HTTPS_PROXY', https_proxy)
+
+        command.append(url)
 
         while tries > 0:
             tries -= 1
             try:
                 output = self.execute(command)
 
-                if self.settings.get('debug'):
+                if debug:
                     self.print_debug(self.stderr)
 
                 return output
