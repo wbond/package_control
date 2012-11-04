@@ -16,6 +16,7 @@ import time
 import shutil
 import tempfile
 import httplib
+import socket
 
 if os.name == 'nt':
     # Python 2.x on Windows can't properly import from non-ASCII paths, so
@@ -38,6 +39,8 @@ class DebuggableHTTPResponse(httplib.HTTPResponse):
     A custom HTTPResponse that formats debugging info for Sublime Text
     """
 
+    _debug_protocol = 'HTTP'
+
     def __init__(self, sock, debuglevel=0, strict=0, method=None):
         # We have to use a positive debuglevel to get it passed to here,
         # however we don't want to use it because by default debugging prints
@@ -49,18 +52,22 @@ class DebuggableHTTPResponse(httplib.HTTPResponse):
     def begin(self):
         return_value = httplib.HTTPResponse.begin(self)
         if self.debuglevel == -1:
-            print '%s: Urllib2 HTTP Debug Read' % __name__
+            print '%s: Urllib2 %s Debug Read' % (__name__, self._debug_protocol)
             headers = self.msg.headers
             versions = {
                 9: 'HTTP/0.9',
                 10: 'HTTP/1.0',
                 11: 'HTTP/1.1'
             }
-            status_line = versions[self.version] + ' ' + str(self.status) + ' ' + self.reason + "\r\n"
+            status_line = versions[self.version] + ' ' + str(self.status) + ' ' + self.reason
             headers.insert(0, status_line)
             for line in headers:
-                print '  ' + line.rstrip()
+                print u"  %s" % line.rstrip()
         return return_value
+
+
+class DebuggableHTTPSResponse(DebuggableHTTPResponse):
+    _debug_protocol = 'HTTPS'
 
 
 class DebuggableHTTPConnection(httplib.HTTPConnection):
@@ -69,10 +76,11 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
     """
 
     response_class = DebuggableHTTPResponse
+    _debug_protocol = 'HTTP'
 
     def connect(self):
         if self.debuglevel == -1:
-            print '%s: Urllib2 HTTP Debug General' % __name__
+            print '%s: Urllib2 %s Debug General' % (__name__, self._debug_protocol)
             print u"  Connecting to %s on port %s" % (self.host, self.port)
         httplib.HTTPConnection.connect(self)
 
@@ -86,11 +94,13 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
             reset_debug = 5
             self.debuglevel = -1
         httplib.HTTPConnection.send(self, string)
-        if reset_debug:
-            print '%s: Urllib2 HTTP Debug Write' % __name__
-            for line in string.strip().splitlines():
-                print '  ' + line
-            self.debuglevel = reset_debug
+        if reset_debug or self.debuglevel == -1:
+            if len(string.strip()) > 0:
+                print '%s: Urllib2 %s Debug Write' % (__name__, self._debug_protocol)
+                for line in string.strip().splitlines():
+                    print '  ' + line
+            if reset_debug:
+                self.debuglevel = reset_debug
 
 
 class DebuggableHTTPHandler(urllib2.HTTPHandler):
@@ -131,6 +141,9 @@ try:
     class CertValidatingHTTPSConnection(DebuggableHTTPConnection):
         default_port = httplib.HTTPS_PORT
 
+        response_class = DebuggableHTTPSResponse
+        _debug_protocol = 'HTTPS'
+
         def __init__(self, host, port=None, key_file=None, cert_file=None,
                                  ca_certs=None, strict=None, **kwargs):
             passed_args = {}
@@ -163,13 +176,21 @@ try:
             return False
 
         def connect(self):
-            DebuggableHTTPConnection.connect(self)
+            if self.debuglevel == -1:
+                print '%s: Urllib2 HTTPS Debug General' % __name__
+                print u"  Connecting to %s on port %s" % (self.host, self.port)
+
+            sock = socket.create_connection((self.host, self.port), self.timeout)
+            if self._tunnel_host:
+                self.sock = sock
+                self._tunnel()
+
             if self.debuglevel == -1:
                 print u"%s: Urllib2 HTTPS Debug General" % __name__
                 print u"  Connecting to %s on port %s" % (self.host, self.port)
                 print u"  CA certs file at %s" % (self.ca_certs)
 
-            self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
+            self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
                                               certfile=self.cert_file,
                                               cert_reqs=self.cert_reqs,
                                               ca_certs=self.ca_certs)
