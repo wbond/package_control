@@ -17,6 +17,8 @@ import shutil
 import tempfile
 import httplib
 import socket
+import hashlib
+import base64
 
 if os.name == 'nt':
     # Python 2.x on Windows can't properly import from non-ASCII paths, so
@@ -151,6 +153,7 @@ try:
                 passed_args['timeout'] = kwargs['timeout']
             DebuggableHTTPConnection.__init__(self, host, port, strict, **passed_args)
 
+            self.passwd = kwargs.get('passwd')
             self.key_file = key_file
             self.cert_file = cert_file
             self.ca_certs = ca_certs
@@ -174,6 +177,135 @@ try:
                 if re.search('^%s$' % (host_re,), hostname, re.I):
                     return True
             return False
+
+        # This custom _tunnel method allows us to read and print the debug log for
+        # the whole response before throwing an error, like the default does
+        def _tunnel(self):
+            self._proxy_host = self.host
+            self._proxy_port = self.port
+            self._set_hostport(self._tunnel_host, self._tunnel_port)
+
+            self._tunnel_headers['Host'] = u"%s:%s" % (self.host, self.port)
+            self._tunnel_headers['User-Agent'] = 'Sublime Package Control'
+            self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
+
+            request = "CONNECT %s:%d HTTP/1.0\r\n" % (self.host, self.port)
+            for header, value in self._tunnel_headers.iteritems():
+                request += "%s: %s\r\n" % (header, value)
+            self.send(request + "\r\n")
+
+            response = self.response_class(self.sock, strict=self.strict,
+                method=self._method)
+            (version, code, message) = response._read_status()
+
+            status_line = u"%s %s %s" % (version, code, message.rstrip())
+            headers = [status_line]
+
+            if self.debuglevel in [-1, 5]:
+                print '%s: Urllib2 %s Debug Read' % (__name__, self._debug_protocol)
+                print u"  %s" % status_line
+
+            content_length = 0
+            while True:
+                line = response.fp.readline()
+                if line == '\r\n': break
+                headers.append(line.rstrip())
+                parts = line.rstrip().split(': ', 1)
+                if parts[0].lower() == 'content-length':
+                    content_length = int(parts[1])
+                if self.debuglevel in [-1, 5]:
+                    print u"  %s" % line.rstrip()
+
+            # Handle proxy auth for SSL connections since regular urllib2 punts on this
+            if code == 407 and self.passwd and 'Proxy-Authorization' not in self._tunnel_headers:
+                if content_length:
+                    response.fp.read(content_length)
+
+                supported_auth_methods = {}
+                for line in headers:
+                    parts = line.split(': ', 1)
+                    if parts[0].lower() != 'proxy-authenticate':
+                        continue
+                    details = parts[1].split(' ', 1)
+                    supported_auth_methods[details[0].lower()] = details[1] if len(details) > 1 else ''
+
+                username, password = self.passwd.find_user_password(None, "%s:%s" % (
+                    self._proxy_host, self._proxy_port))
+
+                if 'digest' in supported_auth_methods:
+                    response_value = self.build_digest_response(
+                        supported_auth_methods['digest'], username, password)
+                    if response_value:
+                        self._tunnel_headers['Proxy-Authorization'] = u"Digest %s" % response_value
+
+                elif 'basic' in supported_auth_methods:
+                    response_value = u"%s:%s" % (username, password)
+                    response_value = base64.b64encode(response_value).strip()
+                    self._tunnel_headers['Proxy-Authorization'] = u"Basic %s" % response_value
+
+                if 'Proxy-Authorization' in self._tunnel_headers:
+                    self.host = self._proxy_host
+                    self.port = self._proxy_port
+                    return self._tunnel()
+
+            if code != 200:
+                self.close()
+                raise socket.error("Tunnel connection failed: %d %s" % (code,
+                    message.strip()))
+
+        def build_digest_response(self, fields, username, password):
+            fields = urllib2.parse_keqv_list(urllib2.parse_http_list(fields))
+
+            realm = fields.get('realm')
+            nonce = fields.get('nonce')
+            qop = fields.get('qop')
+            algorithm = fields.get('algorithm')
+            if algorithm:
+                algorithm = algorithm.lower()
+            opaque = fields.get('opaque')
+
+            if algorithm in ['md5', None]:
+                def hash(string):
+                    return hashlib.md5(string).hexdigest()
+            elif algorithm == 'sha':
+                def hash(string):
+                    return hashlib.sha1(string).hexdigest()
+            else:
+                return None
+
+            host_port = u"%s:%s" % (self.host, self.port)
+
+            a1 = "%s:%s:%s" % (username, realm, password)
+            a2 = "CONNECT:%s" % host_port
+            ha1 = hash(a1)
+            ha2 = hash(a2)
+
+            if qop == None:
+                response = hash(u"%s:%s:%s" % (ha1, nonce, ha2))
+            elif qop == 'auth':
+                nc = '00000001'
+                cnonce = hash(urllib2.randombytes(8))[:8]
+                response = hash(u"%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
+            else:
+                return None
+
+            response_fields = {
+                'username': username,
+                'realm': realm,
+                'nonce': nonce,
+                'response': response,
+                'uri': host_port
+            }
+            if algorithm:
+                response_fields['algorithm'] = algorithm
+            if qop == 'auth':
+                response_fields['nc'] = nc
+                response_fields['cnonce'] = cnonce
+                response_fields['qop'] = qop
+            if opaque:
+                response_fields['opaque'] = opaque
+
+            return ', '.join([u"%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
 
         def connect(self):
             if self.debuglevel == -1:
@@ -1130,7 +1262,7 @@ class UrlLib2Downloader(Downloader):
                 return False
             bundle_path = bundle_path.encode(sys.getfilesystemencoding())
             handlers.append(VerifiedHTTPSHandler(ca_certs=bundle_path,
-                debug=debug))
+                debug=debug, passwd=password_manager))
         else:
             handlers.append(DebuggableHTTPHandler(debug=debug))
         urllib2.install_opener(urllib2.build_opener(*handlers))
