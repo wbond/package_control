@@ -169,7 +169,8 @@ try:
 
         def __str__(self):
             return ('Host %s returned an invalid certificate (%s) %s\n' %
-                    (self.host, self.reason, self.cert))
+                (self.host, self.reason, self.cert))
+
 
     class ValidatingHTTPSConnection(DebuggableHTTPConnection):
         """
@@ -183,7 +184,7 @@ try:
         _debug_protocol = 'HTTPS'
 
         def __init__(self, host, port=None, key_file=None, cert_file=None,
-                                 ca_certs=None, strict=None, **kwargs):
+                ca_certs=None, strict=None, **kwargs):
             passed_args = {}
             if 'timeout' in kwargs:
                 passed_args['timeout'] = kwargs['timeout']
@@ -267,10 +268,13 @@ try:
             while True:
                 line = response.fp.readline()
                 if line == '\r\n': break
+
                 headers.append(line.rstrip())
+
                 parts = line.rstrip().split(': ', 1)
                 if parts[0].lower() == 'content-length':
                     content_length = int(parts[1])
+
                 if self.debuglevel in [-1, 5]:
                     print u"  %s" % line.rstrip()
 
@@ -404,9 +408,8 @@ try:
                 print u"  CA certs file at %s" % (self.ca_certs)
 
             self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
-                                              certfile=self.cert_file,
-                                              cert_reqs=self.cert_reqs,
-                                              ca_certs=self.ca_certs)
+                certfile=self.cert_file, cert_reqs=self.cert_reqs,
+                ca_certs=self.ca_certs)
 
             if self.debuglevel == -1:
                 print u"  Successfully upgraded connection to %s:%s with SSL" % (
@@ -451,7 +454,7 @@ try:
                         print u"  Certificate INVALID"
 
                     raise InvalidCertificateException(hostname, cert,
-                                                      'hostname mismatch')
+                        'hostname mismatch')
 
                 if self.debuglevel == -1:
                     print u"  Certificate validated for %s" % hostname
