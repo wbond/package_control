@@ -43,7 +43,7 @@ def non_recursive_http_error_auth_reqed(self, authreq, host, req, headers):
     if not hasattr(self, 'retried'):
         self.retried = 0
 
-    if self.retried > 0:
+    if self.retried > 5:
         raise urllib2.HTTPError(req.get_full_url(), 401, "basic auth failed",
             headers, None)
     else:
