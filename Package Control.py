@@ -2987,7 +2987,15 @@ class PackageManager():
 
 
 class PackageCreator():
+    """
+    Abstract class for commands that create .sublime-package files
+    """
+
     def show_panel(self):
+        """
+        Shows a list of packages that can be turned into a .sublime-package file
+        """
+
         self.manager = PackageManager()
         self.packages = self.manager.list_packages()
         if not self.packages:
@@ -2997,6 +3005,13 @@ class PackageCreator():
         self.window.show_quick_panel(self.packages, self.on_done)
 
     def get_package_destination(self):
+        """
+        Retrieves the destination for .sublime-package files
+
+        :return:
+            A string - the path to the folder to save .sublime-package files in
+        """
+
         destination = self.manager.settings.get('package_destination')
 
         # We check destination via an if statement instead of using
@@ -3008,10 +3023,23 @@ class PackageCreator():
 
 
 class CreatePackageCommand(sublime_plugin.WindowCommand, PackageCreator):
+    """
+    Command to create a regular .sublime-package file
+    """
+
     def run(self):
         self.show_panel()
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - processes the user package
+        selection and create the package file
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         package_name = self.packages[picked]
@@ -3024,10 +3052,25 @@ class CreatePackageCommand(sublime_plugin.WindowCommand, PackageCreator):
 
 
 class CreateBinaryPackageCommand(sublime_plugin.WindowCommand, PackageCreator):
+    """
+    Command to create a binary .sublime-package file. Binary packages in
+    general exclude the .py source files and instead include the .pyc files.
+    Actual included and excluded files are controlled by settings.
+    """
+
     def run(self):
         self.show_panel()
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - processes the user package
+        selection and create the package file
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         package_name = self.packages[picked]
@@ -3041,7 +3084,17 @@ class CreateBinaryPackageCommand(sublime_plugin.WindowCommand, PackageCreator):
 
 
 class PackageRenamer():
+    """
+    Class to handle renaming packages via the renamed_packages setting
+    gathered from channels and repositories.
+    """
+
     def load_settings(self):
+        """
+        Loads the list of installed packages from the
+        Package Control.sublime-settings file.
+        """
+
         self.settings_file = '%s.sublime-settings' % __name__
         self.settings = sublime.load_settings(self.settings_file)
         self.installed_packages = self.settings.get('installed_packages', [])
@@ -3049,6 +3102,13 @@ class PackageRenamer():
             self.installed_packages = []
 
     def rename_packages(self, installer):
+        """
+        Renames any installed packages that the user has installed.
+
+        :param installer:
+            An instance of :class:`PackageInstaller`
+        """
+
         # Fetch the packages since that will pull in the renamed packages list
         installer.manager.list_available_packages()
         renamed_packages = installer.manager.settings.get('renamed_packages', {})
@@ -3084,6 +3144,14 @@ class PackageRenamer():
         sublime.set_timeout(lambda: self.save_packages(installed_pkgs), 10)
 
     def save_packages(self, installed_packages):
+        """
+        Saves the list of installed packages (after having been appropriately
+        renamed)
+
+        :param installed_packages:
+            The new list of installed packages
+        """
+
         installed_packages = list(set(installed_packages))
         installed_packages = sorted(installed_packages,
             key=lambda s: s.lower())
@@ -3094,11 +3162,44 @@ class PackageRenamer():
 
 
 class PackageInstaller():
+    """
+    Provides helper functionality related to installing packages
+    """
+
     def __init__(self):
         self.manager = PackageManager()
 
     def make_package_list(self, ignore_actions=[], override_action=None,
             ignore_packages=[]):
+        """
+        Creates a list of packages and what operation would be performed for
+        each. Allows filtering by the applicable action or package name.
+        Returns the information in a format suitable for displaying in the
+        quick panel.
+
+        :param ignore_actions:
+            A list of actions to ignore packages by. Valid actions include:
+            `install`, `upgrade`, `downgrade`, `reinstall`, `overwrite`,
+            `pull` and `none`. `pull` andd `none` are for Git and Hg
+            repositories. `pull` is present when incoming changes are detected,
+            where as `none` is selected if no commits are available. `overwrite`
+            is for packages that do not include version information via the
+            `package-metadata.json` file.
+
+        :param override_action:
+            A string action name to override the displayed action for all listed
+            packages.
+
+        :param ignore_packages:
+            A list of packages names that should not be returned in the list
+
+        :return:
+            A list of lists, each containing three strings:
+              0 - package name
+              1 - package description
+              2 - action; [extra info;] package url
+        """
+
         packages = self.manager.list_available_packages()
         installed_packages = self.manager.list_packages()
 
@@ -3195,9 +3296,18 @@ class PackageInstaller():
         return package_list
 
     def disable_package(self, package):
+        """
+        Disables a package before installing or upgrading to prevent errors
+        where Sublime Text tries to read files that no longer exist, or read a
+        half-written file.
+
+        :param package: The string package name
+        """
+
         # Don't disable Package Control so it does not get stuck disabled
         if package == 'Package Control':
             return False
+
         settings = sublime.load_settings(preferences_filename())
         ignored = settings.get('ignored_packages')
         if not ignored:
@@ -3210,6 +3320,12 @@ class PackageInstaller():
         return False
 
     def reenable_package(self, package):
+        """
+        Re-enables a package after it has been installed or upgraded
+
+        :param package: The string package name
+        """
+
         settings = sublime.load_settings(preferences_filename())
         ignored = settings.get('ignored_packages')
         if not ignored:
@@ -3220,6 +3336,15 @@ class PackageInstaller():
             sublime.save_settings(preferences_filename())
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - disables a package, installs or
+        upgrades it, then re-enables the package
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         name = self.package_list[picked][0]
@@ -3236,7 +3361,23 @@ class PackageInstaller():
 
 
 class PackageInstallerThread(threading.Thread):
+    """
+    A thread to run package install/upgrade operations in so that the main
+    Sublime Text thread does not get blocked and freeze the UI
+    """
+
     def __init__(self, manager, package, on_complete):
+        """
+        :param manager:
+            An instance of :class:`PackageManager`
+
+        :param package:
+            The string package name to install/upgrade
+
+        :param on_complete:
+            A callback to run after installing/upgrading the package
+        """
+
         self.package = package
         self.manager = manager
         self.on_complete = on_complete
@@ -3249,6 +3390,11 @@ class PackageInstallerThread(threading.Thread):
 
 
 class InstallPackageCommand(sublime_plugin.WindowCommand):
+    """
+    A command that presents the list of available packages and allows the
+    user to pick one to install.
+    """
+
     def run(self):
         thread = InstallPackageThread(self.window)
         thread.start()
@@ -3256,7 +3402,18 @@ class InstallPackageCommand(sublime_plugin.WindowCommand):
 
 
 class InstallPackageThread(threading.Thread, PackageInstaller):
+    """
+    A thread to run the action of retrieving available packages in. Uses the
+    default PackageInstaller.on_done quick panel handler.
+    """
+
     def __init__(self, window):
+        """
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the available package list in.
+        """
+
         self.window = window
         self.completion_type = 'installed'
         threading.Thread.__init__(self)
@@ -3276,12 +3433,20 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
 
 class DiscoverPackagesCommand(sublime_plugin.WindowCommand):
+    """
+    A command that opens the community package list webpage
+    """
+
     def run(self):
         self.window.run_command('open_url',
             {'url': 'http://wbond.net/sublime_packages/community'})
 
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):
+    """
+    A command that presents the list of installed packages that can be upgraded.
+    """
+
     def run(self):
         package_renamer = PackageRenamer()
         package_renamer.load_settings()
@@ -3292,7 +3457,19 @@ class UpgradePackageCommand(sublime_plugin.WindowCommand):
 
 
 class UpgradePackageThread(threading.Thread, PackageInstaller):
+    """
+    A thread to run the action of retrieving upgradable packages in.
+    """
+
     def __init__(self, window, package_renamer):
+        """
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the list of upgradable packages in.
+
+        :param package_renamer:
+            An instance of :class:`PackageRenamer`
+        """
         self.window = window
         self.package_renamer = package_renamer
         self.completion_type = 'upgraded'
@@ -3314,6 +3491,15 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         sublime.set_timeout(show_quick_panel, 10)
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - disables a package, upgrades it,
+        then re-enables the package
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         name = self.package_list[picked][0]
@@ -3330,6 +3516,11 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
 
 class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
+    """
+    A command to automatically upgrade all installed packages that are
+    upgradable.
+    """
+
     def run(self):
         package_renamer = PackageRenamer()
         package_renamer.load_settings()
@@ -3340,6 +3531,10 @@ class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
 
 
 class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
+    """
+    A thread to run the action of retrieving upgradable packages in.
+    """
+
     def __init__(self, window, package_renamer):
         self.window = window
         self.package_renamer = package_renamer
@@ -3375,10 +3570,29 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
 
 
 class ExistingPackagesCommand():
+    """
+    Allows listing installed packages and their current version
+    """
+
     def __init__(self):
         self.manager = PackageManager()
 
     def make_package_list(self, action=''):
+        """
+        Returns a list of installed packages suitable for displaying in the
+        quick panel.
+
+        :param action:
+            An action to display at the beginning of the third element of the
+            list returned for each package
+
+        :return:
+            A list of lists, each containing three strings:
+              0 - package name
+              1 - package description
+              2 - [action] installed version; package url
+        """
+
         packages = self.manager.list_packages()
 
         if action:
@@ -3419,12 +3633,26 @@ class ExistingPackagesCommand():
 
 
 class ListPackagesCommand(sublime_plugin.WindowCommand):
+    """
+    A command that shows a list of all installed packages in the quick panel
+    """
+
     def run(self):
         ListPackagesThread(self.window).start()
 
 
 class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
+    """
+    A thread to prevent the listing of existing packages from freezing the UI
+    """
+
     def __init__(self, window):
+        """
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the list of installed packages in.
+        """
+
         self.window = window
         threading.Thread.__init__(self)
         ExistingPackagesCommand.__init__(self)
@@ -3441,6 +3669,15 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         sublime.set_timeout(show_quick_panel, 10)
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - opens the homepage for any
+        selected package in the user's browser
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         package_name = self.package_list[picked][0]
@@ -3453,7 +3690,18 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
 class RemovePackageCommand(sublime_plugin.WindowCommand,
         ExistingPackagesCommand):
+    """
+    A command that presents a list of installed packages, allowing the user to
+    select one to remove
+    """
+
     def __init__(self, window):
+        """
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the list of installed packages in.
+        """
+
         self.window = window
         ExistingPackagesCommand.__init__(self)
 
@@ -3466,6 +3714,14 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
         self.window.show_quick_panel(self.package_list, self.on_done)
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - deletes the selected package
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         package = self.package_list[picked][0]
@@ -3490,6 +3746,11 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
 
 
 class RemovePackageThread(threading.Thread):
+    """
+    A thread to run the remove package operation in so that the Sublime Text
+    UI does not become frozen
+    """
+
     def __init__(self, manager, package, ignored):
         self.manager = manager
         self.package = package
@@ -3507,11 +3768,22 @@ class RemovePackageThread(threading.Thread):
 
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
+    """
+    A command to add a new channel (list of repositories) to the user's machine
+    """
+
     def run(self):
         self.window.show_input_panel('Channel JSON URL', '',
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
+        """
+        Input panel handler - adds the provided URL as a channel
+
+        :param input:
+            A string of the URL to the new channel
+        """
+
         settings = sublime.load_settings('%s.sublime-settings' % __name__)
         repository_channels = settings.get('repository_channels', [])
         if not repository_channels:
@@ -3530,12 +3802,23 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
 
 
 class AddRepositoryCommand(sublime_plugin.WindowCommand):
+    """
+    A command to add a new repository to the user's machine
+    """
+
     def run(self):
         self.window.show_input_panel('GitHub or BitBucket Web URL, or Custom' +
                 ' JSON Repository URL', '', self.on_done,
             self.on_change, self.on_cancel)
 
     def on_done(self, input):
+        """
+        Input panel handler - adds the provided URL as a repository
+
+        :param input:
+            A string of the URL to the new repository
+        """
+
         settings = sublime.load_settings('%s.sublime-settings' % __name__)
         repositories = settings.get('repositories', [])
         if not repositories:
@@ -3553,6 +3836,10 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
 
 
 class DisablePackageCommand(sublime_plugin.WindowCommand):
+    """
+    A command that adds a package to Sublime Text's ignored packages list
+    """
+
     def run(self):
         manager = PackageManager()
         packages = manager.list_all_packages()
@@ -3569,6 +3856,14 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
         self.window.show_quick_panel(self.package_list, self.on_done)
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - disables the selected package
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         package = self.package_list[picked]
@@ -3584,6 +3879,10 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
 
 
 class EnablePackageCommand(sublime_plugin.WindowCommand):
+    """
+    A command that removes a package from Sublime Text's ignored packages list
+    """
+
     def run(self):
         self.settings = sublime.load_settings(preferences_filename())
         self.disabled_packages = self.settings.get('ignored_packages')
@@ -3595,6 +3894,14 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
         self.window.show_quick_panel(self.disabled_packages, self.on_done)
 
     def on_done(self, picked):
+        """
+        Quick panel user selection handler - enables the selected package
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
         if picked == -1:
             return
         package = self.disabled_packages[picked]
@@ -3608,7 +3915,19 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
 
 
 class AutomaticUpgrader(threading.Thread):
+    """
+    Automatically checks for updated packages and installs them. controlled
+    by the `auto_upgrade`, `auto_upgrade_ignore`, `auto_upgrade_frequency` and
+    `auto_upgrade_last_run` settings.
+    """
+
     def __init__(self, found_packages):
+        """
+        :param found_packages:
+            A list of package names for the packages that were found to be
+            installed on the machine.
+        """
+
         self.installer = PackageInstaller()
         self.manager = self.installer.manager
 
@@ -3650,6 +3969,11 @@ class AutomaticUpgrader(threading.Thread):
         threading.Thread.__init__(self)
 
     def load_settings(self):
+        """
+        Loads the list of installed packages from the
+        Package Control.sublime-settings file
+        """
+
         self.settings_file = '%s.sublime-settings' % __name__
         self.settings = sublime.load_settings(self.settings_file)
         self.installed_packages = self.settings.get('installed_packages', [])
@@ -3666,6 +3990,12 @@ class AutomaticUpgrader(threading.Thread):
         self.upgrade_packages()
 
     def install_missing(self):
+        """
+        Installs all packages that were listed in the list of
+        `installed_packages` from Package Control.sublime-settings but were not
+        found on the filesystem and passed as `found_packages`.
+        """
+
         if not self.missing_packages:
             return
 
@@ -3677,6 +4007,12 @@ class AutomaticUpgrader(threading.Thread):
                     (__name__, package)
 
     def print_skip(self):
+        """
+        Prints a notice in the console if the automatic upgrade is skipped
+        due to already having been run in the last `auto_upgrade_frequency`
+        hours.
+        """
+
         last_run = datetime.datetime.fromtimestamp(self.last_run)
         next_run = datetime.datetime.fromtimestamp(self.next_run)
         date_format = '%Y-%m-%d %H:%M:%S'
@@ -3685,6 +4021,11 @@ class AutomaticUpgrader(threading.Thread):
             last_run.strftime(date_format), next_run.strftime(date_format))
 
     def upgrade_packages(self):
+        """
+        Upgrades all packages that are not currently upgraded to the lastest
+        version. Also renames any installed packages to their new names.
+        """
+
         if not self.auto_upgrade:
             return
 
@@ -3722,6 +4063,11 @@ class AutomaticUpgrader(threading.Thread):
 
 
 class PackageCleanup(threading.Thread, PackageRenamer):
+    """
+    Cleans up folders for packages that were removed, but that still have files
+    in use.
+    """
+
     def __init__(self):
         self.manager = PackageManager()
         self.load_settings()
@@ -3765,6 +4111,20 @@ class PackageCleanup(threading.Thread, PackageRenamer):
         sublime.set_timeout(lambda: self.finish(installed_pkgs, found_pkgs), 10)
 
     def finish(self, installed_pkgs, found_pkgs):
+        """
+        A callback that can be run the main UI thread to perform saving of the
+        Package Control.sublime-settings file. Also fires off the
+        :class:`AutomaticUpgrader`.
+
+        :param installed_pkgs:
+            A list of the string package names of all "installed" packages,
+            even ones that do not appear to be in the filesystem.
+
+        :param found_pkgs:
+            A list of the string package names of all packages that are
+            currently installed on the filesystem.
+        """
+
         self.save_packages(installed_pkgs)
         AutomaticUpgrader(found_pkgs).start()
 
