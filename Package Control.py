@@ -163,7 +163,7 @@ try:
                     (self.host, self.reason, self.cert))
 
     # Adds SSL certificate checking for urllib2 to help prevents MITM attacks
-    class CertValidatingHTTPSConnection(DebuggableHTTPConnection):
+    class ValidatingHTTPSConnection(DebuggableHTTPConnection):
         default_port = httplib.HTTPS_PORT
 
         response_class = DebuggableHTTPSResponse
@@ -185,7 +185,7 @@ try:
             else:
                 self.cert_reqs = ssl.CERT_NONE
 
-        def _GetValidHostsForCert(self, cert):
+        def get_valid_hosts_for_cert(self, cert):
             if 'subjectAltName' in cert:
                 return [x[1] for x in cert['subjectAltName']
                              if x[0].lower() == 'dns']
@@ -193,8 +193,8 @@ try:
                 return [x[0][1] for x in cert['subject']
                                 if x[0][0].lower() == 'commonname']
 
-        def _ValidateCertificateHostname(self, cert, hostname):
-            hosts = self._GetValidHostsForCert(cert)
+        def validate_cert_host(self, cert, hostname):
+            hosts = self.get_valid_hosts_for_cert(cert)
             for host in hosts:
                 host_re = host.replace('.', '\.').replace('*', '[^.]*')
                 if re.search('^%s$' % (host_re,), hostname, re.I):
@@ -387,7 +387,7 @@ try:
 
                 hostname = self.host.split(':', 0)[0]
 
-                if not self._ValidateCertificateHostname(cert, hostname):
+                if not self.validate_cert_host(cert, hostname):
                     if self.debuglevel == -1:
                         print u"  Certificate INVALID"
 
@@ -398,7 +398,7 @@ try:
                     print u"  Certificate validated for %s" % hostname
 
     if hasattr(urllib2, 'HTTPSHandler'):
-        class VerifiedHTTPSHandler(urllib2.HTTPSHandler):
+        class ValidatingHTTPSHandler(urllib2.HTTPSHandler):
             def __init__(self, **kwargs):
                 # This is a special value that will not trigger the standard debug
                 # functionality, but custom code where we can format the output
@@ -413,7 +413,7 @@ try:
                 def http_class_wrapper(host, **kwargs):
                     full_kwargs = dict(self._connection_args)
                     full_kwargs.update(kwargs)
-                    return CertValidatingHTTPSConnection(host, **full_kwargs)
+                    return ValidatingHTTPSConnection(host, **full_kwargs)
 
                 try:
                     return self.do_open(http_class_wrapper, req)
@@ -1284,7 +1284,7 @@ class UrlLib2Downloader(Downloader):
             if not bundle_path:
                 return False
             bundle_path = bundle_path.encode(sys.getfilesystemencoding())
-            handlers.append(VerifiedHTTPSHandler(ca_certs=bundle_path,
+            handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
                 debug=debug, passwd=password_manager))
         else:
             handlers.append(DebuggableHTTPHandler(debug=debug))
