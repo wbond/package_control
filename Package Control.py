@@ -813,13 +813,22 @@ class PackageProvider(PlatformComparator):
                 self.unavailable_packages.append(package['name'])
                 continue
 
+            # Rewrites the legacy "zipball" URLs to the new "zip" format
+            downloads = package['platforms'][best_platform]
+            rewritten_downloads = []
+            for download in downloads:
+                download['url'] = re.sub(
+                    '^(https://nodeload.github.com/[^/]+/[^/]+/)zipball(/.*)$',
+                    '\\1zip\\2', download['url'])
+                rewritten_downloads.append(download)
+
             info = {
                 'name': package['name'],
                 'description': package.get('description'),
                 'url': package.get('homepage', self.repo),
                 'author': package.get('author'),
                 'last_modified': package.get('last_modified'),
-                'downloads': package['platforms'][best_platform]
+                'downloads': rewritten_downloads
             }
 
             output[package['name']] = info
@@ -937,7 +946,7 @@ class GitHubPackageProvider(NonCachingProvider):
         # HTTP redirect headers
         download_url = 'https://nodeload.github.com/' + \
             repo_info['owner']['login'] + '/' + \
-            repo_info['name'] + '/zipball/' + urllib.quote(branch)
+            repo_info['name'] + '/zip/' + urllib.quote(branch)
 
         commit_date = commit_info[0]['commit']['committer']['date']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
@@ -1040,7 +1049,7 @@ class GitHubUserProvider(NonCachingProvider):
                         # downloaders don't follow HTTP redirect headers
                         'url': 'https://nodeload.github.com/' + \
                             package_info['owner']['login'] + '/' + \
-                            package_info['name'] + '/zipball/master'
+                            package_info['name'] + '/zip/master'
                     }
                 ]
             }
