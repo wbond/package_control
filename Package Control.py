@@ -1615,7 +1615,7 @@ class CurlDownloader(CliDownloader):
         if not self.curl:
             return False
         command = [self.curl, '-f', '--user-agent', 'Sublime Package Control',
-            '--connect-timeout', str(int(timeout)), '-sS']
+            '--connect-timeout', str(int(timeout)), '-sSL']
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
