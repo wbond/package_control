@@ -92,6 +92,10 @@ class DebuggableHTTPResponse(httplib.HTTPResponse):
 
 
 class DebuggableHTTPSResponse(DebuggableHTTPResponse):
+    """
+    A version of DebuggableHTTPResponse that sets the debug protocol to HTTPS
+    """
+
     _debug_protocol = 'HTTPS'
 
 
@@ -152,6 +156,11 @@ try:
     import ssl
 
     class InvalidCertificateException(httplib.HTTPException, urllib2.URLError):
+        """
+        An exception for when an SSL certification is not valid for the URL
+        it was presented for.
+        """
+
         def __init__(self, host, cert, reason):
             httplib.HTTPException.__init__(self)
             self.host = host
@@ -162,8 +171,12 @@ try:
             return ('Host %s returned an invalid certificate (%s) %s\n' %
                     (self.host, self.reason, self.cert))
 
-    # Adds SSL certificate checking for urllib2 to help prevents MITM attacks
     class ValidatingHTTPSConnection(DebuggableHTTPConnection):
+        """
+        A custom HTTPConnection class that validates SSL certificates, and
+        allows proxy authentication for HTTPS connections.
+        """
+
         default_port = httplib.HTTPS_PORT
 
         response_class = DebuggableHTTPSResponse
@@ -186,6 +199,14 @@ try:
                 self.cert_reqs = ssl.CERT_NONE
 
         def get_valid_hosts_for_cert(self, cert):
+            """
+            Returns a list of valid hostnames for an SSL certificate
+
+            :param cert: A dict from SSLSocket.getpeercert()
+
+            :return: An array of hostnames
+            """
+
             if 'subjectAltName' in cert:
                 return [x[1] for x in cert['subjectAltName']
                              if x[0].lower() == 'dns']
@@ -194,6 +215,16 @@ try:
                                 if x[0][0].lower() == 'commonname']
 
         def validate_cert_host(self, cert, hostname):
+            """
+            Checks if the cert is valid for the hostname
+
+            :param cert: A dict from SSLSocket.getpeercert()
+
+            :param hostname: A string hostname to check
+
+            :return: A boolean if the cert is valid for the hostname
+            """
+
             hosts = self.get_valid_hosts_for_cert(cert)
             for host in hosts:
                 host_re = host.replace('.', '\.').replace('*', '[^.]*')
@@ -201,9 +232,13 @@ try:
                     return True
             return False
 
-        # This custom _tunnel method allows us to read and print the debug log for
-        # the whole response before throwing an error, like the default does
         def _tunnel(self):
+            """
+            This custom _tunnel method allows us to read and print the debug
+            log for the whole response before throwing an error, and adds
+            support for proxy authentication
+            """
+
             self._proxy_host = self.host
             self._proxy_port = self.port
             self._set_hostport(self._tunnel_host, self._tunnel_port)
@@ -277,6 +312,25 @@ try:
                     message.strip()))
 
         def build_digest_response(self, fields, username, password):
+            """
+            Takes a Proxy-Authenticate: Digest header and creates a response
+            header
+
+            :param fields:
+                The string portion of the Proxy-Authenticate header after
+                "Digest "
+
+            :param username:
+                The username to use for the response
+
+            :param password:
+                The password to use for the response
+
+            :return:
+                None if invalid Proxy-Authenticate header, otherwise the
+                string of fields for the Proxy-Authorization: Digest header
+            """
+
             fields = urllib2.parse_keqv_list(urllib2.parse_http_list(fields))
 
             realm = fields.get('realm')
@@ -331,6 +385,10 @@ try:
             return ', '.join([u"%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
 
         def connect(self):
+            """
+            Adds debugging and SSL certification validation
+            """
+
             if self.debuglevel == -1:
                 print '%s: Urllib2 HTTPS Debug General' % __name__
                 print u"  Connecting to %s on port %s" % (self.host, self.port)
@@ -354,6 +412,7 @@ try:
                 print u"  Successfully upgraded connection to %s:%s with SSL" % (
                     self.host, self.port)
 
+            # This debugs and validates the SSL certificate
             if self.cert_reqs & ssl.CERT_REQUIRED:
                 cert = self.sock.getpeercert()
 
@@ -399,6 +458,10 @@ try:
 
     if hasattr(urllib2, 'HTTPSHandler'):
         class ValidatingHTTPSHandler(urllib2.HTTPSHandler):
+            """
+            A urllib2 handler that validates SSL certificates for HTTPS requests
+            """
+
             def __init__(self, **kwargs):
                 # This is a special value that will not trigger the standard debug
                 # functionality, but custom code where we can format the output
