@@ -19,6 +19,7 @@ import httplib
 import socket
 import hashlib
 import base64
+import locale
 
 if os.name == 'nt':
     # Python 2.x on Windows can't properly import from non-ASCII paths, so
@@ -34,6 +35,28 @@ if os.name == 'nt':
         sys.path.append(lib_path)
 
     from ntlm import ntlm
+
+
+def unicode_from_os(e):
+    # This is needed as some exceptions coming from the OS are
+    # already encoded and so just calling unicode(e) will result
+    # in an UnicodeDecodeError as the string isn't in ascii form.
+    try:
+        # Sublime Text on OS X does not seem to report the correct encoding
+        # so we hard-code that to UTF-8
+        encoding = 'UTF-8' if os.name == 'darwin' else locale.getpreferredencoding()
+        return unicode(e, encoding)
+
+    # If the "correct" encoding did not work, try some defaults, and then just
+    # obliterate characters that we can't seen to decode properly
+    except UnicodeDecodeError:
+        encodings = ['utf-8', 'cp1252']
+        for encoding in encodings:
+            try:
+                return unicode(str(e), encoding, errors='strict')
+            except:
+                pass
+    return unicode(str(e), errors='replace')
 
 
 # Monkey patch AbstractBasicAuthHandler to prevent infinite recursion
@@ -1487,7 +1510,7 @@ class UrlLib2Downloader(Downloader):
 
             except (httplib.HTTPException) as (e):
                 print '%s: %s HTTP exception %s (%s) downloading %s.' % (
-                    __name__, error_message, e.__class__.__name__, unicode(e),
+                    __name__, error_message, e.__class__.__name__, unicode_from_os(e),
                     url)
 
             except (urllib2.HTTPError) as (e):
@@ -2592,7 +2615,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred creating the ' +
                 'package file %s in %s. %s') % (__name__, package_filename,
-                package_destination, unicode(exception)))
+                package_destination, unicode_from_os(exception)))
             return False
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
@@ -2720,7 +2743,7 @@ class PackageManager():
             except (OSError, IOError) as (exception):
                 sublime.error_message(('%s: An error occurred while trying ' +
                     'to backup the package directory for %s. %s') %
-                    (__name__, package_name, unicode(exception)))
+                    (__name__, package_name, unicode_from_os(exception)))
                 shutil.rmtree(package_backup_dir)
                 return False
 
@@ -2821,7 +2844,7 @@ class PackageManager():
         except (OSError, IOError) as (e):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove old files from the %s directory. %s') %
-                (__name__, package_name, unicode(e)))
+                (__name__, package_name, unicode_from_os(e)))
             return False
 
         self.print_messages(package_name, package_dir, is_upgrade, old_version)
@@ -3014,7 +3037,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the package file for %s. %s') % (__name__,
-                package_name, unicode(exception)))
+                package_name, unicode_from_os(exception)))
             return False
 
         try:
@@ -3023,7 +3046,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the installed package file for %s. %s') % (__name__,
-                package_name, unicode(exception)))
+                package_name, unicode_from_os(exception)))
             return False
 
         try:
@@ -3032,7 +3055,7 @@ class PackageManager():
         except (OSError, IOError) as (exception):
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the pristine package file for %s. %s') % (__name__,
-                package_name, unicode(exception)))
+                package_name, unicode_from_os(exception)))
             return False
 
         # We don't delete the actual package dir immediately due to a bug
@@ -4213,7 +4236,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                         open(cleanup_file, 'w').close()
                     print ('%s: Unable to remove old directory for package ' +
                         '%s - deferring until next start: %s') % (__name__,
-                        package_name, unicode(e))
+                        package_name, unicode_from_os(e))
 
             # This adds previously installed packages from old versions of PC
             if os.path.exists(metadata_path) and \
