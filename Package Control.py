@@ -45,7 +45,7 @@ def unicode_from_os(e):
         # Sublime Text on OS X does not seem to report the correct encoding
         # so we hard-code that to UTF-8
         encoding = 'UTF-8' if os.name == 'darwin' else locale.getpreferredencoding()
-        return unicode(e, encoding)
+        return unicode(str(e), encoding)
 
     # If the "correct" encoding did not work, try some defaults, and then just
     # obliterate characters that we can't seen to decode properly
