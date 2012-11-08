@@ -33,7 +33,7 @@ if os.name == 'nt':
     if lib_path not in sys.path:
         sys.path.append(lib_path)
 
-    from ntlm import HTTPNtlmAuthHandler
+    from ntlm import ntlm
 
 
 # Monkey patch AbstractBasicAuthHandler to prevent infinite recursion
@@ -107,6 +107,11 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
     response_class = DebuggableHTTPResponse
     _debug_protocol = 'HTTP'
 
+    def __init__(self, host, port=None, strict=None,
+                 timeout=socket._GLOBAL_DEFAULT_TIMEOUT, **kwargs):
+        self.passwd = kwargs.get('passwd')
+        httplib.HTTPConnection.__init__(self, host, port, strict, timeout)
+
     def connect(self):
         if self.debuglevel == -1:
             print '%s: Urllib2 %s Debug General' % (__name__, self._debug_protocol)
@@ -131,6 +136,48 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
             if reset_debug:
                 self.debuglevel = reset_debug
 
+    def request(self, method, url, body=None, headers={}):
+        original_headers = headers.copy()
+
+        # Handles the challenge request response cycle before the real request
+        proxy_auth = headers.get('Proxy-Authorization')
+        if os.name == 'nt' and proxy_auth and proxy_auth.lstrip()[0:4] == 'NTLM':
+            # The default urllib2.AbstractHTTPHandler automatically sets the
+            # Connection header to close because of urllib.addinfourl(), but in
+            # this case we are going to do some back and forth first for the NTLM
+            # proxy auth
+            headers['Connection'] = 'Keep-Alive'
+            self._send_request(method, url, body, headers)
+
+            response = self.getresponse()
+
+            content_length = int(response.getheader('content-length', 0))
+            if content_length:
+                response._safe_read(content_length)
+
+            proxy_authenticate = response.getheader('proxy-authenticate', None)
+            if not proxy_authenticate:
+                raise URLError('Invalid NTLM proxy authentication response')
+            ntlm_challenge = re.sub('^\s*NTLM\s+', '', proxy_authenticate)
+
+            if self.host.find(':') != -1:
+                host_port = self.host
+            else:
+                host_port = "%s:%s" % (self.host, self.port)
+            username, password = self.passwd.find_user_password(None, host_port)
+            domain = ''
+            user = username
+            if username.find('\\') != -1:
+                domain, user = username.split('\\', 1)
+
+            challenge, negotiate_flags = ntlm.parse_NTLM_CHALLENGE_MESSAGE(ntlm_challenge)
+            new_proxy_authorization = 'NTLM %s' % ntlm.create_NTLM_AUTHENTICATE_MESSAGE(challenge, user,
+                domain, password, negotiate_flags)
+            original_headers['Proxy-Authorization'] = new_proxy_authorization
+            response.close()
+
+        httplib.HTTPConnection.request(self, method, url, body, original_headers)
+
 
 class DebuggableHTTPHandler(urllib2.HTTPHandler):
     """
@@ -144,9 +191,52 @@ class DebuggableHTTPHandler(urllib2.HTTPHandler):
             self._debuglevel = 5
         else:
             self._debuglevel = debuglevel
+        self.passwd = kwargs.get('passwd')
 
     def http_open(self, req):
-        return self.do_open(DebuggableHTTPConnection, req)
+        def http_class_wrapper(host, **kwargs):
+            kwargs['passwd'] = self.passwd
+            return DebuggableHTTPConnection(host, **kwargs)
+
+        return self.do_open(http_class_wrapper, req)
+
+
+if os.name == 'nt':
+    class ProxyNtlmAuthHandler(urllib2.BaseHandler):
+
+        handler_order = 300
+        auth_header = 'Proxy-Authorization'
+
+        def __init__(self, password_manager=None):
+            if password_manager is None:
+                password_manager = HTTPPasswordMgr()
+            self.passwd = password_manager
+            self.retried = 0
+
+        def http_error_407(self, req, fp, code, msg, headers):
+            proxy_authenticate = headers.get('proxy-authenticate')
+            if os.name != 'nt' or proxy_authenticate[0:4] != 'NTLM':
+                return None
+
+            type1_flags = ntlm.NTLM_TYPE1_FLAGS
+
+            if req.host.find(':') != -1:
+                host_port = req.host
+            else:
+                host_port = "%s:%s" % (req.host, req.port)
+            username, password = self.passwd.find_user_password(None, host_port)
+            if not username:
+                return None
+
+            if username.find('\\') == -1:
+                type1_flags &= ~ntlm.NTLM_NegotiateOemDomainSupplied
+
+            negotiate_message = ntlm.create_NTLM_NEGOTIATE_MESSAGE(username, type1_flags)
+            auth = 'NTLM %s' % negotiate_message
+            if req.headers.get(self.auth_header, None) == auth:
+                return None
+            req.add_unredirected_header(self.auth_header, auth)
+            return self.parent.open(req, timeout=req.timeout)
 
 
 # The following code is wrapped in a try because the Linux versions of Sublime
@@ -233,7 +323,7 @@ try:
                     return True
             return False
 
-        def _tunnel(self):
+        def _tunnel(self, ntlm_follow_up=False):
             """
             This custom _tunnel method allows us to read and print the debug
             log for the whole response before throwing an error, and adds
@@ -279,9 +369,9 @@ try:
                     print u"  %s" % line.rstrip()
 
             # Handle proxy auth for SSL connections since regular urllib2 punts on this
-            if code == 407 and self.passwd and 'Proxy-Authorization' not in self._tunnel_headers:
+            if code == 407 and self.passwd and ('Proxy-Authorization' not in self._tunnel_headers or ntlm_follow_up):
                 if content_length:
-                    response.fp.read(content_length)
+                    response._safe_read(content_length)
 
                 supported_auth_methods = {}
                 for line in headers:
@@ -294,6 +384,8 @@ try:
                 username, password = self.passwd.find_user_password(None, "%s:%s" % (
                     self._proxy_host, self._proxy_port))
 
+                do_ntlm_follow_up = False
+
                 if 'digest' in supported_auth_methods:
                     response_value = self.build_digest_response(
                         supported_auth_methods['digest'], username, password)
@@ -305,10 +397,30 @@ try:
                     response_value = base64.b64encode(response_value).strip()
                     self._tunnel_headers['Proxy-Authorization'] = u"Basic %s" % response_value
 
+                elif 'ntlm' in supported_auth_methods and os.name == 'nt':
+                    ntlm_challenge = supported_auth_methods['ntlm']
+                    if not len(ntlm_challenge):
+                        type1_flags = ntlm.NTLM_TYPE1_FLAGS
+                        if username.find('\\') == -1:
+                            type1_flags &= ~ntlm.NTLM_NegotiateOemDomainSupplied
+
+                        negotiate_message = ntlm.create_NTLM_NEGOTIATE_MESSAGE(username, type1_flags)
+                        self._tunnel_headers['Proxy-Authorization'] = 'NTLM %s' % negotiate_message
+                        do_ntlm_follow_up = True
+                    else:
+                        domain = ''
+                        user = username
+                        if username.find('\\') != -1:
+                            domain, user = username.split('\\', 1)
+
+                        challenge, negotiate_flags = ntlm.parse_NTLM_CHALLENGE_MESSAGE(ntlm_challenge)
+                        self._tunnel_headers['Proxy-Authorization'] = 'NTLM %s' % ntlm.create_NTLM_AUTHENTICATE_MESSAGE(challenge, user,
+                            domain, password, negotiate_flags)
+
                 if 'Proxy-Authorization' in self._tunnel_headers:
                     self.host = self._proxy_host
                     self.port = self._proxy_port
-                    return self._tunnel()
+                    return self._tunnel(do_ntlm_follow_up)
 
             if code != 200:
                 self.close()
@@ -1335,8 +1447,7 @@ class UrlLib2Downloader(Downloader):
 
         handlers = [proxy_handler]
         if os.name == 'nt':
-            ntlm_auth_handler = HTTPNtlmAuthHandler.ProxyNtlmAuthHandler(
-                password_manager)
+            ntlm_auth_handler = ProxyNtlmAuthHandler(password_manager)
             handlers.append(ntlm_auth_handler)
 
         basic_auth_handler = urllib2.ProxyBasicAuthHandler(password_manager)
@@ -1362,7 +1473,8 @@ class UrlLib2Downloader(Downloader):
             handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
                 debug=debug, passwd=password_manager))
         else:
-            handlers.append(DebuggableHTTPHandler(debug=debug))
+            handlers.append(DebuggableHTTPHandler(debug=debug,
+                passwd=password_manager))
         urllib2.install_opener(urllib2.build_opener(*handlers))
 
         while tries > 0:
