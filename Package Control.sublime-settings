@@ -35,6 +35,9 @@
 	// If packages should be automatically upgraded when ST2 starts
 	"auto_upgrade": true,
 
+	// If missing packages should be automatically installed when ST2 starts
+	"install_missing": true,
+
 	// The minimum frequency in hours in which to check for automatic upgrades,
 	// setting this to 0 will always check for automatic upgrades
 	"auto_upgrade_frequency": 1,

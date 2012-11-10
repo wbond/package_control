@@ -4140,7 +4140,7 @@ class AutomaticUpgrader(threading.Thread):
         found on the filesystem and passed as `found_packages`.
         """
 
-        if not self.missing_packages:
+        if not self.missing_packages or not self.settings.get('install_missing'):
             return
 
         print '%s: Installing %s missing packages' % \
