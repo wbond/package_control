@@ -20,6 +20,7 @@ import socket
 import hashlib
 import base64
 import locale
+import urlparse
 
 if os.name == 'nt':
     # Python 2.x on Windows can't properly import from non-ASCII paths, so
@@ -2255,9 +2256,17 @@ class PackageManager():
                 'install curl or wget.') % (__name__, url))
             return False
 
+        url = url.replace(' ', '%20')
         timeout = self.settings.get('timeout', 3)
-        return downloader.download(url.replace(' ', '%20'), error_message,
-            timeout, 3)
+
+        if self.settings.get('debug'):
+            hostname = urlparse.urlparse(url).hostname
+            print u"%s: Download Debug" % __name__
+            print u"  URL: %s" % url
+            print u"  Resolved IP: %s" % socket.gethostbyname(hostname)
+            print u"  Timeout: %s" % str(timeout)
+
+        return downloader.download(url, error_message, timeout, 3)
 
     def get_metadata(self, package):
         """
