@@ -53,9 +53,12 @@
 
 	// An HTTP proxy server to use for requests
 	"http_proxy": "",
-	// An HTTPS proxy server to use for requests
+	// An HTTPS proxy server to use for requests - this will inherit from
+	// http_proxy if it is set to "" or null and http_proxy has a value. You
+	// can set this to false to prevent inheriting from http_proxy.
 	"https_proxy": "",
-	// Username and password for proxy
+
+	// Username and password for both http_proxy and https_proxy
 	"proxy_username": "",
 	"proxy_password": "",
 

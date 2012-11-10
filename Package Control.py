@@ -2186,6 +2186,15 @@ class PackageManager():
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
+
+        # https_proxy will inherit from http_proxy unless it is set to a
+        # string value or false
+        no_https_proxy = self.settings.get('https_proxy') in ["", None]
+        if no_https_proxy and self.settings.get('http_proxy'):
+            self.settings['https_proxy'] = self.settings.get('http_proxy')
+        if self.settings['https_proxy'] == False:
+            self.settings['https_proxy'] = ''
+
         self.settings['platform'] = sublime.platform()
         self.settings['version'] = sublime.version()
 
