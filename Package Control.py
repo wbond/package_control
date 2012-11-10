@@ -1510,28 +1510,28 @@ class UrlLib2Downloader(Downloader):
 
             except (httplib.HTTPException) as (e):
                 print '%s: %s HTTP exception %s (%s) downloading %s.' % (
-                    __name__, error_message, e.__class__.__name__, unicode_from_os(e),
-                    url)
+                    __name__, error_message, e.__class__.__name__,
+                    unicode_from_os(e), url)
 
             except (urllib2.HTTPError) as (e):
                 # Bitbucket and Github ratelimit using 503 a decent amount
-                if unicode(e.code) == '503':
+                if unicode_from_os(e.code) == '503':
                     print ('%s: Downloading %s was rate limited, ' +
                         'trying again') % (__name__, url)
                     continue
                 print '%s: %s HTTP error %s downloading %s.' % (__name__,
-                    error_message, unicode(e.code), url)
+                    error_message, unicode_from_os(e.code), url)
 
             except (urllib2.URLError) as (e):
 
                 # Bitbucket and Github timeout a decent amount
-                if unicode(e.reason) == 'The read operation timed out' or \
-                        unicode(e.reason) == 'timed out':
+                if unicode_from_os(e.reason) == 'The read operation timed out' \
+                        or unicode_from_os(e.reason) == 'timed out':
                     print (u'%s: Downloading %s timed out, trying ' +
                         u'again') % (__name__, url)
                     continue
                 print u'%s: %s URL error %s downloading %s.' % (__name__,
-                    error_message, unicode(e.reason), url)
+                    error_message, unicode_from_os(e.reason), url)
             break
         return False
 
