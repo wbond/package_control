@@ -1939,11 +1939,12 @@ class VcsUpgrader():
         The lenth of time to cache if incoming changesets are available
     """
 
-    def __init__(self, vcs_binary, update_command, working_copy, cache_length):
+    def __init__(self, vcs_binary, update_command, working_copy, cache_length, debug):
         self.binary = vcs_binary
         self.update_command = update_command
         self.working_copy = working_copy
         self.cache_length = cache_length
+        self.debug = debug
 
     def execute(self, args, dir):
         """
@@ -1963,6 +1964,9 @@ class VcsUpgrader():
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
+        if self.debug:
+            print u"%s: Trying to execute command %s" % (
+                __name__, repr(args))
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             startupinfo=startupinfo, cwd=dir)
@@ -1980,12 +1984,18 @@ class VcsUpgrader():
         """
 
         if self.binary:
+            if self.debug:
+                print u"%s: Using \"%s_binary\" from settings \"%s\"" % (
+                    __name__, self.vcs_type, self.binary)
             return self.binary
 
         # Try the path first
         for dir in os.environ['PATH'].split(os.pathsep):
             path = os.path.join(dir, name)
             if os.path.exists(path):
+                if self.debug:
+                    print u"%s: Found %s at \"%s\"" % (__name__, self.vcs_type,
+                        path)
                 return path
 
         # This is left in for backwards compatibility and for windows
@@ -2006,8 +2016,14 @@ class VcsUpgrader():
         for dir in dirs:
             path = os.path.join(dir, name)
             if os.path.exists(path):
+                if self.debug:
+                    print u"%s: Found %s at \"%s\"" % (__name__, self.vcs_type,
+                        path)
                 return path
 
+        if self.debug:
+            print u"%s: Could not find %s on your machine" % (__name__,
+                self.vcs_type)
         return None
 
 
@@ -2015,6 +2031,8 @@ class GitUpgrader(VcsUpgrader):
     """
     Allows upgrading a local git-repository-based package
     """
+
+    vcs_type = 'git'
 
     def retrieve_binary(self):
         """
@@ -2090,6 +2108,8 @@ class HgUpgrader(VcsUpgrader):
     """
     Allows upgrading a local mercurial-repository-based package
     """
+
+    vcs_type = 'hg'
 
     def retrieve_binary(self):
         """
@@ -2723,7 +2743,7 @@ class PackageManager():
                 return False
             return GitUpgrader(self.settings['git_binary'],
                 self.settings['git_update_command'], package_dir,
-                self.settings['cache_length']).run()
+                self.settings['cache_length'], self.settings['debug']).run()
         elif os.path.exists(os.path.join(package_dir, '.hg')):
             if self.settings.get('ignore_vcs_packages'):
                 sublime.error_message(('%s: Skipping hg package %s since ' +
@@ -2732,7 +2752,7 @@ class PackageManager():
                 return False
             return HgUpgrader(self.settings['hg_binary'],
                 self.settings['hg_update_command'], package_dir,
-                self.settings['cache_length']).run()
+                self.settings['cache_length'], self.settings['debug']).run()
 
         is_upgrade = os.path.exists(package_metadata_file)
         old_version = None
@@ -3403,7 +3423,8 @@ class PackageInstaller():
                     vcs = 'git'
                     incoming = GitUpgrader(settings.get('git_binary'),
                         settings.get('git_update_command'), package_dir,
-                        settings.get('cache_length')).incoming()
+                        settings.get('cache_length'), settings.get('debug')
+                        ).incoming()
                 elif os.path.exists(os.path.join(sublime.packages_path(),
                         package, '.hg')):
                     if settings.get('ignore_vcs_packages'):
@@ -3411,7 +3432,8 @@ class PackageInstaller():
                     vcs = 'hg'
                     incoming = HgUpgrader(settings.get('hg_binary'),
                         settings.get('hg_update_command'), package_dir,
-                        settings.get('cache_length')).incoming()
+                        settings.get('cache_length'), settings.get('debug')
+                        ).incoming()
 
                 if installed:
                     if not installed_version:
