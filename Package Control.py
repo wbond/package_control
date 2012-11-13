@@ -22,19 +22,33 @@ import base64
 import locale
 import urlparse
 
+
 if os.name == 'nt':
+    from ctypes import windll, create_unicode_buffer
+
+
+def add_to_path(path):
     # Python 2.x on Windows can't properly import from non-ASCII paths, so
     # this code added the DOC 8.3 version of the lib folder to the path in
     # case the user's username includes non-ASCII characters
-    from ctypes import windll, create_unicode_buffer
+    if os.name == 'nt':
+        buf = create_unicode_buffer(512)
+        if windll.kernel32.GetShortPathNameW(path, buf, len(buf)):
+            path = buf.value
 
-    lib_path = os.path.join(sublime.packages_path(), 'Package Control', 'lib', 'windows')
-    buf = create_unicode_buffer(512)
-    if windll.kernel32.GetShortPathNameW(lib_path, buf, len(buf)):
-        lib_path = buf.value
-    if lib_path not in sys.path:
-        sys.path.append(lib_path)
+    if path not in sys.path:
+        sys.path.append(path)
 
+
+lib_folder = os.path.join(sublime.packages_path(), 'Package Control', 'lib')
+add_to_path(os.path.join(lib_folder, 'all'))
+
+
+import semver
+
+
+if os.name == 'nt':
+    add_to_path(os.path.join(lib_folder, 'windows'))
     from ntlm import ntlm
 
 
@@ -2233,14 +2247,41 @@ class PackageManager():
              1  if version1 is greater than version2
         """
 
-        def normalize(v):
+        def date_compat(v):
             # We prepend 0 to all date-based version numbers so that developers
             # may switch to explicit versioning from GitHub/BitBucket
             # versioning based on commit dates
-            if re.match('\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{2}', v):
-                v = '0.' + v
+            date_match = re.match('(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
+            if date_match:
+                v = '0.%s.%s.%s.%s.%s.%s' % date_match.groups()
+            return v
+
+        def semver_compat(v):
+            # When translating dates into semver, the way to get each date
+            # segment into the version is to treat the year and month as
+            # minor and patch, and then the rest as a numeric build version
+            # with four different parts. The result looks like:
+            # 0.2012.11+10.31.23.59
+            date_match = re.match('(\d{4}(?:\.\d{2}){2})\.(\d{2}(?:\.\d{2}){3})$', v)
+            if date_match:
+                v = '%s+%s' % (date_match.group(1), date_match.group(2))
+
+            # Semver must have major, minor, patch
+            elif re.match('^\d+$', v):
+                v += '.0.0'
+            elif re.match('^\d+\.\d+$', v):
+                v += '.0'
+            return v
+
+        def cmp_compat(v):
             return [int(x) for x in re.sub(r'(\.0+)*$', '', v).split(".")]
-        return cmp(normalize(version1), normalize(version2))
+
+        version1 = date_compat(version1)
+        version2 = date_compat(version2)
+        try:
+            return semver.compare(semver_compat(version1), semver_compat(version2))
+        except (ValueError):
+            return cmp(cmp_compat(version1), cmp_compat(version2))
 
     def download_url(self, url, error_message):
         """
