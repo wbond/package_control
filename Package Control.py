@@ -2929,13 +2929,13 @@ class PackageManager():
                     open(dest, 'wb').write(package_zip.read(path))
                 except (IOError) as (e):
                     message = unicode_from_os(e)
-                    if re.match('[Ee]rrno 13', message):
+                    if re.search('[Ee]rrno 13', message):
                         overwrite_failed = True
                         break
                     print ('%s: Skipping file from package named %s due to ' +
                         'an invalid filename') % (__name__, path)
 
-                except (IOError, UnicodeDecodeError):
+                except (UnicodeDecodeError):
                     print ('%s: Skipping file from package named %s due to ' +
                         'an invalid filename') % (__name__, path)
         package_zip.close()
@@ -2952,8 +2952,8 @@ class PackageManager():
             clear_directory(package_dir, [reinstall_file, package_metadata_file])
 
             sublime.error_message(('%s: An error occurred while trying to ' +
-                'upgrade %s. Please restart Sublime Test to finish the ' +
-                'installation.') % (__name__, package_name))
+                'upgrade %s. Please restart Sublime Text to finish the ' +
+                'upgrade.') % (__name__, package_name))
             return False
 
 
@@ -4346,7 +4346,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                     if not os.path.exists(cleanup_file):
                         open(cleanup_file, 'w').close()
                     print ('%s: Unable to remove old directory for package ' +
-                        '"%s" - deferring until next start: %s') % (__name__,
+                        '%s - deferring until next start: %s') % (__name__,
                         package_name, unicode_from_os(e))
 
             # Finish reinstalling packages that could not be upgraded due to
@@ -4356,9 +4356,15 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                 if not clear_directory(package_dir, [metadata_path]):
                     if not os.path.exists(reinstall):
                         open(reinstall, 'w').close()
-                    print ('%s: Unable to remove all old files in ' +
-                        'preparation for upgrade to package "%s" - ' +
-                        'deferring until next start') % (__name__, package_name)
+                    # Assigning this here prevents the callback from referencing the value
+                    # of the "package_name" variable when it is executed
+                    restart_message = ('%s: An error occurred while trying to ' +
+                        'finish the upgrade of %s. You will most likely need to ' +
+                        'restart your computer to complete the upgrade.') % (
+                        __name__, package_name)
+                    def show_still_locked():
+                        sublime.error_message(restart_message)
+                    sublime.set_timeout(show_still_locked, 10)
                 else:
                     self.manager.install_package(package_name)
 
