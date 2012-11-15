@@ -2189,6 +2189,30 @@ class HgUpgrader(VcsUpgrader):
         return incoming
 
 
+def clear_directory(directory, ignore_paths=None):
+    was_exception = False
+    for root, dirs, files in os.walk(directory, topdown=False):
+        paths = [os.path.join(root, f) for f in files]
+        paths.extend([os.path.join(root, d) for d in dirs])
+
+        for path in paths:
+            try:
+                # Don't delete the metadata file, that way we have it
+                # when the reinstall happens, and the appropriate
+                # usage info can be sent back to the server
+                if ignore_paths and path in ignore_paths:
+                    continue
+                if os.path.isdir(path):
+                    os.rmdir(path)
+                else:
+                    os.remove(path)
+            except (OSError, IOError) as (e):
+                was_exception = True
+
+    return not was_exception
+
+
+
 class PackageManager():
     """
     Allows downloading, creating, installing, upgrading, and deleting packages
@@ -2851,6 +2875,8 @@ class PackageManager():
 
         os.chdir(package_dir)
 
+        overwrite_failed = False
+
         # Here we don’t use .extractall() since it was having issues on OS X
         skip_root_dir = len(root_level_paths) == 1 and \
             root_level_paths[0].endswith('/')
@@ -2901,30 +2927,41 @@ class PackageManager():
                 extracted_paths.append(dest)
                 try:
                     open(dest, 'wb').write(package_zip.read(path))
+                except (IOError) as (e):
+                    message = unicode_from_os(e)
+                    if re.match('[Ee]rrno 13', message):
+                        overwrite_failed = True
+                        break
+                    print ('%s: Skipping file from package named %s due to ' +
+                        'an invalid filename') % (__name__, path)
+
                 except (IOError, UnicodeDecodeError):
                     print ('%s: Skipping file from package named %s due to ' +
                         'an invalid filename') % (__name__, path)
         package_zip.close()
 
-        # Here we clean out any files that were not just overwritten
-        try:
-            for root, dirs, files in os.walk(package_dir, topdown=False):
-                paths = [os.path.join(root, f) for f in files]
-                paths.extend([os.path.join(root, d) for d in dirs])
 
-                for path in paths:
-                    if path in extracted_paths:
-                        continue
-                    if os.path.isdir(path):
-                        os.rmdir(path)
-                    else:
-                        os.remove(path)
+        # If upgrading failed, queue the package to upgrade upon next start
+        if overwrite_failed:
+            reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
+            open(reinstall_file, 'w').close()
 
-        except (OSError, IOError) as (e):
+            # Don't delete the metadata file, that way we have it
+            # when the reinstall happens, and the appropriate
+            # usage info can be sent back to the server
+            clear_directory(package_dir, [reinstall_file, package_metadata_file])
+
             sublime.error_message(('%s: An error occurred while trying to ' +
-                'remove old files from the %s directory. %s') %
-                (__name__, package_name, unicode_from_os(e)))
+                'upgrade %s. Please restart Sublime Test to finish the ' +
+                'installation.') % (__name__, package_name))
             return False
+
+
+        # Here we clean out any files that were not just overwritten. It is ok
+        # if there is an error removing a file. The next time there is an
+        # upgrade, it should be cleaned out successfully then.
+        clear_directory(package_dir, extracted_paths)
+
 
         self.print_messages(package_name, package_dir, is_upgrade, old_version)
 
@@ -3140,19 +3177,12 @@ class PackageManager():
         # We don't delete the actual package dir immediately due to a bug
         # in sublime_plugin.py
         can_delete_dir = True
-        for path in os.listdir(package_dir):
-            try:
-                full_path = os.path.join(package_dir, path)
-                if not os.path.isdir(full_path):
-                    os.remove(full_path)
-                else:
-                    shutil.rmtree(full_path)
-            except (OSError, IOError) as (exception):
-                # If there is an error deleting now, we will mark it for
-                # cleanup the next time Sublime Text starts
-                open(os.path.join(package_dir, 'package-control.cleanup'),
-                    'w').close()
-                can_delete_dir = False
+        if not clear_directory(package_dir):
+            # If there is an error deleting now, we will mark it for
+            # cleanup the next time Sublime Text starts
+            open(os.path.join(package_dir, 'package-control.cleanup'),
+                'w').close()
+            can_delete_dir = False
 
         params = {
             'package': package_name,
@@ -4316,8 +4346,21 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                     if not os.path.exists(cleanup_file):
                         open(cleanup_file, 'w').close()
                     print ('%s: Unable to remove old directory for package ' +
-                        '%s - deferring until next start: %s') % (__name__,
+                        '"%s" - deferring until next start: %s') % (__name__,
                         package_name, unicode_from_os(e))
+
+            # Finish reinstalling packages that could not be upgraded due to
+            # in-use files
+            reinstall = os.path.join(package_dir, 'package-control.reinstall')
+            if os.path.exists(reinstall):
+                if not clear_directory(package_dir, [metadata_path]):
+                    if not os.path.exists(reinstall):
+                        open(reinstall, 'w').close()
+                    print ('%s: Unable to remove all old files in ' +
+                        'preparation for upgrade to package "%s" - ' +
+                        'deferring until next start') % (__name__, package_name)
+                else:
+                    self.manager.install_package(package_name)
 
             # This adds previously installed packages from old versions of PC
             if os.path.exists(metadata_path) and \
