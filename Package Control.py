@@ -21,6 +21,9 @@ import hashlib
 import base64
 import locale
 import urlparse
+import gzip
+import StringIO
+import zlib
 
 
 if os.name == 'nt':
@@ -72,6 +75,21 @@ def unicode_from_os(e):
             except:
                 pass
     return unicode(str(e), errors='replace')
+
+
+def create_cmd(args, basename_binary=False):
+    if basename_binary:
+        args[0] = os.path.basename(args[0])
+
+    if os.name == 'nt':
+        return subprocess.list2cmdline(args)
+    else:
+        escaped_args = []
+        for arg in args:
+            if re.search('^[a-zA-Z0-9/_^\\-\\.:=]+$', arg) == None:
+                arg = u"'" + arg.replace(u"'", u"'\\''") + u"'"
+            escaped_args.append(arg)
+        return u' '.join(escaped_args)
 
 
 # Monkey patch AbstractBasicAuthHandler to prevent infinite recursion
@@ -1361,6 +1379,14 @@ class Downloader():
                 f.write("\n" + cert_contents)
         return ca_bundle_path
 
+    def decode_response(self, encoding, response):
+        if encoding == 'gzip':
+            return gzip.GzipFile(fileobj=StringIO.StringIO(response)).read()
+        elif encoding == 'deflate':
+            decompresser = zlib.decompressobj(-zlib.MAX_WBITS)
+            return decompresser.decompress(response) + decompresser.flush()
+        return response
+
 
 class CliDownloader(Downloader):
     """
@@ -1408,6 +1434,10 @@ class CliDownloader(Downloader):
         :raises:
             NonCleanExitError when the executable exits with an error
         """
+
+        if self.settings.get('debug'):
+            print u"%s: Trying to execute command %s" % (
+                __name__, create_cmd(args))
 
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -1518,10 +1548,18 @@ class UrlLib2Downloader(Downloader):
         while tries > 0:
             tries -= 1
             try:
-                request = urllib2.Request(url, headers={"User-Agent":
-                    "Sublime Package Control"})
+                request = urllib2.Request(url, headers={
+                    "User-Agent": "Sublime Package Control",
+                    # Don't be alarmed if the response from the server does not
+                    # select one of these since the server runs a relatively new
+                    # version of OpenSSL which supports compression on the SSL
+                    # layer, and Apache will use that instead of HTTP-level
+                    # encoding.
+                    "Accept-Encoding": "gzip,deflate"})
                 http_file = urllib2.urlopen(request, timeout=timeout)
-                return http_file.read()
+                result = http_file.read()
+                encoding = http_file.headers.get('Content-Encoding')
+                return self.decode_response(encoding, result)
 
             except (httplib.HTTPException) as (e):
                 print '%s: %s HTTP exception %s (%s) downloading %s.' % (
@@ -1594,7 +1632,13 @@ class WgetDownloader(CliDownloader):
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
-            self.tmp_file, '-q', '-O', '-', '-U', 'Sublime Package Control']
+            self.tmp_file, '-q', '--save-headers', '-O', '-', '-U',
+            'Sublime Package Control', '--header',
+            # Don't be alarmed if the response from the server does not select
+            # one of these since the server runs a relatively new version of
+            # OpenSSL which supports compression on the SSL layer, and Apache
+            # will use that instead of HTTP-level encoding.
+            'Accept-Encoding: gzip,deflate']
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
@@ -1636,6 +1680,16 @@ class WgetDownloader(CliDownloader):
             tries -= 1
             try:
                 result = self.execute(command)
+
+                (headers, result) = re.split('\r?\n\r?\n', result, 1)
+                encoding = None
+                for header in headers.splitlines():
+                    if header.lower()[0:17] == 'content-encoding:':
+                        encoding = header.lower()[17:].strip()
+                        break
+
+                result = self.decode_response(encoding, result)
+
                 if debug:
                     self.print_debug()
 
@@ -1765,7 +1819,12 @@ class CurlDownloader(CliDownloader):
         if not self.curl:
             return False
         command = [self.curl, '-f', '--user-agent', 'Sublime Package Control',
-            '--connect-timeout', str(int(timeout)), '-sSL']
+            '--connect-timeout', str(int(timeout)), '-sSL',
+            # Don't be alarmed if the response from the server does not select
+            # one of these since the server runs a relatively new version of
+            # OpenSSL which supports compression on the SSL layer, and Apache
+            # will use that instead of HTTP-level encoding.
+            '--compressed']
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
@@ -1980,7 +2039,7 @@ class VcsUpgrader():
 
         if self.debug:
             print u"%s: Trying to execute command %s" % (
-                __name__, repr(args))
+                __name__, create_cmd(args))
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             startupinfo=startupinfo, cwd=dir)
