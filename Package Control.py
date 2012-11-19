@@ -3698,9 +3698,11 @@ class PackageInstallerThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        self.result = self.manager.install_package(self.package)
-        if self.on_complete:
-            sublime.set_timeout(self.on_complete, 1)
+        try:
+            self.result = self.manager.install_package(self.package)
+        finally:
+            if self.on_complete:
+                sublime.set_timeout(self.on_complete, 1)
 
 
 class InstallPackageCommand(sublime_plugin.WindowCommand):
