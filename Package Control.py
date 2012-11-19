@@ -3884,6 +3884,9 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
                 ThreadProgress(thread, 'Upgrading package %s' % info[0],
                     'Package %s successfully %s' % (info[0], self.completion_type))
 
+        # Disabling a package means changing settings, which can only be done
+        # in the main thread. We then create a new background thread so that
+        # the upgrade process does not block the UI.
         def disable_packages():
             for info in package_list:
                 disabled_packages[info[0]] = self.disable_package(info[0])
