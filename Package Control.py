@@ -166,6 +166,12 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
     def __init__(self, host, port=None, strict=None,
                  timeout=socket._GLOBAL_DEFAULT_TIMEOUT, **kwargs):
         self.passwd = kwargs.get('passwd')
+
+        # Python 2.6.1 on OS X 10.6 does not include these
+        self._tunnel_host = None
+        self._tunnel_port = None
+        self._tunnel_headers = {}
+
         httplib.HTTPConnection.__init__(self, host, port, strict, timeout)
 
     def connect(self):
