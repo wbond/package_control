@@ -400,7 +400,7 @@ try:
             self._tunnel_headers['User-Agent'] = 'Sublime Package Control'
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
-            request = "CONNECT %s:%d HTTP/1.0\r\n" % (self.host, self.port)
+            request = "CONNECT %s:%d HTTP/1.1\r\n" % (self.host, self.port)
             for header, value in self._tunnel_headers.iteritems():
                 request += "%s: %s\r\n" % (header, value)
             self.send(request + "\r\n")
