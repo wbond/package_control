@@ -417,6 +417,7 @@ try:
                 print u"  %s" % status_line
 
             content_length = 0
+            close_connection = False
             while True:
                 line = response.fp.readline()
                 if line == '\r\n': break
@@ -424,8 +425,13 @@ try:
                 headers.append(line.rstrip())
 
                 parts = line.rstrip().split(': ', 1)
-                if parts[0].lower() == 'content-length':
-                    content_length = int(parts[1])
+                name = parts[0].lower()
+                value = parts[1].lower().strip()
+                if name == 'content-length':
+                    content_length = int(value)
+
+                if name == 'connection' and value == 'close':
+                    close_connection = True
 
                 if self.debuglevel in [-1, 5]:
                     print u"  %s" % line.rstrip()
@@ -482,6 +488,12 @@ try:
                 if 'Proxy-Authorization' in self._tunnel_headers:
                     self.host = self._proxy_host
                     self.port = self._proxy_port
+
+                    # If the proxy wanted the connection closed, we need to make a new connection
+                    if close_connection:
+                        self.sock.close()
+                        self.sock = socket.create_connection((self.host, self.port), self.timeout)
+
                     return self._tunnel(do_ntlm_follow_up)
 
             if code != 200:
@@ -571,9 +583,8 @@ try:
                 print '%s: Urllib2 HTTPS Debug General' % __name__
                 print u"  Connecting to %s on port %s" % (self.host, self.port)
 
-            sock = socket.create_connection((self.host, self.port), self.timeout)
+            self.sock = socket.create_connection((self.host, self.port), self.timeout)
             if self._tunnel_host:
-                self.sock = sock
                 self._tunnel()
 
             if self.debuglevel == -1:
@@ -581,7 +592,7 @@ try:
                 print u"  Connecting to %s on port %s" % (self.host, self.port)
                 print u"  CA certs file at %s" % (self.ca_certs)
 
-            self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
+            self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                 certfile=self.cert_file, cert_reqs=self.cert_reqs,
                 ca_certs=self.ca_certs)
 
