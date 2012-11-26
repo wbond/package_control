@@ -14,7 +14,7 @@ As Sublime Text has become increasingly more popular, and the number of
 packages has increased so rapidly, the bandwidth requirements have also
 significantly increased. This month the default channel will very likely serve
 over 1TB of JSON data. If you feel so inclined, consider pitching in a small
-amount to help cover this cost:
+amount to help cover the cost:
 http://wbond.net/sublime_packages/package_control/say_thanks. A big thank you
 to all of the users who have already contributed!
 
@@ -34,8 +34,8 @@ Enhancements
 
  - The time of the last successful run is no longer stored in
    Packages/User/Package Control.sublime-settings, but rather in
-   Packages/User/Package Control.last-run making it easier to ignore via VCSes.
-   (thanks schlamar!)
+   Packages/User/Package Control.last-run making it easier to ignore via git,
+   hg, etc. (thanks schlamar!)
 
  - Packages are now ignored during install and upgrade to help prevents errors
    where Sublime Text tries to read a file as it is being extracted
@@ -44,25 +44,26 @@ Enhancements
    DLLs will be detected and the user prompted to restart.
 
  - Package version numbers may now include non-numeric components, and semantic
-   versioning is fully supported
+   versioning (http://semver.org) is fully supported
 
- - JSON parsing messages are now printed to the console instead of shown in
-   a popup error message
+ - JSON parsing messages are now printed to the console instead of being shown
+   in an error popup
 
  - Added support for changes to the BitBucket API
 
  - Added support for changes to GitHub URLs
 
- - Added a debug setting to help track down HTTP connection issues
+ - Added the debug setting to help track down HTTP connection issues
 
  - All of the downloaders will now try to use HTTP compression
 
  - All of the downloaders will now follow redirects
 
  - Added new install_missing setting to control if Package Control should try
-   to install any packages that appear to be missing. This defaults to true,
-   and it really only useful if you want to prevent Package Control from
-   connecting to the internet without explicitly asking it to.
+   to install any packages that appear to be missing from the current machine.
+   This defaults to true, and is really only useful if you want to prevent
+   Package Control from connecting to the internet without explicitly asking
+   it to.
 
  - Added lots of code comments as a first step towards making contributions
    by other developers easier
@@ -73,16 +74,16 @@ Bug Fixes
 
  - Added support for the new preferences filename (thanks titoBouzout!)
 
- - If a package is missing off of a machine, but not available for that
+ - If a package is missing from a machine, but not available for that
    platform, it is no longer considered an error (thanks schlamar!)
 
- - Added new CA certs
+ - Updated CA certs
 
  - Fixed handling of install and upgrade messages that contain non-ASCII
    characters
 
  - Fixed a unicode error trying to load the CA cert bundle file on Windows when
-   the install path to Sublime Text contained non-ASCII characters
+   the install path to Sublime Text contains non-ASCII characters
 
  - Better handling for edge case HTTP errors (thanks tgecho!)
 
