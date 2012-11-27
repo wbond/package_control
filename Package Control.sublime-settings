@@ -107,5 +107,8 @@
 	],
 
 	// When a package is created, copy it to this folder - defaults to Desktop 
-	"package_destination": ""
+	"package_destination": "",
+
+	// replace all https access to http, use only if you don't have other  choice!
+	"insecure": false
 }

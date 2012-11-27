@@ -1506,7 +1506,6 @@ class UrlLib2Downloader(Downloader):
         :return:
             The string contents of the URL, or False on error
         """
-
         http_proxy = self.settings.get('http_proxy')
         https_proxy = self.settings.get('https_proxy')
         if http_proxy or https_proxy:
@@ -2317,7 +2316,7 @@ class PackageManager():
                 'submit_usage', 'submit_url', 'renamed_packages',
                 'files_to_include', 'files_to_include_binary', 'certs',
                 'ignore_vcs_packages', 'proxy_username', 'proxy_password',
-                'debug']:
+                'debug', 'insecure']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -2396,6 +2395,8 @@ class PackageManager():
         :return:
             The string contents of the URL, or False on error
         """
+        if self.settings.get('insecure') and url.startswith('https:/'):
+            url = "http:" + url[6:]
 
         has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
         is_ssl = re.search('^https://', url) != None
