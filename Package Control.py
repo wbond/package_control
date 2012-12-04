@@ -146,6 +146,12 @@ class DebuggableHTTPResponse(httplib.HTTPResponse):
                 print u"  %s" % line.rstrip()
         return return_value
 
+    def read(self, *args):
+        try:
+            return httplib.HTTPResponse.read(self, *args)
+        except (httplib.IncompleteRead) as (e):
+            return e.partial
+
 
 class DebuggableHTTPSResponse(DebuggableHTTPResponse):
     """
