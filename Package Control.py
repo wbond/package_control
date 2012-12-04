@@ -430,7 +430,7 @@ try:
                 if name == 'content-length':
                     content_length = int(value)
 
-                if name == 'connection' and value == 'close':
+                if name in ['connection', 'proxy-connection'] and value == 'close':
                     close_connection = True
 
                 if self.debuglevel in [-1, 5]:
