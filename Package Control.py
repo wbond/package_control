@@ -599,7 +599,7 @@ try:
                 print u"  CA certs file at %s" % (self.ca_certs)
 
             self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
-                certfile=self.cert_file, cert_reqs=self.cert_reqs,
+                certfile=self.cert_file, cert_reqs=ssl.CERT_NONE,
                 ca_certs=self.ca_certs)
 
             if self.debuglevel == -1:
