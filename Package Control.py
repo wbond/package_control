@@ -4326,6 +4326,7 @@ class AutomaticUpgrader(threading.Thread):
         self.settings_file = '%s.sublime-settings' % __name__
         self.settings = sublime.load_settings(self.settings_file)
         self.installed_packages = self.settings.get('installed_packages', [])
+        self.should_install_missing = self.settings.get('install_missing')
         if not isinstance(self.installed_packages, list):
             self.installed_packages = []
 
@@ -4345,7 +4346,7 @@ class AutomaticUpgrader(threading.Thread):
         found on the filesystem and passed as `found_packages`.
         """
 
-        if not self.missing_packages or not self.settings.get('install_missing'):
+        if not self.missing_packages or not self.should_install_missing:
             return
 
         print '%s: Installing %s missing packages' % \
