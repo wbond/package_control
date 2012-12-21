@@ -356,10 +356,6 @@ try:
                 self.cert_reqs = ssl.CERT_REQUIRED
             else:
                 self.cert_reqs = ssl.CERT_NONE
-            self.ignore_proxy_cert_errors = kwargs.get('ignore_proxy_cert_errors')
-
-            self._proxy_host = None
-            self._proxy_port = None
 
         def get_valid_hosts_for_cert(self, cert):
             """
@@ -602,30 +598,16 @@ try:
                 print u"  Connecting to %s on port %s" % (self.host, self.port)
                 print u"  CA certs file at %s" % (self.ca_certs)
 
-            ignored_cert_error = False
-            try:
-                self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
-                    certfile=self.cert_file, cert_reqs=self.cert_reqs,
-                    ca_certs=self.ca_certs)
-            except (ssl.SSLError) as (e):
-                message = unicode_from_os(e)
-                if self.self.ignore_proxy_cert_errors and self._proxy_host and message.find('certificate verify failed') != -1:
-                    self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
-                        certfile=self.cert_file, cert_reqs=ssl.CERT_NONE,
-                        ca_certs=self.ca_certs)
-                    ignored_cert_error = True
-                    if self.debuglevel == -1:
-                        print u"  Server SSL certificate failed validation"
-                        print u"  Continuing anyway since ignore_proxy_cert_errors is set to true"
-                else:
-                    raise
+            self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
+                certfile=self.cert_file, cert_reqs=self.cert_reqs,
+                ca_certs=self.ca_certs)
 
             if self.debuglevel == -1:
                 print u"  Successfully upgraded connection to %s:%s with SSL" % (
                     self.host, self.port)
 
             # This debugs and validates the SSL certificate
-            if self.cert_reqs & ssl.CERT_REQUIRED and not ignored_cert_error:
+            if self.cert_reqs & ssl.CERT_REQUIRED:
                 cert = self.sock.getpeercert()
 
                 if self.debuglevel == -1:
@@ -1579,10 +1561,8 @@ class UrlLib2Downloader(Downloader):
             if not bundle_path:
                 return False
             bundle_path = bundle_path.encode(sys.getfilesystemencoding())
-            ignore_proxy_cert_errors = self.settings.get('ignore_proxy_cert_errors')
             handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
-                debug=debug, passwd=password_manager,
-                ignore_proxy_cert_errors=ignore_proxy_cert_errors))
+                debug=debug, passwd=password_manager))
         else:
             handlers.append(DebuggableHTTPHandler(debug=debug,
                 passwd=password_manager))
@@ -2343,7 +2323,7 @@ class PackageManager():
                 'submit_usage', 'submit_url', 'renamed_packages',
                 'files_to_include', 'files_to_include_binary', 'certs',
                 'ignore_vcs_packages', 'proxy_username', 'proxy_password',
-                'debug', 'ignore_proxy_cert_errors']:
+                'debug']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)

@@ -62,10 +62,6 @@
 	"proxy_username": "",
 	"proxy_password": "",
 
-	// If for some reason your HTTPS proxy server mangles SSL certificates,
-	// setting this value to try will skip validation of the certs
-	"ignore_proxy_cert_errors": false,
-
 	// Setting this to true will cause Package Control to ignore all git
 	// and hg repositories - this may help if trying to list packages to install
 	// hangs
