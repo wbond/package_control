@@ -2520,9 +2520,14 @@ class PackageManager():
             rate_limited_domains = []
 
         if self.settings.get('debug'):
+            try:
+                ip = socket.gethostbyname(hostname)
+            except (socket.gaierror) as (e):
+                ip = unicode_from_os(e)
+
             print u"%s: Download Debug" % __name__
             print u"  URL: %s" % url
-            print u"  Resolved IP: %s" % socket.gethostbyname(hostname)
+            print u"  Resolved IP: %s" % ip
             print u"  Timeout: %s" % str(timeout)
 
         if hostname in rate_limited_domains:
