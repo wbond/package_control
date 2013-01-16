@@ -1394,27 +1394,123 @@ class Downloader():
             The CA cert bundle path on success, or False on error
         """
 
-        cert_info = self.settings.get('certs', {}).get(
-            domain)
-        if not cert_info:
-            print '%s: No CA certs available for %s.' % (__name__,
-                domain)
+        cert_match = False
+
+        certs_list = self.settings.get('certs', {})
+        certs_dir = os.path.join(sublime.packages_path(), 'Package Control',
+            'certs')
+        ca_bundle_path = os.path.join(certs_dir, 'ca-bundle.crt')
+
+        cert_info = certs_list.get(domain)
+        if cert_info:
+            cert_match = self.locate_cert(certs_dir, cert_info[0], cert_info[1])
+
+        wildcard_info = certs_list.get('*')
+        if wildcard_info:
+            cert_match = self.locate_cert(certs_dir, wildcard_info[0], wildcard_info[1]) or cert_match
+
+        if not cert_match:
+            print '%s: No CA certs available for %s.' % (__name__, domain)
             return False
-        cert_path = os.path.join(sublime.packages_path(), 'Package Control',
-            'certs', cert_info[0])
-        ca_bundle_path = os.path.join(sublime.packages_path(),
-            'Package Control', 'certs', 'ca-bundle.crt')
-        if not os.path.exists(cert_path):
-            cert_downloader = self.__class__(self.settings)
-            cert_contents = cert_downloader.download(cert_info[1],
-                'Error downloading CA certs for %s.' % (domain), timeout, 1)
-            if not cert_contents:
-                return False
-            with open(cert_path, 'wb') as f:
-                f.write(cert_contents)
-            with open(ca_bundle_path, 'ab') as f:
-                f.write("\n" + cert_contents)
+
         return ca_bundle_path
+
+    def locate_cert(self, certs_dir, cert_id, location):
+        """
+        Makes sure the SSL cert specified has been added to the CA cert
+        bundle that is present on the machine
+
+        :param certs_dir:
+            The path of the folder that contains the cert files
+
+        :param cert_id:
+            The identifier for CA cert(s). For those provided by the channel
+            system, this will be an md5 of the contents of the cert(s). For
+            user-provided certs, this is something they provide.
+
+        :param location:
+            An http(s) URL, or absolute filesystem path to the CA cert(s)
+
+        :return:
+            If the cert specified (by cert_id) is present on the machine and
+            part of the ca-bundle.crt file in the certs_dir
+        """
+
+        cert_path = os.path.join(certs_dir, cert_id)
+        if not os.path.exists(cert_path):
+            if str(location) != '':
+                if re.match('^https?://', location):
+                    contents = self.download_cert(cert_id, location)
+                else:
+                    contents = self.load_cert(cert_id, location)
+                if contents:
+                    self.save_cert(certs_dir, cert_id, contents)
+                    return True
+            return False
+        return True
+
+    def download_cert(self, cert_id, url):
+        """
+        Downloads CA cert(s) from a URL
+
+        :param cert_id:
+            The identifier for CA cert(s). For those provided by the channel
+            system, this will be an md5 of the contents of the cert(s). For
+            user-provided certs, this is something they provide.
+
+        :param url:
+            An http(s) URL to the CA cert(s)
+
+        :return:
+            The contents of the CA cert(s)
+        """
+
+        cert_downloader = self.__class__(self.settings)
+        return cert_downloader.download(url,
+            'Error downloading CA certs for %s.' % (domain), timeout, 1)
+
+    def load_cert(self, cert_id, path):
+        """
+        Copies CA cert(s) from a file path
+
+        :param cert_id:
+            The identifier for CA cert(s). For those provided by the channel
+            system, this will be an md5 of the contents of the cert(s). For
+            user-provided certs, this is something they provide.
+
+        :param path:
+            The absolute filesystem path to a file containing the CA cert(s)
+
+        :return:
+            The contents of the CA cert(s)
+        """
+
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                return f.read()
+
+    def save_cert(self, certs_dir, cert_id, contents):
+        """
+        Saves CA cert(s) to the certs_dir (and ca-bundle.crt file)
+
+        :param certs_dir:
+            The path of the folder that contains the cert files
+
+        :param cert_id:
+            The identifier for CA cert(s). For those provided by the channel
+            system, this will be an md5 of the contents of the cert(s). For
+            user-provided certs, this is something they provide.
+
+        :param contents:
+            The contents of the CA cert(s)
+        """
+
+        ca_bundle_path = os.path.join(certs_dir, 'ca-bundle.crt')
+        cert_path = os.path.join(certs_dir, cert_id)
+        with open(cert_path, 'wb') as f:
+            f.write(contents)
+        with open(ca_bundle_path, 'ab') as f:
+            f.write("\n" + contents)
 
     def decode_response(self, encoding, response):
         if encoding == 'gzip':
