@@ -3574,19 +3574,34 @@ class PackageRenamer():
             metadata_path = os.path.join(package_dir, 'package-metadata.json')
             if not os.path.exists(metadata_path):
                 continue
+
             new_package_name = renamed_packages[package_name]
             new_package_dir = os.path.join(sublime.packages_path(),
                 new_package_name)
+
             if not os.path.exists(new_package_dir):
+
+                # Windows will not allow you to rename to the same name with
+                # a different case, so we work around that with a temporary name
+                if os.name == 'nt' and package_name.lower() == new_package_name.lower():
+                    temp_package_name = '__' + new_package_name
+                    temp_package_dir = os.path.join(sublime.packages_path(),
+                        temp_package_name)
+                    os.rename(package_dir, temp_package_dir)
+                    package_dir = temp_package_dir
+
                 os.rename(package_dir, new_package_dir)
                 installed_pkgs.append(new_package_name)
+
                 print '%s: Renamed %s to %s' % (__name__, package_name,
                     new_package_name)
+
             else:
                 installer.manager.remove_package(package_name)
                 print ('%s: Removed %s since package with new name (%s) ' +
                     'already exists') % (__name__, package_name,
                     new_package_name)
+
             try:
                 installed_pkgs.remove(package_name)
             except (ValueError):
