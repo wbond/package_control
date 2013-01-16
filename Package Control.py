@@ -3662,7 +3662,10 @@ class PackageRenamer():
         if not renamed_packages:
             renamed_packages = {}
 
+        # These are packages that have been tracked as installed
         installed_pkgs = self.installed_packages
+        # There are the packages actually present on the filesystem
+        present_packages = installer.manager.list_packages()
 
         # Rename directories for packages that have changed names
         for package_name in renamed_packages:
@@ -3675,11 +3678,28 @@ class PackageRenamer():
             new_package_dir = os.path.join(sublime.packages_path(),
                 new_package_name)
 
-            if not os.path.exists(new_package_dir):
+            changing_case = package_name.lower() == new_package_name.lower()
+            case_insensitive_fs = sublime.platform() in ['windows', 'osx']
+
+            # Since Windows and OSX use case-insensitive filesystems, we have to
+            # scan through the list of installed packages if the rename of the
+            # package is just changing the case of it. If we don't find the old
+            # name for it, we continue the loop since os.path.exists() will return
+            # true due to the case-insensitive nature of the filesystems.
+            if case_insensitive_fs and changing_case:
+                has_old = False
+                for present_package_name in present_packages:
+                    if present_package_name == package_name:
+                        has_old = True
+                        break
+                if not has_old:
+                    continue
+
+            if not os.path.exists(new_package_dir) or (case_insensitive_fs and changing_case):
 
                 # Windows will not allow you to rename to the same name with
                 # a different case, so we work around that with a temporary name
-                if os.name == 'nt' and package_name.lower() == new_package_name.lower():
+                if os.name == 'nt' and changing_case:
                     temp_package_name = '__' + new_package_name
                     temp_package_dir = os.path.join(sublime.packages_path(),
                         temp_package_name)
