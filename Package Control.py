@@ -269,6 +269,20 @@ class DebuggableHTTPHandler(urllib2.HTTPHandler):
         return self.do_open(http_class_wrapper, req)
 
 
+class RateLimitException(httplib.HTTPException, urllib2.URLError):
+    """
+    An exception for when the rate limit of an API has been exceeded.
+    """
+
+    def __init__(self, host, limit):
+        httplib.HTTPException.__init__(self)
+        self.host = host
+        self.limit = limit
+
+    def __str__(self):
+        return ('Rate limit of %s exceeded for %s' % (self.limit, self.host))
+
+
 if os.name == 'nt':
     class ProxyNtlmAuthHandler(urllib2.BaseHandler):
 
@@ -1423,6 +1437,10 @@ class CliDownloader(Downloader):
     def __init__(self, settings):
         self.settings = settings
 
+    def clean_tmp_file(self):
+        if os.path.exists(self.tmp_file):
+            os.remove(self.tmp_file)
+
     def find_binary(self, name):
         """
         Finds the given executable name in the system PATH
@@ -1470,7 +1488,8 @@ class CliDownloader(Downloader):
         returncode = proc.wait()
         if returncode != 0:
             error = NonCleanExitError(returncode)
-            error.output = self.stderr
+            error.stderr = self.stderr
+            error.stdout = output
             raise error
         return output
 
@@ -1581,6 +1600,13 @@ class UrlLib2Downloader(Downloader):
                     "Accept-Encoding": "gzip,deflate"})
                 http_file = urllib2.urlopen(request, timeout=timeout)
                 result = http_file.read()
+
+                limit_remaining = http_file.headers.get('X-RateLimit-Remaining', 1)
+                if str(limit_remaining) == '0':
+                    hostname = urlparse.urlparse(url).hostname
+                    limit = http_file.headers.get('X-RateLimit-Limit', 1)
+                    raise RateLimitException(hostname, limit)
+
                 encoding = http_file.headers.get('Content-Encoding')
                 return self.decode_response(encoding, result)
 
@@ -1625,9 +1651,6 @@ class WgetDownloader(CliDownloader):
         self.settings = settings
         self.wget = self.find_binary('wget')
 
-    def clean_tmp_file(self):
-        os.remove(self.tmp_file)
-
     def download(self, url, error_message, timeout, tries):
         """
         Downloads a URL and returns the contents
@@ -1655,8 +1678,8 @@ class WgetDownloader(CliDownloader):
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
-            self.tmp_file, '-q', '--save-headers', '-O', '-', '-U',
-            'Sublime Package Control', '--header',
+            self.tmp_file, '--save-headers', '-O', '-', '-U',
+            'Sublime Package Control', '--content-on-error', '--header',
             # Don't be alarmed if the response from the server does not select
             # one of these since the server runs a relatively new version of
             # OpenSSL which supports compression on the SSL layer, and Apache
@@ -1673,7 +1696,7 @@ class WgetDownloader(CliDownloader):
 
         debug = self.settings.get('debug')
         if debug:
-            command.append('-d')
+            command.extend(['-d', '-q'])
 
         http_proxy = self.settings.get('http_proxy')
         https_proxy = self.settings.get('https_proxy')
@@ -1709,12 +1732,11 @@ class WgetDownloader(CliDownloader):
                 for header in headers.splitlines():
                     if header.lower()[0:17] == 'content-encoding:':
                         encoding = header.lower()[17:].strip()
-                        break
 
                 result = self.decode_response(encoding, result)
 
                 if debug:
-                    self.print_debug()
+                    self.print_debug(url)
 
                 self.clean_tmp_file()
                 return result
@@ -1722,7 +1744,9 @@ class WgetDownloader(CliDownloader):
             except (NonCleanExitError) as (e):
 
                 if debug:
-                    self.print_debug()
+                    self.print_debug(url)
+                else:
+                    self.handle_rate_limit(e.stdout, url)
 
                 error_line = ''
                 with open(self.tmp_file) as f:
@@ -1775,9 +1799,29 @@ class WgetDownloader(CliDownloader):
             break
         return False
 
-    def print_debug(self):
+    def handle_rate_limit(self, output, url):
+        limit_remaining = 1
+        limit = 1
+
+        for line in output.splitlines():
+            if line.strip() == '':
+                break
+            if line.lower()[0:22] == 'x-ratelimit-remaining:':
+                limit_remaining = line.lower()[22:].strip()
+            if line.lower()[0:18] == 'x-ratelimit-limit:':
+                limit = line.lower()[18:].strip()
+
+        if str(limit_remaining) == '0':
+            hostname = urlparse.urlparse(url).hostname
+            self.clean_tmp_file()
+            raise RateLimitException(hostname, limit)
+
+    def print_debug(self, url):
         with open(self.tmp_file, 'r') as f:
             debug_content = f.read()
+
+        limit_remaining = 1
+        limit = 1
 
         section = 'General'
         last_section = None
@@ -1800,8 +1844,19 @@ class WgetDownloader(CliDownloader):
             if section != last_section:
                 print "%s: Wget HTTP Debug %s" % (__name__, section)
 
+            if section == 'Read':
+                if line.lower()[0:22] == 'x-ratelimit-remaining:':
+                    limit_remaining = line.lower()[22:].strip()
+                if line.lower()[0:18] == 'x-ratelimit-limit:':
+                    limit = line.lower()[18:].strip()
+
             print '  ' + line
             last_section = section
+
+        if str(limit_remaining) == '0':
+            hostname = urlparse.urlparse(url).hostname
+            self.clean_tmp_file()
+            raise RateLimitException(hostname, limit)
 
 
 class CurlDownloader(CliDownloader):
@@ -1841,13 +1896,17 @@ class CurlDownloader(CliDownloader):
 
         if not self.curl:
             return False
-        command = [self.curl, '-f', '--user-agent', 'Sublime Package Control',
+
+        self.tmp_file = tempfile.NamedTemporaryFile().name
+        command = [self.curl, '--user-agent', 'Sublime Package Control',
             '--connect-timeout', str(int(timeout)), '-sSL',
             # Don't be alarmed if the response from the server does not select
             # one of these since the server runs a relatively new version of
             # OpenSSL which supports compression on the SSL layer, and Apache
             # will use that instead of HTTP-level encoding.
-            '--compressed']
+            '--compressed',
+            # We have to capture the headers to check for rate limit info
+            '--dump-header', self.tmp_file]
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
@@ -1891,8 +1950,32 @@ class CurlDownloader(CliDownloader):
             try:
                 output = self.execute(command)
 
+                with open(self.tmp_file, 'r') as f:
+                    headers = f.read()
+                self.clean_tmp_file()
+
+                limit = 1
+                limit_remaining = 1
+                status = '200 OK'
+                for header in headers.splitlines():
+                    if header[0:5] == 'HTTP/':
+                        status = re.sub('^HTTP/\d\.\d\s+', '', header)
+                    if header.lower()[0:22] == 'x-ratelimit-remaining:':
+                        limit_remaining = header.lower()[22:].strip()
+                    if header.lower()[0:18] == 'x-ratelimit-limit:':
+                        limit = header.lower()[18:].strip()
+
                 if debug:
                     self.print_debug(self.stderr)
+
+                if str(limit_remaining) == '0':
+                    hostname = urlparse.urlparse(url).hostname
+                    raise RateLimitException(hostname, limit)
+
+                if status != '200 OK':
+                    e = NonCleanExitError(22)
+                    e.stderr = status
+                    raise e
 
                 return output
 
@@ -1900,10 +1983,12 @@ class CurlDownloader(CliDownloader):
                 # Stderr is used for both the error message and the debug info
                 # so we need to process it to extra the debug info
                 if self.settings.get('debug'):
-                    e.output = self.print_debug(e.output)
+                    e.stderr = self.print_debug(e.stderr)
+
+                self.clean_tmp_file()
 
                 if e.returncode == 22:
-                    code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.output)
+                    code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
                     if code == '503':
                         # GitHub and BitBucket seem to rate limit via 503
                         print ('%s: Downloading %s was rate limited' +
@@ -1918,11 +2003,12 @@ class CurlDownloader(CliDownloader):
                         'again') % (__name__, url)
                     continue
                 else:
-                    error_string = e.output.rstrip()
+                    error_string = e.stderr.rstrip()
 
                 print '%s: %s %s downloading %s.' % (__name__, error_message,
                     error_string, url)
             break
+
         return False
 
     def print_debug(self, string):
@@ -2424,16 +2510,41 @@ class PackageManager():
             return False
 
         url = url.replace(' ', '%20')
+        hostname = urlparse.urlparse(url).hostname.lower()
         timeout = self.settings.get('timeout', 3)
 
+        rate_limited_cache = _channel_repository_cache.get('rate_limited_domains', {})
+        if rate_limited_cache.get('time') and rate_limited_cache.get('time') > time.time():
+            rate_limited_domains = rate_limited_cache.get('data', [])
+        else:
+            rate_limited_domains = []
+
         if self.settings.get('debug'):
-            hostname = urlparse.urlparse(url).hostname
             print u"%s: Download Debug" % __name__
             print u"  URL: %s" % url
             print u"  Resolved IP: %s" % socket.gethostbyname(hostname)
             print u"  Timeout: %s" % str(timeout)
 
-        return downloader.download(url, error_message, timeout, 3)
+        if hostname in rate_limited_domains:
+            if self.settings.get('debug'):
+                print u"  Skipping due to hitting rate limit for %s" % hostname
+            return False
+
+        try:
+            return downloader.download(url, error_message, timeout, 3)
+        except (RateLimitException) as (e):
+
+            rate_limited_domains.append(hostname)
+            _channel_repository_cache['rate_limited_domains'] = {
+                'data': rate_limited_domains,
+                'time': time.time() + self.settings.get('cache_length',
+                    300)
+                }
+
+            print ('%s: Hit rate limit of %s for %s, skipping all futher ' +
+                'download requests for this domain') % (__name__,
+                e.limit, e.host)
+        return False
 
     def get_metadata(self, package):
         """
