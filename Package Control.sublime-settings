@@ -86,6 +86,9 @@
 	"proxy_username": "",
 	"proxy_password": "",
 
+	// User agent for HTTP requests
+	"user_agent": "Sublime Package Control",
+
 	// Setting this to true will cause Package Control to ignore all git
 	// and hg repositories - this may help if trying to list packages to install
 	// hangs

@@ -366,6 +366,8 @@ try:
             self.key_file = key_file
             self.cert_file = cert_file
             self.ca_certs = ca_certs
+            if 'user_agent' in kwargs:
+                self.user_agent = kwargs['user_agent']
             if self.ca_certs:
                 self.cert_reqs = ssl.CERT_REQUIRED
             else:
@@ -417,7 +419,7 @@ try:
             self._set_hostport(self._tunnel_host, self._tunnel_port)
 
             self._tunnel_headers['Host'] = u"%s:%s" % (self.host, self.port)
-            self._tunnel_headers['User-Agent'] = 'Sublime Package Control'
+            self._tunnel_headers['User-Agent'] = self.user_agent
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
             request = "CONNECT %s:%d HTTP/1.1\r\n" % (self.host, self.port)
@@ -1677,7 +1679,8 @@ class UrlLib2Downloader(Downloader):
                 return False
             bundle_path = bundle_path.encode(sys.getfilesystemencoding())
             handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
-                debug=debug, passwd=password_manager))
+                debug=debug, passwd=password_manager,
+                user_agent=self.settings.get('user_agent')))
         else:
             handlers.append(DebuggableHTTPHandler(debug=debug,
                 passwd=password_manager))
@@ -1687,7 +1690,7 @@ class UrlLib2Downloader(Downloader):
             tries -= 1
             try:
                 request = urllib2.Request(url, headers={
-                    "User-Agent": "Sublime Package Control",
+                    "User-Agent": self.settings.get('user_agent'),
                     # Don't be alarmed if the response from the server does not
                     # select one of these since the server runs a relatively new
                     # version of OpenSSL which supports compression on the SSL
@@ -1775,7 +1778,7 @@ class WgetDownloader(CliDownloader):
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
             self.tmp_file, '--save-headers', '-O', '-', '-U',
-            'Sublime Package Control', '--content-on-error', '--header',
+            self.settings.get('user_agent'), '--content-on-error', '--header',
             # Don't be alarmed if the response from the server does not select
             # one of these since the server runs a relatively new version of
             # OpenSSL which supports compression on the SSL layer, and Apache
@@ -1994,7 +1997,7 @@ class CurlDownloader(CliDownloader):
             return False
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
-        command = [self.curl, '--user-agent', 'Sublime Package Control',
+        command = [self.curl, '--user-agent', self.settings.get('user_agent'),
             '--connect-timeout', str(int(timeout)), '-sSL',
             # Don't be alarmed if the response from the server does not select
             # one of these since the server runs a relatively new version of
@@ -2505,7 +2508,7 @@ class PackageManager():
                 'submit_usage', 'submit_url', 'renamed_packages',
                 'files_to_include', 'files_to_include_binary', 'certs',
                 'ignore_vcs_packages', 'proxy_username', 'proxy_password',
-                'debug']:
+                'debug', 'user_agent']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
