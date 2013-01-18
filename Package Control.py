@@ -1698,14 +1698,8 @@ class UrlLib2Downloader(Downloader):
                     # encoding.
                     "Accept-Encoding": "gzip,deflate"})
                 http_file = urllib2.urlopen(request, timeout=timeout)
+                self.handle_rate_limit(http_file, url)
                 result = http_file.read()
-
-                limit_remaining = http_file.headers.get('X-RateLimit-Remaining', 1)
-                if str(limit_remaining) == '0':
-                    hostname = urlparse.urlparse(url).hostname
-                    limit = http_file.headers.get('X-RateLimit-Limit', 1)
-                    raise RateLimitException(hostname, limit)
-
                 encoding = http_file.headers.get('Content-Encoding')
                 return self.decode_response(encoding, result)
 
@@ -1715,7 +1709,10 @@ class UrlLib2Downloader(Downloader):
                     unicode_from_os(e), url)
 
             except (urllib2.HTTPError) as (e):
-                # Bitbucket and Github ratelimit using 503 a decent amount
+                # Make sure we obey Github's rate limiting headers
+                self.handle_rate_limit(e, url)
+
+                # Bitbucket and Github return 503 a decent amount
                 if unicode_from_os(e.code) == '503':
                     print ('%s: Downloading %s was rate limited, ' +
                         'trying again') % (__name__, url)
@@ -1735,6 +1732,27 @@ class UrlLib2Downloader(Downloader):
                     error_message, unicode_from_os(e.reason), url)
             break
         return False
+
+    def handle_rate_limit(self, response, url):
+        """
+        Checks the headers of a respone object to make sure we are obeying the
+        rate limit
+
+        :param response:
+            The response object that has a headers dict
+
+        :param url:
+            The URL that was requested
+
+        :raises:
+            RateLimitException when the rate limit has been hit
+        """
+
+        limit_remaining = response.headers.get('X-RateLimit-Remaining', 1)
+        if str(limit_remaining) == '0':
+            hostname = urlparse.urlparse(url).hostname
+            limit = response.headers.get('X-RateLimit-Limit', 1)
+            raise RateLimitException(hostname, limit)
 
 
 class WgetDownloader(CliDownloader):
