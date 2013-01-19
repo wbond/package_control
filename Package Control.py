@@ -1884,8 +1884,8 @@ class WgetDownloader(CliDownloader):
                             'trying again') % (__name__, url)
                         continue
 
-                print u'%s: %s %s downloading %s.' % (__name__, error_message,
-                    error_string, url)
+                print (u'%s: %s %s downloading %s.' % (__name__, error_message,
+                    error_string, url)).encode('UTF-8')
 
             break
         return False
