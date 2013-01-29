@@ -5,8 +5,7 @@ import os
 import sys
 import subprocess
 import zipfile
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
 import json
 from fnmatch import fnmatch
 import re
@@ -15,14 +14,13 @@ import datetime
 import time
 import shutil
 import tempfile
-import httplib
+import http.client
 import socket
 import hashlib
 import base64
 import locale
-import urlparse
 import gzip
-import StringIO
+import io
 import zlib
 
 
@@ -63,7 +61,7 @@ def unicode_from_os(e):
         # Sublime Text on OS X does not seem to report the correct encoding
         # so we hard-code that to UTF-8
         encoding = 'UTF-8' if os.name == 'darwin' else locale.getpreferredencoding()
-        return unicode(str(e), encoding)
+        return str(str(e), encoding)
 
     # If the "correct" encoding did not work, try some defaults, and then just
     # obliterate characters that we can't seen to decode properly
@@ -71,10 +69,10 @@ def unicode_from_os(e):
         encodings = ['utf-8', 'cp1252']
         for encoding in encodings:
             try:
-                return unicode(str(e), encoding, errors='strict')
+                return str(str(e), encoding, errors='strict')
             except:
                 pass
-    return unicode(str(e), errors='replace')
+    return str(str(e), errors='replace')
 
 
 def create_cmd(args, basename_binary=False):
@@ -87,9 +85,9 @@ def create_cmd(args, basename_binary=False):
         escaped_args = []
         for arg in args:
             if re.search('^[a-zA-Z0-9/_^\\-\\.:=]+$', arg) == None:
-                arg = u"'" + arg.replace(u"'", u"'\\''") + u"'"
+                arg = "'" + arg.replace("'", "'\\''") + "'"
             escaped_args.append(arg)
-        return u' '.join(escaped_args)
+        return ' '.join(escaped_args)
 
 
 # Monkey patch AbstractBasicAuthHandler to prevent infinite recursion
@@ -100,22 +98,22 @@ def non_recursive_http_error_auth_reqed(self, authreq, host, req, headers):
         self.retried = 0
 
     if self.retried > 5:
-        raise urllib2.HTTPError(req.get_full_url(), 401, "basic auth failed",
+        raise urllib.error.HTTPError(req.get_full_url(), 401, "basic auth failed",
             headers, None)
     else:
         self.retried += 1
 
     if authreq:
-        mo = urllib2.AbstractBasicAuthHandler.rx.search(authreq)
+        mo = urllib.request.AbstractBasicAuthHandler.rx.search(authreq)
         if mo:
             scheme, quote, realm = mo.groups()
             if scheme.lower() == 'basic':
                 return self.retry_http_basic_auth(host, req, realm)
 
-urllib2.AbstractBasicAuthHandler.http_error_auth_reqed = non_recursive_http_error_auth_reqed
+urllib.request.AbstractBasicAuthHandler.http_error_auth_reqed = non_recursive_http_error_auth_reqed
 
 
-class DebuggableHTTPResponse(httplib.HTTPResponse):
+class DebuggableHTTPResponse(http.client.HTTPResponse):
     """
     A custom HTTPResponse that formats debugging info for Sublime Text
     """
@@ -128,12 +126,12 @@ class DebuggableHTTPResponse(httplib.HTTPResponse):
         # to the stdout and we can't capture it, so we use a special -1 value
         if debuglevel == 5:
             debuglevel = -1
-        httplib.HTTPResponse.__init__(self, sock, debuglevel, strict, method)
+        http.client.HTTPResponse.__init__(self, sock, debuglevel, strict, method)
 
     def begin(self):
-        return_value = httplib.HTTPResponse.begin(self)
+        return_value = http.client.HTTPResponse.begin(self)
         if self.debuglevel == -1:
-            print '%s: Urllib2 %s Debug Read' % (__name__, self._debug_protocol)
+            print(('%s: Urllib2 %s Debug Read' % (__name__, self._debug_protocol)))
             headers = self.msg.headers
             versions = {
                 9: 'HTTP/0.9',
@@ -143,13 +141,13 @@ class DebuggableHTTPResponse(httplib.HTTPResponse):
             status_line = versions[self.version] + ' ' + str(self.status) + ' ' + self.reason
             headers.insert(0, status_line)
             for line in headers:
-                print u"  %s" % line.rstrip()
+                print(("  %s" % line.rstrip()))
         return return_value
 
     def read(self, *args):
         try:
-            return httplib.HTTPResponse.read(self, *args)
-        except (httplib.IncompleteRead) as (e):
+            return http.client.HTTPResponse.read(self, *args)
+        except http.client.IncompleteRead as e:
             return e.partial
 
 
@@ -161,7 +159,7 @@ class DebuggableHTTPSResponse(DebuggableHTTPResponse):
     _debug_protocol = 'HTTPS'
 
 
-class DebuggableHTTPConnection(httplib.HTTPConnection):
+class DebuggableHTTPConnection(http.client.HTTPConnection):
     """
     A custom HTTPConnection that formats debugging info for Sublime Text
     """
@@ -178,13 +176,13 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
         self._tunnel_port = None
         self._tunnel_headers = {}
 
-        httplib.HTTPConnection.__init__(self, host, port, strict, timeout)
+        http.client.HTTPConnection.__init__(self, host, port, strict, timeout)
 
     def connect(self):
         if self.debuglevel == -1:
-            print '%s: Urllib2 %s Debug General' % (__name__, self._debug_protocol)
-            print u"  Connecting to %s on port %s" % (self.host, self.port)
-        httplib.HTTPConnection.connect(self)
+            print(('%s: Urllib2 %s Debug General' % (__name__, self._debug_protocol)))
+            print(("  Connecting to %s on port %s" % (self.host, self.port)))
+        http.client.HTTPConnection.connect(self)
 
     def send(self, string):
         # We have to use a positive debuglevel to get it passed to the
@@ -195,12 +193,12 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
         if self.debuglevel == 5:
             reset_debug = 5
             self.debuglevel = -1
-        httplib.HTTPConnection.send(self, string)
+        http.client.HTTPConnection.send(self, string)
         if reset_debug or self.debuglevel == -1:
             if len(string.strip()) > 0:
-                print '%s: Urllib2 %s Debug Write' % (__name__, self._debug_protocol)
+                print(('%s: Urllib2 %s Debug Write' % (__name__, self._debug_protocol)))
                 for line in string.strip().splitlines():
-                    print '  ' + line
+                    print(('  ' + line))
             if reset_debug:
                 self.debuglevel = reset_debug
 
@@ -210,7 +208,7 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
         # Handles the challenge request response cycle before the real request
         proxy_auth = headers.get('Proxy-Authorization')
         if os.name == 'nt' and proxy_auth and proxy_auth.lstrip()[0:4] == 'NTLM':
-            # The default urllib2.AbstractHTTPHandler automatically sets the
+            # The default urllib.request.AbstractHTTPHandler automatically sets the
             # Connection header to close because of urllib.addinfourl(), but in
             # this case we are going to do some back and forth first for the NTLM
             # proxy auth
@@ -244,10 +242,10 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
             original_headers['Proxy-Authorization'] = new_proxy_authorization
             response.close()
 
-        httplib.HTTPConnection.request(self, method, url, body, original_headers)
+        http.client.HTTPConnection.request(self, method, url, body, original_headers)
 
 
-class DebuggableHTTPHandler(urllib2.HTTPHandler):
+class DebuggableHTTPHandler(urllib.request.HTTPHandler):
     """
     A custom HTTPHandler that formats debugging info for Sublime Text
     """
@@ -269,13 +267,13 @@ class DebuggableHTTPHandler(urllib2.HTTPHandler):
         return self.do_open(http_class_wrapper, req)
 
 
-class RateLimitException(httplib.HTTPException, urllib2.URLError):
+class RateLimitException(http.client.HTTPException, urllib.error.URLError):
     """
     An exception for when the rate limit of an API has been exceeded.
     """
 
     def __init__(self, host, limit):
-        httplib.HTTPException.__init__(self)
+        http.client.HTTPException.__init__(self)
         self.host = host
         self.limit = limit
 
@@ -284,7 +282,7 @@ class RateLimitException(httplib.HTTPException, urllib2.URLError):
 
 
 if os.name == 'nt':
-    class ProxyNtlmAuthHandler(urllib2.BaseHandler):
+    class ProxyNtlmAuthHandler(urllib.request.BaseHandler):
 
         handler_order = 300
         auth_header = 'Proxy-Authorization'
@@ -327,14 +325,14 @@ if os.name == 'nt':
 try:
     import ssl
 
-    class InvalidCertificateException(httplib.HTTPException, urllib2.URLError):
+    class InvalidCertificateException(http.client.HTTPException, urllib.error.URLError):
         """
         An exception for when an SSL certification is not valid for the URL
         it was presented for.
         """
 
         def __init__(self, host, cert, reason):
-            httplib.HTTPException.__init__(self)
+            http.client.HTTPException.__init__(self)
             self.host = host
             self.cert = cert
             self.reason = reason
@@ -350,7 +348,7 @@ try:
         allows proxy authentication for HTTPS connections.
         """
 
-        default_port = httplib.HTTPS_PORT
+        default_port = http.client.HTTPS_PORT
 
         response_class = DebuggableHTTPSResponse
         _debug_protocol = 'HTTPS'
@@ -418,12 +416,12 @@ try:
             self._proxy_port = self.port
             self._set_hostport(self._tunnel_host, self._tunnel_port)
 
-            self._tunnel_headers['Host'] = u"%s:%s" % (self.host, self.port)
+            self._tunnel_headers['Host'] = "%s:%s" % (self.host, self.port)
             self._tunnel_headers['User-Agent'] = self.user_agent
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
             request = "CONNECT %s:%d HTTP/1.1\r\n" % (self.host, self.port)
-            for header, value in self._tunnel_headers.iteritems():
+            for header, value in self._tunnel_headers.items():
                 request += "%s: %s\r\n" % (header, value)
             self.send(request + "\r\n")
 
@@ -431,12 +429,12 @@ try:
                 method=self._method)
             (version, code, message) = response._read_status()
 
-            status_line = u"%s %s %s" % (version, code, message.rstrip())
+            status_line = "%s %s %s" % (version, code, message.rstrip())
             headers = [status_line]
 
             if self.debuglevel in [-1, 5]:
-                print '%s: Urllib2 %s Debug Read' % (__name__, self._debug_protocol)
-                print u"  %s" % status_line
+                print(('%s: Urllib2 %s Debug Read' % (__name__, self._debug_protocol)))
+                print(("  %s" % status_line))
 
             content_length = 0
             close_connection = False
@@ -456,9 +454,9 @@ try:
                     close_connection = True
 
                 if self.debuglevel in [-1, 5]:
-                    print u"  %s" % line.rstrip()
+                    print(("  %s" % line.rstrip()))
 
-            # Handle proxy auth for SSL connections since regular urllib2 punts on this
+            # Handle proxy auth for SSL connections since regular urllib.request punts on this
             if code == 407 and self.passwd and ('Proxy-Authorization' not in self._tunnel_headers or ntlm_follow_up):
                 if content_length:
                     response._safe_read(content_length)
@@ -480,12 +478,12 @@ try:
                     response_value = self.build_digest_response(
                         supported_auth_methods['digest'], username, password)
                     if response_value:
-                        self._tunnel_headers['Proxy-Authorization'] = u"Digest %s" % response_value
+                        self._tunnel_headers['Proxy-Authorization'] = "Digest %s" % response_value
 
                 elif 'basic' in supported_auth_methods:
-                    response_value = u"%s:%s" % (username, password)
+                    response_value = "%s:%s" % (username, password)
                     response_value = base64.b64encode(response_value).strip()
-                    self._tunnel_headers['Proxy-Authorization'] = u"Basic %s" % response_value
+                    self._tunnel_headers['Proxy-Authorization'] = "Basic %s" % response_value
 
                 elif 'ntlm' in supported_auth_methods and os.name == 'nt':
                     ntlm_challenge = supported_auth_methods['ntlm']
@@ -543,7 +541,7 @@ try:
                 string of fields for the Proxy-Authorization: Digest header
             """
 
-            fields = urllib2.parse_keqv_list(urllib2.parse_http_list(fields))
+            fields = urllib.parse.parse_keqv_list(urllib.parse.parse_http_list(fields))
 
             realm = fields.get('realm')
             nonce = fields.get('nonce')
@@ -562,7 +560,7 @@ try:
             else:
                 return None
 
-            host_port = u"%s:%s" % (self.host, self.port)
+            host_port = "%s:%s" % (self.host, self.port)
 
             a1 = "%s:%s:%s" % (username, realm, password)
             a2 = "CONNECT:%s" % host_port
@@ -570,11 +568,11 @@ try:
             ha2 = hash(a2)
 
             if qop == None:
-                response = hash(u"%s:%s:%s" % (ha1, nonce, ha2))
+                response = hash("%s:%s:%s" % (ha1, nonce, ha2))
             elif qop == 'auth':
                 nc = '00000001'
                 cnonce = hash(urllib2.randombytes(8))[:8]
-                response = hash(u"%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
+                response = hash("%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
             else:
                 return None
 
@@ -594,7 +592,7 @@ try:
             if opaque:
                 response_fields['opaque'] = opaque
 
-            return ', '.join([u"%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
+            return ', '.join(["%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
 
         def connect(self):
             """
@@ -602,25 +600,25 @@ try:
             """
 
             if self.debuglevel == -1:
-                print '%s: Urllib2 HTTPS Debug General' % __name__
-                print u"  Connecting to %s on port %s" % (self.host, self.port)
+                print(('%s: urllib.request.HTTPS Debug General' % __name__))
+                print(("  Connecting to %s on port %s" % (self.host, self.port)))
 
             self.sock = socket.create_connection((self.host, self.port), self.timeout)
             if self._tunnel_host:
                 self._tunnel()
 
             if self.debuglevel == -1:
-                print u"%s: Urllib2 HTTPS Debug General" % __name__
-                print u"  Connecting to %s on port %s" % (self.host, self.port)
-                print u"  CA certs file at %s" % (self.ca_certs)
+                print(("%s: urllib.request.HTTPS Debug General" % __name__))
+                print(("  Connecting to %s on port %s" % (self.host, self.port)))
+                print(("  CA certs file at %s" % (self.ca_certs)))
 
             self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                 certfile=self.cert_file, cert_reqs=self.cert_reqs,
                 ca_certs=self.ca_certs)
 
             if self.debuglevel == -1:
-                print u"  Successfully upgraded connection to %s:%s with SSL" % (
-                    self.host, self.port)
+                print(("  Successfully upgraded connection to %s:%s with SSL" % (
+                    self.host, self.port)))
 
             # This debugs and validates the SSL certificate
             if self.cert_reqs & ssl.CERT_REQUIRED:
@@ -647,29 +645,29 @@ try:
                             field_name = pair[0][0]
                         subject_parts.append(field_name + '=' + pair[0][1])
 
-                    print u"  Server SSL certificate:"
-                    print u"    subject: " + ','.join(subject_parts)
+                    print("  Server SSL certificate:")
+                    print(("    subject: " + ','.join(subject_parts)))
                     if 'subjectAltName' in cert:
-                        print u"    common name: " + cert['subjectAltName'][0][1]
+                        print(("    common name: " + cert['subjectAltName'][0][1]))
                     if 'notAfter' in cert:
-                        print u"    expire date: " + cert['notAfter']
+                        print(("    expire date: " + cert['notAfter']))
 
                 hostname = self.host.split(':', 0)[0]
 
                 if not self.validate_cert_host(cert, hostname):
                     if self.debuglevel == -1:
-                        print u"  Certificate INVALID"
+                        print("  Certificate INVALID")
 
                     raise InvalidCertificateException(hostname, cert,
                         'hostname mismatch')
 
                 if self.debuglevel == -1:
-                    print u"  Certificate validated for %s" % hostname
+                    print(("  Certificate validated for %s" % hostname))
 
-    if hasattr(urllib2, 'HTTPSHandler'):
-        class ValidatingHTTPSHandler(urllib2.HTTPSHandler):
+    if hasattr(urllib.request, 'HTTPSHandler'):
+        class ValidatingHTTPSHandler(urllib.request.HTTPSHandler):
             """
-            A urllib2 handler that validates SSL certificates for HTTPS requests
+            A urllib handler that validates SSL certificates for HTTPS requests
             """
 
             def __init__(self, **kwargs):
@@ -690,15 +688,15 @@ try:
 
                 try:
                     return self.do_open(http_class_wrapper, req)
-                except urllib2.URLError, e:
+                except urllib.error.URLError as e:
                     if type(e.reason) == ssl.SSLError and e.reason.args[0] == 1:
                         raise InvalidCertificateException(req.host, '',
                                                           e.reason.args[1])
                     raise
 
-            https_request = urllib2.AbstractHTTPHandler.do_request_
+            https_request = urllib.request.AbstractHTTPHandler.do_request_
 
-except (ImportError):
+except ImportError:
     pass
 
 
@@ -809,8 +807,8 @@ class ChannelProvider(PlatformComparator):
         try:
             channel_info = json.loads(channel_json)
         except (ValueError):
-            print '%s: Error parsing JSON from channel %s.' % (__name__,
-                self.channel)
+            print(('%s: Error parsing JSON from channel %s.' % (__name__,
+                self.channel)))
             channel_info = False
 
         self.channel_info = channel_info
@@ -843,7 +841,7 @@ class ChannelProvider(PlatformComparator):
         """
         Provides a secure way for distribution of SSL CA certificates
 
-        Unfortunately Python does not include a bundle of CA certs with urllib2
+        Unfortunately Python does not include a bundle of CA certs with urllib
         to perform SSL certificate validation. To circumvent this issue,
         Package Control acts as a distributor of the CA certs for all HTTPS
         URLs of package downloads.
@@ -908,7 +906,7 @@ class ChannelProvider(PlatformComparator):
         for package in self.channel_info['packages'][repo]:
             copy = package.copy()
 
-            platforms = copy['platforms'].keys()
+            platforms = list(copy['platforms'].keys())
             best_platform = self.get_best_platform(platforms)
 
             if not best_platform:
@@ -986,8 +984,8 @@ class PackageProvider(PlatformComparator):
         try:
             self.repo_info = json.loads(repository_json)
         except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                self.repo)
+            print(('%s: Error parsing JSON from repository %s.' % (__name__,
+                self.repo)))
             self.repo_info = False
 
     def get_packages(self):
@@ -1013,7 +1011,7 @@ class PackageProvider(PlatformComparator):
 
         for package in self.repo_info['packages']:
 
-            platforms = package['platforms'].keys()
+            platforms = list(package['platforms'].keys())
             best_platform = self.get_best_platform(platforms)
 
             if not best_platform:
@@ -1079,8 +1077,8 @@ class NonCachingProvider():
         try:
             return json.loads(repository_json)
         except (ValueError):
-            print '%s: Error parsing JSON from repository %s.' % (__name__,
-                url)
+            print(('%s: Error parsing JSON from repository %s.' % (__name__,
+                url)))
         return False
 
     def get_unavailable_packages(self):
@@ -1142,7 +1140,7 @@ class GitHubPackageProvider(NonCachingProvider):
         # also have to list the commits to get the timestamp of the last
         # commit since we use that to generate a version number
         commit_api_url = api_url + '/commits?' + \
-            urllib.urlencode({'sha': branch, 'per_page': 1})
+            urllib.parse.urlencode({'sha': branch, 'per_page': 1})
 
         commit_info = self.fetch_json(commit_api_url)
         if commit_info == False:
@@ -1153,7 +1151,7 @@ class GitHubPackageProvider(NonCachingProvider):
         # HTTP redirect headers
         download_url = 'https://nodeload.github.com/' + \
             repo_info['owner']['login'] + '/' + \
-            repo_info['name'] + '/zip/' + urllib.quote(branch)
+            repo_info['name'] + '/zip/' + urllib.parse.quote(branch)
 
         commit_date = commit_info[0]['commit']['committer']['date']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
@@ -1418,7 +1416,7 @@ class Downloader():
             cert_match = self.locate_cert(certs_dir, wildcard_info[0], wildcard_info[1]) or cert_match
 
         if not cert_match:
-            print '%s: No CA certs available for %s.' % (__name__, domain)
+            print(('%s: No CA certs available for %s.' % (__name__, domain)))
             return False
 
         return ca_bundle_path
@@ -1522,7 +1520,7 @@ class Downloader():
 
     def decode_response(self, encoding, response):
         if encoding == 'gzip':
-            return gzip.GzipFile(fileobj=StringIO.StringIO(response)).read()
+            return gzip.GzipFile(fileobj=io.StringIO(response)).read()
         elif encoding == 'deflate':
             decompresser = zlib.decompressobj(-zlib.MAX_WBITS)
             return decompresser.decompress(response) + decompresser.flush()
@@ -1581,8 +1579,8 @@ class CliDownloader(Downloader):
         """
 
         if self.settings.get('debug'):
-            print u"%s: Trying to execute command %s" % (
-                __name__, create_cmd(args))
+            print(("%s: Trying to execute command %s" % (
+                __name__, create_cmd(args))))
 
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -1600,7 +1598,7 @@ class CliDownloader(Downloader):
 
 class UrlLib2Downloader(Downloader):
     """
-    A downloader that uses the Python urllib2 module
+    A downloader that uses the Python urllib module
 
     :param settings:
         A dict of the various Package Control settings. The Sublime Text
@@ -1644,11 +1642,11 @@ class UrlLib2Downloader(Downloader):
                 proxies['http'] = http_proxy
             if https_proxy:
                 proxies['https'] = https_proxy
-            proxy_handler = urllib2.ProxyHandler(proxies)
+            proxy_handler = urllib.request.ProxyHandler(proxies)
         else:
-            proxy_handler = urllib2.ProxyHandler()
+            proxy_handler = urllib.request.ProxyHandler()
 
-        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         proxy_username = self.settings.get('proxy_username')
         proxy_password = self.settings.get('proxy_password')
         if proxy_username and proxy_password:
@@ -1664,18 +1662,18 @@ class UrlLib2Downloader(Downloader):
             ntlm_auth_handler = ProxyNtlmAuthHandler(password_manager)
             handlers.append(ntlm_auth_handler)
 
-        basic_auth_handler = urllib2.ProxyBasicAuthHandler(password_manager)
-        digest_auth_handler = urllib2.ProxyDigestAuthHandler(password_manager)
+        basic_auth_handler = urllib.request.ProxyBasicAuthHandler(password_manager)
+        digest_auth_handler = urllib.request.ProxyDigestAuthHandler(password_manager)
         handlers.extend([digest_auth_handler, basic_auth_handler])
 
         debug = self.settings.get('debug')
 
         if debug:
-            print u"%s: Urllib2 Debug Proxy" % __name__
-            print u"  http_proxy: %s" % http_proxy
-            print u"  https_proxy: %s" % https_proxy
-            print u"  proxy_username: %s" % proxy_username
-            print u"  proxy_password: %s" % proxy_password
+            print(("%s: Urllib2 Debug Proxy" % __name__))
+            print(("  http_proxy: %s" % http_proxy))
+            print(("  https_proxy: %s" % https_proxy))
+            print(("  proxy_username: %s" % proxy_username))
+            print(("  proxy_password: %s" % proxy_password))
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
@@ -1690,12 +1688,12 @@ class UrlLib2Downloader(Downloader):
         else:
             handlers.append(DebuggableHTTPHandler(debug=debug,
                 passwd=password_manager))
-        urllib2.install_opener(urllib2.build_opener(*handlers))
+        urllib.request.install_opener(urllib.request.build_opener(*handlers))
 
         while tries > 0:
             tries -= 1
             try:
-                request = urllib2.Request(url, headers={
+                request = urllib.request.Request(url, headers={
                     "User-Agent": self.settings.get('user_agent'),
                     # Don't be alarmed if the response from the server does not
                     # select one of these since the server runs a relatively new
@@ -1703,39 +1701,39 @@ class UrlLib2Downloader(Downloader):
                     # layer, and Apache will use that instead of HTTP-level
                     # encoding.
                     "Accept-Encoding": "gzip,deflate"})
-                http_file = urllib2.urlopen(request, timeout=timeout)
+                http_file = urllib.request.urlopen(request, timeout=timeout)
                 self.handle_rate_limit(http_file, url)
                 result = http_file.read()
                 encoding = http_file.headers.get('Content-Encoding')
                 return self.decode_response(encoding, result)
 
-            except (httplib.HTTPException) as (e):
-                print '%s: %s HTTP exception %s (%s) downloading %s.' % (
+            except http.client.HTTPException as e:
+                print(('%s: %s HTTP exception %s (%s) downloading %s.' % (
                     __name__, error_message, e.__class__.__name__,
-                    unicode_from_os(e), url)
+                    unicode_from_os(e), url)))
 
-            except (urllib2.HTTPError) as (e):
+            except urllib.request.HTTPError as e:
                 # Make sure we obey Github's rate limiting headers
                 self.handle_rate_limit(e, url)
 
                 # Bitbucket and Github return 503 a decent amount
                 if unicode_from_os(e.code) == '503':
-                    print ('%s: Downloading %s was rate limited, ' +
-                        'trying again') % (__name__, url)
+                    print((('%s: Downloading %s was rate limited, ' +
+                        'trying again') % (__name__, url)))
                     continue
-                print '%s: %s HTTP error %s downloading %s.' % (__name__,
-                    error_message, unicode_from_os(e.code), url)
+                print(('%s: %s HTTP error %s downloading %s.' % (__name__,
+                    error_message, unicode_from_os(e.code), url)))
 
-            except (urllib2.URLError) as (e):
+            except urllib.error.URLError as e:
 
                 # Bitbucket and Github timeout a decent amount
                 if unicode_from_os(e.reason) == 'The read operation timed out' \
                         or unicode_from_os(e.reason) == 'timed out':
-                    print (u'%s: Downloading %s timed out, trying ' +
-                        u'again') % (__name__, url)
+                    print((('%s: Downloading %s timed out, trying ' +
+                        'again') % (__name__, url)))
                     continue
-                print u'%s: %s URL error %s downloading %s.' % (__name__,
-                    error_message, unicode_from_os(e.reason), url)
+                print(('%s: %s URL error %s downloading %s.' % (__name__,
+                    error_message, unicode_from_os(e.reason), url)))
             break
         return False
 
@@ -1756,7 +1754,7 @@ class UrlLib2Downloader(Downloader):
 
         limit_remaining = response.headers.get('X-RateLimit-Remaining', 1)
         if str(limit_remaining) == '0':
-            hostname = urlparse.urlparse(url).hostname
+            hostname = urllib.parse.urlparse(url).hostname
             limit = response.headers.get('X-RateLimit-Limit', 1)
             raise RateLimitException(hostname, limit)
 
@@ -1816,7 +1814,7 @@ class WgetDownloader(CliDownloader):
             bundle_path = self.check_certs(secure_domain, timeout)
             if not bundle_path:
                 return False
-            command.append(u'--ca-certificate=' + bundle_path)
+            command.append('--ca-certificate=' + bundle_path)
 
         if self.debug:
             command.append('-d')
@@ -1829,16 +1827,16 @@ class WgetDownloader(CliDownloader):
         proxy_password = self.settings.get('proxy_password')
 
         if proxy_username:
-            command.append(u"--proxy-user=%s" % proxy_username)
+            command.append("--proxy-user=%s" % proxy_username)
         if proxy_password:
-            command.append(u"--proxy-password=%s" % proxy_password)
+            command.append("--proxy-password=%s" % proxy_password)
 
         if self.debug:
-            print u"%s: Wget Debug Proxy" % __name__
-            print u"  http_proxy: %s" % http_proxy
-            print u"  https_proxy: %s" % https_proxy
-            print u"  proxy_username: %s" % proxy_username
-            print u"  proxy_password: %s" % proxy_password
+            print(("%s: Wget Debug Proxy" % __name__))
+            print(("  http_proxy: %s" % http_proxy))
+            print(("  https_proxy: %s" % https_proxy))
+            print(("  proxy_username: %s" % proxy_username))
+            print(("  proxy_password: %s" % proxy_password))
 
         command.append(url)
 
@@ -1859,7 +1857,7 @@ class WgetDownloader(CliDownloader):
 
                 return result
 
-            except (NonCleanExitError) as (e):
+            except NonCleanExitError as e:
 
                 try:
                     general, headers = self.parse_output()
@@ -1867,25 +1865,25 @@ class WgetDownloader(CliDownloader):
 
                     if general['status'] == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        print ('%s: Downloading %s was rate limited' +
-                            ', trying again') % (__name__, url)
+                        print((('%s: Downloading %s was rate limited' +
+                            ', trying again') % (__name__, url)))
                         continue
 
                     error_string = 'HTTP error %s %s' % (general['status'],
                         general['message'])
 
-                except (NonHttpError) as (e):
+                except NonHttpError as e:
 
                     error_string = unicode_from_os(e)
 
                     # GitHub and BitBucket seem to time out a lot
                     if error_string.find('timed out') != -1:
-                        print ('%s: Downloading %s timed out, ' +
-                            'trying again') % (__name__, url)
+                        print((('%s: Downloading %s timed out, ' +
+                            'trying again') % (__name__, url)))
                         continue
 
-                print (u'%s: %s %s downloading %s.' % (__name__, error_message,
-                    error_string, url)).encode('UTF-8')
+                print((('%s: %s %s downloading %s.' % (__name__, error_message,
+                    error_string, url)).encode('UTF-8')))
 
             break
         return False
@@ -1929,12 +1927,12 @@ class WgetDownloader(CliDownloader):
                     continue
 
                 if section != last_section:
-                    print "%s: Wget HTTP Debug %s" % (__name__, section)
+                    print(("%s: Wget HTTP Debug %s" % (__name__, section)))
 
                 if section == 'Read':
                     header_lines.append(line)
 
-                print '  ' + line
+                print(('  ' + line))
                 last_section = section
 
         else:
@@ -2011,7 +2009,7 @@ class WgetDownloader(CliDownloader):
         limit = headers.get('x-ratelimit-limit', '1')
 
         if str(limit_remaining) == '0':
-            hostname = urlparse.urlparse(url).hostname
+            hostname = urllib.parse.urlparse(url).hostname
             raise RateLimitException(hostname, limit)
 
 
@@ -2082,17 +2080,17 @@ class CurlDownloader(CliDownloader):
         proxy_password = self.settings.get('proxy_password')
 
         if debug:
-            print u"%s: Curl Debug Proxy" % __name__
-            print u"  http_proxy: %s" % http_proxy
-            print u"  https_proxy: %s" % https_proxy
-            print u"  proxy_username: %s" % proxy_username
-            print u"  proxy_password: %s" % proxy_password
+            print(("%s: Curl Debug Proxy" % __name__))
+            print(("  http_proxy: %s" % http_proxy))
+            print(("  https_proxy: %s" % https_proxy))
+            print(("  proxy_username: %s" % proxy_username))
+            print(("  proxy_password: %s" % proxy_password))
 
         if http_proxy or https_proxy:
             command.append('--proxy-anyauth')
 
         if proxy_username or proxy_password:
-            command.extend(['-U', u"%s:%s" % (proxy_username, proxy_password)])
+            command.extend(['-U', "%s:%s" % (proxy_username, proxy_password)])
 
         if http_proxy:
             os.putenv('http_proxy', http_proxy)
@@ -2125,7 +2123,7 @@ class CurlDownloader(CliDownloader):
                     self.print_debug(self.stderr)
 
                 if str(limit_remaining) == '0':
-                    hostname = urlparse.urlparse(url).hostname
+                    hostname = urllib.parse.urlparse(url).hostname
                     raise RateLimitException(hostname, limit)
 
                 if status != '200 OK':
@@ -2135,7 +2133,7 @@ class CurlDownloader(CliDownloader):
 
                 return output
 
-            except (NonCleanExitError) as (e):
+            except NonCleanExitError as e:
                 # Stderr is used for both the error message and the debug info
                 # so we need to process it to extra the debug info
                 if self.settings.get('debug'):
@@ -2147,22 +2145,22 @@ class CurlDownloader(CliDownloader):
                     code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
                     if code == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        print ('%s: Downloading %s was rate limited' +
-                            ', trying again') % (__name__, url)
+                        print((('%s: Downloading %s was rate limited' +
+                            ', trying again') % (__name__, url)))
                         continue
                     error_string = 'HTTP error ' + code
                 elif e.returncode == 6:
                     error_string = 'URL error host not found'
                 elif e.returncode == 28:
                     # GitHub and BitBucket seem to time out a lot
-                    print ('%s: Downloading %s timed out, trying ' +
-                        'again') % (__name__, url)
+                    print((('%s: Downloading %s timed out, trying ' +
+                        'again') % (__name__, url)))
                     continue
                 else:
                     error_string = e.stderr.rstrip()
 
-                print '%s: %s %s downloading %s.' % (__name__, error_message,
-                    error_string, url)
+                print(('%s: %s %s downloading %s.' % (__name__, error_message,
+                    error_string, url)))
             break
 
         return False
@@ -2201,9 +2199,9 @@ class CurlDownloader(CliDownloader):
                 continue
 
             if section != last_section:
-                print "%s: Curl HTTP Debug %s" % (__name__, section)
+                print(("%s: Curl HTTP Debug %s" % (__name__, section)))
 
-            print '  ' + line
+            print(('  ' + line))
             last_section = section
 
         return output
@@ -2247,7 +2245,7 @@ class RepositoryDownloader(threading.Thread):
             return
 
         mapped_packages = {}
-        for package in packages.keys():
+        for package in list(packages.keys()):
             mapped_package = self.name_map.get(package, package)
             mapped_packages[mapped_package] = packages[package]
             mapped_packages[mapped_package]['name'] = mapped_package
@@ -2303,8 +2301,8 @@ class VcsUpgrader():
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         if self.debug:
-            print u"%s: Trying to execute command %s" % (
-                __name__, create_cmd(args))
+            print(("%s: Trying to execute command %s" % (
+                __name__, create_cmd(args))))
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             startupinfo=startupinfo, cwd=dir)
@@ -2323,8 +2321,8 @@ class VcsUpgrader():
 
         if self.binary:
             if self.debug:
-                print u"%s: Using \"%s_binary\" from settings \"%s\"" % (
-                    __name__, self.vcs_type, self.binary)
+                print(("%s: Using \"%s_binary\" from settings \"%s\"" % (
+                    __name__, self.vcs_type, self.binary)))
             return self.binary
 
         # Try the path first
@@ -2332,8 +2330,8 @@ class VcsUpgrader():
             path = os.path.join(dir, name)
             if os.path.exists(path):
                 if self.debug:
-                    print u"%s: Found %s at \"%s\"" % (__name__, self.vcs_type,
-                        path)
+                    print(("%s: Found %s at \"%s\"" % (__name__, self.vcs_type,
+                        path)))
                 return path
 
         # This is left in for backwards compatibility and for windows
@@ -2355,13 +2353,13 @@ class VcsUpgrader():
             path = os.path.join(dir, name)
             if os.path.exists(path):
                 if self.debug:
-                    print u"%s: Found %s at \"%s\"" % (__name__, self.vcs_type,
-                        path)
+                    print(("%s: Found %s at \"%s\"" % (__name__, self.vcs_type,
+                        path)))
                 return path
 
         if self.debug:
-            print u"%s: Could not find %s on your machine" % (__name__,
-                self.vcs_type)
+            print(("%s: Could not find %s on your machine" % (__name__,
+                self.vcs_type)))
         return None
 
 
@@ -2391,7 +2389,7 @@ class GitUpgrader(VcsUpgrader):
             sublime.error_message(('%s: Unable to find %s. ' +
                 'Please set the git_binary setting by accessing the ' +
                 'Preferences > Package Settings > %s > ' +
-                u'Settings – User menu entry. The Settings – Default entry ' +
+                'Settings – User menu entry. The Settings – Default entry ' +
                 'can be used for reference, but changes to that will be ' +
                 'overwritten upon next upgrade.') % (__name__, name, __name__))
             return False
@@ -2468,7 +2466,7 @@ class HgUpgrader(VcsUpgrader):
             sublime.error_message(('%s: Unable to find %s. ' +
                 'Please set the hg_binary setting by accessing the ' +
                 'Preferences > Package Settings > %s > ' +
-                u'Settings – User menu entry. The Settings – Default entry ' +
+                'Settings – User menu entry. The Settings – Default entry ' +
                 'can be used for reference, but changes to that will be ' +
                 'overwritten upon next upgrade.') % (__name__, name, __name__))
             return False
@@ -2530,7 +2528,7 @@ def clear_directory(directory, ignore_paths=None):
                     os.rmdir(path)
                 else:
                     os.remove(path)
-            except (OSError, IOError) as (e):
+            except (OSError, IOError):
                 was_exception = True
 
     return not was_exception
@@ -2645,7 +2643,7 @@ class PackageManager():
             The string contents of the URL, or False on error
         """
 
-        has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
+        has_ssl = 'ssl' in sys.modules and hasattr(urllib.request, 'HTTPSHandler')
         is_ssl = re.search('^https://', url) != None
         downloader = None
 
@@ -2666,7 +2664,7 @@ class PackageManager():
             return False
 
         url = url.replace(' ', '%20')
-        hostname = urlparse.urlparse(url).hostname.lower()
+        hostname = urllib.parse.urlparse(url).hostname.lower()
         timeout = self.settings.get('timeout', 3)
 
         rate_limited_cache = _channel_repository_cache.get('rate_limited_domains', {})
@@ -2678,22 +2676,22 @@ class PackageManager():
         if self.settings.get('debug'):
             try:
                 ip = socket.gethostbyname(hostname)
-            except (socket.gaierror) as (e):
+            except socket.gaierror as e:
                 ip = unicode_from_os(e)
 
-            print u"%s: Download Debug" % __name__
-            print u"  URL: %s" % url
-            print u"  Resolved IP: %s" % ip
-            print u"  Timeout: %s" % str(timeout)
+            print(("%s: Download Debug" % __name__))
+            print(("  URL: %s" % url))
+            print(("  Resolved IP: %s" % ip))
+            print(("  Timeout: %s" % str(timeout)))
 
         if hostname in rate_limited_domains:
             if self.settings.get('debug'):
-                print u"  Skipping due to hitting rate limit for %s" % hostname
+                print(("  Skipping due to hitting rate limit for %s" % hostname))
             return False
 
         try:
             return downloader.download(url, error_message, timeout, 3)
-        except (RateLimitException) as (e):
+        except RateLimitException as e:
 
             rate_limited_domains.append(hostname)
             _channel_repository_cache['rate_limited_domains'] = {
@@ -2702,9 +2700,9 @@ class PackageManager():
                     300)
                 }
 
-            print ('%s: Hit rate limit of %s for %s, skipping all futher ' +
+            print((('%s: Hit rate limit of %s for %s, skipping all futher ' +
                 'download requests for this domain') % (__name__,
-                e.limit, e.host)
+                e.limit, e.host)))
         return False
 
     def get_metadata(self, package):
@@ -2923,7 +2921,7 @@ class PackageManager():
 
         # Grabs every repo grouped by domain and delays the start
         # of each download from that domain by a fixed amount
-        for domain_downloaders in grouped_downloaders.values():
+        for domain_downloaders in list(grouped_downloaders.values()):
             for i in range(len(domain_downloaders)):
                 downloader = domain_downloaders[i]
                 downloaders.append(downloader)
@@ -3069,7 +3067,7 @@ class PackageManager():
         try:
             package_file = zipfile.ZipFile(package_path, "w",
                 compression=zipfile.ZIP_DEFLATED)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as exception:
             sublime.error_message(('%s: An error occurred creating the ' +
                 'package file %s in %s. %s') % (__name__, package_filename,
                 package_destination, unicode_from_os(exception)))
@@ -3130,11 +3128,11 @@ class PackageManager():
         packages = self.list_available_packages()
 
         if package_name in self.settings.get('unavailable_packages', []):
-            print ('%s: The package "%s" is not available ' +
-                   'on this platform.') % (__name__, package_name)
+            print((('%s: The package "%s" is not available ' +
+                   'on this platform.') % (__name__, package_name)))
             return False
 
-        if package_name not in packages.keys():
+        if package_name not in list(packages.keys()):
             sublime.error_message(('%s: The package specified, %s, is ' +
                 'not available.') % (__name__, package_name))
             return False
@@ -3197,7 +3195,7 @@ class PackageManager():
                     os.makedirs(backup_dir)
                 package_backup_dir = os.path.join(backup_dir, package_name)
                 shutil.copytree(package_dir, package_backup_dir)
-            except (OSError, IOError) as (exception):
+            except (OSError, IOError) as exception:
                 sublime.error_message(('%s: An error occurred while trying ' +
                     'to backup the package directory for %s. %s') %
                     (__name__, package_name, unicode_from_os(exception)))
@@ -3238,16 +3236,16 @@ class PackageManager():
         for path in package_zip.namelist():
             dest = path
             try:
-                if not isinstance(dest, unicode):
-                    dest = unicode(dest, 'utf-8', 'strict')
+                if not isinstance(dest, str):
+                    dest = str(dest, 'utf-8', 'strict')
             except (UnicodeDecodeError):
-                dest = unicode(dest, 'cp1252', 'replace')
+                dest = str(dest, 'cp1252', 'replace')
 
             if os.name == 'nt':
                 regex = ':|\*|\?|"|<|>|\|'
                 if re.search(regex, dest) != None:
-                    print ('%s: Skipping file from package named %s due to ' +
-                        'an invalid filename') % (__name__, path)
+                    print((('%s: Skipping file from package named %s due to ' +
+                        'an invalid filename') % (__name__, path)))
                     continue
 
             # If there was only a single directory in the package, we remove
@@ -3281,17 +3279,17 @@ class PackageManager():
                 extracted_paths.append(dest)
                 try:
                     open(dest, 'wb').write(package_zip.read(path))
-                except (IOError) as (e):
+                except IOError as e:
                     message = unicode_from_os(e)
                     if re.search('[Ee]rrno 13', message):
                         overwrite_failed = True
                         break
-                    print ('%s: Skipping file from package named %s due to ' +
-                        'an invalid filename') % (__name__, path)
+                    print((('%s: Skipping file from package named %s due to ' +
+                        'an invalid filename') % (__name__, path)))
 
                 except (UnicodeDecodeError):
-                    print ('%s: Skipping file from package named %s due to ' +
-                        'an invalid filename') % (__name__, path)
+                    print((('%s: Skipping file from package named %s due to ' +
+                        'an invalid filename') % (__name__, path)))
         package_zip.close()
 
 
@@ -3398,7 +3396,7 @@ class PackageManager():
         try:
             message_info = json.load(messages_fp)
         except (ValueError):
-            print '%s: Error parsing messages.json for %s' % (__name__, package)
+            print(('%s: Error parsing messages.json for %s' % (__name__, package)))
             return
         messages_fp.close()
 
@@ -3409,7 +3407,7 @@ class PackageManager():
             message = '\n\n%s:\n%s\n\n  ' % (package,
                         ('-' * len(package)))
             with open(install_messages, 'r') as f:
-                message += unicode(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
+                message += str(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
             output += message + '\n'
 
         elif is_upgrade and old_version:
@@ -3428,7 +3426,7 @@ class PackageManager():
                     message_info.get(version))
                 message = '\n  '
                 with open(upgrade_messages, 'r') as f:
-                    message += unicode(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
+                    message += str(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
                 output += message + '\n'
 
         if not output:
@@ -3504,7 +3502,7 @@ class PackageManager():
         try:
             if os.path.exists(package_path):
                 os.remove(package_path)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as exception:
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the package file for %s. %s') % (__name__,
                 package_name, unicode_from_os(exception)))
@@ -3513,7 +3511,7 @@ class PackageManager():
         try:
             if os.path.exists(installed_package_path):
                 os.remove(installed_package_path)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as exception:
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the installed package file for %s. %s') % (__name__,
                 package_name, unicode_from_os(exception)))
@@ -3522,7 +3520,7 @@ class PackageManager():
         try:
             if os.path.exists(pristine_package_path):
                 os.remove(pristine_package_path)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as exception:
             sublime.error_message(('%s: An error occurred while trying to ' +
                 'remove the pristine package file for %s. %s') % (__name__,
                 package_name, unicode_from_os(exception)))
@@ -3578,7 +3576,7 @@ class PackageManager():
             self.get_metadata('Package Control').get('version')
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
-        url = self.settings.get('submit_url') + '?' + urllib.urlencode(params)
+        url = self.settings.get('submit_url') + '?' + urllib.parse.urlencode(params)
 
         result = self.download_url(url, 'Error submitting usage information.')
         if result == False:
@@ -3589,8 +3587,8 @@ class PackageManager():
             if result['result'] != 'success':
                 raise ValueError()
         except (ValueError):
-            print '%s: Error submitting usage information for %s' % (__name__,
-                params['package'])
+            print(('%s: Error submitting usage information for %s' % (__name__,
+                params['package'])))
 
 
 class PackageCreator():
@@ -3769,14 +3767,14 @@ class PackageRenamer():
                 os.rename(package_dir, new_package_dir)
                 installed_pkgs.append(new_package_name)
 
-                print '%s: Renamed %s to %s' % (__name__, package_name,
-                    new_package_name)
+                print(('%s: Renamed %s to %s' % (__name__, package_name,
+                    new_package_name)))
 
             else:
                 installer.manager.remove_package(package_name)
-                print ('%s: Removed %s since package with new name (%s) ' +
+                print((('%s: Removed %s since package with new name (%s) ' +
                     'already exists') % (__name__, package_name,
-                    new_package_name)
+                    new_package_name)))
 
             try:
                 installed_pkgs.remove(package_name)
@@ -3846,7 +3844,7 @@ class PackageInstaller():
         installed_packages = self.manager.list_packages()
 
         package_list = []
-        for package in sorted(packages.iterkeys(), key=lambda s: s.lower()):
+        for package in sorted(iter(packages.keys()), key=lambda s: s.lower()):
             if ignore_packages and package in ignore_packages:
                 continue
             package_entry = [package]
@@ -4656,12 +4654,12 @@ class AutomaticUpgrader(threading.Thread):
         if not self.missing_packages or not self.should_install_missing:
             return
 
-        print '%s: Installing %s missing packages' % \
-            (__name__, len(self.missing_packages))
+        print(('%s: Installing %s missing packages' % \
+            (__name__, len(self.missing_packages))))
         for package in self.missing_packages:
             if self.installer.manager.install_package(package):
-                print '%s: Installed missing package %s' % \
-                    (__name__, package)
+                print(('%s: Installed missing package %s' % \
+                    (__name__, package)))
 
     def print_skip(self):
         """
@@ -4673,9 +4671,9 @@ class AutomaticUpgrader(threading.Thread):
         last_run = datetime.datetime.fromtimestamp(self.last_run)
         next_run = datetime.datetime.fromtimestamp(self.next_run)
         date_format = '%Y-%m-%d %H:%M:%S'
-        print ('%s: Skipping automatic upgrade, last run at ' +
+        print((('%s: Skipping automatic upgrade, last run at ' +
             '%s, next run at %s or after') % (__name__,
-            last_run.strftime(date_format), next_run.strftime(date_format))
+            last_run.strftime(date_format), next_run.strftime(date_format))))
 
     def upgrade_packages(self):
         """
@@ -4706,17 +4704,17 @@ class AutomaticUpgrader(threading.Thread):
             break
 
         if not packages:
-            print '%s: No updated packages' % __name__
+            print(('%s: No updated packages' % __name__))
             return
 
-        print '%s: Installing %s upgrades' % (__name__, len(packages))
+        print(('%s: Installing %s upgrades' % (__name__, len(packages))))
         for package in packages:
             self.installer.manager.install_package(package[0])
             version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2])
             if version == package[2] and version.find('pull with') != -1:
                 vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
                 version = 'latest %s commit' % vcs
-            print '%s: Upgraded %s to %s' % (__name__, package[0], version)
+            print(('%s: Upgraded %s to %s' % (__name__, package[0], version)))
 
 
 class PackageCleanup(threading.Thread, PackageRenamer):
@@ -4742,14 +4740,14 @@ class PackageCleanup(threading.Thread, PackageRenamer):
             if os.path.exists(cleanup_file):
                 try:
                     shutil.rmtree(package_dir)
-                    print '%s: Removed old directory for package %s' % \
-                        (__name__, package_name)
-                except (OSError) as (e):
+                    print(('%s: Removed old directory for package %s' % \
+                        (__name__, package_name)))
+                except OSError as e:
                     if not os.path.exists(cleanup_file):
                         open(cleanup_file, 'w').close()
-                    print ('%s: Unable to remove old directory for package ' +
+                    print((('%s: Unable to remove old directory for package ' +
                         '%s - deferring until next start: %s') % (__name__,
-                        package_name, unicode_from_os(e))
+                        package_name, unicode_from_os(e))))
 
             # Finish reinstalling packages that could not be upgraded due to
             # in-use files
