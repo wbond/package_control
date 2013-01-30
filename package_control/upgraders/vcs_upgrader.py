@@ -56,7 +56,7 @@ class VcsUpgrader():
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             startupinfo=startupinfo, cwd=dir)
 
-        return proc.stdout.read().replace('\r\n', '\n').rstrip(' \n\r')
+        return proc.stdout.read().decode('utf-8').replace('\r\n', '\n').rstrip(' \n\r')
 
     def find_binary(self, name):
         """

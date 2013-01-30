@@ -1,17 +1,29 @@
+try:
+    # Python 3
+    from http.client import HTTPConnection
+    from urllib.error import URLError
+except (ImportError):
+    # Python 2
+    from httplib import HTTPConnection
+    from urllib2 import URLError
+
 import os
 import re
-import httplib
 import socket
-import urllib2
 
 if os.name == 'nt':
-    from ntlm import ntlm
+    try:
+        # Python 3
+        from ...lib.windows.ntlm import ntlm
+    except (ImportError):
+        # Python 2
+        from ntlm import ntlm
 
 from ..console_write import console_write
 from .debuggable_http_response import DebuggableHTTPResponse
 
 
-class DebuggableHTTPConnection(httplib.HTTPConnection):
+class DebuggableHTTPConnection(HTTPConnection):
     """
     A custom HTTPConnection that formats debugging info for Sublime Text
     """
@@ -28,13 +40,13 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
         self._tunnel_port = None
         self._tunnel_headers = {}
 
-        httplib.HTTPConnection.__init__(self, host, port, strict, timeout)
+        HTTPConnection.__init__(self, host, port, strict, timeout)
 
     def connect(self):
         if self.debuglevel == -1:
-            console_write(u'Urllib2 %s Debug General' % self._debug_protocol, True)
+            console_write(u'Urllib %s Debug General' % self._debug_protocol, True)
             console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
-        httplib.HTTPConnection.connect(self)
+        HTTPConnection.connect(self)
 
     def send(self, string):
         # We have to use a positive debuglevel to get it passed to the
@@ -45,10 +57,10 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
         if self.debuglevel == 5:
             reset_debug = 5
             self.debuglevel = -1
-        httplib.HTTPConnection.send(self, string)
+        HTTPConnection.send(self, string)
         if reset_debug or self.debuglevel == -1:
             if len(string.strip()) > 0:
-                console_write(u'Urllib2 %s Debug Write' % self._debug_protocol, True)
+                console_write(u'Urllib %s Debug Write' % self._debug_protocol, True)
                 for line in string.strip().splitlines():
                     console_write(u'  ' + line)
             if reset_debug:
@@ -60,7 +72,7 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
         # Handles the challenge request response cycle before the real request
         proxy_auth = headers.get('Proxy-Authorization')
         if os.name == 'nt' and proxy_auth and proxy_auth.lstrip()[0:4] == 'NTLM':
-            # The default urllib2.AbstractHTTPHandler automatically sets the
+            # The default AbstractHTTPHandler automatically sets the
             # Connection header to close because of urllib.addinfourl(), but in
             # this case we are going to do some back and forth first for the NTLM
             # proxy auth
@@ -75,7 +87,7 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
 
             proxy_authenticate = response.getheader('proxy-authenticate', None)
             if not proxy_authenticate:
-                raise urllib2.URLError('Invalid NTLM proxy authentication response')
+                raise URLError('Invalid NTLM proxy authentication response')
             ntlm_challenge = re.sub('^\s*NTLM\s+', '', proxy_authenticate)
 
             if self.host.find(':') != -1:
@@ -94,4 +106,4 @@ class DebuggableHTTPConnection(httplib.HTTPConnection):
             original_headers['Proxy-Authorization'] = new_proxy_authorization
             response.close()
 
-        httplib.HTTPConnection.request(self, method, url, body, original_headers)
+        HTTPConnection.request(self, method, url, body, original_headers)

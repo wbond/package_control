@@ -44,7 +44,7 @@ class ChannelProvider(PlatformComparator):
             return
 
         try:
-            channel_info = json.loads(channel_json)
+            channel_info = json.loads(channel_json.decode('utf-8'))
         except (ValueError):
             console_write(u'Error parsing JSON from channel %s.' % self.channel, True)
             channel_info = False
@@ -79,7 +79,7 @@ class ChannelProvider(PlatformComparator):
         """
         Provides a secure way for distribution of SSL CA certificates
 
-        Unfortunately Python does not include a bundle of CA certs with urllib2
+        Unfortunately Python does not include a bundle of CA certs with urllib
         to perform SSL certificate validation. To circumvent this issue,
         Package Control acts as a distributor of the CA certs for all HTTPS
         URLs of package downloads.
@@ -144,7 +144,7 @@ class ChannelProvider(PlatformComparator):
         for package in self.channel_info['packages'][repo]:
             copy = package.copy()
 
-            platforms = copy['platforms'].keys()
+            platforms = list(copy['platforms'].keys())
             best_platform = self.get_best_platform(platforms)
 
             if not best_platform:

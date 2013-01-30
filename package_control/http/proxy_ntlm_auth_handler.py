@@ -1,12 +1,23 @@
+try:
+    # Python 3
+    from urllib.request import BaseHandler, HTTPPasswordMgr
+except (ImportError):
+    # Python 2
+    from urllib2 import BaseHandler, HTTPPasswordMgr
+
 import os
-import urllib2
 
 if os.name == 'nt':
-    from ntlm import ntlm
-
+    try:
+        # Python 3
+        from ...lib.windows.ntlm import ntlm
+    except (ImportError):
+        # Python 2
+        from ntlm import ntlm
+        
 
 if os.name == 'nt':
-    class ProxyNtlmAuthHandler(urllib2.BaseHandler):
+    class ProxyNtlmAuthHandler(BaseHandler):
         """
         Provides NTLM authentication for proxy servers.
         """
@@ -48,6 +59,6 @@ if os.name == 'nt':
 else:
 
     # Let the user know if this is used on an unsupported platform
-    class ProxyNtlmAuthHandler(urllib2.BaseHandler):
+    class ProxyNtlmAuthHandler(BaseHandler):
         def __init__(self, password_manager=None):
             raise Exception("ProxyNtlmAuthHandler is only implemented on Windows")

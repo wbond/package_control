@@ -1,14 +1,20 @@
-import httplib
-import urllib2
+try:
+    # Python 3
+    from http.client import HTTPException
+    from urllib.error import URLError
+except (ImportError):
+    # Python 2
+    from httplib import HTTPException
+    from urllib2 import URLError
 
 
-class RateLimitException(httplib.HTTPException, urllib2.URLError):
+class RateLimitException(HTTPException, URLError):
     """
     An exception for when the rate limit of an API has been exceeded.
     """
 
     def __init__(self, host, limit):
-        httplib.HTTPException.__init__(self)
+        HTTPException.__init__(self)
         self.host = host
         self.limit = limit
 

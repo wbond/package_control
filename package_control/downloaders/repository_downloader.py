@@ -43,7 +43,7 @@ class RepositoryDownloader(threading.Thread):
             return
 
         mapped_packages = {}
-        for package in packages.keys():
+        for package in list(packages.keys()):
             mapped_package = self.name_map.get(package, package)
             mapped_packages[mapped_package] = packages[package]
             mapped_packages[mapped_package]['name'] = mapped_package

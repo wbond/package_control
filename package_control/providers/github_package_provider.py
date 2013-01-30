@@ -1,5 +1,11 @@
+try:
+    # Python 3
+    from urllib.parse import urlencode, quote
+except (ImportError):
+    # Python 2
+    from urllib import urlencode, quote
+
 import re
-import urllib
 import datetime
 
 from .non_caching_provider import NonCachingProvider
@@ -52,7 +58,7 @@ class GitHubPackageProvider(NonCachingProvider):
         # also have to list the commits to get the timestamp of the last
         # commit since we use that to generate a version number
         commit_api_url = api_url + '/commits?' + \
-            urllib.urlencode({'sha': branch, 'per_page': 1})
+            urlencode({'sha': branch, 'per_page': 1})
 
         commit_info = self.fetch_json(commit_api_url)
         if commit_info == False:
@@ -63,7 +69,7 @@ class GitHubPackageProvider(NonCachingProvider):
         # HTTP redirect headers
         download_url = 'https://nodeload.github.com/' + \
             repo_info['owner']['login'] + '/' + \
-            repo_info['name'] + '/zip/' + urllib.quote(branch)
+            repo_info['name'] + '/zip/' + quote(branch)
 
         commit_date = commit_info[0]['commit']['committer']['date']
         timestamp = datetime.datetime.strptime(commit_date[0:19],

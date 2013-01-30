@@ -1,7 +1,17 @@
-import httplib
-import urllib2
+try:
+    # Python 3
+    from http.client import HTTPException
+    from urllib.parse import urlparse
+    from urllib.request import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, install_opener, build_opener, Request, urlopen
+    from urllib.error import HTTPError, URLError
+except (ImportError):
+    # Python 2
+    from httplib import HTTPException
+    from urlparse import urlparse
+    from urllib2 import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, install_opener, build_opener, Request, urlopen
+    from urllib2 import HTTPError, URLError
+
 import re
-import urlparse
 import os
 import sys
 
@@ -16,7 +26,7 @@ from ..http.proxy_ntlm_auth_handler import ProxyNtlmAuthHandler
 
 class UrlLib2Downloader(Downloader):
     """
-    A downloader that uses the Python urllib2 module
+    A downloader that uses the Python urllib module
 
     :param settings:
         A dict of the various Package Control settings. The Sublime Text
@@ -60,11 +70,11 @@ class UrlLib2Downloader(Downloader):
                 proxies['http'] = http_proxy
             if https_proxy:
                 proxies['https'] = https_proxy
-            proxy_handler = urllib2.ProxyHandler(proxies)
+            proxy_handler = ProxyHandler(proxies)
         else:
-            proxy_handler = urllib2.ProxyHandler()
+            proxy_handler = ProxyHandler()
 
-        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_manager = HTTPPasswordMgrWithDefaultRealm()
         proxy_username = self.settings.get('proxy_username')
         proxy_password = self.settings.get('proxy_password')
         if proxy_username and proxy_password:
@@ -80,14 +90,14 @@ class UrlLib2Downloader(Downloader):
             ntlm_auth_handler = ProxyNtlmAuthHandler(password_manager)
             handlers.append(ntlm_auth_handler)
 
-        basic_auth_handler = urllib2.ProxyBasicAuthHandler(password_manager)
-        digest_auth_handler = urllib2.ProxyDigestAuthHandler(password_manager)
+        basic_auth_handler = ProxyBasicAuthHandler(password_manager)
+        digest_auth_handler = ProxyDigestAuthHandler(password_manager)
         handlers.extend([digest_auth_handler, basic_auth_handler])
 
         debug = self.settings.get('debug')
 
         if debug:
-            console_write(u"Urllib2 Debug Proxy", True)
+            console_write(u"Urllib Debug Proxy", True)
             console_write(u"  http_proxy: %s" % http_proxy)
             console_write(u"  https_proxy: %s" % https_proxy)
             console_write(u"  proxy_username: %s" % proxy_username)
@@ -106,12 +116,12 @@ class UrlLib2Downloader(Downloader):
         else:
             handlers.append(DebuggableHTTPHandler(debug=debug,
                 passwd=password_manager))
-        urllib2.install_opener(urllib2.build_opener(*handlers))
+        install_opener(build_opener(*handlers))
 
         while tries > 0:
             tries -= 1
             try:
-                request = urllib2.Request(url, headers={
+                request = Request(url, headers={
                     "User-Agent": self.settings.get('user_agent'),
                     # Don't be alarmed if the response from the server does not
                     # select one of these since the server runs a relatively new
@@ -119,18 +129,18 @@ class UrlLib2Downloader(Downloader):
                     # layer, and Apache will use that instead of HTTP-level
                     # encoding.
                     "Accept-Encoding": "gzip,deflate"})
-                http_file = urllib2.urlopen(request, timeout=timeout)
+                http_file = urlopen(request, timeout=timeout)
                 self.handle_rate_limit(http_file, url)
                 result = http_file.read()
                 encoding = http_file.headers.get('Content-Encoding')
                 return self.decode_response(encoding, result)
 
-            except (httplib.HTTPException) as (e):
+            except (HTTPException) as e:
                 error_string = u'%s HTTP exception %s (%s) downloading %s.' % (
                     error_message, e.__class__.__name__, unicode_from_os(e), url)
                 console_write(error_string, True)
 
-            except (urllib2.HTTPError) as (e):
+            except (HTTPError) as e:
                 # Make sure we obey Github's rate limiting headers
                 self.handle_rate_limit(e, url)
 
@@ -144,7 +154,7 @@ class UrlLib2Downloader(Downloader):
                     error_message, unicode_from_os(e.code), url)
                 console_write(error_string, True)
 
-            except (urllib2.URLError) as (e):
+            except (URLError) as e:
 
                 # Bitbucket and Github timeout a decent amount
                 if unicode_from_os(e.reason) == 'The read operation timed out' \
@@ -177,6 +187,6 @@ class UrlLib2Downloader(Downloader):
 
         limit_remaining = response.headers.get('X-RateLimit-Remaining', 1)
         if str(limit_remaining) == '0':
-            hostname = urlparse.urlparse(url).hostname
+            hostname = urlparse(url).hostname
             limit = response.headers.get('X-RateLimit-Limit', 1)
             raise RateLimitException(hostname, limit)

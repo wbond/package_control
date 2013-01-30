@@ -10,6 +10,7 @@ from .clear_directory import clear_directory
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
 from .package_renamer import PackageRenamer
+from .open_compat import open_compat
 
 
 class PackageCleanup(threading.Thread, PackageRenamer):
@@ -25,7 +26,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
 
     def run(self):
         found_pkgs = []
-        installed_pkgs = self.installed_packages
+        installed_pkgs = list(self.installed_packages)
         for package_name in os.listdir(sublime.packages_path()):
             package_dir = os.path.join(sublime.packages_path(), package_name)
             metadata_path = os.path.join(package_dir, 'package-metadata.json')
@@ -37,9 +38,9 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                     shutil.rmtree(package_dir)
                     console_write(u'Removed old directory for package %s' % package_name, True)
 
-                except (OSError) as (e):
+                except (OSError) as e:
                     if not os.path.exists(cleanup_file):
-                        open(cleanup_file, 'w').close()
+                        open_compat(cleanup_file, 'w').close()
 
                     error_string = (u'Unable to remove old directory for package ' +
                         u'%s - deferring until next start: %s') % (
@@ -52,7 +53,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
             if os.path.exists(reinstall):
                 if not clear_directory(package_dir, [metadata_path]):
                     if not os.path.exists(reinstall):
-                        open(reinstall, 'w').close()
+                        open_compat(reinstall, 'w').close()
                     # Assigning this here prevents the callback from referencing the value
                     # of the "package_name" variable when it is executed
                     restart_message = (u'An error occurred while trying to ' +

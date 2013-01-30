@@ -1,7 +1,13 @@
+try:
+    # Python 3
+    from urllib.parse import urlparse
+except (ImportError):
+    # Python 2
+    from urlparse import urlparse
+
 import tempfile
 import re
 import os
-import urlparse
 
 from ..console_write import console_write
 from ..unicode import unicode_from_os
@@ -9,6 +15,7 @@ from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
 from .non_clean_exit_error import NonCleanExitError
 from ..http.rate_limit_exception import RateLimitException
+from ..open_compat import open_compat, read_compat
 
 
 class WgetDownloader(CliDownloader):
@@ -109,7 +116,7 @@ class WgetDownloader(CliDownloader):
 
                 return result
 
-            except (NonCleanExitError) as (e):
+            except (NonCleanExitError) as e:
 
                 try:
                     general, headers = self.parse_output()
@@ -124,9 +131,9 @@ class WgetDownloader(CliDownloader):
                     download_error = 'HTTP error %s %s' % (general['status'],
                         general['message'])
 
-                except (NonHttpError) as (e):
+                except (NonHttpError) as e:
 
-                    download_error = unicode(e)
+                    download_error = unicode_from_os(e)
 
                     # GitHub and BitBucket seem to time out a lot
                     if download_error.find('timed out') != -1:
@@ -141,8 +148,8 @@ class WgetDownloader(CliDownloader):
         return False
 
     def parse_output(self):
-        with open(self.tmp_file, 'r') as f:
-            output = unicode_from_os(f.read()).splitlines()
+        with open_compat(self.tmp_file, 'r') as f:
+            output = read_compat(f).splitlines()
         self.clean_tmp_file()
 
         error = None
@@ -230,8 +237,8 @@ class WgetDownloader(CliDownloader):
 
     def parse_headers(self, output=None):
         if not output:
-            with open(self.tmp_file, 'r') as f:
-                output = f.read().splitlines()
+            with open_compat(self.tmp_file, 'r') as f:
+                output = read_compat(f).splitlines()
             self.clean_tmp_file()
 
         general = {
@@ -261,5 +268,5 @@ class WgetDownloader(CliDownloader):
         limit = headers.get('x-ratelimit-limit', '1')
 
         if str(limit_remaining) == '0':
-            hostname = urlparse.urlparse(url).hostname
+            hostname = urlparse(url).hostname
             raise RateLimitException(hostname, limit)

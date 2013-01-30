@@ -1,9 +1,14 @@
-import urllib2
+try:
+    # Python 3
+    from urllib.request import HTTPHandler
+except (ImportError):
+    # Python 2
+    from urllib2 import HTTPHandler
 
 from .debuggable_http_connection import DebuggableHTTPConnection
 
 
-class DebuggableHTTPHandler(urllib2.HTTPHandler):
+class DebuggableHTTPHandler(HTTPHandler):
     """
     A custom HTTPHandler that formats debugging info for Sublime Text
     """

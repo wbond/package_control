@@ -1,3 +1,4 @@
+import sublime
 import sys
 
 
@@ -12,8 +13,9 @@ def console_write(string, prefix=False):
         If the string "Package Control: " should be prefixed to the string
     """
 
-    if isinstance(string, unicode):
-        string = string.encode('UTF-8')
+    if int(sublime.version()) < 3000:
+	    if isinstance(string, unicode):
+	        string = string.encode('UTF-8')
     if prefix:
         sys.stdout.write('Package Control: ')
     print(string)

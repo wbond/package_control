@@ -1,12 +1,19 @@
+try:
+    # Python 3
+    from urllib.parse import urlparse
+except (ImportError):
+    # Python 2
+    from urlparse import urlparse
+
 import tempfile
 import re
 import os
-import urlparse
 
 from ..console_write import console_write
 from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
 from ..http.rate_limit_exception import RateLimitException
+from ..open_compat import open_compat, read_compat
 
 
 class CurlDownloader(CliDownloader):
@@ -100,8 +107,8 @@ class CurlDownloader(CliDownloader):
             try:
                 output = self.execute(command)
 
-                with open(self.tmp_file, 'r') as f:
-                    headers = f.read()
+                with open_compat(self.tmp_file, 'r') as f:
+                    headers = read_compat(f)
                 self.clean_tmp_file()
 
                 limit = 1
@@ -116,10 +123,10 @@ class CurlDownloader(CliDownloader):
                         limit = header.lower()[18:].strip()
 
                 if debug:
-                    self.print_debug(self.stderr)
+                    self.print_debug(self.stderr.decode('utf-8'))
 
                 if str(limit_remaining) == '0':
-                    hostname = urlparse.urlparse(url).hostname
+                    hostname = urlparse(url).hostname
                     raise RateLimitException(hostname, limit)
 
                 if status != '200 OK':
@@ -129,11 +136,11 @@ class CurlDownloader(CliDownloader):
 
                 return output
 
-            except (NonCleanExitError) as (e):
+            except (NonCleanExitError) as e:
                 # Stderr is used for both the error message and the debug info
                 # so we need to process it to extra the debug info
                 if self.settings.get('debug'):
-                    e.stderr = self.print_debug(e.stderr)
+                    e.stderr = self.print_debug(e.stderr.decode('utf-8'))
 
                 self.clean_tmp_file()
 

@@ -53,7 +53,7 @@ class PackageInstaller():
         installed_packages = self.manager.list_packages()
 
         package_list = []
-        for package in sorted(packages.iterkeys(), key=lambda s: s.lower()):
+        for package in sorted(iter(packages.keys()), key=lambda s: s.lower()):
             if ignore_packages and package in ignore_packages:
                 continue
             package_entry = [package]

@@ -1,10 +1,17 @@
+try:
+    # Python 3
+    from urllib.parse import urlparse, urlencode
+    import urllib.request as urllib_compat
+except (ImportError):
+    # Python 2
+    from urlparse import urlparse
+    from urllib import urlencode
+    import urllib2 as urllib_compat
+
 import sublime
 import sys
 import os
 import re
-import urllib2
-import urllib
-import urlparse
 import socket
 import json
 import time
@@ -13,10 +20,16 @@ import shutil
 from fnmatch import fnmatch
 import datetime
 
-import semver
+try:
+    # Python 3
+    from ..lib.all import semver
+except (ValueError):
+    # Python 2
+    import semver
 
 from .show_error import show_error
 from .console_write import console_write
+from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
@@ -131,7 +144,9 @@ class PackageManager():
         try:
             return semver.compare(semver_compat(version1), semver_compat(version2))
         except (ValueError):
-            return cmp(cmp_compat(version1), cmp_compat(version2))
+            cv1 = cmp_compat(version1)
+            cv2 = cmp_compat(version2)
+            return (cv1 > cv2) - (cv1 < cv2)
 
     def download_url(self, url, error_message):
         """
@@ -147,7 +162,7 @@ class PackageManager():
             The string contents of the URL, or False on error
         """
 
-        has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
+        has_ssl = 'ssl' in sys.modules and hasattr(urllib_compat, 'HTTPSHandler')
         is_ssl = re.search('^https://', url) != None
         downloader = None
 
@@ -166,7 +181,7 @@ class PackageManager():
             return False
 
         url = url.replace(' ', '%20')
-        hostname = urlparse.urlparse(url).hostname.lower()
+        hostname = urlparse(url).hostname.lower()
         timeout = self.settings.get('timeout', 3)
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
@@ -174,7 +189,7 @@ class PackageManager():
         if self.settings.get('debug'):
             try:
                 ip = socket.gethostbyname(hostname)
-            except (socket.gaierror) as (e):
+            except (socket.gaierror) as e:
                 ip = unicode_from_os(e)
 
             console_write(u"Download Debug", True)
@@ -189,7 +204,7 @@ class PackageManager():
 
         try:
             return downloader.download(url, error_message, timeout, 3)
-        except (RateLimitException) as (e):
+        except (RateLimitException) as e:
 
             rate_limited_domains.append(hostname)
             set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
@@ -215,9 +230,9 @@ class PackageManager():
         metadata_filename = os.path.join(self.get_package_dir(package),
             'package-metadata.json')
         if os.path.exists(metadata_filename):
-            with open(metadata_filename) as f:
+            with open_compat(metadata_filename) as f:
                 try:
-                    return json.load(f)
+                    return json.loads(read_compat(f))
                 except (ValueError):
                     return {}
         return {}
@@ -372,7 +387,7 @@ class PackageManager():
 
         # Grabs every repo grouped by domain and delays the start
         # of each download from that domain by a fixed amount
-        for domain_downloaders in grouped_downloaders.values():
+        for domain_downloaders in list(grouped_downloaders.values()):
             for i in range(len(domain_downloaders)):
                 downloader = domain_downloaders[i]
                 downloaders.append(downloader)
@@ -447,10 +462,15 @@ class PackageManager():
     def list_default_packages(self):
         """ :return: A list of all default package names"""
 
-        files = os.listdir(os.path.join(os.path.dirname(
-            sublime.packages_path()), 'Pristine Packages'))
-        files = list(set(files) - set(os.listdir(
-            sublime.installed_packages_path())))
+        if int(sublime.version()) > 3000:
+            bundled_packages_path = os.path.join(os.path.dirname(sublime.executable_path()),
+                'Packages')
+            files = os.listdir(bundled_packages_path)
+        else:
+            files = os.listdir(os.path.join(os.path.dirname(
+                sublime.packages_path()), 'Pristine Packages'))
+            files = list(set(files) - set(os.listdir(
+                sublime.installed_packages_path())))
         packages = [file.replace('.sublime-package', '') for file in files]
         packages = sorted(packages, key=lambda s: s.lower())
         return packages
@@ -506,9 +526,9 @@ class PackageManager():
         try:
             package_file = zipfile.ZipFile(package_path, "w",
                 compression=zipfile.ZIP_DEFLATED)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as e:
             show_error(u'An error occurred creating the package file %s in %s.\n\n%s' % (
-                package_filename, package_destination, unicode_from_os(exception)))
+                package_filename, package_destination, unicode_from_os(e)))
             return False
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
@@ -569,7 +589,7 @@ class PackageManager():
             console_write(u'The package "%s" is not available on this platform.' % package_name, True)
             return False
 
-        if package_name not in packages.keys():
+        if package_name not in list(packages.keys()):
             show_error(u'The package specified, %s, is not available' % package_name)
             return False
 
@@ -611,7 +631,7 @@ class PackageManager():
         package_bytes = self.download_url(url, 'Error downloading package.')
         if package_bytes == False:
             return False
-        with open(package_path, "wb") as package_file:
+        with open_compat(package_path, "wb") as package_file:
             package_file.write(package_bytes)
 
         if not os.path.exists(package_dir):
@@ -627,9 +647,9 @@ class PackageManager():
                     os.makedirs(backup_dir)
                 package_backup_dir = os.path.join(backup_dir, package_name)
                 shutil.copytree(package_dir, package_backup_dir)
-            except (OSError, IOError) as (exception):
+            except (OSError, IOError) as e:
                 show_error(u'An error occurred while trying to backup the package directory for %s.\n\n%s' % (
-                    package_name, unicode_from_os(exception)))
+                    package_name, unicode_from_os(e)))
                 shutil.rmtree(package_backup_dir)
                 return False
 
@@ -663,7 +683,9 @@ class PackageManager():
         for path in package_zip.namelist():
             dest = path
             try:
-                if not isinstance(dest, unicode):
+                # Python 3 seems to return the paths as str instead of
+                # bytes, so we only need this for Python 2
+                if int(sublime.version()) < 3000 and not isinstance(dest, unicode):
                     dest = unicode(dest, 'utf-8', 'strict')
             except (UnicodeDecodeError):
                 dest = unicode(dest, 'cp1252', 'replace')
@@ -704,8 +726,8 @@ class PackageManager():
                 add_extracted_dirs(dest_dir)
                 extracted_paths.append(dest)
                 try:
-                    open(dest, 'wb').write(package_zip.read(path))
-                except (IOError) as (e):
+                    open_compat(dest, 'wb').write(package_zip.read(path))
+                except (IOError) as e:
                     message = unicode_from_os(e)
                     if re.search('[Ee]rrno 13', message):
                         overwrite_failed = True
@@ -719,7 +741,7 @@ class PackageManager():
         # If upgrading failed, queue the package to upgrade upon next start
         if overwrite_failed:
             reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
-            open(reinstall_file, 'w').close()
+            open_compat(reinstall_file, 'w').close()
 
             # Don't delete the metadata file, that way we have it
             # when the reinstall happens, and the appropriate
@@ -736,7 +758,7 @@ class PackageManager():
 
         self.print_messages(package_name, package_dir, is_upgrade, old_version)
 
-        with open(package_metadata_file, 'w') as f:
+        with open_compat(package_metadata_file, 'w') as f:
             metadata = {
                 "version": packages[package_name]['downloads'][0]['version'],
                 "url": packages[package_name]['url'],
@@ -811,9 +833,9 @@ class PackageManager():
         if not os.path.exists(messages_file):
             return
 
-        messages_fp = open(messages_file, 'r')
+        messages_fp = open_compat(messages_file, 'r')
         try:
-            message_info = json.load(messages_fp)
+            message_info = json.loads(read_compat(messages_fp))
         except (ValueError):
             console_write(u'Error parsing messages.json for %s' % package, True)
             return
@@ -825,8 +847,8 @@ class PackageManager():
                 message_info.get('install'))
             message = '\n\n%s:\n%s\n\n  ' % (package,
                         ('-' * len(package)))
-            with open(install_messages, 'r') as f:
-                message += unicode(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
+            with open_compat(install_messages, 'r') as f:
+                message += read_compat(f).replace('\n', '\n  ')
             output += message + '\n'
 
         elif is_upgrade and old_version:
@@ -844,8 +866,8 @@ class PackageManager():
                 upgrade_messages = os.path.join(package_dir,
                     message_info.get(version))
                 message = '\n  '
-                with open(upgrade_messages, 'r') as f:
-                    message += unicode(f.read(), 'utf-8', errors='replace').replace('\n', '\n  ')
+                with open_compat(upgrade_messages, 'r') as f:
+                    message += read_compat(f).replace('\n', '\n  ')
                 output += message + '\n'
 
         if not output:
@@ -920,25 +942,25 @@ class PackageManager():
         try:
             if os.path.exists(package_path):
                 os.remove(package_path)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as e:
             show_error(u'An error occurred while trying to remove the package file for %s.\n\n%s' % (
-                package_name, unicode_from_os(exception)))
+                package_name, unicode_from_os(e)))
             return False
 
         try:
             if os.path.exists(installed_package_path):
                 os.remove(installed_package_path)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as e:
             show_error(u'An error occurred while trying to remove the installed package file for %s.\n\n%s' % (
-                package_name, unicode_from_os(exception)))
+                package_name, unicode_from_os(e)))
             return False
 
         try:
             if os.path.exists(pristine_package_path):
                 os.remove(pristine_package_path)
-        except (OSError, IOError) as (exception):
+        except (OSError, IOError) as e:
             show_error(u'An error occurred while trying to remove the pristine package file for %s.\n\n%s' % (
-                package_name, unicode_from_os(exception)))
+                package_name, unicode_from_os(e)))
             return False
 
         # We don't delete the actual package dir immediately due to a bug
@@ -947,7 +969,7 @@ class PackageManager():
         if not clear_directory(package_dir):
             # If there is an error deleting now, we will mark it for
             # cleanup the next time Sublime Text starts
-            open(os.path.join(package_dir, 'package-control.cleanup'),
+            open_compat(os.path.join(package_dir, 'package-control.cleanup'),
                 'w').close()
             can_delete_dir = False
 
@@ -991,14 +1013,14 @@ class PackageManager():
             self.get_metadata('Package Control').get('version')
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
-        url = self.settings.get('submit_url') + '?' + urllib.urlencode(params)
+        url = self.settings.get('submit_url') + '?' + urlencode(params)
 
         result = self.download_url(url, 'Error submitting usage information.')
         if result == False:
             return
 
         try:
-            result = json.loads(result)
+            result = json.loads(result.decode('utf-8'))
             if result['result'] != 'success':
                 raise ValueError()
         except (ValueError):

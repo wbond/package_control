@@ -20,7 +20,7 @@ class NonCachingProvider():
         if repository_json == False:
             return False
         try:
-            return json.loads(repository_json)
+            return json.loads(repository_json.decode('utf-8'))
         except (ValueError):
             console_write(u'Error parsing JSON from repository %s.' % url, True)
         return False

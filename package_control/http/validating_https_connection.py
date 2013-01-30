@@ -1,5 +1,12 @@
-import httplib
-import urllib2
+try:
+    # Python 3
+    from http.client import HTTPS_PORT
+    from urllib.request import parse_keqv_list, parse_http_list
+except (ImportError):
+    # Python 2
+    from httplib import HTTPS_PORT
+    from urllib2 import parse_keqv_list, parse_http_list
+
 import re
 import socket
 import base64
@@ -7,7 +14,12 @@ import hashlib
 import os
 
 if os.name == 'nt':
-    from ntlm import ntlm
+    try:
+        # Python 3
+        from ...lib.windows.ntlm import ntlm
+    except (ImportError):
+        # Python 2
+        from ntlm import ntlm
 
 from ..console_write import console_write
 from .debuggable_https_response import DebuggableHTTPSResponse
@@ -26,7 +38,7 @@ try:
         allows proxy authentication for HTTPS connections.
         """
 
-        default_port = httplib.HTTPS_PORT
+        default_port = HTTPS_PORT
 
         response_class = DebuggableHTTPSResponse
         _debug_protocol = 'HTTPS'
@@ -99,7 +111,7 @@ try:
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
             request = "CONNECT %s:%d HTTP/1.1\r\n" % (self.host, self.port)
-            for header, value in self._tunnel_headers.iteritems():
+            for header, value in self._tunnel_headers.items():
                 request += "%s: %s\r\n" % (header, value)
             self.send(request + "\r\n")
 
@@ -111,7 +123,7 @@ try:
             headers = [status_line]
 
             if self.debuglevel in [-1, 5]:
-                console_write(u'Urllib2 %s Debug Read' % self._debug_protocol, True)
+                console_write(u'Urllib %s Debug Read' % self._debug_protocol, True)
                 console_write(u"  %s" % status_line)
 
             content_length = 0
@@ -135,7 +147,7 @@ try:
                 if self.debuglevel in [-1, 5]:
                     console_write(u"  %s" % line.rstrip())
 
-            # Handle proxy auth for SSL connections since regular urllib2 punts on this
+            # Handle proxy auth for SSL connections since regular urllib punts on this
             if code == 407 and self.passwd and ('Proxy-Authorization' not in self._tunnel_headers or ntlm_follow_up):
                 if content_length:
                     response._safe_read(content_length)
@@ -220,7 +232,7 @@ try:
                 string of fields for the Proxy-Authorization: Digest header
             """
 
-            fields = urllib2.parse_keqv_list(urllib2.parse_http_list(fields))
+            fields = parse_keqv_list(parse_http_list(fields))
 
             realm = fields.get('realm')
             nonce = fields.get('nonce')
@@ -254,7 +266,7 @@ try:
                 response = hash(u"%s:%s:%s" % (ha1, nonce, ha2))
             elif qop == 'auth':
                 nc = '00000001'
-                cnonce = hash(urllib2.randombytes(8))[:8]
+                cnonce = hash(os.urandom(8))[:8]
                 response = hash(u"%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
             else:
                 return None
@@ -283,7 +295,7 @@ try:
             """
 
             if self.debuglevel == -1:
-                console_write(u"Urllib2 HTTPS Debug General", True)
+                console_write(u"Urllib HTTPS Debug General", True)
                 console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
 
             self.sock = socket.create_connection((self.host, self.port), self.timeout)
@@ -291,7 +303,7 @@ try:
                 self._tunnel()
 
             if self.debuglevel == -1:
-                console_write(u"Urllib2 HTTPS Debug General", True)
+                console_write(u"Urllib HTTPS Debug General", True)
                 console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
                 console_write(u"  CA certs file at %s" % (self.ca_certs))
 

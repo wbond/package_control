@@ -1,4 +1,13 @@
+import sublime
 import sys
+
+
+st_version = 2
+# With the way ST3 works, the sublime module is not "available" at startup
+# which results in an empty version number
+if sublime.version() == '' or int(sublime.version()) > 3000:
+    st_version = 3
+    from imp import reload
 
 
 # Python allows reloading modules on the fly, which allows us to do live upgrades.
@@ -13,83 +22,88 @@ import sys
 
 reload_mods = []
 for mod in sys.modules:
-    if (mod[0:16] == 'package_control.' or mod == 'package_control') and sys.modules[mod] != None:
+    if mod[0:15].lower().replace(' ', '_') == 'package_control' and sys.modules[mod] != None:
         reload_mods.append(mod)
 
+mod_prefix = 'package_control'
+if st_version == 3:
+    mod_prefix = 'Package Control.' + mod_prefix
+
 mods_load_order = [
-    'package_control',
+    '',
 
-    'package_control.sys_path',
-    'package_control.cache',
-    'package_control.clear_directory',
-    'package_control.cmd',
-    'package_control.console_write',
-    'package_control.preferences_filename',
-    'package_control.show_error',
-    'package_control.unicode',
-    'package_control.thread_progress',
+    '.sys_path',
+    '.cache',
+    '.clear_directory',
+    '.cmd',
+    '.console_write',
+    '.preferences_filename',
+    '.show_error',
+    '.unicode',
+    '.thread_progress',
 
-    'package_control.http',
-    'package_control.http.invalid_certificate_exception',
-    'package_control.http.rate_limit_exception',
-    'package_control.http.proxy_ntlm_auth_handler',
-    'package_control.http.debuggable_http_response',
-    'package_control.http.debuggable_https_response',
-    'package_control.http.debuggable_http_connection',
-    'package_control.http.debuggable_http_handler',
-    'package_control.http.validating_https_connection',
-    'package_control.http.validating_https_handler',
+    '.http',
+    '.http.invalid_certificate_exception',
+    '.http.rate_limit_exception',
+    '.http.proxy_ntlm_auth_handler',
+    '.http.debuggable_http_response',
+    '.http.debuggable_https_response',
+    '.http.debuggable_http_connection',
+    '.http.debuggable_http_handler',
+    '.http.validating_https_connection',
+    '.http.validating_https_handler',
 
-    'package_control.providers',
-    'package_control.providers.bitbucket_package_provider',
-    'package_control.providers.channel_provider',
-    'package_control.providers.datetime',
-    'package_control.providers.github_package_provider',
-    'package_control.providers.github_user_provider',
-    'package_control.providers.non_caching_provider',
-    'package_control.providers.package_provider',
-    'package_control.providers.platform_comparator',
+    '.providers',
+    '.providers.bitbucket_package_provider',
+    '.providers.channel_provider',
+    '.providers.datetime',
+    '.providers.github_package_provider',
+    '.providers.github_user_provider',
+    '.providers.non_caching_provider',
+    '.providers.package_provider',
+    '.providers.platform_comparator',
 
-    'package_control.downloaders',
-    'package_control.downloaders.binary_not_found_error',
-    'package_control.downloaders.non_clean_exit_error',
-    'package_control.downloaders.non_http_error',
-    'package_control.downloaders.downloader',
-    'package_control.downloaders.urllib2_downloader',
-    'package_control.downloaders.cli_downloader',
-    'package_control.downloaders.curl_downloader',
-    'package_control.downloaders.wget_downloader',
-    'package_control.downloaders.repository_downloader',
+    '.downloaders',
+    '.downloaders.binary_not_found_error',
+    '.downloaders.non_clean_exit_error',
+    '.downloaders.non_http_error',
+    '.downloaders.downloader',
+    '.downloaders.urllib2_downloader',
+    '.downloaders.cli_downloader',
+    '.downloaders.curl_downloader',
+    '.downloaders.wget_downloader',
+    '.downloaders.repository_downloader',
 
-    'package_control.upgraders',
-    'package_control.upgraders.vcs_upgrader',
-    'package_control.upgraders.git_upgrader',
-    'package_control.upgraders.hg_upgrader',
+    '.upgraders',
+    '.upgraders.vcs_upgrader',
+    '.upgraders.git_upgrader',
+    '.upgraders.hg_upgrader',
 
-    'package_control.package_manager',
-    'package_control.package_creator',
-    'package_control.package_installer',
-    'package_control.package_renamer',
+    '.package_manager',
+    '.package_creator',
+    '.package_installer',
+    '.package_renamer',
 
-    'package_control.commands',
-    'package_control.commands.add_repository_channel_command',
-    'package_control.commands.add_repository_command',
-    'package_control.commands.create_binary_package_command',
-    'package_control.commands.create_package_command',
-    'package_control.commands.disable_package_command',
-    'package_control.commands.discover_packages_command',
-    'package_control.commands.enable_package_command',
-    'package_control.commands.existing_packages_command',
-    'package_control.commands.install_package_command',
-    'package_control.commands.list_packages_command',
-    'package_control.commands.remove_package_command',
-    'package_control.commands.upgrade_all_packages_command',
-    'package_control.commands.upgrade_package_command',
+    '.commands',
+    '.commands.add_repository_channel_command',
+    '.commands.add_repository_command',
+    '.commands.create_binary_package_command',
+    '.commands.create_package_command',
+    '.commands.disable_package_command',
+    '.commands.discover_packages_command',
+    '.commands.enable_package_command',
+    '.commands.existing_packages_command',
+    '.commands.install_package_command',
+    '.commands.list_packages_command',
+    '.commands.remove_package_command',
+    '.commands.upgrade_all_packages_command',
+    '.commands.upgrade_package_command',
 
-    'package_control.package_cleanup',
-    'package_control.automatic_upgrader'
+    '.package_cleanup',
+    '.automatic_upgrader'
 ]
 
-for mod in mods_load_order:
+for suffix in mods_load_order:
+    mod = mod_prefix + suffix
     if mod in reload_mods:
         reload(sys.modules[mod])

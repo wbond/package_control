@@ -47,7 +47,7 @@ class PackageProvider(PlatformComparator):
             return
 
         try:
-            self.repo_info = json.loads(repository_json)
+            self.repo_info = json.loads(repository_json.decode('utf-8'))
         except (ValueError):
             console_write(u'Error parsing JSON from repository %s.' % self.repo, True)
             self.repo_info = False
@@ -75,7 +75,7 @@ class PackageProvider(PlatformComparator):
 
         for package in self.repo_info['packages']:
 
-            platforms = package['platforms'].keys()
+            platforms = list(package['platforms'].keys())
             best_platform = self.get_best_platform(platforms)
 
             if not best_platform:

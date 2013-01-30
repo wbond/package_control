@@ -8,6 +8,7 @@ import time
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
+from .open_compat import open_compat, read_compat
 
 
 class AutomaticUpgrader(threading.Thread):
@@ -41,9 +42,9 @@ class AutomaticUpgrader(threading.Thread):
             'Package Control.last-run')
 
         if os.path.isfile(last_run_file):
-            with open(last_run_file) as fobj:
+            with open_compat(last_run_file) as fobj:
                 try:
-                    self.last_run = int(fobj.read())
+                    self.last_run = int(read_compat(fobj))
                 except ValueError:
                     pass
 
@@ -59,7 +60,7 @@ class AutomaticUpgrader(threading.Thread):
             set(found_packages))
 
         if self.auto_upgrade and self.next_run <= time.time():
-            with open(last_run_file, 'w') as fobj:
+            with open_compat(last_run_file, 'w') as fobj:
                 fobj.write(str(int(time.time())))
 
         threading.Thread.__init__(self)

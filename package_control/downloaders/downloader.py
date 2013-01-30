@@ -1,12 +1,18 @@
+try:
+    # Python 3
+    from io import StringIO
+except (ImportError):
+    # Python 2
+    from StringIO import StringIO
+
 import sublime
 import os
 import re
 import gzip
-import StringIO
 import zlib
 
 from ..console_write import console_write
-
+from ..open_compat import open_compat
 
 class Downloader():
     """
@@ -138,7 +144,7 @@ class Downloader():
         """
 
         if os.path.exists(path):
-            with open(path, 'rb') as f:
+            with open_compat(path, 'rb') as f:
                 return f.read()
 
     def save_cert(self, certs_dir, cert_id, contents):
@@ -159,14 +165,14 @@ class Downloader():
 
         ca_bundle_path = os.path.join(certs_dir, 'ca-bundle.crt')
         cert_path = os.path.join(certs_dir, cert_id)
-        with open(cert_path, 'wb') as f:
+        with open_compat(cert_path, 'wb') as f:
             f.write(contents)
-        with open(ca_bundle_path, 'ab') as f:
+        with open_compat(ca_bundle_path, 'ab') as f:
             f.write("\n" + contents)
 
     def decode_response(self, encoding, response):
         if encoding == 'gzip':
-            return gzip.GzipFile(fileobj=StringIO.StringIO(response)).read()
+            return gzip.GzipFile(fileobj=StringIO(response)).read()
         elif encoding == 'deflate':
             decompresser = zlib.decompressobj(-zlib.MAX_WBITS)
             return decompresser.decompress(response) + decompresser.flush()
