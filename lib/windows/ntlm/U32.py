@@ -15,25 +15,25 @@
 # License along with this library.  If not, see <http://www.gnu.org/licenses/> or <http://www.gnu.org/licenses/lgpl.txt>.
 
 
-C = 0x1000000000L
+C = 0x1000000000
 
 def norm(n):
-    return n & 0xFFFFFFFFL
+    return n & 0xFFFFFFFF
 
 
 class U32:
-    v = 0L
+    v = 0
 
     def __init__(self, value = 0):
-        self.v = C + norm(abs(long(value)))
+        self.v = C + norm(abs(int(value)))
 
     def set(self, value = 0):
-        self.v = C + norm(abs(long(value)))
+        self.v = C + norm(abs(int(value)))
 
     def __repr__(self):
         return hex(norm(self.v))
 
-    def __long__(self): return long(norm(self.v))
+    def __long__(self): return int(norm(self.v))
     def __int__(self): return int(norm(self.v))
     def __chr__(self): return chr(norm(self.v))
 
@@ -45,7 +45,7 @@ class U32:
     def __sub__(self, b):
         r = U32()
         if self.v < b.v:
-            r.v = C + norm(0x100000000L - (b.v - self.v))
+            r.v = C + norm(0x100000000 - (b.v - self.v))
         else: r.v = C + norm(self.v - b.v)
         return r
 
@@ -109,5 +109,5 @@ class U32:
         elif norm(self.v) < norm(b.v): return -1
         else: return 0
 
-    def __nonzero__(self):
+    def __bool__(self):
         return norm(self.v)
