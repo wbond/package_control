@@ -2,12 +2,12 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation, either
 # version 3 of the License, or (at your option) any later version.
- 
+
 # This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library.  If not, see <http://www.gnu.org/licenses/> or <http://www.gnu.org/licenses/lgpl.txt>.
 
@@ -109,75 +109,75 @@ def dump_NegotiateFlags(NegotiateFlags):
     if NegotiateFlags & NTLM_NegotiateUnicode:
         print "NTLM_NegotiateUnicode set"
     if NegotiateFlags & NTLM_NegotiateOEM:
-        print "NTLM_NegotiateOEM set"                   
+        print "NTLM_NegotiateOEM set"
     if NegotiateFlags & NTLM_RequestTarget:
-        print "NTLM_RequestTarget set"                  
+        print "NTLM_RequestTarget set"
     if NegotiateFlags & NTLM_Unknown9:
-        print "NTLM_Unknown9 set"                       
+        print "NTLM_Unknown9 set"
     if NegotiateFlags & NTLM_NegotiateSign:
-        print "NTLM_NegotiateSign set"                  
+        print "NTLM_NegotiateSign set"
     if NegotiateFlags & NTLM_NegotiateSeal:
-        print "NTLM_NegotiateSeal set"                  
+        print "NTLM_NegotiateSeal set"
     if NegotiateFlags & NTLM_NegotiateDatagram:
-        print "NTLM_NegotiateDatagram set"              
+        print "NTLM_NegotiateDatagram set"
     if NegotiateFlags & NTLM_NegotiateLanManagerKey:
         print "NTLM_NegotiateLanManagerKey set"
     if NegotiateFlags & NTLM_Unknown8:
-        print "NTLM_Unknown8 set"                       
+        print "NTLM_Unknown8 set"
     if NegotiateFlags & NTLM_NegotiateNTLM:
-        print "NTLM_NegotiateNTLM set"                  
+        print "NTLM_NegotiateNTLM set"
     if NegotiateFlags & NTLM_NegotiateNTOnly:
-        print "NTLM_NegotiateNTOnly set"                
+        print "NTLM_NegotiateNTOnly set"
     if NegotiateFlags & NTLM_Anonymous:
-        print "NTLM_Anonymous set"                      
+        print "NTLM_Anonymous set"
     if NegotiateFlags & NTLM_NegotiateOemDomainSupplied:
-        print "NTLM_NegotiateOemDomainSupplied set"     
+        print "NTLM_NegotiateOemDomainSupplied set"
     if NegotiateFlags & NTLM_NegotiateOemWorkstationSupplied:
         print "NTLM_NegotiateOemWorkstationSupplied set"
     if NegotiateFlags & NTLM_Unknown6:
-        print "NTLM_Unknown6 set"                       
+        print "NTLM_Unknown6 set"
     if NegotiateFlags & NTLM_NegotiateAlwaysSign:
-        print "NTLM_NegotiateAlwaysSign set"            
+        print "NTLM_NegotiateAlwaysSign set"
     if NegotiateFlags & NTLM_TargetTypeDomain:
-        print "NTLM_TargetTypeDomain set"               
+        print "NTLM_TargetTypeDomain set"
     if NegotiateFlags & NTLM_TargetTypeServer:
-        print "NTLM_TargetTypeServer set"               
+        print "NTLM_TargetTypeServer set"
     if NegotiateFlags & NTLM_TargetTypeShare:
-        print "NTLM_TargetTypeShare set"                
+        print "NTLM_TargetTypeShare set"
     if NegotiateFlags & NTLM_NegotiateExtendedSecurity:
-        print "NTLM_NegotiateExtendedSecurity set"      
+        print "NTLM_NegotiateExtendedSecurity set"
     if NegotiateFlags & NTLM_NegotiateIdentify:
-        print "NTLM_NegotiateIdentify set"              
+        print "NTLM_NegotiateIdentify set"
     if NegotiateFlags & NTLM_Unknown5:
-        print "NTLM_Unknown5 set"                       
+        print "NTLM_Unknown5 set"
     if NegotiateFlags & NTLM_RequestNonNTSessionKey:
-        print "NTLM_RequestNonNTSessionKey set"         
+        print "NTLM_RequestNonNTSessionKey set"
     if NegotiateFlags & NTLM_NegotiateTargetInfo:
-        print "NTLM_NegotiateTargetInfo set"            
+        print "NTLM_NegotiateTargetInfo set"
     if NegotiateFlags & NTLM_Unknown4:
-        print "NTLM_Unknown4 set"                       
+        print "NTLM_Unknown4 set"
     if NegotiateFlags & NTLM_NegotiateVersion:
-        print "NTLM_NegotiateVersion set"               
+        print "NTLM_NegotiateVersion set"
     if NegotiateFlags & NTLM_Unknown3:
-        print "NTLM_Unknown3 set"                       
+        print "NTLM_Unknown3 set"
     if NegotiateFlags & NTLM_Unknown2:
-        print "NTLM_Unknown2 set"                       
+        print "NTLM_Unknown2 set"
     if NegotiateFlags & NTLM_Unknown1:
-        print "NTLM_Unknown1 set"                       
+        print "NTLM_Unknown1 set"
     if NegotiateFlags & NTLM_Negotiate128:
-        print "NTLM_Negotiate128 set"                   
+        print "NTLM_Negotiate128 set"
     if NegotiateFlags & NTLM_NegotiateKeyExchange:
-        print "NTLM_NegotiateKeyExchange set"           
+        print "NTLM_NegotiateKeyExchange set"
     if NegotiateFlags & NTLM_Negotiate56:
-        print "NTLM_Negotiate56 set"                    
+        print "NTLM_Negotiate56 set"
 
 def create_NTLM_NEGOTIATE_MESSAGE(user, type1_flags=NTLM_TYPE1_FLAGS):
     BODY_LENGTH = 40
     Payload_start = BODY_LENGTH # in bytes
-    protocol = 'NTLMSSP\0'    #name        
-    
+    protocol = 'NTLMSSP\0'    #name
+
     type = struct.pack('<I',1) #type 1
-    
+
     flags =  struct.pack('<I', type1_flags)
     Workstation = gethostname().upper().encode('ascii')
     user_parts = user.split('\\', 1)
@@ -186,8 +186,8 @@ def create_NTLM_NEGOTIATE_MESSAGE(user, type1_flags=NTLM_TYPE1_FLAGS):
     else:
         DomainName = ''
     EncryptedRandomSessionKey = ""
-    
-    
+
+
     WorkstationLen = struct.pack('<H', len(Workstation))
     WorkstationMaxLen = struct.pack('<H', len(Workstation))
     WorkstationBufferOffset = struct.pack('<I', Payload_start)
@@ -203,7 +203,7 @@ def create_NTLM_NEGOTIATE_MESSAGE(user, type1_flags=NTLM_TYPE1_FLAGS):
     VersionReserved2 = struct.pack('<B', 0)
     VersionReserved3 = struct.pack('<B', 0)
     NTLMRevisionCurrent = struct.pack('<B', 15)
-    
+
     msg1 = protocol + type + flags + \
             DomainNameLen + DomainNameMaxLen + DomainNameBufferOffset + \
             WorkstationLen + WorkstationMaxLen + WorkstationBufferOffset + \
@@ -214,7 +214,7 @@ def create_NTLM_NEGOTIATE_MESSAGE(user, type1_flags=NTLM_TYPE1_FLAGS):
     msg1 = base64.encodestring(msg1)
     msg1 = string.replace(msg1, '\n', '')
     return msg1
-    
+
 def parse_NTLM_CHALLENGE_MESSAGE(msg2):
     ""
     msg2 = base64.decodestring(msg2)
@@ -244,7 +244,7 @@ def parse_NTLM_CHALLENGE_MESSAGE(msg2):
             AvValue = TargetInfo[i+4:i+4+AvLen]
             i = i+4+AvLen
             if AvId == NTLM_MsvAvTimestamp:
-                TimeStamp = AvValue 
+                TimeStamp = AvValue
             #~ print AvId, AvValue.decode('utf-16')
     return (ServerChallenge, NegotiateFlags)
 
@@ -252,7 +252,7 @@ def create_NTLM_AUTHENTICATE_MESSAGE(nonce, user, domain, password, NegotiateFla
     ""
     is_unicode  = NegotiateFlags & NTLM_NegotiateUnicode
     is_NegotiateExtendedSecurity = NegotiateFlags & NTLM_NegotiateExtendedSecurity
-    
+
     flags =  struct.pack('<I',NTLM_TYPE2_FLAGS)
 
     BODY_LENGTH = 72
@@ -269,48 +269,48 @@ def create_NTLM_AUTHENTICATE_MESSAGE(nonce, user, domain, password, NegotiateFla
         EncryptedRandomSessionKey = EncryptedRandomSessionKey.encode('utf-16-le')
     LmChallengeResponse = calc_resp(create_LM_hashed_password_v1(password), nonce)
     NtChallengeResponse = calc_resp(create_NT_hashed_password_v1(password), nonce)
-    
+
     if is_NegotiateExtendedSecurity:
         pwhash = create_NT_hashed_password_v1(password, UserName, DomainName)
         ClientChallenge = ""
         for i in range(8):
            ClientChallenge+= chr(random.getrandbits(8))
         (NtChallengeResponse, LmChallengeResponse) = ntlm2sr_calc_resp(pwhash, nonce, ClientChallenge) #='\x39 e3 f4 cd 59 c5 d8 60')
-    Signature = 'NTLMSSP\0'           
+    Signature = 'NTLMSSP\0'
     MessageType = struct.pack('<I',3)  #type 3
-    
+
     DomainNameLen = struct.pack('<H', len(DomainName))
     DomainNameMaxLen = struct.pack('<H', len(DomainName))
     DomainNameOffset = struct.pack('<I', Payload_start)
     Payload_start += len(DomainName)
-    
+
     UserNameLen = struct.pack('<H', len(UserName))
     UserNameMaxLen = struct.pack('<H', len(UserName))
     UserNameOffset = struct.pack('<I', Payload_start)
     Payload_start += len(UserName)
-    
+
     WorkstationLen = struct.pack('<H', len(Workstation))
     WorkstationMaxLen = struct.pack('<H', len(Workstation))
     WorkstationOffset = struct.pack('<I', Payload_start)
     Payload_start += len(Workstation)
-    
-    
+
+
     LmChallengeResponseLen = struct.pack('<H', len(LmChallengeResponse))
     LmChallengeResponseMaxLen = struct.pack('<H', len(LmChallengeResponse))
     LmChallengeResponseOffset = struct.pack('<I', Payload_start)
     Payload_start += len(LmChallengeResponse)
-    
+
     NtChallengeResponseLen = struct.pack('<H', len(NtChallengeResponse))
     NtChallengeResponseMaxLen = struct.pack('<H', len(NtChallengeResponse))
     NtChallengeResponseOffset = struct.pack('<I', Payload_start)
     Payload_start += len(NtChallengeResponse)
-    
+
     EncryptedRandomSessionKeyLen = struct.pack('<H', len(EncryptedRandomSessionKey))
     EncryptedRandomSessionKeyMaxLen = struct.pack('<H', len(EncryptedRandomSessionKey))
     EncryptedRandomSessionKeyOffset = struct.pack('<I',Payload_start)
     Payload_start +=  len(EncryptedRandomSessionKey)
     NegotiateFlags = flags
-    
+
     ProductMajorVersion = struct.pack('<B', 5)
     ProductMinorVersion = struct.pack('<B', 1)
     ProductBuild = struct.pack('<H', 2600)
@@ -318,7 +318,7 @@ def create_NTLM_AUTHENTICATE_MESSAGE(nonce, user, domain, password, NegotiateFla
     VersionReserved2 = struct.pack('<B', 0)
     VersionReserved3 = struct.pack('<B', 0)
     NTLMRevisionCurrent = struct.pack('<B', 15)
-    
+
     MIC = struct.pack('<IIII',0,0,0,0)
     msg3 = Signature + MessageType + \
             LmChallengeResponseLen + LmChallengeResponseMaxLen + LmChallengeResponseOffset + \
@@ -336,7 +336,7 @@ def create_NTLM_AUTHENTICATE_MESSAGE(nonce, user, domain, password, NegotiateFla
     msg3 = base64.encodestring(msg3)
     msg3 = string.replace(msg3, '\n', '')
     return msg3
-            
+
 def calc_resp(password_hash, server_challenge):
     """calc_resp generates the LM response given a 16-byte password hash and the
         challenge from the Type-2 message.
@@ -359,16 +359,16 @@ def calc_resp(password_hash, server_challenge):
     dobj = des.DES(password_hash[14:21])
     res = res + dobj.encrypt(server_challenge[0:8])
     return res
-    
+
 def ComputeResponse(ResponseKeyNT, ResponseKeyLM, ServerChallenge, ServerName, ClientChallenge='\xaa'*8, Time='\0'*8):
     LmChallengeResponse = hmac.new(ResponseKeyLM, ServerChallenge+ClientChallenge).digest() + ClientChallenge
-    
+
     Responserversion = '\x01'
     HiResponserversion = '\x01'
-    temp = Responserversion + HiResponserversion + '\0'*6 + Time + ClientChallenge + '\0'*4 + ServerChallenge + '\0'*4 
+    temp = Responserversion + HiResponserversion + '\0'*6 + Time + ClientChallenge + '\0'*4 + ServerChallenge + '\0'*4
     NTProofStr  = hmac.new(ResponseKeyNT, ServerChallenge + temp).digest()
     NtChallengeResponse = NTProofStr + temp
-    
+
     SessionBaseKey = hmac.new(ResponseKeyNT, NTProofStr).digest()
     return (NtChallengeResponse, LmChallengeResponse)
 
@@ -382,7 +382,7 @@ def ntlm2sr_calc_resp(ResponseKeyNT, ServerChallenge, ClientChallenge='\xaa'*8):
 def create_LM_hashed_password_v1(passwd):
     "setup LanManager password"
     "create LanManager hashed password"
-    
+
     # fix the password length to 14 bytes
     passwd = string.upper(passwd)
     lm_pw = passwd + '\0' * (14 - len(passwd))
@@ -399,7 +399,7 @@ def create_LM_hashed_password_v1(passwd):
     res = res + dobj.encrypt(magic_str)
 
     return res
-    
+
 def create_NT_hashed_password_v1(passwd, user=None, domain=None):
     "create NT hashed password"
     digest = hashlib.new('md4', passwd.encode('utf-16le')).digest()
@@ -408,10 +408,10 @@ def create_NT_hashed_password_v1(passwd, user=None, domain=None):
 def create_NT_hashed_password_v2(passwd, user, domain):
     "create NT hashed password"
     digest = create_NT_hashed_password_v1(passwd)
-    
+
     return hmac.new(digest, (user.upper()+domain).encode('utf-16le')).digest()
     return digest
-    
+
 def create_sessionbasekey(password):
     return hashlib.new('md4', create_NT_hashed_password_v1(password)).digest()
 
@@ -435,7 +435,7 @@ if __name__ == "__main__":
             bytes.append( chr( int (hexStr[i:i+2], 16 ) ) )
 
         return ''.join( bytes )
-        
+
     ServerChallenge = HexToByte("01 23 45 67 89 ab cd ef")
     ClientChallenge = '\xaa'*8
     Time = '\x00'*8
@@ -450,17 +450,17 @@ if __name__ == "__main__":
     assert HexToByte("d8 72 62 b0 cd e4 b1 cb 74 99 be cc cd f1 07 84") == create_sessionbasekey(Password)
     assert HexToByte("67 c4 30 11 f3 02 98 a2 ad 35 ec e6 4f 16 33 1c 44 bd be d9 27 84 1f 94") == calc_resp(create_NT_hashed_password_v1(Password), ServerChallenge)
     assert HexToByte("98 de f7 b8 7f 88 aa 5d af e2 df 77 96 88 a1 72 de f1 1c 7d 5c cd ef 13") == calc_resp(create_LM_hashed_password_v1(Password), ServerChallenge)
-    
+
     (NTLMv1Response,LMv1Response) = ntlm2sr_calc_resp(create_NT_hashed_password_v1(Password), ServerChallenge, ClientChallenge)
     assert HexToByte("aa aa aa aa aa aa aa aa 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00") == LMv1Response  # [MS-NLMP] page 75
     assert HexToByte("75 37 f8 03 ae 36 71 28 ca 45 82 04 bd e7 ca f8 1e 97 ed 26 83 26 72 32") == NTLMv1Response
-    
+
     assert HexToByte("0c 86 8a 40 3b fd 7a 93 a3 00 1e f2 2e f0 2e 3f") == create_NT_hashed_password_v2(Password, User, Domain)    # [MS-NLMP] page 76
     ResponseKeyLM = ResponseKeyNT = create_NT_hashed_password_v2(Password, User, Domain)
     (NTLMv2Response,LMv2Response) = ComputeResponse(ResponseKeyNT, ResponseKeyLM, ServerChallenge, ServerName, ClientChallenge, Time)
     assert HexToByte("86 c3 50 97 ac 9c ec 10 25 54 76 4a 57 cc cc 19 aa aa aa aa aa aa aa aa") == LMv2Response  # [MS-NLMP] page 76
-    
+
     # expected failure
     # According to the spec in section '3.3.2 NTLM v2 Authentication' the NTLMv2Response should be longer than the value given on page 77 (this suggests a mistake in the spec)
     #~ assert HexToByte("68 cd 0a b8 51 e5 1c 96 aa bc 92 7b eb ef 6a 1c") == NTLMv2Response, "\nExpected: 68 cd 0a b8 51 e5 1c 96 aa bc 92 7b eb ef 6a 1c\nActual:   %s" % ByteToHex(NTLMv2Response) # [MS-NLMP] page 77
-    
+
