@@ -1,6 +1,6 @@
 try:
     # Python 3
-    from io import StringIO
+    from io import BytesIO as StringIO
 except (ImportError):
     # Python 2
     from StringIO import StringIO
