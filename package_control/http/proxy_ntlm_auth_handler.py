@@ -11,7 +11,7 @@ if os.name == 'nt':
     try:
         # Python 3
         from ...lib.windows.ntlm import ntlm
-    except (ImportError):
+    except (ValueError):
         # Python 2
         from ntlm import ntlm
         
