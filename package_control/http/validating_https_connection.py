@@ -110,13 +110,15 @@ try:
             self._tunnel_headers['User-Agent'] = self.user_agent
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
+            byterequest = b""
             request = "CONNECT %s:%d HTTP/1.1\r\n" % (self.host, self.port)
             for header, value in self._tunnel_headers.items():
                 request += "%s: %s\r\n" % (header, value)
-            self.send(request + "\r\n")
+            for line in request:
+                byterequest += bytes(line, 'utf-8')
+            self.send(byterequest + b"\r\n")
 
-            response = self.response_class(self.sock, strict=self.strict,
-                method=self._method)
+            response = self.response_class(self.sock, method=self._method)
             (version, code, message) = response._read_status()
 
             status_line = u"%s %s %s" % (version, code, message.rstrip())
@@ -130,9 +132,10 @@ try:
             close_connection = False
             while True:
                 line = response.fp.readline()
-                if line == '\r\n':
+                if line == b'\r\n':
                     break
 
+                line = str(line, encoding='utf-8')
                 headers.append(line.rstrip())
 
                 parts = line.rstrip().split(': ', 1)
