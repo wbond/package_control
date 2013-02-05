@@ -136,7 +136,7 @@ try:
             close_connection = False
             while True:
                 line = response.fp.readline()
-                if line == b'\r\n' or line == '\r\b':
+                if line == b'\r\n' or line == '\r\n':
                     break
 
                 if int(sublime.version()) > 3000:
