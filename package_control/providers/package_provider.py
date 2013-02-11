@@ -73,6 +73,20 @@ class PackageProvider(PlatformComparator):
 
         output = {}
 
+        schema_error = u'Repository %s does not appear to be a valid repository file because ' % self.repo
+
+        if 'schema_version' not in self.repo_info:
+            console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
+            return False
+
+        if str(self.repo_info['schema_version']) not in ['1.0', '1.1', '1.2']:
+            console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1 or 1.2.' % schema_error, True)
+            return False
+
+        if 'packages' not in self.repo_info:
+            console_write(u'%s the "packages" JSON key is missing.' % schema_error, True)
+            return False
+
         for package in self.repo_info['packages']:
 
             platforms = list(package['platforms'].keys())

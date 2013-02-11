@@ -49,6 +49,18 @@ class ChannelProvider(PlatformComparator):
             console_write(u'Error parsing JSON from channel %s.' % self.channel, True)
             channel_info = False
 
+        schema_error = u'Channel %s does not appear to be a valid channel file because ' % self.channel
+
+        if 'schema_version' not in self.repo_info:
+            console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
+            self.channel_info = False
+            return
+
+        if str(self.repo_info['schema_version']) not in ['1.0', '1.1', '1.2']:
+            console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1 or 1.2.' % schema_error, True)
+            self.channel_info = False
+            return
+
         self.channel_info = channel_info
 
     def get_name_map(self):
@@ -73,7 +85,12 @@ class ChannelProvider(PlatformComparator):
         self.fetch_channel()
         if self.channel_info == False:
             return False
-        return self.channel_info['repositories']
+
+        if 'repositories' not in self.channgel_info:
+            console_write(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel, True)
+            return False
+
+        return self.channel_info.get('repositories', {})
 
     def get_certs(self):
         """
