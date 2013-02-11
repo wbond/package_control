@@ -51,12 +51,12 @@ class ChannelProvider(PlatformComparator):
 
         schema_error = u'Channel %s does not appear to be a valid channel file because ' % self.channel
 
-        if 'schema_version' not in self.repo_info:
+        if 'schema_version' not in self.channel_info:
             console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
             self.channel_info = False
             return
 
-        if str(self.repo_info['schema_version']) not in ['1.0', '1.1', '1.2']:
+        if str(self.channel_info['schema_version']) not in ['1.0', '1.1', '1.2']:
             console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1 or 1.2.' % schema_error, True)
             self.channel_info = False
             return
@@ -86,7 +86,7 @@ class ChannelProvider(PlatformComparator):
         if self.channel_info == False:
             return False
 
-        if 'repositories' not in self.channgel_info:
+        if 'repositories' not in self.channel_info:
             console_write(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel, True)
             return False
 
