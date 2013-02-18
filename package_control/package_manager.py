@@ -609,6 +609,10 @@ class PackageManager():
         tmp_dir = tempfile.mkdtemp()
 
         try:
+            # This is refers to the zipfile later on, so we define it here so we can
+            # close the zip file if set during the finally clause
+            package_file = None
+
             tmp_package_path = os.path.join(tmp_dir, package_filename)
             tmp_working_dir = os.path.join(tmp_dir, 'working')
             os.mkdir(tmp_working_dir)
@@ -841,6 +845,7 @@ class PackageManager():
                         package_file.write(full_path, relative_path)
 
                 package_file.close()
+                package_file = None
 
                 if os.path.exists(package_path):
                     os.remove(package_path)
@@ -856,7 +861,22 @@ class PackageManager():
             return True
 
         finally:
-            shutil.rmtree(tmp_dir)
+            # We need to make sure the zipfile is closed to
+            # help prevent permissions errors on Windows
+            if package_file:
+                package_file.close()
+
+            # Try to remove the tmp dir after a second to make sure
+            # a virus scanner is holding a reference to the zipfile
+            # after we close it.
+            def remove_tmp_dir():
+                try:
+                    shutil.rmtree(tmp_dir)
+                except (PermissionError):
+                    # If we can't remove the tmp dir, don't let an uncaught exception
+                    # fall through and break the install process
+                    pass
+            sublime.set_timeout(remove_tmp_dir, 1000)
 
     def print_messages(self, package, package_dir, is_upgrade, old_version):
         """
