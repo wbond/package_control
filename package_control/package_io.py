@@ -11,21 +11,32 @@ from .file_not_found_error import FileNotFoundError
 def read_package_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
-    if not os.path.exists(package_dir) and int(sublime.version()) >= 3000:
-        return _read_zip_file(package, relative_path, binary)
-    elif os.path.exists(package_dir):
-        return _read_regular_file(package, relative_path, binary)
 
-    console_write(u"Unable to find the package file for %s" % package)
+    if os.path.exists(package_dir):
+        result = _read_regular_file(package, relative_path, binary)
+        if result != False:
+            return result
+
+    if int(sublime.version()) >= 3000:
+        result = _read_zip_file(package, relative_path, binary)
+        if result != False:
+            return result
+
+    console_write(u"Unable to find file %s in the package %s" % (relative_path, package))
     return False
 
 def package_file_exists(package, relative_path):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
-    if not os.path.exists(package_dir) and int(sublime.version()) >= 3000:
+
+    if os.path.exists(package_dir):
+        result = _regular_file_exists(package, relative_path)
+        if result:
+            return result
+            
+    if int(sublime.version()) >= 3000:
         return _zip_file_exists(package, relative_path)
-    elif os.path.exists(package_dir):
-        return _regular_file_exists(package, relative_path)
+
     return False
 
 def _get_package_dir(package):
@@ -41,7 +52,7 @@ def _read_regular_file(package, relative_path, binary=False):
             return read_compat(f)
 
     except (FileNotFoundError) as e:
-        console_write(u"Unable to find file %s in the package %s" % (relative_path, package))
+        console_write(u"Unable to find file %s in the package folder for package %s" % (relative_path, package))
         return False      
 
 def _read_zip_file(package, relative_path, binary=False):
@@ -66,7 +77,7 @@ def _read_zip_file(package, relative_path, binary=False):
         return contents
 
     except (KeyError) as e:
-        console_write(u"Unable to find file %s in the package %s" % (relative_path, package))
+        console_write(u"Unable to find file %s in the package file for package %s" % (relative_path, package))
 
     except (IOError) as e:
         message = unicode_from_os(e)
