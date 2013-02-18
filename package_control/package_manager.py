@@ -980,23 +980,13 @@ class PackageManager():
         time.sleep(1)
 
         package_filename = package_name + '.sublime-package'
-        package_path = os.path.join(sublime.installed_packages_path(),
+        installed_package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)
-        installed_package_path = os.path.join(os.path.dirname(
-            sublime.packages_path()), 'Installed Packages', package_filename)
         pristine_package_path = os.path.join(os.path.dirname(
             sublime.packages_path()), 'Pristine Packages', package_filename)
         package_dir = self.get_package_dir(package_name)
 
         version = self.get_metadata(package_name).get('version')
-
-        try:
-            if os.path.exists(package_path):
-                os.remove(package_path)
-        except (OSError, IOError) as e:
-            show_error(u'An error occurred while trying to remove the package file for %s.\n\n%s' % (
-                package_name, unicode_from_os(e)))
-            return False
 
         try:
             if os.path.exists(installed_package_path):
