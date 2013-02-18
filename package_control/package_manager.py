@@ -1032,7 +1032,7 @@ class PackageManager():
             sublime.save_settings('Package Control.sublime-settings')
         sublime.set_timeout(clear_package, 1)
 
-        if can_delete_dir:
+        if can_delete_dir and os.path.exists(package_dir):
             os.rmdir(package_dir)
 
         return True
