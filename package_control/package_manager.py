@@ -831,7 +831,6 @@ class PackageManager():
 
                 package_dir_regex = re.compile('^' + re.escape(package_dir))
                 for root, dirs, files in os.walk(package_dir):
-                    [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
                     paths = dirs
                     paths.extend(files)
                     for path in paths:
