@@ -113,24 +113,25 @@ class PackageManager():
              1  if version1 is greater than version2
         """
 
-        def date_compat(v):
+        def semver_compat(v):
             # We prepend 0 to all date-based version numbers so that developers
             # may switch to explicit versioning from GitHub/BitBucket
-            # versioning based on commit dates
-            date_match = re.match('(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
-            if date_match:
-                v = '0.%s.%s.%s.%s.%s.%s' % date_match.groups()
-            return v
-
-        def semver_compat(v):
+            # versioning based on commit dates.
+            #
             # When translating dates into semver, the way to get each date
             # segment into the version is to treat the year and month as
             # minor and patch, and then the rest as a numeric build version
             # with four different parts. The result looks like:
             # 0.2012.11+10.31.23.59
-            date_match = re.match('(\d{4}(?:\.\d{2}){2})\.(\d{2}(?:\.\d{2}){3})$', v)
+            date_match = re.match('(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
             if date_match:
-                v = '%s+%s' % (date_match.group(1), date_match.group(2))
+                v = '0.%s.%s+%s.%s.%s.%s' % date_match.groups()
+
+            # This handles version that were valid pre-semver with 4+ dotted
+            # groups, such as 1.6.9.0
+            four_plus_match = re.match('(\d+\.\d+\.\d+)\.(\d+(\.\d+)*)$', v)
+            if four_plus_match:
+                v = '%s-%s' % (four_plus_match.group(1), four_plus_match.group(2))
 
             # Semver must have major, minor, patch
             elif re.match('^\d+$', v):
@@ -139,17 +140,12 @@ class PackageManager():
                 v += '.0'
             return v
 
-        def cmp_compat(v):
-            return [int(x) for x in re.sub(r'(\.0+)*$', '', v).split(".")]
-
-        version1 = date_compat(version1)
-        version2 = date_compat(version2)
         try:
+            console_write(u"Comparing %s and %s" % (semver_compat(version1), semver_compat(version2)))
             return semver.compare(semver_compat(version1), semver_compat(version2))
-        except (ValueError):
-            cv1 = cmp_compat(version1)
-            cv2 = cmp_compat(version2)
-            return (cv1 > cv2) - (cv1 < cv2)
+        except (ValueError) as e:
+            console_write(u"Error comparing versions - %s" % e, True)
+            return 0
 
     def download_url(self, url, error_message):
         """
