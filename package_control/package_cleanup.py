@@ -81,6 +81,10 @@ class PackageCleanup(threading.Thread, PackageRenamer):
 
             found_pkgs.append(package_name)
 
+        if int(sublime.version()) >= 3000:
+            package_files = os.listdir(sublime.installed_packages_path())
+            found_pkgs += [file.replace('.sublime-package', '') for file in package_files]
+
         sublime.set_timeout(lambda: self.finish(installed_pkgs, found_pkgs), 10)
 
     def finish(self, installed_pkgs, found_pkgs):

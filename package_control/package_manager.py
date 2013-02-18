@@ -440,6 +440,10 @@ class PackageManager():
         package_names = os.listdir(sublime.packages_path())
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
+        
+        if int(sublime.version()) > 3000:
+            package_files = os.listdir(sublime.installed_packages_path())
+            package_names += [file.replace('.sublime-package', '') for file in package_files]
 
         # Ignore things to be deleted
         ignored = []
@@ -458,7 +462,7 @@ class PackageManager():
     def list_all_packages(self):
         """ :return: A list of all installed package names, including default packages"""
 
-        packages = os.listdir(sublime.packages_path())
+        packages = self.list_default_packages() + self.list_packages()
         packages = sorted(packages, key=lambda s: s.lower())
         return packages
 
