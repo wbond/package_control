@@ -19,6 +19,7 @@ import zipfile
 import shutil
 from fnmatch import fnmatch
 import datetime
+import tempfile
 
 try:
     # Python 3
@@ -46,6 +47,8 @@ from .http.rate_limit_exception import RateLimitException
 
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
+
+from .package_io import read_package_file
 
 
 # The providers (in order) to check when trying to download a channel
@@ -227,14 +230,14 @@ class PackageManager():
             or an empty dict on error
         """
 
-        metadata_filename = os.path.join(self.get_package_dir(package),
-            'package-metadata.json')
-        if os.path.exists(metadata_filename):
-            with open_compat(metadata_filename) as f:
-                try:
-                    return json.loads(read_compat(f))
-                except (ValueError):
-                    return {}
+        try:
+            metadata_json = read_package_file(package, 'package-metadata.json')
+            if metadata_json:
+                return json.loads(metadata_json)
+
+        except (IOError, ValueError) as e:
+            pass
+
         return {}
 
     def list_repositories(self):
@@ -598,215 +601,259 @@ class PackageManager():
 
         package_filename = package_name + \
             '.sublime-package'
-        package_path = os.path.join(sublime.installed_packages_path(),
-            package_filename)
-        pristine_package_path = os.path.join(os.path.dirname(
-            sublime.packages_path()), 'Pristine Packages', package_filename)
 
-        package_dir = self.get_package_dir(package_name)
-
-        package_metadata_file = os.path.join(package_dir,
-            'package-metadata.json')
-
-        if os.path.exists(os.path.join(package_dir, '.git')):
-            if self.settings.get('ignore_vcs_packages'):
-                show_error(u'Skipping git package %s since the setting ignore_vcs_packages is set to true' % package_name)
-                return False
-            return GitUpgrader(self.settings['git_binary'],
-                self.settings['git_update_command'], package_dir,
-                self.settings['cache_length'], self.settings['debug']).run()
-        elif os.path.exists(os.path.join(package_dir, '.hg')):
-            if self.settings.get('ignore_vcs_packages'):
-                show_error(u'Skipping hg package %s since the setting ignore_vcs_packages is set to true' % package_name)
-                return False
-            return HgUpgrader(self.settings['hg_binary'],
-                self.settings['hg_update_command'], package_dir,
-                self.settings['cache_length'], self.settings['debug']).run()
-
-        is_upgrade = os.path.exists(package_metadata_file)
-        old_version = None
-        if is_upgrade:
-            old_version = self.get_metadata(package_name).get('version')
-
-        package_bytes = self.download_url(url, 'Error downloading package.')
-        if package_bytes == False:
-            return False
-        with open_compat(package_path, "wb") as package_file:
-            package_file.write(package_bytes)
-
-        if not os.path.exists(package_dir):
-            os.mkdir(package_dir)
-
-        # We create a backup copy incase something was edited
-        else:
-            try:
-                backup_dir = os.path.join(os.path.dirname(
-                    sublime.packages_path()), 'Backup',
-                    datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-                if not os.path.exists(backup_dir):
-                    os.makedirs(backup_dir)
-                package_backup_dir = os.path.join(backup_dir, package_name)
-                shutil.copytree(package_dir, package_backup_dir)
-            except (OSError, IOError) as e:
-                show_error(u'An error occurred while trying to backup the package directory for %s.\n\n%s' % (
-                    package_name, unicode_from_os(e)))
-                shutil.rmtree(package_backup_dir)
-                return False
+        tmp_dir = tempfile.mkdtemp()
 
         try:
-            package_zip = zipfile.ZipFile(package_path, 'r')
-        except (zipfile.BadZipfile):
-            show_error(u'An error occurred while trying to unzip the package file for %s. Please try installing the package again.' % package_name)
-            return False
+            tmp_package_path = os.path.join(tmp_dir, package_filename)
+            tmp_working_dir = os.path.join(tmp_dir, 'working')
+            os.mkdir(tmp_working_dir)
 
-        root_level_paths = []
-        last_path = None
-        for path in package_zip.namelist():
-            last_path = path
-            if path.find('/') in [len(path) - 1, -1]:
-                root_level_paths.append(path)
-            if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
-                show_error(u'The package specified, %s, contains files outside of the package dir and cannot be safely installed.' % package_name)
+            package_path = os.path.join(sublime.installed_packages_path(),
+                package_filename)
+            pristine_package_path = os.path.join(os.path.dirname(
+                sublime.packages_path()), 'Pristine Packages', package_filename)
+
+            # For ST3 we create a new folder to zip up instead of extracting
+            # directly into the Packages folder
+            if int(sublime.version()) >= 3000:
+                package_dir = tmp_working_dir
+            else:
+                package_dir = self.get_package_dir(package_name)
+
+            package_metadata_file = os.path.join(package_dir,
+                'package-metadata.json')
+
+            if os.path.exists(os.path.join(package_dir, '.git')):
+                if self.settings.get('ignore_vcs_packages'):
+                    show_error(u'Skipping git package %s since the setting ignore_vcs_packages is set to true' % package_name)
+                    return False
+                return GitUpgrader(self.settings['git_binary'],
+                    self.settings['git_update_command'], package_dir,
+                    self.settings['cache_length'], self.settings['debug']).run()
+            elif os.path.exists(os.path.join(package_dir, '.hg')):
+                if self.settings.get('ignore_vcs_packages'):
+                    show_error(u'Skipping hg package %s since the setting ignore_vcs_packages is set to true' % package_name)
+                    return False
+                return HgUpgrader(self.settings['hg_binary'],
+                    self.settings['hg_update_command'], package_dir,
+                    self.settings['cache_length'], self.settings['debug']).run()
+
+            old_version = self.get_metadata(package_name).get('version')
+            is_upgrade = old_version != None
+
+            package_bytes = self.download_url(url, 'Error downloading package.')
+            if package_bytes == False:
+                return False
+            with open_compat(tmp_package_path, "wb") as package_file:
+                package_file.write(package_bytes)
+
+            if not os.path.exists(package_dir):
+                os.mkdir(package_dir)
+
+            # We create a backup copy incase something was edited
+            else:
+                try:
+                    backup_dir = os.path.join(os.path.dirname(
+                        sublime.packages_path()), 'Backup',
+                        datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+                    if not os.path.exists(backup_dir):
+                        os.makedirs(backup_dir)
+                    package_backup_dir = os.path.join(backup_dir, package_name)
+                    shutil.copytree(package_dir, package_backup_dir)
+                except (OSError, IOError) as e:
+                    show_error(u'An error occurred while trying to backup the package directory for %s.\n\n%s' % (
+                        package_name, unicode_from_os(e)))
+                    shutil.rmtree(package_backup_dir)
+                    return False
+
+            try:
+                package_zip = zipfile.ZipFile(tmp_package_path, 'r')
+            except (zipfile.BadZipfile):
+                show_error(u'An error occurred while trying to unzip the package file for %s. Please try installing the package again.' % package_name)
                 return False
 
-        if last_path and len(root_level_paths) == 0:
-            root_level_paths.append(last_path[0:last_path.find('/') + 1])
+            root_level_paths = []
+            last_path = None
+            for path in package_zip.namelist():
+                last_path = path
+                if path.find('/') in [len(path) - 1, -1]:
+                    root_level_paths.append(path)
+                if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
+                    show_error(u'The package specified, %s, contains files outside of the package dir and cannot be safely installed.' % package_name)
+                    return False
 
-        os.chdir(package_dir)
+            if last_path and len(root_level_paths) == 0:
+                root_level_paths.append(last_path[0:last_path.find('/') + 1])
 
-        overwrite_failed = False
+            os.chdir(package_dir)
 
-        # Here we don't use .extractall() since it was having issues on OS X
-        skip_root_dir = len(root_level_paths) == 1 and \
-            root_level_paths[0].endswith('/')
-        extracted_paths = []
-        for path in package_zip.namelist():
-            dest = path
-            try:
-                # Python 3 seems to return the paths as str instead of
-                # bytes, so we only need this for Python 2
-                if int(sublime.version()) < 3000 and not isinstance(dest, unicode):
-                    dest = unicode(dest, 'utf-8', 'strict')
-            except (UnicodeDecodeError):
-                dest = unicode(dest, 'cp1252', 'replace')
+            overwrite_failed = False
 
-            if os.name == 'nt':
-                regex = ':|\*|\?|"|<|>|\|'
-                if re.search(regex, dest) != None:
-                    console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
-                    continue
-
-            # If there was only a single directory in the package, we remove
-            # that folder name from the paths as we extract entries
-            if skip_root_dir:
-                dest = dest[len(root_level_paths[0]):]
-
-            if os.name == 'nt':
-                dest = dest.replace('/', '\\')
-            else:
-                dest = dest.replace('\\', '/')
-
-            dest = os.path.join(package_dir, dest)
-
-            def add_extracted_dirs(dir):
-                while dir not in extracted_paths:
-                    extracted_paths.append(dir)
-                    dir = os.path.dirname(dir)
-                    if dir == package_dir:
-                        break
-
-            if path.endswith('/'):
-                if not os.path.exists(dest):
-                    os.makedirs(dest)
-                add_extracted_dirs(dest)
-            else:
-                dest_dir = os.path.dirname(dest)
-                if not os.path.exists(dest_dir):
-                    os.makedirs(dest_dir)
-                add_extracted_dirs(dest_dir)
-                extracted_paths.append(dest)
+            # Here we don't use .extractall() since it was having issues on OS X
+            skip_root_dir = len(root_level_paths) == 1 and \
+                root_level_paths[0].endswith('/')
+            extracted_paths = []
+            for path in package_zip.namelist():
+                dest = path
                 try:
-                    open_compat(dest, 'wb').write(package_zip.read(path))
-                except (IOError) as e:
-                    message = unicode_from_os(e)
-                    if re.search('[Ee]rrno 13', message):
-                        overwrite_failed = True
-                        break
-                    console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
-
+                    # Python 3 seems to return the paths as str instead of
+                    # bytes, so we only need this for Python 2
+                    if int(sublime.version()) < 3000 and not isinstance(dest, unicode):
+                        dest = unicode(dest, 'utf-8', 'strict')
                 except (UnicodeDecodeError):
-                    console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
-        package_zip.close()
+                    dest = unicode(dest, 'cp1252', 'replace')
 
-        # If upgrading failed, queue the package to upgrade upon next start
-        if overwrite_failed:
-            reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
-            open_compat(reinstall_file, 'w').close()
+                if os.name == 'nt':
+                    regex = ':|\*|\?|"|<|>|\|'
+                    if re.search(regex, dest) != None:
+                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+                        continue
 
-            # Don't delete the metadata file, that way we have it
-            # when the reinstall happens, and the appropriate
-            # usage info can be sent back to the server
-            clear_directory(package_dir, [reinstall_file, package_metadata_file])
+                # If there was only a single directory in the package, we remove
+                # that folder name from the paths as we extract entries
+                if skip_root_dir:
+                    dest = dest[len(root_level_paths[0]):]
 
-            show_error(u'An error occurred while trying to upgrade %s. Please restart Sublime Text to finish the upgrade.' % package_name)
-            return False
+                if os.name == 'nt':
+                    dest = dest.replace('/', '\\')
+                else:
+                    dest = dest.replace('\\', '/')
 
-        # Here we clean out any files that were not just overwritten. It is ok
-        # if there is an error removing a file. The next time there is an
-        # upgrade, it should be cleaned out successfully then.
-        clear_directory(package_dir, extracted_paths)
+                dest = os.path.join(package_dir, dest)
 
-        self.print_messages(package_name, package_dir, is_upgrade, old_version)
+                def add_extracted_dirs(dir):
+                    while dir not in extracted_paths:
+                        extracted_paths.append(dir)
+                        dir = os.path.dirname(dir)
+                        if dir == package_dir:
+                            break
 
-        with open_compat(package_metadata_file, 'w') as f:
-            metadata = {
-                "version": packages[package_name]['downloads'][0]['version'],
-                "url": packages[package_name]['url'],
-                "description": packages[package_name]['description']
-            }
-            json.dump(metadata, f)
+                if path.endswith('/'):
+                    if not os.path.exists(dest):
+                        os.makedirs(dest)
+                    add_extracted_dirs(dest)
+                else:
+                    dest_dir = os.path.dirname(dest)
+                    if not os.path.exists(dest_dir):
+                        os.makedirs(dest_dir)
+                    add_extracted_dirs(dest_dir)
+                    extracted_paths.append(dest)
+                    try:
+                        open_compat(dest, 'wb').write(package_zip.read(path))
+                    except (IOError) as e:
+                        message = unicode_from_os(e)
+                        if re.search('[Ee]rrno 13', message):
+                            overwrite_failed = True
+                            break
+                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
 
-        # Submit install and upgrade info
-        if is_upgrade:
-            params = {
-                'package': package_name,
-                'operation': 'upgrade',
-                'version': packages[package_name]['downloads'][0]['version'],
-                'old_version': old_version
-            }
-        else:
-            params = {
-                'package': package_name,
-                'operation': 'install',
-                'version': packages[package_name]['downloads'][0]['version']
-            }
-        self.record_usage(params)
+                    except (UnicodeDecodeError):
+                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+            package_zip.close()
 
-        # Record the install in the settings file so that you can move
-        # settings across computers and have the same packages installed
-        def save_package():
-            settings = sublime.load_settings('Package Control.sublime-settings')
-            installed_packages = settings.get('installed_packages', [])
-            if not installed_packages:
-                installed_packages = []
-            installed_packages.append(package_name)
-            installed_packages = list(set(installed_packages))
-            installed_packages = sorted(installed_packages,
-                key=lambda s: s.lower())
-            settings.set('installed_packages', installed_packages)
-            sublime.save_settings('Package Control.sublime-settings')
-        sublime.set_timeout(save_package, 1)
+            # If upgrading failed, queue the package to upgrade upon next start
+            if overwrite_failed:
+                reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
+                open_compat(reinstall_file, 'w').close()
 
-        # Here we delete the package file from the installed packages directory
-        # since we don't want to accidentally overwrite user changes
-        os.remove(package_path)
-        # We have to remove the pristine package too or else Sublime Text 2
-        # will silently delete the package
-        if os.path.exists(pristine_package_path):
-            os.remove(pristine_package_path)
+                # Don't delete the metadata file, that way we have it
+                # when the reinstall happens, and the appropriate
+                # usage info can be sent back to the server
+                clear_directory(package_dir, [reinstall_file, package_metadata_file])
 
-        os.chdir(sublime.packages_path())
-        return True
+                show_error(u'An error occurred while trying to upgrade %s. Please restart Sublime Text to finish the upgrade.' % package_name)
+                return False
+
+            # Here we clean out any files that were not just overwritten. It is ok
+            # if there is an error removing a file. The next time there is an
+            # upgrade, it should be cleaned out successfully then.
+            clear_directory(package_dir, extracted_paths)
+
+            self.print_messages(package_name, package_dir, is_upgrade, old_version)
+
+            with open_compat(package_metadata_file, 'w') as f:
+                metadata = {
+                    "version": packages[package_name]['downloads'][0]['version'],
+                    "url": packages[package_name]['url'],
+                    "description": packages[package_name]['description']
+                }
+                json.dump(metadata, f)
+
+            # Submit install and upgrade info
+            if is_upgrade:
+                params = {
+                    'package': package_name,
+                    'operation': 'upgrade',
+                    'version': packages[package_name]['downloads'][0]['version'],
+                    'old_version': old_version
+                }
+            else:
+                params = {
+                    'package': package_name,
+                    'operation': 'install',
+                    'version': packages[package_name]['downloads'][0]['version']
+                }
+            self.record_usage(params)
+
+            # Record the install in the settings file so that you can move
+            # settings across computers and have the same packages installed
+            def save_package():
+                settings = sublime.load_settings('Package Control.sublime-settings')
+                installed_packages = settings.get('installed_packages', [])
+                if not installed_packages:
+                    installed_packages = []
+                installed_packages.append(package_name)
+                installed_packages = list(set(installed_packages))
+                installed_packages = sorted(installed_packages,
+                    key=lambda s: s.lower())
+                settings.set('installed_packages', installed_packages)
+                sublime.save_settings('Package Control.sublime-settings')
+            sublime.set_timeout(save_package, 1)
+
+            # Here we delete the package file from the installed packages directory
+            # since we don't want to accidentally overwrite user changes
+            os.remove(tmp_package_path)
+
+            # For ST3 we create a .sublime-package file and place it in the Installed packages folder
+            if int(sublime.version()) >= 3000:
+                try:
+                    package_file = zipfile.ZipFile(tmp_package_path, "w",
+                        compression=zipfile.ZIP_DEFLATED)
+                except (OSError, IOError) as e:
+                    show_error(u'An error occurred creating the package file %s in %s.\n\n%s' % (
+                        package_filename, tmp_dir, unicode_from_os(e)))
+                    return False
+
+                package_dir_regex = re.compile('^' + re.escape(package_dir))
+                for root, dirs, files in os.walk(package_dir):
+                    [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
+                    paths = dirs
+                    paths.extend(files)
+                    for path in paths:
+                        full_path = os.path.join(root, path)
+                        relative_path = re.sub(package_dir_regex, '', full_path)
+                        if os.path.isdir(full_path):
+                            continue
+                        package_file.write(full_path, relative_path)
+
+                package_file.close()
+
+                if os.path.exists(package_path):
+                    os.remove(package_path)
+                shutil.move(tmp_package_path, package_path)
+
+            else:
+                # We have to remove the pristine package too or else Sublime Text 2
+                # will silently delete the package
+                if os.path.exists(pristine_package_path):
+                    os.remove(pristine_package_path)
+
+            os.chdir(sublime.packages_path())
+            return True
+
+        finally:
+            shutil.rmtree(tmp_dir)
 
     def print_messages(self, package, package_dir, is_upgrade, old_version):
         """

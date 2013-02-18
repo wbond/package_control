@@ -1,7 +1,13 @@
 import sublime
+import os
+
+from .file_not_found_error import FileNotFoundError
 
 
 def open_compat(path, mode='r'):
+	if mode in ['r', 'rb'] and not os.path.exists(path):
+		raise FileNotFoundError(u"The file \"%s\" could not be found" % path)
+
 	if int(sublime.version()) > 3000:
 		encoding = 'utf-8'
 		errors = 'replace'

@@ -11,6 +11,7 @@ from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
 from .package_renamer import PackageRenamer
 from .open_compat import open_compat
+from .package_io import package_file_exists
 
 
 class PackageCleanup(threading.Thread, PackageRenamer):
@@ -29,7 +30,6 @@ class PackageCleanup(threading.Thread, PackageRenamer):
         installed_pkgs = list(self.installed_packages)
         for package_name in os.listdir(sublime.packages_path()):
             package_dir = os.path.join(sublime.packages_path(), package_name)
-            metadata_path = os.path.join(package_dir, 'package-metadata.json')
 
             # Cleanup packages that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
@@ -51,6 +51,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
             # in-use files
             reinstall = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall):
+                metadata_path = os.path.join(package_dir, 'package-metadata.json')
                 if not clear_directory(package_dir, [metadata_path]):
                     if not os.path.exists(reinstall):
                         open_compat(reinstall, 'w').close()
@@ -67,7 +68,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                     self.manager.install_package(package_name)
 
             # This adds previously installed packages from old versions of PC
-            if os.path.exists(metadata_path) and \
+            if package_file_exists(package_name, 'package-metadata.json') and \
                     package_name not in self.installed_packages:
                 installed_pkgs.append(package_name)
                 params = {
