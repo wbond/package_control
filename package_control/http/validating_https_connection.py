@@ -12,6 +12,7 @@ import socket
 import base64
 import hashlib
 import os
+import sublime
 
 if os.name == 'nt':
     try:
@@ -113,8 +114,13 @@ try:
             request = "CONNECT %s:%d HTTP/1.1\r\n" % (self.host, self.port)
             for header, value in self._tunnel_headers.items():
                 request += "%s: %s\r\n" % (header, value)
-            self.send(request + "\r\n")
+            request += "\r\n"
 
+            if int(sublime.version()) > 3000:
+                request = bytes(request, 'iso-8859-1')
+            
+            self.send(request)
+            
             response = self.response_class(self.sock, method=self._method)
             (version, code, message) = response._read_status()
 
@@ -129,6 +135,10 @@ try:
             close_connection = False
             while True:
                 line = response.fp.readline()
+                
+                if int(sublime.version()) > 3000:
+                    line = str(line, encoding='iso-8859-1')
+
                 if line == '\r\n':
                     break
 
