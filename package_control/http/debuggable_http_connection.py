@@ -31,8 +31,8 @@ class DebuggableHTTPConnection(HTTPConnection):
     response_class = DebuggableHTTPResponse
     _debug_protocol = 'HTTP'
 
-    def __init__(self, host, port=None, strict=None,
-                 timeout=socket._GLOBAL_DEFAULT_TIMEOUT, **kwargs):
+    def __init__(self, host, port=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+            **kwargs):
         self.passwd = kwargs.get('passwd')
 
         # Python 2.6.1 on OS X 10.6 does not include these
@@ -40,7 +40,7 @@ class DebuggableHTTPConnection(HTTPConnection):
         self._tunnel_port = None
         self._tunnel_headers = {}
 
-        HTTPConnection.__init__(self, host, port, strict, timeout)
+        HTTPConnection.__init__(self, host, port=port, timeout=timeout)
 
     def connect(self):
         if self.debuglevel == -1:

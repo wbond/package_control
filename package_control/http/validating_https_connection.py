@@ -44,11 +44,11 @@ try:
         _debug_protocol = 'HTTPS'
 
         def __init__(self, host, port=None, key_file=None, cert_file=None,
-                ca_certs=None, strict=None, **kwargs):
+                ca_certs=None, **kwargs):
             passed_args = {}
             if 'timeout' in kwargs:
                 passed_args['timeout'] = kwargs['timeout']
-            DebuggableHTTPConnection.__init__(self, host, port, strict, **passed_args)
+            DebuggableHTTPConnection.__init__(self, host, port, **passed_args)
 
             self.passwd = kwargs.get('passwd')
             self.key_file = key_file
@@ -115,8 +115,7 @@ try:
                 request += "%s: %s\r\n" % (header, value)
             self.send(request + "\r\n")
 
-            response = self.response_class(self.sock, strict=self.strict,
-                method=self._method)
+            response = self.response_class(self.sock, method=self._method)
             (version, code, message) = response._read_status()
 
             status_line = u"%s %s %s" % (version, code, message.rstrip())
