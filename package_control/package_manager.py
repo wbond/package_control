@@ -446,7 +446,7 @@ class PackageManager():
             package_names += [file.replace('.sublime-package', '') for file in package_files]
 
         # Ignore things to be deleted
-        ignored = []
+        ignored = ['User']
         for package in package_names:
             cleanup_file = os.path.join(sublime.packages_path(), package,
                 'package-control.cleanup')
