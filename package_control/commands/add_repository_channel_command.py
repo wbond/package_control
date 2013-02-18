@@ -1,5 +1,8 @@
 import sublime
 import sublime_plugin
+import re
+
+from ..show_error import show_error
 
 
 class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
@@ -18,6 +21,10 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
         :param input:
             A string of the URL to the new channel
         """
+
+        if re.match('https?://', input, re.I) == None:
+            show_error(u"Unable to add the channel \"%s\" since it does not appear to be served via HTTP (http:// or https://)." % input)
+            return
 
         settings = sublime.load_settings('Package Control.sublime-settings')
         repository_channels = settings.get('repository_channels', [])
