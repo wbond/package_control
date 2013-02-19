@@ -7,19 +7,19 @@ st_version = 2
 # With the way ST3 works, the sublime module is not "available" at startup
 # which results in an empty version number
 if sublime.version() == '' or int(sublime.version()) > 3000:
-	st_version = 3
+    st_version = 3
 
 
 reloader_name = 'package_control.reloader'
 
 if st_version == 3:
-	from imp import reload
+    from imp import reload
 
 # Make sure all dependencies are reloaded on upgrade
 if reloader_name in sys.modules:
     reload(sys.modules[reloader_name])
-
-sys.path.insert(0, os.path.split(__file__)[0])
+elif st_version == 3:
+    sys.path.insert(0, os.path.split(__file__)[0])
 
 from package_control import reloader
 from package_control import sys_path
