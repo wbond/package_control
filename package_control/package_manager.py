@@ -141,7 +141,6 @@ class PackageManager():
             return v
 
         try:
-            console_write(u"Comparing %s and %s" % (semver_compat(version1), semver_compat(version2)))
             return semver.compare(semver_compat(version1), semver_compat(version2))
         except (ValueError) as e:
             console_write(u"Error comparing versions - %s" % e, True)
