@@ -168,11 +168,7 @@ class Downloader():
         with open_compat(cert_path, 'wb') as f:
             f.write(contents)
         with open_compat(ca_bundle_path, 'ab') as f:
-            if int(sublime.version()) >= 3000:
-                prefix = b"\n"
-            else:
-                prefix = "\n"
-            f.write(prefix + contents)
+            f.write(b"\n" + contents)
 
     def decode_response(self, encoding, response):
         if encoding == 'gzip':
