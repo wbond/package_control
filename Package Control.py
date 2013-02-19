@@ -19,7 +19,11 @@ if st_version == 3:
 if reloader_name in sys.modules:
     reload(sys.modules[reloader_name])
 elif st_version == 3:
-    sys.path.insert(0, os.path.split(__file__)[0])
+    _base = os.path.split(__file__)[0]
+    sys.path.insert(0, _base)
+    sys.path.insert(0, os.path.join(_base, 'lib', 'all'))
+    if os.name == 'nt':
+        sys.path.insert(0, os.path.join(_base, 'lib', 'windows'))
 
 from package_control import reloader
 from package_control import sys_path

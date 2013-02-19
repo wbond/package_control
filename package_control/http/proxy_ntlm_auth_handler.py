@@ -8,13 +8,8 @@ except (ImportError):
 import os
 
 if os.name == 'nt':
-    try:
-        # Python 3
-        from ...lib.windows.ntlm import ntlm
-    except (ValueError):
-        # Python 2
-        from ntlm import ntlm
-        
+    from ntlm import ntlm
+
 
 if os.name == 'nt':
     class ProxyNtlmAuthHandler(BaseHandler):
