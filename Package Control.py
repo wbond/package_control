@@ -37,6 +37,7 @@ try:
 	from .package_control.commands.remove_package_command import RemovePackageCommand
 	from .package_control.commands.upgrade_all_packages_command import UpgradeAllPackagesCommand
 	from .package_control.commands.upgrade_package_command import UpgradePackageCommand
+	from .package_control.commands.package_message_command import PackageMessageCommand
 
 	from .package_control.package_cleanup import PackageCleanup
 	
@@ -57,6 +58,7 @@ except (ValueError):
 	from package_control.commands.remove_package_command import RemovePackageCommand
 	from package_control.commands.upgrade_all_packages_command import UpgradeAllPackagesCommand
 	from package_control.commands.upgrade_package_command import UpgradePackageCommand
+	from package_control.commands.package_message_command import PackageMessageCommand
 
 	from package_control.package_cleanup import PackageCleanup
 

@@ -20,6 +20,7 @@ import shutil
 from fnmatch import fnmatch
 import datetime
 import tempfile
+from functools import cmp_to_key
 
 try:
     # Python 3
@@ -921,7 +922,7 @@ class PackageManager():
             upgrade_messages = list(set(message_info.keys()) -
                 set(['install']))
             upgrade_messages = sorted(upgrade_messages,
-                cmp=self.compare_versions, reverse=True)
+                key=cmp_to_key(self.compare_versions), reverse=True)
             for version in upgrade_messages:
                 if self.compare_versions(old_version, version) >= 0:
                     break
@@ -955,9 +956,7 @@ class PackageManager():
                 view.set_scratch(True)
 
             def write(string):
-                edit = view.begin_edit()
-                view.insert(edit, view.size(), string)
-                view.end_edit(edit)
+                view.run_command('package_message', {'string': string})
 
             if not view.size():
                 view.settings().set("word_wrap", True)
