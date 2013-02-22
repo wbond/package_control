@@ -68,7 +68,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                     self.manager.install_package(package_name)
 
             # This adds previously installed packages from old versions of PC
-            if package_file_exists(package_name, 'package-metadata.json') and \
+            if package_file_exists(package_name, 'package-metadata.json', False) and \
                     package_name not in self.installed_packages:
                 installed_pkgs.append(package_name)
                 params = {

@@ -25,7 +25,7 @@ def read_package_file(package, relative_path, binary=False):
     console_write(u"Unable to find file %s in the package %s" % (relative_path, package))
     return False
 
-def package_file_exists(package, relative_path):
+def package_file_exists(package, relative_path, verbose=True):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
 
@@ -33,9 +33,9 @@ def package_file_exists(package, relative_path):
         result = _regular_file_exists(package, relative_path)
         if result:
             return result
-            
+
     if int(sublime.version()) >= 3000:
-        return _zip_file_exists(package, relative_path)
+        return _zip_file_exists(package, relative_path, verbose)
 
     return False
 
@@ -53,7 +53,7 @@ def _read_regular_file(package, relative_path, binary=False):
 
     except (FileNotFoundError) as e:
         console_write(u"Unable to find file %s in the package folder for package %s" % (relative_path, package))
-        return False      
+        return False
 
 def _read_zip_file(package, relative_path, binary=False):
     zip_path = os.path.join(sublime.installed_packages_path(),
@@ -93,12 +93,13 @@ def _regular_file_exists(package, relative_path):
     file_path = os.path.join(package_dir, relative_path)
     return os.path.exists(file_path)
 
-def _zip_file_exists(package, relative_path):
+def _zip_file_exists(package, relative_path, verbose):
     zip_path = os.path.join(sublime.installed_packages_path(),
         package + '.sublime-package')
 
     if not os.path.exists(zip_path):
-        console_write(u"Unable to find the package file for %s" % package)
+        if verbose:
+            console_write(u"Unable to find the package file for %s" % package)
         return False
 
     try:
