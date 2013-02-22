@@ -131,7 +131,7 @@ class PackageManager():
             # groups, such as 1.6.9.0
             four_plus_match = re.match('(\d+\.\d+\.\d+)\.(\d+(\.\d+)*)$', v)
             if four_plus_match:
-                v = '%s-%s' % (four_plus_match.group(1), four_plus_match.group(2))
+                v = '%s+%s' % (four_plus_match.group(1), four_plus_match.group(2))
 
             # Semver must have major, minor, patch
             elif re.match('^\d+$', v):
