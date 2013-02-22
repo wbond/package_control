@@ -97,6 +97,7 @@ mods_load_order = [
     '.commands.existing_packages_command',
     '.commands.install_package_command',
     '.commands.list_packages_command',
+    '.commands.package_message_command',
     '.commands.remove_package_command',
     '.commands.upgrade_all_packages_command',
     '.commands.upgrade_package_command',
