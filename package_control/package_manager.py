@@ -328,6 +328,7 @@ class PackageManager():
                 if certs:
                     self.settings['certs'] = self.settings.get('certs', {})
                     self.settings['certs'].update(certs)
+                    set_cache('*.certs', self.settings['certs'], cache_ttl)
 
             repositories.extend(channel_repositories)
         return [repo.strip() for repo in repositories]

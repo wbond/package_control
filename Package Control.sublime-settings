@@ -24,7 +24,7 @@
 	// In both cases the literal "*" means the cert will be checked to ensure
 	// it is present for accessing any URL. This is necessary for proxy
 	// connections, but also useful if you want to provide you own
-	// ca-bundle.crt file.
+	// Pckage Control.ca-bundle file.
 	//
 	// The "my_identifier" and "my_identifier_2" can be any unique string
 	// that Package Control can use as a filename, and ensures that it has
