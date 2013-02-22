@@ -20,7 +20,6 @@ import shutil
 from fnmatch import fnmatch
 import datetime
 import tempfile
-from functools import cmp_to_key
 
 try:
     # Python 3
@@ -29,12 +28,14 @@ except (ValueError):
     # Python 2
     import semver
 
+
 from .show_error import show_error
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
+from .cmp_to_key import cmp_to_key
 
 from .downloaders.urllib2_downloader import UrlLib2Downloader
 from .downloaders.wget_downloader import WgetDownloader

@@ -42,6 +42,7 @@ mods_load_order = [
     '.unicode',
     '.thread_progress',
     '.package_io',
+    '.cmp_to_key',
 
     '.http',
     '.http.invalid_certificate_exception',
