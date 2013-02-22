@@ -20,13 +20,7 @@ import shutil
 from fnmatch import fnmatch
 import datetime
 import tempfile
-
-try:
-    # Python 3
-    from ..lib.all import semver
-except (ValueError):
-    # Python 2
-    import semver
+import semver
 
 from .show_error import show_error
 from .console_write import console_write
@@ -436,7 +430,7 @@ class PackageManager():
         package_names = os.listdir(sublime.packages_path())
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
-        
+
         if int(sublime.version()) > 3000:
             package_files = os.listdir(sublime.installed_packages_path())
             package_names += [file.replace('.sublime-package', '') for file in package_files]
