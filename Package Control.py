@@ -3,9 +3,13 @@ import sys
 
 
 st_version = 2
-# With the way ST3 works, the sublime module is not "available" at startup
-# which results in an empty version number
-if sublime.version() == '' or int(sublime.version()) > 3000:
+
+# Warn about out-dated versions of ST3
+if sublime.version() == '':
+	st_version = 3
+	print('Package Control: Please upgrade to Sublime Text 3 build 3012 or newer')
+
+elif int(sublime.version()) > 3000:
 	st_version = 3
 
 
