@@ -228,7 +228,8 @@ class PackageManager():
         """
 
         try:
-            metadata_json = read_package_file(package, 'package-metadata.json')
+            debug = self.settings.get('debug')
+            metadata_json = read_package_file(package, 'package-metadata.json', debug=debug)
             if metadata_json:
                 return json.loads(metadata_json)
 
