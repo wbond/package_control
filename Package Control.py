@@ -41,6 +41,10 @@ except (ValueError):
 	from package_control.package_cleanup import PackageCleanup
 
 
-# Start shortly after Sublime starts so package renames don't cause errors
-# with keybindings, settings, etc disappearing in the middle of parsing
-sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
+def plugin_loaded():
+	# Start shortly after Sublime starts so package renames don't cause errors
+	# with keybindings, settings, etc disappearing in the middle of parsing
+	sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
+
+if st_version == 2:
+	plugin_loaded()
