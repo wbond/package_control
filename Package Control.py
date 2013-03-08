@@ -13,28 +13,30 @@ elif int(sublime.version()) > 3000:
 	st_version = 3
 
 
-reloader_name = 'package_control.reloader'
+mod_prefix = 'package_control'
 
 # ST3 loads each package as a module, so it needs an extra prefix
 if st_version == 3:
-	reloader_name = 'Package Control.' + reloader_name
-	from imp import reload
+	mod_prefix = 'Package Control.' + mod_prefix
 
 # Make sure all dependencies are reloaded on upgrade
-if reloader_name in sys.modules:
-    reload(sys.modules[reloader_name])
+pc_modules = list()
+for mod_name in sys.modules:
+	if mod_name.startswith(mod_prefix):
+		pc_modules.append(mod_name)
+
+for mod_name in pc_modules:
+	sys.modules.pop(mod_name)
+del pc_modules
 
 
 try:
 	# Python 3
-	from .package_control import reloader
-	
 	from .package_control.commands import *
 	from .package_control.package_cleanup import PackageCleanup
-	
+
 except (ValueError):
 	# Python 2
-	from package_control import reloader
 	from package_control import sys_path
 
 	from package_control.commands import *
