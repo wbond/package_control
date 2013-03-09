@@ -1,10 +1,11 @@
 import json
 
 from ..console_write import console_write
-from .platform_comparator import PlatformComparator
+from ..versions import semver_sort
+from .release_selector import ReleaseSelector
 
 
-class ChannelProvider(PlatformComparator):
+class ChannelProvider(ReleaseSelector):
     """
     Retrieves a channel and provides an API into the information
 
@@ -22,6 +23,7 @@ class ChannelProvider(PlatformComparator):
 
     def __init__(self, channel, package_manager):
         self.channel_info = None
+        self.schema_version = 0.0
         self.channel = channel
         self.package_manager = package_manager
         self.unavailable_packages = []
@@ -56,8 +58,15 @@ class ChannelProvider(PlatformComparator):
             self.channel_info = False
             return
 
-        if str(channel_info['schema_version']) not in ['1.0', '1.1', '1.2']:
-            console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1 or 1.2.' % schema_error, True)
+        try:
+            self.schema_version = float(channel_info.get('schema_version'))
+        except (ValueError):
+            console_write(u'%s the "schema_version" is not a valid number.' % schema_error, True)
+            self.channel_info = False
+            return
+
+        if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
+            console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error, True)
             self.channel_info = False
             return
 
@@ -69,6 +78,10 @@ class ChannelProvider(PlatformComparator):
         self.fetch_channel()
         if self.channel_info == False:
             return False
+
+        if self.schema_version >= 2.0:
+            return {}
+
         return self.channel_info.get('package_name_map', {})
 
     def get_renamed_packages(self):
@@ -77,6 +90,10 @@ class ChannelProvider(PlatformComparator):
         self.fetch_channel()
         if self.channel_info == False:
             return False
+            
+        if self.schema_version >= 2.0:
+            return {}
+
         return self.channel_info.get('renamed_packages', {})
 
     def get_repositories(self):
@@ -90,7 +107,7 @@ class ChannelProvider(PlatformComparator):
             console_write(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel, True)
             return False
 
-        return self.channel_info.get('repositories', {})
+        return self.channel_info.get('repositories', [])
 
     def get_certs(self):
         """
@@ -152,25 +169,32 @@ class ChannelProvider(PlatformComparator):
         self.fetch_channel()
         if self.channel_info == False:
             return False
-        if self.channel_info.get('packages', False) == False:
+
+        # The 2.0 channel schema renamed the key cached package info was
+        # stored under in order to be more clear to new users.
+        packages_key = 'packages_cache' if self.schema_version >= 2.0 else 'packages'
+
+        if self.channel_info.get(packages_key, False) == False:
             return False
-        if self.channel_info['packages'].get(repo, False) == False:
+        if self.channel_info[packages_key].get(repo, False) == False:
             return False
 
         output = {}
-        for package in self.channel_info['packages'][repo]:
+        for package in self.channel_info[packages_key][repo]:
             copy = package.copy()
 
-            platforms = list(copy['platforms'].keys())
-            best_platform = self.get_best_platform(platforms)
+            # In schema version 2.0, we store a list of dicts containing info
+            # about all available releases. These include "version" and
+            # "platforms" keys that are used to pick the download for the
+            # current machine.
+            if self.schema_version >= 2.0:
+                copy = self.select_release(copy)
+            else:
+                copy = self.select_platform(copy)
 
-            if not best_platform:
-                self.unavailable_packages.append(copy['name'])
+            if not copy:
+                self.unavailable_packages.append(package['name'])
                 continue
-
-            copy['downloads'] = copy['platforms'][best_platform]
-
-            del copy['platforms']
 
             copy['url'] = copy['homepage']
             del copy['homepage']

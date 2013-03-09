@@ -3,10 +3,9 @@ import json
 from ..console_write import console_write
 
 
-class NonCachingProvider():
-    """
-    Base for package providers that do not need to cache the JSON
-    """
+class JSONApiClient():
+    def __init__(self, package_manager):
+        self.package_manager = package_manager
 
     def fetch_json(self, url):
         """
@@ -24,14 +23,3 @@ class NonCachingProvider():
         except (ValueError):
             console_write(u'Error parsing JSON from repository %s.' % url, True)
         return False
-
-    def get_unavailable_packages(self):
-        """
-        Method for compatibility with PackageProvider class. These providers
-        are based on API calls, and thus do not support different platform
-        downloads, making it impossible for there to be unavailable packages.
-
-        :return: An empty list
-        """
-
-        return []

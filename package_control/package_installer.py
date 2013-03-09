@@ -58,7 +58,7 @@ class PackageInstaller():
                 continue
             package_entry = [package]
             info = packages[package]
-            download = info['downloads'][0]
+            download = info['download']
 
             if package in installed_packages:
                 installed = True

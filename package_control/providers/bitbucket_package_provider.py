@@ -1,12 +1,13 @@
 import re
-import datetime
 
-from .non_caching_provider import NonCachingProvider
+from ..clients.bitbucket_client import BitBucketClient
 
 
-class BitBucketPackageProvider(NonCachingProvider):
+class BitBucketPackageProvider():
     """
-    Allows using a public BitBucket repository as the source for a single package
+    Allows using a public BitBucket repository as the source for a single package.
+    For legacy purposes, this can also be treated as the source for a Package
+    Control "repository".
 
     :param repo:
         The public web URL to the BitBucket repository. Should be in the format
@@ -26,57 +27,44 @@ class BitBucketPackageProvider(NonCachingProvider):
         return re.search('^https?://bitbucket.org', self.repo) != None
 
     def get_packages(self):
-        """Uses the BitBucket API to construct necessary info for a package"""
+        """
+        Uses the BitBucket API to construct necessary info for a package
 
-        api_url = re.sub('^https?://bitbucket.org/',
-            'https://api.bitbucket.org/1.0/repositories/', self.repo)
-        api_url = api_url.rstrip('/')
+        :return:
+            A list with a single dict containing the keys: "name",
+            "description", "url", "author", "last_modified", "download"
+        """
 
-        repo_info = self.fetch_json(api_url)
+        client = BitBucketClient(self.package_manager)
+
+        repo_info = client.repo_info(self.repo)
         if repo_info == False:
             return False
 
-        # Since HG allows for arbitrary main branch names, we have to hit
-        # this URL just to get that info
-        main_branch_url = api_url + '/main-branch/'
-        main_branch_info = self.fetch_json(main_branch_url)
-        if main_branch_info == False:
+        download = client.download_info(self.repo)
+        if download == False:
             return False
 
-        # Grabbing the changesets is necessary because we construct the
-        # version number from the last commit timestamp
-        changeset_url = api_url + '/changesets/' + main_branch_info['name']
-        last_commit = self.fetch_json(changeset_url)
-        if last_commit == False:
-            return False
-
-        commit_date = last_commit['timestamp']
-        timestamp = datetime.datetime.strptime(commit_date[0:19],
-            '%Y-%m-%d %H:%M:%S')
-        utc_timestamp = timestamp.strftime(
-            '%Y.%m.%d.%H.%M.%S')
-
-        homepage = repo_info['website']
-        if not homepage:
-            homepage = self.repo
-        package = {
+        return [{
             'name': repo_info['name'],
-            'description': repo_info['description'] if \
-                repo_info['description'] else 'No description provided',
-            'url': homepage,
-            'author': repo_info['owner'],
-            'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'downloads': [
-                {
-                    'version': utc_timestamp,
-                    'url': self.repo + '/get/' + \
-                        last_commit['node'] + '.zip'
-                }
-            ]
-        }
-        return {package['name']: package}
+            'description': repo_info['description'],
+            'url': repo_info['url'],
+            'author': repo_info['author'],
+            'last_modified': download.get('date'),
+            'download': download
+        }]
 
     def get_renamed_packages(self):
         """For API-compatibility with :class:`PackageProvider`"""
 
         return {}
+
+    def get_unavailable_packages(self):
+        """
+        Method for compatibility with PackageProvider class. These providers
+        are based on API calls, and thus do not support different platform
+        downloads, making it impossible for there to be unavailable packages.
+
+        :return: An empty list
+        """
+        return []

@@ -42,7 +42,7 @@ mods_load_order = [
     '.unicode',
     '.thread_progress',
     '.package_io',
-    '.cmp_to_key',
+    '.versions',
 
     '.http',
     '.http.invalid_certificate_exception',
@@ -55,15 +55,18 @@ mods_load_order = [
     '.http.validating_https_connection',
     '.http.validating_https_handler',
 
+    '.clients',
+    '.clients.bitbucket_client',
+    '.clients.github_client',
+    '.clients.json_api_client',
+
     '.providers',
     '.providers.bitbucket_package_provider',
     '.providers.channel_provider',
-    '.providers.datetime',
     '.providers.github_package_provider',
     '.providers.github_user_provider',
-    '.providers.non_caching_provider',
     '.providers.package_provider',
-    '.providers.platform_comparator',
+    '.providers.release_selector',
 
     '.downloaders',
     '.downloaders.binary_not_found_error',

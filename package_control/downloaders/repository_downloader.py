@@ -7,7 +7,7 @@ from ..providers.package_provider import PackageProvider
 
 
 # The providers (in order) to check when trying to download repository info
-_package_providers = [BitBucketPackageProvider, GitHubPackageProvider,
+_repository_providers = [BitBucketPackageProvider, GitHubPackageProvider,
     GitHubUserProvider, PackageProvider]
 
 
@@ -33,7 +33,7 @@ class RepositoryDownloader(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        for provider_class in _package_providers:
+        for provider_class in _repository_providers:
             provider = provider_class(self.repo, self.package_manager)
             if provider.match_url():
                 break
@@ -42,13 +42,14 @@ class RepositoryDownloader(threading.Thread):
             self.packages = False
             return
 
-        mapped_packages = {}
-        for package in list(packages.keys()):
-            mapped_package = self.name_map.get(package, package)
-            mapped_packages[mapped_package] = packages[package]
-            mapped_packages[mapped_package]['name'] = mapped_package
-        packages = mapped_packages
+        self.packages = {}  
+        for package in packages:
 
-        self.packages = packages
+            # Allow name mapping of packages for schema version < 2.0
+            package_name = self.name_map.get(package['name'], package['name'])
+            package['name'] = package_name
+
+            self.packages[package_name] = package
+
         self.renamed_packages = provider.get_renamed_packages()
         self.unavailable_packages = provider.get_unavailable_packages()

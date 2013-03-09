@@ -21,21 +21,13 @@ from fnmatch import fnmatch
 import datetime
 import tempfile
 
-try:
-    # Python 3
-    from ..lib.all import semver
-except (ValueError):
-    # Python 2
-    import semver
-
-
 from .show_error import show_error
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
-from .cmp_to_key import cmp_to_key
+from .versions import semver_cmp, semver_sort
 
 from .downloaders.urllib2_downloader import UrlLib2Downloader
 from .downloaders.wget_downloader import WgetDownloader
@@ -62,7 +54,7 @@ class PackageManager():
     Allows downloading, creating, installing, upgrading, and deleting packages
 
     Delegates metadata retrieval to the _channel_providers and
-    _package_providers classes. Uses VcsUpgrader-based classes for handling
+    _repository_providers classes. Uses VcsUpgrader-based classes for handling
     git and hg repositories in the Packages folder. Downloader classes are
     utilized to fetch contents of URLs.
 
@@ -100,53 +92,6 @@ class PackageManager():
 
         self.settings['platform'] = sublime.platform()
         self.settings['version'] = sublime.version()
-
-    def compare_versions(self, version1, version2):
-        """
-        Compares to version strings to see which is greater
-
-        Date-based version numbers (used by GitHub and BitBucket providers)
-        are automatically pre-pended with a 0 so they are always less than
-        version 1.0.
-
-        :return:
-            -1  if version1 is less than version2
-             0  if they are equal
-             1  if version1 is greater than version2
-        """
-
-        def semver_compat(v):
-            # We prepend 0 to all date-based version numbers so that developers
-            # may switch to explicit versioning from GitHub/BitBucket
-            # versioning based on commit dates.
-            #
-            # When translating dates into semver, the way to get each date
-            # segment into the version is to treat the year and month as
-            # minor and patch, and then the rest as a numeric build version
-            # with four different parts. The result looks like:
-            # 0.2012.11+10.31.23.59
-            date_match = re.match('(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
-            if date_match:
-                v = '0.%s.%s+%s.%s.%s.%s' % date_match.groups()
-
-            # This handles version that were valid pre-semver with 4+ dotted
-            # groups, such as 1.6.9.0
-            four_plus_match = re.match('(\d+\.\d+\.\d+)\.(\d+(\.\d+)*)$', v)
-            if four_plus_match:
-                v = '%s+%s' % (four_plus_match.group(1), four_plus_match.group(2))
-
-            # Semver must have major, minor, patch
-            elif re.match('^\d+$', v):
-                v += '.0.0'
-            elif re.match('^\d+\.\d+$', v):
-                v += '.0'
-            return v
-
-        try:
-            return semver.compare(semver_compat(version1), semver_compat(version2))
-        except (ValueError) as e:
-            console_write(u"Error comparing versions - %s" % e, True)
-            return 0
 
     def download_url(self, url, error_message):
         """
@@ -599,7 +544,7 @@ class PackageManager():
             show_error(u'The package specified, %s, is not available' % package_name)
             return False
 
-        download = packages[package_name]['downloads'][0]
+        download = packages[package_name]['download']
         url = download['url']
 
         package_filename = package_name + \
@@ -781,7 +726,7 @@ class PackageManager():
 
             with open_compat(package_metadata_file, 'w') as f:
                 metadata = {
-                    "version": packages[package_name]['downloads'][0]['version'],
+                    "version": packages[package_name]['download']['version'],
                     "url": packages[package_name]['url'],
                     "description": packages[package_name]['description']
                 }
@@ -792,14 +737,14 @@ class PackageManager():
                 params = {
                     'package': package_name,
                     'operation': 'upgrade',
-                    'version': packages[package_name]['downloads'][0]['version'],
+                    'version': packages[package_name]['download']['version'],
                     'old_version': old_version
                 }
             else:
                 params = {
                     'package': package_name,
                     'operation': 'install',
-                    'version': packages[package_name]['downloads'][0]['version']
+                    'version': packages[package_name]['download']['version']
                 }
             self.record_usage(params)
 
@@ -923,10 +868,9 @@ class PackageManager():
         elif is_upgrade and old_version:
             upgrade_messages = list(set(message_info.keys()) -
                 set(['install']))
-            upgrade_messages = sorted(upgrade_messages,
-                key=cmp_to_key(self.compare_versions), reverse=True)
+            upgrade_messages = semver_sort(upgrade_messages, reverse=True)
             for version in upgrade_messages:
-                if self.compare_versions(old_version, version) >= 0:
+                if semver_cmp(old_version, version) >= 0:
                     break
                 if not output:
                     message = '\n\n%s:\n%s\n' % (package,
