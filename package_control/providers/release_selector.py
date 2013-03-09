@@ -1,5 +1,7 @@
 import sublime
 
+from ..versions import version_sort
+
 
 class ReleaseSelector():
     """
@@ -18,7 +20,7 @@ class ReleaseSelector():
             added that contains a dict with "version", "url" and "date" keys
         """
 
-        releases = semver_sort(package_info['releases'])
+        releases = version_sort(package_info['releases'])
 
         for release in releases:
             platforms = release.get('platforms', '*')

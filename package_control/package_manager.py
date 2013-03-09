@@ -27,7 +27,7 @@ from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
-from .versions import semver_cmp, semver_sort
+from .versions import version_comparable, version_sort
 
 from .downloaders.urllib2_downloader import UrlLib2Downloader
 from .downloaders.wget_downloader import WgetDownloader
@@ -868,9 +868,11 @@ class PackageManager():
         elif is_upgrade and old_version:
             upgrade_messages = list(set(message_info.keys()) -
                 set(['install']))
-            upgrade_messages = semver_sort(upgrade_messages, reverse=True)
+            upgrade_messages = version_sort(upgrade_messages, reverse=True)
+            old_version_cmp = version_comparable(old_version)
+
             for version in upgrade_messages:
-                if semver_cmp(old_version, version) >= 0:
+                if version_comparable(version) <= old_version_cmp:
                     break
                 if not output:
                     message = '\n\n%s:\n%s\n' % (package,

@@ -1,86 +1,255 @@
-# -*- coding: utf-8 -*-
-# This code is copyright Konstantine Rybnikov <k-bx@k-bx.com>, and is
-# available at https://github.com/k-bx/python-semver and is licensed under the
-# BSD License
+# Copyright 2013, Zachary King, FichteFoll and Will Bond
+# Licensed under the MIT license
 
 import re
+import sys
 
-_REGEX = re.compile('^(?P<major>[0-9]+)'
-                    '\.(?P<minor>[0-9]+)'
-                    '\.(?P<patch>[0-9]+)'
-                    '(\-(?P<prerelease>[0-9A-Za-z]+(\.[0-9A-Za-z]+)*))?'
-                    '(\+(?P<build>[0-9A-Za-z]+(\.[0-9A-Za-z]+)*))?$')
-
-if 'cmp' not in __builtins__:
-    cmp = lambda a,b: (a > b) - (a < b)
-
-def parse(version):
-    """
-    Parse version to major, minor, patch, pre-release, build parts.
-    """
-    match = _REGEX.match(version)
-    if match is None:
-        raise ValueError('%s is not valid SemVer string' % version)
-
-    verinfo = match.groupdict()
-
-    verinfo['major'] = int(verinfo['major'])
-    verinfo['minor'] = int(verinfo['minor'])
-    verinfo['patch'] = int(verinfo['patch'])
-
-    return verinfo
+if sys.version_info[0] == 3:
+    basestring = str
+    cmp = lambda a, b: (a > b) - (a < b)
 
 
-def compare(ver1, ver2):
-    def nat_cmp(a, b):
-        a, b = a or '', b or ''
-        convert = lambda text: text.isdigit() and int(text) or text.lower()
-        alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-        return cmp(alphanum_key(a), alphanum_key(b))
+class SemVer(object):
 
-    def compare_by_keys(d1, d2):
-        for key in ['major', 'minor', 'patch']:
-            v = cmp(d1.get(key), d2.get(key))
-            if v:
-                return v
-        rc1, rc2 = d1.get('prerelease'), d2.get('prerelease')
-        build1, build2 = d1.get('build'), d2.get('build')
-        rccmp = nat_cmp(rc1, rc2)
-        buildcmp = nat_cmp(build1, build2)
-        if not (rc1 or rc2):
-            return buildcmp
-        elif not rc1:
-            return 1
-        elif not rc2:
-            return -1
-        return rccmp or buildcmp or 0
+    # Static class variables
+    base_regex = (r'([v=]+\s*)?'
+                  r'(?P<major>[0-9]+)'
+                  r'\.(?P<minor>[0-9]+)'
+                  r'\.(?P<patch>[0-9]+)'
+                  r'(\-(?P<prerelease>[0-9A-Za-z]+(\.[0-9A-Za-z]+)*))?'
+                  r'(\+(?P<build>[0-9A-Za-z]+(\.[0-9A-Za-z]+)*))?')
+    search_regex = re.compile(base_regex)
+    match_regex  = re.compile('^%s$' % base_regex)  # required because of $ anchor
 
-    v1, v2 = parse(ver1), parse(ver2)
+    # Instance variables
+    _initialized = False
 
-    return compare_by_keys(v1, v2)
+    # Magic methods
+    def __init__(self, version=None, clean=False):
+        super(SemVer, self).__init__()
 
+        if version:
+            if clean:
+                version = self.__class__.clean(version) or version
+            self.parse(version)
 
-def match(version, match_expr):
-    prefix = match_expr[:2]
-    if prefix in ('>=', '<=', '=='):
-        match_version = match_expr[2:]
-    elif prefix and prefix[0] in ('>', '<', '='):
-        prefix = prefix[0]
-        match_version = match_expr[1:]
-    else:
-        raise ValueError("match_expr parameter should be in format <op><ver>, "
-                         "where <op> is one of ['<', '>', '==', '<=', '>=']. "
-                         "You provided: %r" % match_expr)
+    def __str__(self):
+        temp_str = str(self.major) + "." + str(self.minor) + "." + str(self.patch)
+        if self.prerelease is not None:
+            temp_str += "-" + str(self.prerelease)
+        if self.build is not None:
+            temp_str += "+" + str(self.build)
+        return temp_str
 
-    possibilities_dict = {
-        '>': (1,),
-        '<': (-1,),
-        '==': (0,),
-        '>=': (0, 1),
-        '<=': (-1, 0)
-    }
+    def __repr__(self):
+        return 'SemVer("%s")' % str(self)
 
-    possibilities = possibilities_dict[prefix]
-    cmp_res = compare(version, match_version)
+    def __iter__(self):
+        if self._initialized is True:
+            result = [self.major,
+                    self.minor,
+                    self.patch]
+            if self.prerelease is not None:
+                result.append(self.prerelease)
+            if self.build is not None:
+                result.append(self.build)
+            return iter(result)
+        else:
+            return False
 
-    return cmp_res in possibilities
+    def __bool__(self):
+        return self._initialized
+
+    # __bool__ is Py3
+    __nonzero__ = __bool__
+
+    # Magic comparing methods
+    def __gt__(self, other):
+        if isinstance(other, SemVer):
+            if self._compare(other) == 1:
+                return True
+            else:
+                return False
+        else:
+            return NotImplemented
+
+    def __eq__(self, other):
+        if isinstance(other, SemVer):
+            if self._compare(other) == 0:
+                return True
+            else:
+                return False
+        else:
+            return NotImplemented
+
+    def __lt__(self, other):
+        return not (self > other or self == other)
+
+    def __ge__(self, other):
+        return not (self < other)
+
+    def __le__(self, other):
+        return not (self > other)
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    # Utility functions
+    def satisfies(self, comp_range):
+        comp_range = comp_range.replace(" - ", "---")
+        or_ranges = comp_range.split(" || ")  # Split sting into segments joined by OR
+        or_comps = []
+        for or_range in or_ranges:
+            and_ranges = or_range.split(' ')
+            and_comps = []
+            for and_range in and_ranges:
+                # The 1.x and 1.2.x styles are equivalent to the more
+                # complex forms ~1 and ~1.2
+                x_regex = '(\d+)(.\d+)?.x'
+                x_match = re.match(x_regex, and_range)
+                if x_match:
+                    and_range = '~' + and_range.replace('.x', '')
+
+                if and_range.find('---') != -1:
+                    ge_version, le_version = and_range.split('---')
+                    and_comps.append(['__ge__', ge_version])
+                    and_comps.append(['__le__', le_version])
+
+                elif len(and_range) > 0 and and_range[0] == '~':
+                    version = and_range[1:]
+                    
+                    regex = (r'(?P<major>[0-9]+)'
+                             r'(?P<minor>.[0-9]+)?'
+                             r'(?P<patch>.[0-9]+)?')
+                    match = re.match(regex, version)
+                    ge_info = match.groupdict()
+                    lt_info = {}
+
+                    if not ge_info['minor']:
+                        ge_info['minor'] = '.0'
+
+                        ge_major = int(ge_info['major'])
+                        lt_info['major'] = str(ge_major + 1)
+                        lt_info['minor'] = '.0'
+
+                    else:
+                        lt_info['major'] = ge_info['major']
+                        ge_minor = int(ge_info['minor'].replace('.', ''))
+                        lt_info['minor'] = '.' + str(ge_minor + 1)
+
+                    if not ge_info['patch']:
+                        ge_info['patch'] = '.0'
+                    
+                    lt_info['patch'] = '.0'
+
+                    ge_version = ge_info['major'] + ge_info['minor'] + ge_info['patch']
+                    lt_version = lt_info['major'] + lt_info['minor'] + lt_info['patch']
+                    and_comps.append(['__ge__', ge_version])
+                    and_comps.append(['__lt__', lt_version])
+
+                else:
+                    op_match = re.match('(>=|<=|>|<)(.*)$', and_range)
+                    if not op_match:
+                        raise ValueError('%s is not a valid SemVer range' % comp_range)
+                    
+                    op, version = op_match.groups()
+                    ops = {
+                        '>=': '__ge__',
+                        '<=': '__le__',
+                        '>': '__gt__',
+                        '<': '__lt__'
+                    }
+                    and_comps.append([ops[op], version])
+
+            or_comps.append(and_comps)
+
+        for or_comps in or_comps:
+            and_comp_true = True
+            for ands in or_comps:
+                method = getattr(self, ands[0])
+                version = SemVer(ands[1])
+                and_comp_true = and_comp_true and method(version)
+            if and_comp_true:
+                return True
+
+        return False
+
+    @classmethod
+    def valid(cls, version):
+        if not isinstance(version, basestring):
+            raise TypeError("%r is not a string" % version)
+
+        if cls.match_regex.match(version):
+            return True
+        else:
+            return False
+
+    @classmethod
+    def clean(cls, version):
+        m = cls.search_regex.search(version)
+        if m:
+            return version[m.start():m.end()]
+        else:
+            return None
+
+    def parse(self, version):
+        if self._initialized:
+            raise RuntimeError("SemVer instance has already been initialized with %s" % str(self))
+        if not isinstance(version, basestring):
+            raise TypeError("%r is not a string" % version)
+
+        match = self.match_regex.match(version)
+
+        if match is None:
+            raise ValueError('%s is not a valid SemVer string' % version)
+
+        info = match.groupdict()
+
+        self.major = int(info['major'])
+        self.minor = int(info['minor'])
+        self.patch = int(info['patch'])
+
+        if info['prerelease'] is not None:
+            self.prerelease = info['prerelease']
+        else:
+            self.prerelease = None
+        if info['build'] is not None:
+            self.build = info['build']
+        else:
+            self.build = None
+
+        self._initialized = True
+        return True
+
+    def _compare(self, other):
+        # Because zip truncates to the shortest parameter list
+        # this is required to make the longer list win
+        cp_len = lambda t, i=0: cmp(len(t[i]), len(t[not i]))
+
+        i = 0
+        t1 = [tuple(self), tuple(other)]
+        for x1, x2 in zip(*t1):
+            if i > 2:
+                # Use numeric comp or lexicographical order - split by '.' for tag and build
+                t2 = [x1.split('.'), x2.split('.')]
+                for y1, y2 in zip(*t2):
+                    if y1.isdigit() and y2.isdigit():
+                        y1 = int(y1)
+                        y2 = int(y2)
+                    if y1 > y2:
+                        return 1
+                    elif y1 < y2:
+                        return -1
+                # The "longer" version is greater
+                d = cp_len(t2)
+                if d:
+                    return d
+            else:
+                if x1 > x2:
+                    return 1
+                elif x1 < x2:
+                    return -1
+            i += 1
+
+        # The "shorter" version is greater
+        return cp_len(t1, 1)

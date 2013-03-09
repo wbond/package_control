@@ -1,7 +1,6 @@
 import json
 
 from ..console_write import console_write
-from ..versions import semver_sort
 from .release_selector import ReleaseSelector
 
 

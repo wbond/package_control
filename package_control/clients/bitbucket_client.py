@@ -1,6 +1,6 @@
 import re
 
-from ..versions import semver_sort, semver_filter
+from ..versions import version_sort, version_filter
 from .json_api_client import JSONApiClient
 
 
@@ -50,8 +50,8 @@ class BitBucketClient(JSONApiClient):
             tags_list = self.fetch_json(tags_url)
             if tags_list == False:
                 return False
-            tags = semver_filter(tags_list.keys())
-            tags = semver_sort(tags, reverse=True)
+            tags = version_filter(tags_list.keys())
+            tags = version_sort(tags, reverse=True)
             commit = tags[0]
 
         else:

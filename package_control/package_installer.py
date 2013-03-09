@@ -8,6 +8,7 @@ from .thread_progress import ThreadProgress
 from .package_manager import PackageManager
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
+from .versions import version_comparable
 
 
 class PackageInstaller():
@@ -116,13 +117,13 @@ class PackageInstaller():
                             extra = ' %s with %s' % (installed_version_name,
                                 new_version)
                     else:
-                        res = self.manager.compare_versions(
-                            installed_version, download['version'])
-                        if res < 0:
+                        installed_version = version_comparable(installed_version)
+                        download_version = version_comparable(download['version'])
+                        if download_version > installed_version:
                             action = 'upgrade'
                             extra = ' to %s from %s' % (new_version,
                                 installed_version_name)
-                        elif res > 0:
+                        elif download_version < installed_version:
                             action = 'downgrade'
                             extra = ' to %s from %s' % (new_version,
                                 installed_version_name)
