@@ -21,7 +21,7 @@ class GitHubClient(JSONApiClient):
         if repo_match == None:
             return False
 
-        user_repo = repo_match.groups(1)
+        user_repo = repo_match.group(1)
         api_url = self.make_api_url(user_repo)
 
         info = self.fetch_json(api_url)
@@ -35,7 +35,7 @@ class GitHubClient(JSONApiClient):
         if user_match == None:
             return False
 
-        user = user_match.groups(1)
+        user = user_match.group(1)
         api_url = self.make_api_url(user)
 
         repos_info = self.fetch_json(api_url)
@@ -62,15 +62,15 @@ class GitHubClient(JSONApiClient):
         tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
         
         if repo_match:
-            user_repo = repo_match.groups(1)
+            user_repo = repo_match.group(1)
             commit = 'master'
 
         elif branch_match:
-            user_repo = branch_match.groups(1)
-            commit = branch_match.groups(2)
+            user_repo = branch_match.group(1)
+            commit = branch_match.group(2)
         
         elif tags_match:
-            user_repo = tags_match.groups(1)
+            user_repo = tags_match.group(1)
             tags_url = self.make_api_url(user_repo, '/tags')
             tags_list = self.fetch_json(tags_url)
             if tags_list == False:

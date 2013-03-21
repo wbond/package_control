@@ -94,16 +94,16 @@ class ReleaseSelector():
         range_match = re.match('(\d+) - (\d+)$', version_range)
 
         if gt_match:
-            min_version = int(gt_match.groups(1)) + 1
+            min_version = int(gt_match.group(1)) + 1
         elif ge_match:
-            min_version = int(ge_match.groups(1))
+            min_version = int(ge_match.group(1))
         elif lt_match:
-            max_version = int(lt_match.groups(1)) - 1
+            max_version = int(lt_match.group(1)) - 1
         elif le_match:
-            max_version = int(le_match.groups(1))
+            max_version = int(le_match.group(1))
         elif range_match:
-            min_version = int(range_match.groups(1))
-            max_version = int(range_match.groups(2))
+            min_version = int(range_match.group(1))
+            max_version = int(range_match.group(2))
         else:
             return None
 

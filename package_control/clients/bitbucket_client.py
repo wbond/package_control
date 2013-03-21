@@ -10,7 +10,7 @@ class BitBucketClient(JSONApiClient):
         if repo_match == None:
             return False
 
-        user_repo = repo_match.groups(1)
+        user_repo = repo_match.group(1)
         api_url = self.make_api_url(user_repo)
 
         info = self.fetch_json(api_url)
@@ -33,7 +33,7 @@ class BitBucketClient(JSONApiClient):
         if repo_match:
             # Since HG allows for arbitrary main branch names, we have to hit
             # this URL just to get that info
-            user_repo = repo_match.groups(1)
+            user_repo = repo_match.group(1)
             main_branch_url = self.make_api_url(user_repo, '/main-branch')
             main_branch_info = self.fetch_json(main_branch_url)
             if main_branch_info == False:
@@ -41,11 +41,11 @@ class BitBucketClient(JSONApiClient):
             commit = main_branch_info['name']
 
         elif branch_match:
-            user_repo = branch_match.groups(1)
-            commit = branch_match.groups(2)
+            user_repo = branch_match.group(1)
+            commit = branch_match.group(2)
         
         elif tags_match:
-            user_repo = tags_match.groups(1)
+            user_repo = tags_match.group(1)
             tags_url = self.make_api_url(user_repo, '/tags')
             tags_list = self.fetch_json(tags_url)
             if tags_list == False:
