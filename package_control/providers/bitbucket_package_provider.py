@@ -13,13 +13,21 @@ class BitBucketPackageProvider():
         The public web URL to the BitBucket repository. Should be in the format
         `https://bitbucket.org/user/package`.
 
-    :param package_manager:
-        An instance of :class:`PackageManager` used to access the API
+    :param settings:
+        A dict containing at least the following fields:
+          `cache_length`,
+          `debug`,
+          `timeout`,
+          `user_agent`,
+          `http_proxy`,
+          `https_proxy`,
+          `proxy_username`,
+          `proxy_password`
     """
 
-    def __init__(self, repo, package_manager):
+    def __init__(self, repo, settings):
         self.repo = repo
-        self.package_manager = package_manager
+        self.settings = settings
 
     def match_url(self):
         """Indicates if this provider can handle the provided repo"""
@@ -35,7 +43,7 @@ class BitBucketPackageProvider():
             "description", "url", "author", "last_modified", "download"
         """
 
-        client = BitBucketClient(self.package_manager)
+        client = BitBucketClient(self.settings)
 
         repo_info = client.repo_info(self.repo)
         if repo_info == False:

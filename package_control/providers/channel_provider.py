@@ -2,6 +2,7 @@ import json
 
 from ..console_write import console_write
 from .release_selector import ReleaseSelector
+from ..download_manager import DownloadManager
 
 
 class ChannelProvider(ReleaseSelector):
@@ -16,15 +17,23 @@ class ChannelProvider(ReleaseSelector):
     :param channel:
         The URL of the channel
 
-    :param package_manager:
-        An instance of :class:`PackageManager` used to download the file
+    :param settings:
+        A dict containing at least the following fields:
+          `cache_length`,
+          `debug`,
+          `timeout`,
+          `user_agent`,
+          `http_proxy`,
+          `https_proxy`,
+          `proxy_username`,
+          `proxy_password`
     """
 
-    def __init__(self, channel, package_manager):
+    def __init__(self, channel, settings):
         self.channel_info = None
         self.schema_version = 0.0
         self.channel = channel
-        self.package_manager = package_manager
+        self.settings = settings
         self.unavailable_packages = []
 
     def match_url(self):
@@ -38,7 +47,8 @@ class ChannelProvider(ReleaseSelector):
         if self.channel_info != None:
             return
 
-        channel_json = self.package_manager.download_url(self.channel,
+        download_manager = DownloadManager(self.settings)
+        channel_json = download_manager.download_url(self.channel,
             'Error downloading channel.')
         if channel_json == False:
             self.channel_info = False

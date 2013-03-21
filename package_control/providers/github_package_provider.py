@@ -15,14 +15,22 @@ class GitHubPackageProvider():
         `https://github.com/user/package/tree/{branch_name}` for any other
         branch.
 
-    :param package_manager:
-        An instance of :class:`PackageManager` used to access the API
+    :param settings:
+        A dict containing at least the following fields:
+          `cache_length`,
+          `debug`,
+          `timeout`,
+          `user_agent`,
+          `http_proxy`,
+          `https_proxy`,
+          `proxy_username`,
+          `proxy_password`
     """
 
-    def __init__(self, repo, package_manager):
+    def __init__(self, repo, settings):
         # Clean off the trailing .git to be more forgiving
         self.repo = re.sub('\.git$', '', repo)
-        self.package_manager = package_manager
+        self.settings = settings
 
     def match_url(self):
         """Indicates if this provider can handle the provided repo"""
@@ -41,7 +49,7 @@ class GitHubPackageProvider():
             "description", "url", "author", "last_modified", "download"
         """
 
-        client = GitHubClient(self.package_manager)
+        client = GitHubClient(self.settings)
 
         repo_info = client.repo_info(self.repo)
         if repo_info == False:

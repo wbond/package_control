@@ -12,13 +12,21 @@ class GitHubUserProvider():
         The public web URL to the GitHub user/org. Should be in the format
         `https://github.com/user`.
 
-    :param package_manager:
-        An instance of :class:`PackageManager` used to access the API
+    :param settings:
+        A dict containing at least the following fields:
+          `cache_length`,
+          `debug`,
+          `timeout`,
+          `user_agent`,
+          `http_proxy`,
+          `https_proxy`,
+          `proxy_username`,
+          `proxy_password`
     """
 
-    def __init__(self, repo, package_manager):
+    def __init__(self, repo, settings):
         self.repo = repo
-        self.package_manager = package_manager
+        self.settings = settings
 
     def match_url(self):
         """Indicates if this provider can handle the provided repo"""
@@ -28,7 +36,7 @@ class GitHubUserProvider():
     def get_packages(self):
         """Uses the GitHub API to construct necessary info for all packages"""
 
-        client = GitHubClient(self.package_manager)
+        client = GitHubClient(self.settings)
 
         user_repos = client.user_info(self.repo)
         if user_repos == False:

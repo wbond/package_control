@@ -15,8 +15,16 @@ class RepositoryDownloader(threading.Thread):
     """
     Downloads information about a repository in the background
 
-    :param package_manager:
-        An instance of :class:`PackageManager` used to download files
+    :param settings:
+        A dict containing at least the following fields:
+          `cache_length`,
+          `debug`,
+          `timeout`,
+          `user_agent`,
+          `http_proxy`,
+          `https_proxy`,
+          `proxy_username`,
+          `proxy_password`
 
     :param name_map:
         The dict of name mapping for URL slug -> package name
@@ -25,8 +33,8 @@ class RepositoryDownloader(threading.Thread):
         The URL of the repository to download info about
     """
 
-    def __init__(self, package_manager, name_map, repo):
-        self.package_manager = package_manager
+    def __init__(self, settings, name_map, repo):
+        self.settings = settings
         self.repo = repo
         self.packages = {}
         self.name_map = name_map
@@ -34,7 +42,7 @@ class RepositoryDownloader(threading.Thread):
 
     def run(self):
         for provider_class in _repository_providers:
-            provider = provider_class(self.repo, self.package_manager)
+            provider = provider_class(self.repo, self.settings)
             if provider.match_url():
                 break
         packages = provider.get_packages()

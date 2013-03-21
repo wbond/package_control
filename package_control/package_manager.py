@@ -1,12 +1,9 @@
 try:
     # Python 3
-    from urllib.parse import urlparse, urlencode
-    import urllib.request as urllib_compat
+    from urllib.parse import urlencode
 except (ImportError):
     # Python 2
-    from urlparse import urlparse
     from urllib import urlencode
-    import urllib2 as urllib_compat
 
 import sublime
 import sys
@@ -29,15 +26,10 @@ from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
 from .versions import version_comparable, version_sort
 
-from .downloaders.urllib_downloader import UrlLibDownloader
-from .downloaders.wget_downloader import WgetDownloader
-from .downloaders.curl_downloader import CurlDownloader
 from .downloaders.repository_downloader import RepositoryDownloader
-from .downloaders.binary_not_found_error import BinaryNotFoundError
+from .download_manager import DownloadManager
 
 from .providers.channel_provider import ChannelProvider
-
-from .http.rate_limit_exception import RateLimitException
 
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
@@ -92,73 +84,6 @@ class PackageManager():
 
         self.settings['platform'] = sublime.platform()
         self.settings['version'] = sublime.version()
-
-    def download_url(self, url, error_message):
-        """
-        Downloads a URL and returns the contents
-
-        :param url:
-            The string URL to download
-
-        :param error_message:
-            The error message to include if the download fails
-
-        :return:
-            The string contents of the URL, or False on error
-        """
-
-        has_ssl = 'ssl' in sys.modules and hasattr(urllib_compat, 'HTTPSHandler')
-        is_ssl = re.search('^https://', url) != None
-        downloader = None
-
-        if (is_ssl and has_ssl) or not is_ssl:
-            downloader = UrlLibDownloader(self.settings)
-        else:
-            for downloader_class in [CurlDownloader, WgetDownloader]:
-                try:
-                    downloader = downloader_class(self.settings)
-                    break
-                except (BinaryNotFoundError):
-                    pass
-
-        if not downloader:
-            show_error(u'Unable to download %s due to no ssl module available and no capable program found. Please install curl or wget.' % url)
-            return False
-
-        url = url.replace(' ', '%20')
-        hostname = urlparse(url).hostname.lower()
-        timeout = self.settings.get('timeout', 3)
-
-        rate_limited_domains = get_cache('rate_limited_domains', [])
-
-        if self.settings.get('debug'):
-            try:
-                ip = socket.gethostbyname(hostname)
-            except (socket.gaierror) as e:
-                ip = unicode_from_os(e)
-
-            console_write(u"Download Debug", True)
-            console_write(u"  URL: %s" % url)
-            console_write(u"  Resolved IP: %s" % ip)
-            console_write(u"  Timeout: %s" % str(timeout))
-
-        if hostname in rate_limited_domains:
-            if self.settings.get('debug'):
-                console_write(u"  Skipping due to hitting rate limit for %s" % hostname)
-            return False
-
-        try:
-            return downloader.download(url, error_message, timeout, 3)
-        except (RateLimitException) as e:
-
-            rate_limited_domains.append(hostname)
-            set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
-
-            error_string = (u'Hit rate limit of %s for %s, skipping all futher ' +
-                u'download requests for this domain') % (e.limit, e.host)
-            console_write(error_string, True)
-
-        return False
 
     def get_metadata(self, package):
         """
@@ -238,7 +163,7 @@ class PackageManager():
                     self.settings.get('renamed_packages') == None:
 
                 for provider_class in _channel_providers:
-                    provider = provider_class(channel, self)
+                    provider = provider_class(channel, self.settings)
                     if provider.match_url():
                         break
 
@@ -310,7 +235,7 @@ class PackageManager():
                 packages.update(repository_packages)
 
             if repository_packages == None:
-                downloader = RepositoryDownloader(self,
+                downloader = RepositoryDownloader(self.settings,
                     self.settings.get('package_name_map', {}), repo)
                 domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1',
                     repo)
@@ -594,7 +519,8 @@ class PackageManager():
             old_version = self.get_metadata(package_name).get('version')
             is_upgrade = old_version != None
 
-            package_bytes = self.download_url(url, 'Error downloading package.')
+            download_manager = DownloadManager(self.settings)
+            package_bytes = download_manager.download_url(url, 'Error downloading package.')
             if package_bytes == False:
                 return False
             with open_compat(tmp_package_path, "wb") as package_file:
@@ -1018,7 +944,8 @@ class PackageManager():
         params['sublime_version'] = self.settings.get('version')
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
-        result = self.download_url(url, 'Error submitting usage information.')
+        download_manager = DownloadManager(self.settings)
+        result = download_manager.download_url(url, 'Error submitting usage information.')
         if result == False:
             return
 

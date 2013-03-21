@@ -13,6 +13,7 @@ from ..console_write import console_write
 from .release_selector import ReleaseSelector
 from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
+from ..download_manager import DownloadManager
 
 
 class PackageProvider(ReleaseSelector):
@@ -29,15 +30,23 @@ class PackageProvider(ReleaseSelector):
     :param repo:
         The URL of the package repository
 
-    :param package_manager:
-        An instance of :class:`PackageManager` used to download the file
+    :param settings:
+        A dict containing at least the following fields:
+          `cache_length`,
+          `debug`,
+          `timeout`,
+          `user_agent`,
+          `http_proxy`,
+          `https_proxy`,
+          `proxy_username`,
+          `proxy_password`
     """
 
-    def __init__(self, repo, package_manager):
+    def __init__(self, repo, settings):
         self.repo_info = None
         self.schema_version = 0.0
         self.repo = repo
-        self.package_manager = package_manager
+        self.settings = settings
         self.unavailable_packages = []
 
     def match_url(self):
@@ -78,7 +87,8 @@ class PackageProvider(ReleaseSelector):
             self.repo_info['packages'].extend(included_packages)
 
     def fetch_url(self, url):
-        json_string = self.package_manager.download_url(url,
+        download_manager = DownloadManager(self.settings)
+        json_string = download_manager.download_url(url,
             'Error downloading repository.')
         if json_string == False:
             return json_string
@@ -130,8 +140,8 @@ class PackageProvider(ReleaseSelector):
             console_write(u'%s the "packages" JSON key is missing.' % schema_error, True)
             return False
 
-        github_client = GitHubClient(self.package_manager)
-        bitbucket_client = BitBucketClient(self.package_manager)
+        github_client = GitHubClient(self.settings)
+        bitbucket_client = BitBucketClient(self.settings)
 
         for package in self.repo_info['packages']:
             info = {}

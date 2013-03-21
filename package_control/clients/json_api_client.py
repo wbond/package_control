@@ -1,11 +1,12 @@
 import json
 
 from ..console_write import console_write
+from ..download_manager import DownloadManager
 
 
 class JSONApiClient():
-    def __init__(self, package_manager):
-        self.package_manager = package_manager
+    def __init__(self, settings):
+        self.settings = settings
 
     def fetch_json(self, url):
         """
@@ -14,7 +15,8 @@ class JSONApiClient():
         :return: A dict or list from the JSON, or False on error
         """
 
-        repository_json = self.package_manager.download_url(url,
+        download_manager = DownloadManager(self.settings)
+        repository_json = download_manager.download_url(url,
             'Error downloading repository.')
         if repository_json == False:
             return False
