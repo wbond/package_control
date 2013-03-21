@@ -32,7 +32,7 @@ class GitHubPackageProvider():
             self.repo)
         return master != None or branch != None
 
-    def get_package(self):
+    def get_packages(self):
         """
         Uses the GitHub API to construct necessary info for a package
 
