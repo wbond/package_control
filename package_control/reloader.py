@@ -73,7 +73,7 @@ mods_load_order = [
     '.downloaders.non_clean_exit_error',
     '.downloaders.non_http_error',
     '.downloaders.downloader',
-    '.downloaders.urllib2_downloader',
+    '.downloaders.urllib_downloader',
     '.downloaders.cli_downloader',
     '.downloaders.curl_downloader',
     '.downloaders.wget_downloader',

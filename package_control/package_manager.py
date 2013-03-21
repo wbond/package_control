@@ -29,7 +29,7 @@ from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
 from .versions import version_comparable, version_sort
 
-from .downloaders.urllib2_downloader import UrlLib2Downloader
+from .downloaders.urllib_downloader import UrlLibDownloader
 from .downloaders.wget_downloader import WgetDownloader
 from .downloaders.curl_downloader import CurlDownloader
 from .downloaders.repository_downloader import RepositoryDownloader
@@ -112,7 +112,7 @@ class PackageManager():
         downloader = None
 
         if (is_ssl and has_ssl) or not is_ssl:
-            downloader = UrlLib2Downloader(self.settings)
+            downloader = UrlLibDownloader(self.settings)
         else:
             for downloader_class in [CurlDownloader, WgetDownloader]:
                 try:

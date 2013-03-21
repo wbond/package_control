@@ -24,7 +24,7 @@ from ..http.rate_limit_exception import RateLimitException
 from ..http.proxy_ntlm_auth_handler import ProxyNtlmAuthHandler
 
 
-class UrlLib2Downloader(Downloader):
+class UrlLibDownloader(Downloader):
     """
     A downloader that uses the Python urllib module
 
