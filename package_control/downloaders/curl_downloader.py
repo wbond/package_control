@@ -140,7 +140,9 @@ class CurlDownloader(CliDownloader):
                 # Stderr is used for both the error message and the debug info
                 # so we need to process it to extra the debug info
                 if self.settings.get('debug'):
-                    e.stderr = self.print_debug(e.stderr.decode('utf-8'))
+                    if hasattr(e.stderr, 'decode'):
+                        e.stderr = e.stderr.decode('utf-8')
+                    e.stderr = self.print_debug(e.stderr)
 
                 self.clean_tmp_file()
 
