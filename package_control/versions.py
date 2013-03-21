@@ -33,7 +33,7 @@ def semver_compat(v):
 
     # This handles version that were valid pre-semver with 4+ dotted
     # groups, such as 1.6.9.0
-    four_plus_match = re.match('(\d+\.\d+\.\d+)\.(\d+(\.\d+)*)$', v)
+    four_plus_match = re.match('(\d+\.\d+\.\d+)[T\.](\d+(\.\d+)*)$', v)
     if four_plus_match:
         v = '%s+%s' % (four_plus_match.group(1), four_plus_match.group(2))
 
