@@ -1,6 +1,9 @@
 import subprocess
 import os
 
+if os.name == 'nt':
+    from ctypes import windll, create_unicode_buffer
+
 from ..console_write import console_write
 from ..unicode import unicode_from_os
 from ..show_error import show_error
@@ -33,14 +36,14 @@ class VcsUpgrader():
         self.cache_length = cache_length
         self.debug = debug
 
-    def execute(self, args, dir):
+    def execute(self, args, cwd):
         """
         Creates a subprocess with the executable/args
 
         :param args:
             A list of the executable path and all arguments to it
 
-        :param dir:
+        :param cwd:
             The directory in which to run the executable
 
         :return: A string of the executable output
@@ -51,13 +54,21 @@ class VcsUpgrader():
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
+            # Make sure the cwd is ascii
+            try:
+                cwd.encode('ascii')
+            except UnicodeEncodeError:
+                buf = create_unicode_buffer(512)
+                if windll.kernel32.GetShortPathNameW(cwd, buf, len(buf)):
+                    cwd = buf.value
+
         if self.debug:
             console_write(u"Trying to execute command %s" % create_cmd(args), True)
 
         try:
             proc = subprocess.Popen(args, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                startupinfo=startupinfo, cwd=dir)
+                startupinfo=startupinfo, cwd=cwd)
 
             output = proc.stdout.read()
             output = output.decode('utf-8')
