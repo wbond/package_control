@@ -14,7 +14,7 @@
 		// BitBucket) repository info.
 		//
 		// If the word "sublime" exists in the repository name, the name
-		// is overridden by the "name" key.
+		// can be overridden by the "name" key.
 		//
 		// A release is created from the the tag that is the highest semantic
 		// versioning version number in the list of tags.
@@ -163,6 +163,7 @@
 	// relative file paths that will be combined together and dynamically inserted
 	// into the "packages" key.
 	"includes": [
+
 		// Relative file paths work for local filesystem access, or HTTP access.
 		//
 		// So, if this file was loaded from:
