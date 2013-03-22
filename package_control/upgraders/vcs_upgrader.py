@@ -2,6 +2,8 @@ import subprocess
 import os
 
 from ..console_write import console_write
+from ..unicode import unicode_from_os
+from ..show_error import show_error
 from ..cmd import create_cmd
 
 
@@ -52,11 +54,23 @@ class VcsUpgrader():
         if self.debug:
             console_write(u"Trying to execute command %s" % create_cmd(args), True)
 
-        proc = subprocess.Popen(args, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            startupinfo=startupinfo, cwd=dir)
+        try:
+            proc = subprocess.Popen(args, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                startupinfo=startupinfo, cwd=dir)
 
-        return proc.stdout.read().decode('utf-8').replace('\r\n', '\n').rstrip(' \n\r')
+            output = proc.stdout.read()
+            output = output.decode('utf-8')
+            output = output.replace('\r\n', '\n').rstrip(' \n\r')
+
+            return output
+
+        except (OSError) as e:
+            cmd = create_cmd(args)
+            error = unicode_from_os(e)
+            message = u"Error executing: %s\n%s\n\nTry checking your \"%s_binary\" setting?" % (cmd, error, self.vcs_type)
+            show_error(message)
+            return False
 
     def find_binary(self, name):
         """
