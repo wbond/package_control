@@ -39,6 +39,10 @@ class DebuggableHTTPConnection(HTTPConnection):
         self._tunnel_host = None
         self._tunnel_port = None
         self._tunnel_headers = {}
+        if 'debug' in kwargs and kwargs['debug']:
+            self.debuglevel = 5
+        elif 'debuglevel' in kwargs:
+            self.debuglevel = kwargs['debuglevel']
 
         HTTPConnection.__init__(self, host, port=port, timeout=timeout)
 
@@ -62,7 +66,7 @@ class DebuggableHTTPConnection(HTTPConnection):
             if len(string.strip()) > 0:
                 console_write(u'Urllib %s Debug Write' % self._debug_protocol, True)
                 for line in string.strip().splitlines():
-                    console_write(u'  ' + line)
+                    console_write(u'  ' + line.decode('iso-8859-1'))
             if reset_debug:
                 self.debuglevel = reset_debug
 

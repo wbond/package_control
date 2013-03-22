@@ -27,7 +27,16 @@ class DebuggableHTTPResponse(HTTPResponse):
         return_value = HTTPResponse.begin(self)
         if self.debuglevel == -1:
             console_write(u'Urllib %s Debug Read' % self._debug_protocol, True)
-            headers = self.msg.headers
+
+            # Python 2
+            if hasattr(self.msg, 'headers'):
+                headers = self.msg.headers
+            # Python 3
+            else:
+                headers = []
+                for header in self.msg:
+                    headers.append("%s: %s" % (header, self.msg[header]))
+
             versions = {
                 9: 'HTTP/0.9',
                 10: 'HTTP/1.0',

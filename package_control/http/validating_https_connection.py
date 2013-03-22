@@ -13,6 +13,7 @@ import base64
 import hashlib
 import os
 import sublime
+import sys
 
 if os.name == 'nt':
     try:
@@ -49,6 +50,8 @@ try:
             passed_args = {}
             if 'timeout' in kwargs:
                 passed_args['timeout'] = kwargs['timeout']
+            if 'debug' in kwargs:
+                passed_args['debug'] = kwargs['debug']
             DebuggableHTTPConnection.__init__(self, host, port, **passed_args)
 
             self.passwd = kwargs.get('passwd')
@@ -314,7 +317,7 @@ try:
             if self.debuglevel == -1:
                 console_write(u"Urllib HTTPS Debug General", True)
                 console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
-                console_write(u"  CA certs file at %s" % (self.ca_certs))
+                console_write(u"  CA certs file at %s" % (self.ca_certs.decode(sys.getfilesystemencoding())))
 
             self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                 certfile=self.cert_file, cert_reqs=self.cert_reqs,
