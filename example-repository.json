@@ -160,22 +160,20 @@
 
 	// If you need/want to split your repository up into multiple smaller files
 	// for the sake of organization, the "includes" key allows you to enter
-	// relative file paths that will be combined together and dynamically inserted
-	// into the "packages" key.
+	// URL paths that will be combined together and dynamically inserted
+	// into the "packages" key. These URLs these can be relative or absolute.
 	"includes": [
 
-		// Relative file paths work for local filesystem access, or HTTP access.
-		//
-		// So, if this file was loaded from:
-		//   "/home/wbond/example-repository.json",
-		// then the following file would be loaded from:
-		//   "/home/wbond/repository/0-9.json"
-		//
-		// Similarly, if this file was loaded from
+		// Here is an example of how relative paths work for URLs. If this file
+		// was loaded from:
 		//   "https://sublime.wbond.net/example-repository.json"
-		// then the following file would be loaded from:
+		// then the following files would be loaded from:
 		//   "https://sublime.wbond.net/repository/0-9.json"
+		//   "https://sublime.wbond.net/repository/a.json"
 		"./repository/0-9.json",
-		"./repository/a.json"
+		"./repository/a.json",
+
+		// An example of an absolute URL
+		"https://sublime.wbond.net/repository/b.json"
 	]
 }
