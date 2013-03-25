@@ -653,7 +653,7 @@ class PackageManager():
             with open_compat(package_metadata_file, 'w') as f:
                 metadata = {
                     "version": packages[package_name]['download']['version'],
-                    "url": packages[package_name]['url'],
+                    "url": packages[package_name]['homepage'],
                     "description": packages[package_name]['description']
                 }
                 json.dump(metadata, f)
