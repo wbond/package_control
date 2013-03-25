@@ -79,7 +79,7 @@ class PackageManager():
         no_https_proxy = self.settings.get('https_proxy') in ["", None]
         if no_https_proxy and self.settings.get('http_proxy'):
             self.settings['https_proxy'] = self.settings.get('http_proxy')
-        if self.settings['https_proxy'] == False:
+        if self.settings.get('https_proxy') == False:
             self.settings['https_proxy'] = ''
 
         self.settings['platform'] = sublime.platform()
