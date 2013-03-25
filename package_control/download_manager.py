@@ -28,7 +28,7 @@ class DownloadManager(object):
     def __init__(self, settings):
         self.settings = settings
 
-    def download_url(self, url, error_message):
+    def fetch(self, url, error_message):
         """
         Downloads a URL and returns the contents
 

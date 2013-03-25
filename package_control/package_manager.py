@@ -520,7 +520,7 @@ class PackageManager():
             is_upgrade = old_version != None
 
             download_manager = DownloadManager(self.settings)
-            package_bytes = download_manager.download_url(url, 'Error downloading package.')
+            package_bytes = download_manager.fetch(url, 'Error downloading package.')
             if package_bytes == False:
                 return False
             with open_compat(tmp_package_path, "wb") as package_file:
@@ -956,7 +956,7 @@ class PackageManager():
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
         download_manager = DownloadManager(self.settings)
-        result = download_manager.download_url(url, 'Error submitting usage information.')
+        result = download_manager.fetch(url, 'Error submitting usage information.')
         if result == False:
             return
 

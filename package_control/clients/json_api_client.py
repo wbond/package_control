@@ -16,7 +16,7 @@ class JSONApiClient():
         """
 
         download_manager = DownloadManager(self.settings)
-        repository_json = download_manager.download_url(url,
+        repository_json = download_manager.fetch(url,
             'Error downloading repository.')
         if repository_json == False:
             return False

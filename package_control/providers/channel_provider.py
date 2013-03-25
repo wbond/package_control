@@ -48,7 +48,7 @@ class ChannelProvider(ReleaseSelector):
             return
 
         download_manager = DownloadManager(self.settings)
-        channel_json = download_manager.download_url(self.channel,
+        channel_json = download_manager.fetch(self.channel,
             'Error downloading channel.')
         if channel_json == False:
             self.channel_info = False

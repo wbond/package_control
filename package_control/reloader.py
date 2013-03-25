@@ -42,6 +42,7 @@ mods_load_order = [
     '.unicode',
     '.thread_progress',
     '.package_io',
+    '.download_manager',
     '.versions',
 
     '.http',

@@ -88,7 +88,7 @@ class PackageProvider(ReleaseSelector):
 
     def fetch_url(self, url):
         download_manager = DownloadManager(self.settings)
-        json_string = download_manager.download_url(url,
+        json_string = download_manager.fetch(url,
             'Error downloading repository.')
         if json_string == False:
             return json_string
