@@ -34,7 +34,28 @@ class GitHubUserProvider():
         return re.search('^https?://github.com/[^/]+/?$', self.repo) != None
 
     def get_packages(self):
-        """Uses the GitHub API to construct necessary info for all packages"""
+        """
+        Uses the GitHub API to construct necessary info for all packages
+
+        :return:
+            A dict in the format:
+            {
+                'Package Name': {
+                    'name': name,
+                    'description': description,
+                    'author': author,
+                    'homepage': homepage,
+                    'last_modified': last modified date,
+                    'download': {
+                        'url': url,
+                        'date': date,
+                        'version': version
+                    }
+                },
+                ...
+            }
+            or False if there is an error
+        """
 
         client = GitHubClient(self.settings)
 
@@ -42,18 +63,18 @@ class GitHubUserProvider():
         if user_repos == False:
             return False
 
-        output = []
+        output = {}
         for repo_info in user_repos:
             download = client.download_info('https://github.com/' + repo_info['user_repo'])
 
-            output.append({
+            output[repo_info['name']] = {
                 'name': repo_info['name'],
                 'description': repo_info['description'],
-                'url': repo_info['url'],
+                'homepage': repo_info['homepage'],
                 'author': repo_info['author'],
                 'last_modified': download.get('date'),
                 'download': download
-            })
+            }
 
         return output
 

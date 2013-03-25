@@ -101,13 +101,22 @@ class PackageProvider(ReleaseSelector):
 
     def get_packages(self):
         """
-        Provides access to the repository info that is cached in a channel
+        Provides access to the packages in this repository
 
         :return:
             A dict in the format:
             {
                 'Package Name': {
-                    # Package details - see example-packages.json for format
+                    'name': name,
+                    'description': description,
+                    'author': author,
+                    'homepage': homepage,
+                    'last_modified': last modified date,
+                    'download': {
+                        'url': url,
+                        'date': date,
+                        'version': version
+                    }
                 },
                 ...
             }
@@ -149,9 +158,6 @@ class PackageProvider(ReleaseSelector):
             for field in ['name', 'description', 'author', 'last_modified']:
                 if package.get(field):
                     info[field] = package.get(field)
-
-            if package.get('homepage'):
-                info['url'] = package.get('homepage')
 
             # Schema version 2.0 allows for grabbing details about a pacakge, or its
             # download from "details" urls. See the GitHubClient and BitBucketClient
@@ -224,8 +230,8 @@ class PackageProvider(ReleaseSelector):
                 console_write(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
                 continue
 
-            if 'url' not in info:
-                info['url'] = self.repo
+            if 'homepage' not in info:
+                info['homepage'] = self.repo
 
             # Rewrites the legacy "zipball" URLs to the new "zip" format
             info['download']['url'] = re.sub(

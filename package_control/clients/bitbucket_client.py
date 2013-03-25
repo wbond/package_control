@@ -19,8 +19,8 @@ class BitBucketClient(JSONApiClient):
 
         return {
             'name': info['name'],
-            'description': info['description'] if info['description'] else 'No description provided',
-            'url': info['website'] if info['website'] else url,
+            'description': info['description'] or 'No description provided',
+            'homepage': info['website'] or url,
             'author': info['owner'],
             'user_repo': user_repo
         }

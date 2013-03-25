@@ -50,8 +50,8 @@ class GitHubClient(JSONApiClient):
     def extract_repo_info(self, result):
         return {
             'name': result['name'],
-            'description': result['description'] if result['description'] else 'No description provided',
-            'url': result['homepage'] if result['homepage'] else result['html_url'],
+            'description': result['description'] or 'No description provided',
+            'homepage': result['homepage'] or result['html_url'],
             'author': result['owner']['login'],
             'user_repo': result['owner']['login'] + '/' + result['name']
         }

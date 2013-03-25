@@ -45,8 +45,22 @@ class GitHubPackageProvider():
         Uses the GitHub API to construct necessary info for a package
 
         :return:
-            A list with a single dict containing the keys: "name",
-            "description", "url", "author", "last_modified", "download"
+            A dict in the format:
+            {
+                'Package Name': {
+                    'name': name,
+                    'description': description,
+                    'author': author,
+                    'homepage': homepage,
+                    'last_modified': last modified date,
+                    'download': {
+                        'url': url,
+                        'date': date,
+                        'version': version
+                    }
+                }
+            }
+            or False if there is an error
         """
 
         client = GitHubClient(self.settings)
@@ -59,14 +73,14 @@ class GitHubPackageProvider():
         if download == False:
             return False
 
-        return [{
+        return {repo_info['name']: {
             'name': repo_info['name'],
             'description': repo_info['description'],
-            'url': repo_info['url'],
+            'homepage': repo_info['homepage'],
             'author': repo_info['author'],
             'last_modified': download.get('date'),
             'download': download
-        }]
+        }}
 
     def get_renamed_packages(self):
         """For API-compatibility with :class:`PackageProvider`"""

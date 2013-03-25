@@ -143,7 +143,7 @@ class PackageInstaller():
                 description = 'No description provided'
             package_entry.append(description)
             package_entry.append(action + extra + ' ' +
-                re.sub('^https?://', '', info['url']))
+                re.sub('^https?://', '', info['homepage']))
             package_list.append(package_entry)
         return package_list
 

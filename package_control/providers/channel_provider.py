@@ -168,7 +168,16 @@ class ChannelProvider(ReleaseSelector):
             A dict in the format:
             {
                 'Package Name': {
-                    # Package details - see example-packages.json for format
+                    'name': name,
+                    'description': description,
+                    'author': author,
+                    'homepage': homepage,
+                    'last_modified': last modified date,
+                    'download': {
+                        'url': url,
+                        'date': date,
+                        'version': version
+                    }
                 },
                 ...
             }
@@ -204,9 +213,6 @@ class ChannelProvider(ReleaseSelector):
             if not copy:
                 self.unavailable_packages.append(package['name'])
                 continue
-
-            copy['url'] = copy['homepage']
-            del copy['homepage']
 
             output[copy['name']] = copy
 

@@ -51,13 +51,13 @@ class RepositoryDownloader(threading.Thread):
             return
 
         self.packages = {}  
-        for package in packages:
+        for name, info in packages.items():
 
             # Allow name mapping of packages for schema version < 2.0
-            package_name = self.name_map.get(package['name'], package['name'])
-            package['name'] = package_name
+            name = self.name_map.get(name, name)
+            info['name'] = name
 
-            self.packages[package_name] = package
+            self.packages[name] = info
 
         self.renamed_packages = provider.get_renamed_packages()
         self.unavailable_packages = provider.get_unavailable_packages()
