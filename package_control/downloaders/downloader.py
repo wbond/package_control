@@ -46,7 +46,7 @@ class Downloader():
         certs_list = get_cache('*.certs', self.settings.get('certs', {}))
 
         ca_bundle_path = os.path.join(sublime.packages_path(), 'User', 'Package Control.ca-bundle')
-        if not os.path.exists(ca_bundle_path):
+        if not os.path.exists(ca_bundle_path) or os.stat(ca_bundle_path).st_size == 0:
             bundle_contents = read_package_file('Package Control', 'Package Control.ca-bundle', True)
             with open_compat(ca_bundle_path, 'wb') as f:
                 f.write(bundle_contents)
@@ -92,7 +92,7 @@ class Downloader():
         """
 
         ca_list_path = os.path.join(sublime.packages_path(), 'User', 'Package Control.ca-list')
-        if not os.path.exists(ca_list_path):
+        if not os.path.exists(ca_list_path) or os.stat(ca_list_path).st_size == 0:
             list_contents = read_package_file('Package Control', 'Package Control.ca-list')
             with open_compat(ca_list_path, 'w') as f:
                 f.write(list_contents)
