@@ -1,13 +1,6 @@
 import re
 
-try:
-    # Python 3
-    from ..lib.all.semver import SemVer
-
-except (ValueError):
-    # Python 2
-    from semver import SemVer
-
+from .semver import SemVer
 from .console_write import console_write
 
 

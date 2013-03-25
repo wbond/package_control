@@ -44,6 +44,7 @@ mods_load_order = [
     '.package_io',
     '.download_manager',
     '.versions',
+    '.semver',
 
     '.http',
     '.http.invalid_certificate_exception',
