@@ -12,7 +12,6 @@ import socket
 import base64
 import hashlib
 import os
-import sublime
 import sys
 
 if os.name == 'nt':
@@ -119,7 +118,7 @@ try:
                 request += "%s: %s\r\n" % (header, value)
             request += "\r\n"
 
-            if int(sublime.version()) > 3000:
+            if sys.version_info >= (3,):
                 request = bytes(request, 'iso-8859-1')
             
             self.send(request)
@@ -139,7 +138,7 @@ try:
             while True:
                 line = response.fp.readline()
                 
-                if int(sublime.version()) > 3000:
+                if sys.version_info >= (3,):
                     line = str(line, encoding='iso-8859-1')
 
                 if line == '\r\n':
