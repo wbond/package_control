@@ -119,12 +119,19 @@
 		// is valid for. As shown, there can be multiple releases of a package
 		// at any given time. However, only the latest version for any given
 		// platform/arch will be shown to the user.
+		//
+		// The "platforms" key allows specifying a single platform, or a list
+		// of platforms. Valid platform indentifiers include:
+		//
+		// "*"
+		// "windows", "windows-x64", "windows-x32"
+		// "osx", "osx-x64"
+		// "linux", "linux-x32", "linux-x64"
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
-					// Defaults to all platforms. Can also specify the arch of
-					// the platform, e.g. "linux-x64"
+					// Defaults to "*", or all platforms.
 					"platforms": ["osx", "linux"],
 					"details": "https://github.com/wbond/sublime_alignment/tree/posix"
 				},
