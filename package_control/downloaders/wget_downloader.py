@@ -16,9 +16,11 @@ from .non_http_error import NonHttpError
 from .non_clean_exit_error import NonCleanExitError
 from ..http.rate_limit_exception import RateLimitException
 from ..open_compat import open_compat, read_compat
+from .cert_provider import CertProvider
+from .decoding_downloader import DecodingDownloader
 
 
-class WgetDownloader(CliDownloader):
+class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader):
     """
     A downloader that uses the command line program wget
 

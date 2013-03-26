@@ -1,15 +1,6 @@
-try:
-    # Python 3
-    from io import BytesIO as StringIO
-except (ImportError):
-    # Python 2
-    from StringIO import StringIO
-
 import sublime
 import os
 import re
-import gzip
-import zlib
 import json
 
 from ..console_write import console_write
@@ -18,13 +9,10 @@ from ..package_io import read_package_file
 from ..cache import get_cache
 
 
-class Downloader():
+class CertProvider(object):
     """
-    A base downloader that actually performs downloading URLs
-
-    The SSL module is not included with the bundled Python for Linux
-    users of Sublime Text, so Linux machines will fall back to using curl
-    or wget for HTTPS URLs.
+    A base downloader that provides access to a ca-bundle for validating
+    SSL certificates.
     """
 
     def check_certs(self, domain, timeout):
@@ -191,11 +179,3 @@ class Downloader():
         ca_certs.append(cert_id)
         with open_compat(ca_list_path, 'w') as f:
             f.write(json.dumps(ca_certs, indent=4))
-
-    def decode_response(self, encoding, response):
-        if encoding == 'gzip':
-            return gzip.GzipFile(fileobj=StringIO(response)).read()
-        elif encoding == 'deflate':
-            decompresser = zlib.decompressobj(-zlib.MAX_WBITS)
-            return decompresser.decompress(response) + decompresser.flush()
-        return response

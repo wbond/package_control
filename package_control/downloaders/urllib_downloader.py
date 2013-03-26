@@ -17,14 +17,15 @@ import sys
 
 from ..console_write import console_write
 from ..unicode import unicode_from_os
-from .downloader import Downloader
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
 from ..http.rate_limit_exception import RateLimitException
 from ..http.proxy_ntlm_auth_handler import ProxyNtlmAuthHandler
+from .cert_provider import CertProvider
+from .decoding_downloader import DecodingDownloader
 
 
-class UrlLibDownloader(Downloader):
+class UrlLibDownloader(CertProvider, DecodingDownloader):
     """
     A downloader that uses the Python urllib module
 

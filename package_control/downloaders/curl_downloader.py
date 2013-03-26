@@ -14,9 +14,10 @@ from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
 from ..http.rate_limit_exception import RateLimitException
 from ..open_compat import open_compat, read_compat
+from .cert_provider import CertProvider
 
 
-class CurlDownloader(CliDownloader):
+class CurlDownloader(CliDownloader, CertProvider):
     """
     A downloader that uses the command line program curl
 
