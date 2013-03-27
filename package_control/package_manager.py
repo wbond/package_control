@@ -36,19 +36,16 @@ from .upgraders.hg_upgrader import HgUpgrader
 
 from .package_io import read_package_file
 
-
-# The providers (in order) to check when trying to download a channel
-_channel_providers = [ChannelProvider]
+from .providers import CHANNEL_PROVIDERS
 
 
 class PackageManager():
     """
     Allows downloading, creating, installing, upgrading, and deleting packages
 
-    Delegates metadata retrieval to the _channel_providers and
-    _repository_providers classes. Uses VcsUpgrader-based classes for handling
-    git and hg repositories in the Packages folder. Downloader classes are
-    utilized to fetch contents of URLs.
+    Delegates metadata retrieval to the CHANNEL_PROVIDERS classes.
+    Uses VcsUpgrader-based classes for handling git and hg repositories in the
+    Packages folder. Downloader classes are utilized to fetch contents of URLs.
 
     Also handles displaying package messaging, and sending usage information to
     the usage server.
@@ -162,7 +159,7 @@ class PackageManager():
                     self.settings.get('package_name_map') == None or \
                     self.settings.get('renamed_packages') == None:
 
-                for provider_class in _channel_providers:
+                for provider_class in CHANNEL_PROVIDERS:
                     provider = provider_class(channel, self.settings)
                     if provider.match_url():
                         break

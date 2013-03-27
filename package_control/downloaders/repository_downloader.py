@@ -1,14 +1,6 @@
 import threading
 
-from ..providers.bitbucket_package_provider import BitBucketPackageProvider
-from ..providers.github_package_provider import GitHubPackageProvider
-from ..providers.github_user_provider import GitHubUserProvider
-from ..providers.package_provider import PackageProvider
-
-
-# The providers (in order) to check when trying to download repository info
-_repository_providers = [BitBucketPackageProvider, GitHubPackageProvider,
-    GitHubUserProvider, PackageProvider]
+from ..providers import REPOSITORY_PROVIDERS
 
 
 class RepositoryDownloader(threading.Thread):
@@ -41,7 +33,7 @@ class RepositoryDownloader(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        for provider_class in _repository_providers:
+        for provider_class in REPOSITORY_PROVIDERS:
             provider = provider_class(self.repo, self.settings)
             if provider.match_url():
                 break
