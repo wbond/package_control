@@ -118,7 +118,8 @@ class PackageProvider(ReleaseSelector):
                         'url': url,
                         'date': date,
                         'version': version
-                    }
+                    },
+                    'previous_names': [old_name, ...]
                 },
                 ...
             }
@@ -157,7 +158,7 @@ class PackageProvider(ReleaseSelector):
         for package in self.repo_info['packages']:
             info = {}
 
-            for field in ['name', 'description', 'author', 'last_modified']:
+            for field in ['name', 'description', 'author', 'last_modified', 'previous_names']:
                 if package.get(field):
                     info[field] = package.get(field)
 
@@ -228,19 +229,32 @@ class PackageProvider(ReleaseSelector):
                 self.unavailable_packages.append(package['name'])
                 continue
 
-            if 'download' not in info:
+            if 'download' not in info and 'releases' not in info:
                 console_write(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
                 continue
+
+            if 'previous_names' not in info:
+                info['previous_names'] = []
 
             if 'homepage' not in info:
                 info['homepage'] = self.repo
 
             # Rewrites the legacy "zipball" URLs to the new "zip" format
-            info['download']['url'] = re.sub(
-                '^(https://nodeload.github.com/[^/]+/[^/]+/)zipball(/.*)$',
-                '\\1zip\\2', info['download']['url'])
+            if 'download' in info:
+                info['download']['url'] = re.sub(
+                    '^(https://nodeload.github.com/[^/]+/[^/]+/)zipball(/.*)$',
+                    '\\1zip\\2', info['download']['url'])
 
             output[info['name']] = info
+
+        # Backfill the "previous_names" keys for old schemas
+        if self.schema_version < 2.0:
+            renamed = self.get_renamed_packages()
+            for old_name in renamed:
+                new_name = renamed[old_name]
+                if new_name not in output:
+                    continue
+                output[new_name]['previous_names'].append(old_name)
 
         return output
 

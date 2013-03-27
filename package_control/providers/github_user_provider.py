@@ -52,7 +52,8 @@ class GitHubUserProvider():
                         'url': url,
                         'date': date,
                         'version': version
-                    }
+                    },
+                    'previous_names': []
                 },
                 ...
             }
@@ -75,7 +76,8 @@ class GitHubUserProvider():
                 'homepage': repo_info['homepage'],
                 'author': repo_info['author'],
                 'last_modified': download.get('date'),
-                'download': download
+                'download': download,
+                'previous_names': []
             }
 
         return output

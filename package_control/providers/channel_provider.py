@@ -179,7 +179,8 @@ class ChannelProvider(ReleaseSelector):
                         'url': url,
                         'date': date,
                         'version': version
-                    }
+                    },
+                    'previous_names': [old_name, ...]
                 },
                 ...
             }
