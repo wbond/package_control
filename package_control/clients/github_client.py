@@ -4,6 +4,7 @@ try:
 except (ImportError):
     # Python 2
     from urllib import urlencode, quote
+
 import re
 
 from ..versions import version_sort, version_filter

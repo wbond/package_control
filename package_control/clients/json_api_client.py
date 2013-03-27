@@ -1,3 +1,10 @@
+try:
+    # Python 3
+    from urllib.parse import urlencode
+except (ImportError):
+    # Python 2
+    from urllib import urlencode
+
 import json
 
 from ..console_write import console_write
@@ -14,6 +21,11 @@ class JSONApiClient():
 
         :return: A dict or list from the JSON, or False on error
         """
+
+        if 'query_string_params' in self.settings:
+            params = urlencode(self.settings['query_string_params'])
+            joiner = '?%s' if url.find('?') == -1 else '&%s'
+            url += joiner % params
 
         download_manager = DownloadManager(self.settings)
         repository_json = download_manager.fetch(url,

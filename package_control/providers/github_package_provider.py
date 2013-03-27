@@ -25,6 +25,8 @@ class GitHubPackageProvider():
           `https_proxy`,
           `proxy_username`,
           `proxy_password`
+        Optional fields:
+          `query_string_params`
     """
 
     def __init__(self, repo, settings):
