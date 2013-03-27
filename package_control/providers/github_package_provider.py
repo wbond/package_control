@@ -60,7 +60,8 @@ class GitHubPackageProvider():
                         'date': date,
                         'version': version
                     },
-                    'previous_names': []
+                    'previous_names': [],
+                    'labels': []
                 }
             }
             or False if there is an error

@@ -78,6 +78,43 @@
 			"previous_names": ["sublime_alignment"]
 		},
 
+		// Packages can be labelled for the purpose of creating a
+		// folksonomy so users may more easily find relevant packages.
+		// Labels should be all lower case and should use spaces instead
+		// of _ or - to separate words.
+		//
+		// Some suggested labels are listed below, however, anything can
+		// be used as a label:
+		//
+		// auto-complete
+		// browser integration
+		// build system
+		// code navigation
+		// code sharing
+		// color scheme
+		// diff/merge
+		// editor emulation
+		// file creation
+		// file navigation
+		// formatting
+		// ftp
+		// language syntax
+		// linting
+		// minification
+		// search
+		// snippets
+		// terminal/shell/repl
+		// testing
+		// text manipulation
+		// text navigation
+		// theme
+		// todo
+		// vcs
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"labels": ["text manipulation", "formatting"]
+		},
+
 		// In addition to the recommendation above of pulling releases
 		// from tags that are semantic version numbers, releases can also
 		// comefrom a custom branch.

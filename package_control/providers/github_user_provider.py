@@ -53,7 +53,8 @@ class GitHubUserProvider():
                         'date': date,
                         'version': version
                     },
-                    'previous_names': []
+                    'previous_names': [],
+                    'labels': []
                 },
                 ...
             }

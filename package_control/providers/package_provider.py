@@ -119,7 +119,8 @@ class PackageProvider(ReleaseSelector):
                         'date': date,
                         'version': version
                     },
-                    'previous_names': [old_name, ...]
+                    'previous_names': [old_name, ...],
+                    'labels': [label, ...]
                 },
                 ...
             }
@@ -158,7 +159,7 @@ class PackageProvider(ReleaseSelector):
         for package in self.repo_info['packages']:
             info = {}
 
-            for field in ['name', 'description', 'author', 'last_modified', 'previous_names']:
+            for field in ['name', 'description', 'author', 'last_modified', 'previous_names', 'labels']:
                 if package.get(field):
                     info[field] = package.get(field)
 
@@ -233,8 +234,9 @@ class PackageProvider(ReleaseSelector):
                 console_write(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
                 continue
 
-            if 'previous_names' not in info:
-                info['previous_names'] = []
+            for field in ['previous_names', 'labels']:
+                if field not in info:
+                    info[field] = []
 
             if 'homepage' not in info:
                 info['homepage'] = self.repo

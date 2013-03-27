@@ -180,7 +180,8 @@ class ChannelProvider(ReleaseSelector):
                         'date': date,
                         'version': version
                     },
-                    'previous_names': [old_name, ...]
+                    'previous_names': [old_name, ...],
+                    'labels': [label, ...]
                 },
                 ...
             }
