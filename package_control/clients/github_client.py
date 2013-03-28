@@ -100,7 +100,7 @@ class GitHubClient(JSONApiClient):
         if commit_info == False:
             return False
 
-        commit_date = commit_info['timestamp'][0:19]
+        commit_date = commit_info['timestamp'][0:19].replace('T', ' ')
 
         return {
             'version': re.sub('[\-: ]', '.', commit_date),
