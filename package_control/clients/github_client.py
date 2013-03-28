@@ -53,8 +53,7 @@ class GitHubClient(JSONApiClient):
             'name': result['name'],
             'description': result['description'] or 'No description provided',
             'homepage': result['homepage'] or result['html_url'],
-            'author': result['owner']['login'],
-            'user_repo': result['owner']['login'] + '/' + result['name']
+            'author': result['owner']['login']
         }
 
     def commit_info(self, url):

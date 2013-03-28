@@ -21,8 +21,7 @@ class BitBucketClient(JSONApiClient):
             'name': info['name'],
             'description': info['description'] or 'No description provided',
             'homepage': info['website'] or url,
-            'author': info['owner'],
-            'user_repo': user_repo
+            'author': info['owner']
         }
 
     def commit_info(self, url):
