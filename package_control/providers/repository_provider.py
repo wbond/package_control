@@ -179,9 +179,9 @@ class RepositoryProvider(ReleaseSelector):
                     # When grabbing details, prefer explicit field values over the values
                     # from the GitHub or BitBucket API
                     if github_repo_info:
-                        info = dict(github_repo_info.items(), info.items())
+                        info = dict(github_repo_info.items() + info.items())
                     elif bitbucket_repo_info:
-                        info = dict(bitbucket_repo_info.items(), info.items())
+                        info = dict(bitbucket_repo_info.items() + info.items())
                     else:
                         console_write(u'Invalid "details" key for one of the packages in the repository %s.' % self.repo, True)
                         continue
@@ -210,9 +210,9 @@ class RepositoryProvider(ReleaseSelector):
 
                         # Overlay the explicit field values over values fetched from the APIs
                         if github_download:
-                            download_info = dict(github_download.items(), download_info.items())
+                            download_info = dict(github_download.items() + download_info.items())
                         elif bitbucket_download:
-                            download_info = dict(bitbucket_download.items(), download_info.items())
+                            download_info = dict(bitbucket_download.items() + download_info.items())
                         else:
                             console_write(u'Invalid "details" key under the "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
                             continue
