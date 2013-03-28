@@ -57,13 +57,13 @@ class RepositoryProvider(ReleaseSelector):
 
         return True
 
-    def fetch_repo(self):
+    def fetch(self):
         """Retrieves and loads the JSON for other methods to use"""
 
         if self.repo_info != None:
             return
 
-        self.repo_info = self.fetch_url(self.repo)
+        self.repo_info = self.fetch_location(self.repo)
         if self.repo_info == False:
              return False
 
@@ -71,35 +71,47 @@ class RepositoryProvider(ReleaseSelector):
             return
 
         # Allow repositories to include other repositories
-        url_pieces = urlparse(self.repo)
-        domain = url_pieces['scheme'] + '://' + url_pieces['netloc']
-        path = '/' if url_pieces['path'] == '' else url_pieces['path']
-        if path[-1] != '/':
-            path = os.path.dirname(path)
-        relative_base = domain + path
+        if re.match('https?://', self.repo, re.I):
+            url_pieces = urlparse(self.repo)
+            domain = url_pieces.scheme + '://' + url_pieces.netloc
+            path = '/' if url_pieces.path == '' else url_pieces.path
+            if path[-1] != '/':
+                path = os.path.dirname(path)
+            relative_base = domain + path
+        else:
+            relative_base = os.path.dirname(self.repo) + '/'
 
         includes = self.repo_info.get('includes', [])
         del self.repo_info['includes']
         for include in includes:
             if re.match('^\./|\.\./', include):
                 include = os.path.normpath(relative_base + include)
-            include_info = self.fetch_url(include)
+            include_info = self.fetch_location(include)
             if include_info == False:
                 continue
             included_packages = include_info.get('packages', [])
             self.repo_info['packages'].extend(included_packages)
 
-    def fetch_url(self, url):
-        download_manager = DownloadManager(self.settings)
-        json_string = download_manager.fetch(url,
-            'Error downloading repository.')
+    def fetch_location(self, location):
+        if re.match('https?://', self.repo, re.I):
+            download_manager = DownloadManager(self.settings)
+            json_string = download_manager.fetch(location,
+                'Error downloading repository.')
+
+        # Anything that is not a URL is expected to be a filesystem path
+        else:
+            json_string = False
+            # We open as binary so we get bytes like the DownloadManager
+            with open(location, 'rb') as f:
+                json_string = f.read()
+
         if json_string == False:
             return json_string
 
         try:
             return json.loads(json_string.decode('utf-8'))
         except (ValueError):
-            console_write(u'Error parsing JSON from repository %s.' % url, True)
+            console_write(u'Error parsing JSON from repository %s.' % location, True)
             return False
 
     def get_packages(self):
@@ -128,7 +140,7 @@ class RepositoryProvider(ReleaseSelector):
             or False if there is an error
         """
 
-        self.fetch_repo()
+        self.fetch()
         if self.repo_info == False:
             return False
 

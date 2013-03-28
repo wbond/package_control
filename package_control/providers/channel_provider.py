@@ -1,4 +1,13 @@
 import json
+import os
+import re
+
+try:
+    # Python 3
+    from urllib.parse import urlparse
+except (ImportError):
+    # Python 2
+    from urlparse import urlparse
 
 from ..console_write import console_write
 from .release_selector import ReleaseSelector
@@ -44,15 +53,24 @@ class ChannelProvider(ReleaseSelector):
 
         return True
 
-    def fetch_channel(self):
+    def fetch(self):
         """Retrieves and loads the JSON for other methods to use"""
 
         if self.channel_info != None:
             return
 
-        download_manager = DownloadManager(self.settings)
-        channel_json = download_manager.fetch(self.channel,
-            'Error downloading channel.')
+        if re.match('https?://', self.channel, re.I):
+            download_manager = DownloadManager(self.settings)
+            channel_json = download_manager.fetch(self.channel,
+                'Error downloading channel.')
+
+        # All other channels are expected to be filesystem paths
+        else:
+            channel_json = False
+            # We open as binary so we get bytes like the DownloadManager
+            with open(self.channel, 'rb') as f:
+                channel_json = f.read()
+
         if channel_json == False:
             self.channel_info = False
             return
@@ -87,7 +105,7 @@ class ChannelProvider(ReleaseSelector):
     def get_name_map(self):
         """:return: A dict of the mapping for URL slug -> package name"""
 
-        self.fetch_channel()
+        self.fetch()
         if self.channel_info == False:
             return False
 
@@ -99,7 +117,7 @@ class ChannelProvider(ReleaseSelector):
     def get_renamed_packages(self):
         """:return: A dict of the packages that have been renamed"""
 
-        self.fetch_channel()
+        self.fetch()
         if self.channel_info == False:
             return False
             
@@ -111,7 +129,7 @@ class ChannelProvider(ReleaseSelector):
     def get_repositories(self):
         """:return: A list of the repository URLs"""
 
-        self.fetch_channel()
+        self.fetch()
         if self.channel_info == False:
             return False
 
@@ -119,7 +137,28 @@ class ChannelProvider(ReleaseSelector):
             console_write(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel, True)
             return False
 
-        return self.channel_info.get('repositories', [])
+        # Determine a relative root so repositories can be defined
+        # relative to the location of the channel file.
+        if re.match('https?://', self.channel, re.I):
+            url_pieces = urlparse(self.channel)
+            print(self.channel)
+            print(url_pieces)
+            domain = url_pieces.scheme + '://' + url_pieces.netloc
+            path = '/' if url_pieces.path == '' else url_pieces.path
+            if path[-1] != '/':
+                path = os.path.dirname(path)
+            relative_base = domain + path
+        else:
+            relative_base = os.path.dirname(self.channel) + '/'
+
+        output = []
+        repositories = self.channel_info.get('repositories', [])
+        for repository in repositories:
+            if re.match('^\./|\.\./', repository):
+                repository = os.path.normpath(relative_base + repository)
+            output.append(repository)
+
+        return output
 
     def get_certs(self):
         """
@@ -155,7 +194,7 @@ class ChannelProvider(ReleaseSelector):
         :return: A dict of {'Domain Name': ['cert_file_hash', 'cert_file_download_url']}
         """
 
-        self.fetch_channel()
+        self.fetch()
         if self.channel_info == False:
             return False
         return self.channel_info.get('certs', {})
@@ -189,7 +228,7 @@ class ChannelProvider(ReleaseSelector):
             or False if there is an error
         """
 
-        self.fetch_channel()
+        self.fetch()
         if self.channel_info == False:
             return False
 
