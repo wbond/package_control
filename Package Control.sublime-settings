@@ -2,12 +2,12 @@
 	// A list of URLs that each contain a JSON file with a list of repositories.
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
-	"repository_channels": [
+	"channels": [
 		"https://sublime.wbond.net/repositories.json"
 	],
-	
+
 	// A list of URLs that contain a packages JSON file. These repositories
-	// are placed in order before repositories from the "repository_channels"
+	// are placed in order before repositories from the "channels"
 	// setting
 	"repositories": [],
 
@@ -53,7 +53,7 @@
 	// the channel for aggregated statistics
 	"submit_usage": true,
 
-	// The URL to post install, upgrade and removal notices to 
+	// The URL to post install, upgrade and removal notices to
 	"submit_url": "https://sublime.wbond.net/submit",
 
 	// If packages should be automatically upgraded when ST2 starts
@@ -98,9 +98,9 @@
 	// found on the system and a package includes a VCS metadata directory
 	"git_binary": "",
 	"git_update_command": ["pull", "origin", "master", "--ff", "--commit"],
-	
+
 	"hg_binary": "",
-	
+
 	// Be sure to keep the remote name as the last argument
 	"hg_update_command": ["pull", "--update", "default"],
 
@@ -133,6 +133,6 @@
 		"__init__.py"
 	],
 
-	// When a package is created, copy it to this folder - defaults to Desktop 
+	// When a package is created, copy it to this folder - defaults to Desktop
 	"package_destination": ""
 }

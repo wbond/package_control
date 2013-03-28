@@ -56,7 +56,7 @@ class PackageManager():
         # code accessing settings from threads
         self.settings = {}
         settings = sublime.load_settings('Package Control.sublime-settings')
-        for setting in ['timeout', 'repositories', 'repository_channels',
+        for setting in ['timeout', 'repositories', 'channels',
                 'package_name_map', 'dirs_to_ignore', 'files_to_ignore',
                 'package_destination', 'cache_length', 'auto_upgrade',
                 'files_to_ignore_binary', 'files_to_keep', 'dirs_to_keep',
@@ -110,7 +110,7 @@ class PackageManager():
         Returns a master list of all repositories pulled from all sources
 
         These repositories come from the channels specified in the
-        "repository_channels" setting, plus any repositories listed in the
+        "channels" setting, plus any repositories listed in the
         "repositories" setting.
 
         :return:
@@ -120,8 +120,8 @@ class PackageManager():
         cache_ttl = self.settings.get('cache_length')
 
         repositories = self.settings.get('repositories')
-        repository_channels = self.settings.get('repository_channels')
-        for channel in repository_channels:
+        channels = self.settings.get('channels')
+        for channel in channels:
             channel = channel.strip()
 
             # Caches various info from channels for performance

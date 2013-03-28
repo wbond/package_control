@@ -27,11 +27,11 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
             return
 
         settings = sublime.load_settings('Package Control.sublime-settings')
-        repository_channels = settings.get('repository_channels', [])
-        if not repository_channels:
-            repository_channels = []
-        repository_channels.append(input)
-        settings.set('repository_channels', repository_channels)
+        channels = settings.get('channels', [])
+        if not channels:
+            channels = []
+        channels.append(input)
+        settings.set('channels', channels)
         sublime.save_settings('Package Control.sublime-settings')
         sublime.status_message(('Channel %s successfully ' +
             'added') % input)
