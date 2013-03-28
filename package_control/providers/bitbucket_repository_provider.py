@@ -31,10 +31,11 @@ class BitBucketRepositoryProvider():
         self.repo = repo
         self.settings = settings
 
-    def match_url(self):
+    @classmethod
+    def match_url(cls, repo):
         """Indicates if this provider can handle the provided repo"""
 
-        return re.search('^https?://bitbucket.org', self.repo) != None
+        return re.search('^https?://bitbucket.org', repo) != None
 
     def get_packages(self):
         """

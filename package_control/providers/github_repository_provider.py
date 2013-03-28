@@ -34,12 +34,13 @@ class GitHubRepositoryProvider():
         self.repo = re.sub('\.git$', '', repo)
         self.settings = settings
 
-    def match_url(self):
+    @classmethod
+    def match_url(cls, repo):
         """Indicates if this provider can handle the provided repo"""
 
-        master = re.search('^https?://github.com/[^/]+/[^/]+/?$', self.repo)
+        master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo)
         branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
-            self.repo)
+            repo)
         return master != None or branch != None
 
     def get_packages(self):

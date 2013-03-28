@@ -160,8 +160,8 @@ class PackageManager():
                     self.settings.get('renamed_packages') == None:
 
                 for provider_class in CHANNEL_PROVIDERS:
-                    provider = provider_class(channel, self.settings)
-                    if provider.match_url():
+                    if provider_class.match_url(channel):
+                        provider = provider_class(channel, self.settings)
                         break
 
                 channel_repositories = provider.get_repositories()

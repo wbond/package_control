@@ -30,10 +30,11 @@ class GitHubUserProvider():
         self.repo = repo
         self.settings = settings
 
-    def match_url(self):
+    @classmethod
+    def match_url(cls, repo):
         """Indicates if this provider can handle the provided repo"""
 
-        return re.search('^https?://github.com/[^/]+/?$', self.repo) != None
+        return re.search('^https?://github.com/[^/]+/?$', repo) != None
 
     def get_packages(self):
         """

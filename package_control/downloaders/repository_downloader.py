@@ -34,9 +34,10 @@ class RepositoryDownloader(threading.Thread):
 
     def run(self):
         for provider_class in REPOSITORY_PROVIDERS:
-            provider = provider_class(self.repo, self.settings)
-            if provider.match_url():
+            if provider_class.match_url(self.repo):
+                provider = provider_class(self.repo, self.settings)
                 break
+
         packages = provider.get_packages()
         if packages == False:
             self.packages = False

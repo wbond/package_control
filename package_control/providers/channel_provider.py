@@ -38,7 +38,8 @@ class ChannelProvider(ReleaseSelector):
         self.settings = settings
         self.unavailable_packages = []
 
-    def match_url(self):
+    @classmethod
+    def match_url(cls, channel):
         """Indicates if this provider can handle the provided channel"""
 
         return True

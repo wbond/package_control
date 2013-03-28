@@ -51,7 +51,8 @@ class RepositoryProvider(ReleaseSelector):
         self.settings = settings
         self.unavailable_packages = []
 
-    def match_url(self):
+    @classmethod
+    def match_url(cls, repo):
         """Indicates if this provider can handle the provided repo"""
 
         return True
