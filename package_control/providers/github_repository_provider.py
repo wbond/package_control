@@ -3,7 +3,7 @@ import re
 from ..clients.github_client import GitHubClient
 
 
-class GitHubPackageProvider():
+class GitHubRepositoryProvider():
     """
     Allows using a public GitHub repository as the source for a single package.
     For legacy purposes, this can also be treated as the source for a Package
@@ -20,12 +20,12 @@ class GitHubPackageProvider():
           `cache_length`,
           `debug`,
           `timeout`,
-          `user_agent`,
+          `user_agent`
+        Optional fields:
           `http_proxy`,
           `https_proxy`,
           `proxy_username`,
-          `proxy_password`
-        Optional fields:
+          `proxy_password`,
           `query_string_params`
     """
 

@@ -63,11 +63,11 @@ mods_load_order = [
     '.clients.json_api_client',
 
     '.providers',
-    '.providers.bitbucket_package_provider',
+    '.providers.bitbucket_repository_provider',
     '.providers.channel_provider',
-    '.providers.github_package_provider',
+    '.providers.github_repository_provider',
     '.providers.github_user_provider',
-    '.providers.package_provider',
+    '.providers.repository_provider',
     '.providers.release_selector',
 
     '.downloaders',

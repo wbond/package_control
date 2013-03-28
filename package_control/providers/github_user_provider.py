@@ -18,11 +18,11 @@ class GitHubUserProvider():
           `debug`,
           `timeout`,
           `user_agent`,
+        Optional fields:
           `http_proxy`,
           `https_proxy`,
           `proxy_username`,
-          `proxy_password`
-        Optional fields:
+          `proxy_password`,
           `query_string_params`
     """
 

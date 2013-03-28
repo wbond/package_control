@@ -1,12 +1,12 @@
-from .bitbucket_package_provider import BitBucketPackageProvider
-from .github_package_provider import GitHubPackageProvider
+from .bitbucket_repository_provider import BitBucketRepositoryProvider
+from .github_repository_provider import GitHubRepositoryProvider
 from .github_user_provider import GitHubUserProvider
-from .package_provider import PackageProvider
+from .repository_provider import RepositoryProvider
 
 from .channel_provider import ChannelProvider
 
 
-REPOSITORY_PROVIDERS = [BitBucketPackageProvider, GitHubPackageProvider,
-    GitHubUserProvider, PackageProvider]
+REPOSITORY_PROVIDERS = [BitBucketRepositoryProvider, GitHubRepositoryProvider,
+    GitHubUserProvider, RepositoryProvider]
 
 CHANNEL_PROVIDERS = [ChannelProvider]

@@ -16,7 +16,7 @@ from ..clients.bitbucket_client import BitBucketClient
 from ..download_manager import DownloadManager
 
 
-class PackageProvider(ReleaseSelector):
+class RepositoryProvider(ReleaseSelector):
     """
     Generic repository downloader that fetches package info
 
@@ -35,12 +35,12 @@ class PackageProvider(ReleaseSelector):
           `cache_length`,
           `debug`,
           `timeout`,
-          `user_agent`,
+          `user_agent`
+        Optional fields:
           `http_proxy`,
           `https_proxy`,
           `proxy_username`,
-          `proxy_password`
-        Optional fields:
+          `proxy_password`,
           `query_string_params`
     """
 

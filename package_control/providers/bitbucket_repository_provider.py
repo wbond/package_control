@@ -3,7 +3,7 @@ import re
 from ..clients.bitbucket_client import BitBucketClient
 
 
-class BitBucketPackageProvider():
+class BitBucketRepositoryProvider():
     """
     Allows using a public BitBucket repository as the source for a single package.
     For legacy purposes, this can also be treated as the source for a Package
@@ -18,12 +18,12 @@ class BitBucketPackageProvider():
           `cache_length`,
           `debug`,
           `timeout`,
-          `user_agent`,
+          `user_agent`
+        Optional fields:
           `http_proxy`,
           `https_proxy`,
           `proxy_username`,
-          `proxy_password`
-        Optional fields:
+          `proxy_password`,
           `query_string_params`
     """
 
