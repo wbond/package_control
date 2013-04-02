@@ -141,8 +141,6 @@ class ChannelProvider(ReleaseSelector):
         # relative to the location of the channel file.
         if re.match('https?://', self.channel, re.I):
             url_pieces = urlparse(self.channel)
-            print(self.channel)
-            print(url_pieces)
             domain = url_pieces.scheme + '://' + url_pieces.netloc
             path = '/' if url_pieces.path == '' else url_pieces.path
             if path[-1] != '/':
