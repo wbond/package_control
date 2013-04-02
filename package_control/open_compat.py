@@ -15,7 +15,7 @@ def open_compat(path, mode='r'):
             encoding = None
             errors = None
         return open(path, mode, encoding=encoding, errors=errors)
-    
+
     else:
         return open(path, mode)
 

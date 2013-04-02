@@ -26,7 +26,7 @@ class ReleaseSelector():
             platforms = release.get('platforms', '*')
             if not isinstance(platforms, list):
                 platforms = [platforms]
-            
+
             best_platform = self.get_best_platform(platforms)
             if not best_platform:
                 continue

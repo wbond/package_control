@@ -28,7 +28,7 @@ class BitBucketClient(JSONApiClient):
         repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
         branch_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/src/([^/]+)/?$', url)
         tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
-        
+
         if repo_match:
             # Since HG allows for arbitrary main branch names, we have to hit
             # this URL just to get that info
@@ -42,7 +42,7 @@ class BitBucketClient(JSONApiClient):
         elif branch_match:
             user_repo = branch_match.group(1)
             commit = branch_match.group(2)
-        
+
         elif tags_match:
             user_repo = tags_match.group(1)
             tags_url = self.make_api_url(user_repo, '/tags')

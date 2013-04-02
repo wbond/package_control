@@ -43,7 +43,7 @@ class RepositoryDownloader(threading.Thread):
             self.packages = False
             return
 
-        self.packages = {}  
+        self.packages = {}
         for name, info in packages.items():
 
             # Allow name mapping of packages for schema version < 2.0

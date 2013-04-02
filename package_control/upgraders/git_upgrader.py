@@ -66,7 +66,7 @@ class GitUpgrader(VcsUpgrader):
         binary = self.retrieve_binary()
         if not binary:
             return False
-            
+
         res = self.execute([binary, 'fetch'], self.working_copy)
         if res == False:
             return False

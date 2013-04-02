@@ -117,7 +117,7 @@ class SemVer(object):
 
                 elif len(and_range) > 0 and and_range[0] == '~':
                     version = and_range[1:]
-                    
+
                     regex = (r'(?P<major>[0-9]+)'
                              r'(?P<minor>.[0-9]+)?'
                              r'(?P<patch>.[0-9]+)?')
@@ -139,7 +139,7 @@ class SemVer(object):
 
                     if not ge_info['patch']:
                         ge_info['patch'] = '.0'
-                    
+
                     lt_info['patch'] = '.0'
 
                     ge_version = ge_info['major'] + ge_info['minor'] + ge_info['patch']
@@ -151,7 +151,7 @@ class SemVer(object):
                     op_match = re.match('(>=|<=|>|<)(.*)$', and_range)
                     if not op_match:
                         raise ValueError('%s is not a valid SemVer range' % comp_range)
-                    
+
                     op, version = op_match.groups()
                     ops = {
                         '>=': '__ge__',

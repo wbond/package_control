@@ -120,9 +120,9 @@ try:
 
             if sys.version_info >= (3,):
                 request = bytes(request, 'iso-8859-1')
-            
+
             self.send(request)
-            
+
             response = self.response_class(self.sock, method=self._method)
             (version, code, message) = response._read_status()
 
@@ -137,7 +137,7 @@ try:
             close_connection = False
             while True:
                 line = response.fp.readline()
-                
+
                 if sys.version_info >= (3,):
                     line = str(line, encoding='iso-8859-1')
 

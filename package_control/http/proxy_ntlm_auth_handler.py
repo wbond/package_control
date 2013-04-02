@@ -14,7 +14,7 @@ if os.name == 'nt':
     except (ValueError):
         # Python 2
         from ntlm import ntlm
-        
+
 
 if os.name == 'nt':
     class ProxyNtlmAuthHandler(BaseHandler):

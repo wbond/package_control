@@ -306,7 +306,7 @@ class PackageManager():
         package_names = os.listdir(sublime.packages_path())
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
-        
+
         if int(sublime.version()) > 3000:
             package_files = os.listdir(sublime.installed_packages_path())
             package_names += [file.replace('.sublime-package', '') for file in package_files]

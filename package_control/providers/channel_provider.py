@@ -120,7 +120,7 @@ class ChannelProvider(ReleaseSelector):
         self.fetch()
         if self.channel_info == False:
             return False
-            
+
         if self.schema_version >= 2.0:
             return {}
 

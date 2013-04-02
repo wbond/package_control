@@ -183,12 +183,12 @@ class RepositoryProvider(ReleaseSelector):
             if self.schema_version >= 2.0:
                 details = package.get('details')
                 releases = package.get('releases')
-                
+
                 # Try to grab package-level details from GitHub or BitBucket
                 if details:
                     github_repo_info = github_client.repo_info(details)
                     bitbucket_repo_info = bitbucket_client.repo_info(details)
-                    
+
                     # When grabbing details, prefer explicit field values over the values
                     # from the GitHub or BitBucket API
                     if github_repo_info:
@@ -231,7 +231,7 @@ class RepositoryProvider(ReleaseSelector):
                             continue
 
                     info['releases'].append(download_info)
-            
+
                 info = self.select_release(info)
 
             # Schema version 1.0, 1.1 and 1.2 just require that all values be

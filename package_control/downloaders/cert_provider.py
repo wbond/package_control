@@ -168,7 +168,7 @@ class CertProvider(object):
             The contents of the CA cert(s)
         """
 
-        
+
         ca_bundle_path = os.path.join(sublime.packages_path(), 'User', 'Package Control.ca-bundle')
         with open_compat(ca_bundle_path, 'ab') as f:
             f.write(b"\n" + contents)

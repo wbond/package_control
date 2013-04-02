@@ -61,7 +61,7 @@ class HgUpgrader(VcsUpgrader):
         binary = self.retrieve_binary()
         if not binary:
             return False
-            
+
         args = [binary, 'in', '-q']
         args.append(self.update_command[-1])
         output = self.execute(args, self.working_copy)
