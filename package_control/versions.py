@@ -5,6 +5,9 @@ from .console_write import console_write
 
 
 def semver_compat(v):
+    if isinstance(v, SemVer):
+        return str(v)
+
     # Allowing passing in a dict containing info about a package
     if isinstance(v, dict):
         if not hasattr(v, 'version'):
