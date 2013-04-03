@@ -1,13 +1,11 @@
 try:
     # Python 3
     from http.client import HTTPException
-    from urllib.parse import urlparse
     from urllib.request import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, install_opener, build_opener, Request, urlopen
     from urllib.error import HTTPError, URLError
 except (ImportError):
     # Python 2
     from httplib import HTTPException
-    from urlparse import urlparse
     from urllib2 import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, install_opener, build_opener, Request, urlopen
     from urllib2 import HTTPError, URLError
 
@@ -19,13 +17,14 @@ from ..console_write import console_write
 from ..unicode import unicode_from_os
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
-from ..http.rate_limit_exception import RateLimitException
 from ..http.proxy_ntlm_auth_handler import ProxyNtlmAuthHandler
+from .rate_limit_exception import RateLimitException
 from .cert_provider import CertProvider
 from .decoding_downloader import DecodingDownloader
+from .limiting_downloader import LimitingDownloader
 
 
-class UrlLibDownloader(CertProvider, DecodingDownloader):
+class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader):
     """
     A downloader that uses the Python urllib module
 
@@ -131,9 +130,9 @@ class UrlLibDownloader(CertProvider, DecodingDownloader):
                     # encoding.
                     "Accept-Encoding": "gzip,deflate"})
                 http_file = urlopen(request, timeout=timeout)
-                self.handle_rate_limit(http_file, url)
+                self.handle_rate_limit(http_file.headers, url)
                 result = http_file.read()
-                encoding = http_file.headers.get('Content-Encoding')
+                encoding = http_file.headers.get('content-encoding')
                 return self.decode_response(encoding, result)
 
             except (HTTPException) as e:
@@ -170,24 +169,3 @@ class UrlLibDownloader(CertProvider, DecodingDownloader):
 
             break
         return False
-
-    def handle_rate_limit(self, response, url):
-        """
-        Checks the headers of a respone object to make sure we are obeying the
-        rate limit
-
-        :param response:
-            The response object that has a headers dict
-
-        :param url:
-            The URL that was requested
-
-        :raises:
-            RateLimitException when the rate limit has been hit
-        """
-
-        limit_remaining = response.headers.get('X-RateLimit-Remaining', 1)
-        if str(limit_remaining) == '0':
-            hostname = urlparse(url).hostname
-            limit = response.headers.get('X-RateLimit-Limit', 1)
-            raise RateLimitException(hostname, limit)

@@ -1,23 +1,17 @@
-try:
-    # Python 3
-    from urllib.parse import urlparse
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
-
 import tempfile
 import re
 import os
 
 from ..console_write import console_write
+from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
-from ..http.rate_limit_exception import RateLimitException
-from ..open_compat import open_compat, read_compat
+from .rate_limit_exception import RateLimitException
 from .cert_provider import CertProvider
+from .limiting_downloader import LimitingDownloader
 
 
-class CurlDownloader(CliDownloader, CertProvider):
+class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader):
     """
     A downloader that uses the command line program curl
 
@@ -109,26 +103,24 @@ class CurlDownloader(CliDownloader, CertProvider):
                 output = self.execute(command)
 
                 with open_compat(self.tmp_file, 'r') as f:
-                    headers = read_compat(f)
+                    headers_str = read_compat(f)
                 self.clean_tmp_file()
 
-                limit = 1
-                limit_remaining = 1
                 status = '200 OK'
-                for header in headers.splitlines():
+                headers = {}
+                for header in headers_str.splitlines():
                     if header[0:5] == 'HTTP/':
                         status = re.sub('^HTTP/\d\.\d\s+', '', header)
-                    if header.lower()[0:22] == 'x-ratelimit-remaining:':
-                        limit_remaining = header.lower()[22:].strip()
-                    if header.lower()[0:18] == 'x-ratelimit-limit:':
-                        limit = header.lower()[18:].strip()
+                        continue
+                    if header.strip() == '':
+                        continue
+                    name, value = header.split(':', 1)
+                    headers[name.lower()] = value.strip()
 
                 if debug:
                     self.print_debug(self.stderr.decode('utf-8'))
 
-                if str(limit_remaining) == '0':
-                    hostname = urlparse(url).hostname
-                    raise RateLimitException(hostname, limit)
+                self.handle_rate_limit(headers, url)
 
                 if status != '200 OK':
                     e = NonCleanExitError(22)

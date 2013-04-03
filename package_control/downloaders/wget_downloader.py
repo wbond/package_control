@@ -1,26 +1,20 @@
-try:
-    # Python 3
-    from urllib.parse import urlparse
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
-
 import tempfile
 import re
 import os
 
 from ..console_write import console_write
 from ..unicode import unicode_from_os
+from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
 from .non_clean_exit_error import NonCleanExitError
-from ..http.rate_limit_exception import RateLimitException
-from ..open_compat import open_compat, read_compat
+from .rate_limit_exception import RateLimitException
 from .cert_provider import CertProvider
 from .decoding_downloader import DecodingDownloader
+from .limiting_downloader import LimitingDownloader
 
 
-class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader):
+class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDownloader):
     """
     A downloader that uses the command line program wget
 
@@ -264,11 +258,3 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader):
                 headers[name.lower()] = value.strip()
 
         return (general, headers)
-
-    def handle_rate_limit(self, headers, url):
-        limit_remaining = headers.get('x-ratelimit-remaining', '1')
-        limit = headers.get('x-ratelimit-limit', '1')
-
-        if str(limit_remaining) == '0':
-            hostname = urlparse(url).hostname
-            raise RateLimitException(hostname, limit)

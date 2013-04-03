@@ -48,7 +48,6 @@ mods_load_order = [
 
     '.http',
     '.http.invalid_certificate_exception',
-    '.http.rate_limit_exception',
     '.http.proxy_ntlm_auth_handler',
     '.http.debuggable_http_response',
     '.http.debuggable_https_response',
@@ -71,10 +70,12 @@ mods_load_order = [
     '.providers.release_selector',
 
     '.downloaders',
+    '.downloaders.rate_limit_exception',
     '.downloaders.binary_not_found_error',
     '.downloaders.non_clean_exit_error',
     '.downloaders.non_http_error',
     '.downloaders.decoding_downloader',
+    '.downloaders.limiting_downloader',
     '.downloaders.cert_provider',
     '.downloaders.urllib_downloader',
     '.downloaders.cli_downloader',

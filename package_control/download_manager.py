@@ -20,8 +20,7 @@ from .downloaders.urllib_downloader import UrlLibDownloader
 from .downloaders.wget_downloader import WgetDownloader
 from .downloaders.curl_downloader import CurlDownloader
 from .downloaders.binary_not_found_error import BinaryNotFoundError
-
-from .http.rate_limit_exception import RateLimitException
+from .downloaders.rate_limit_exception import RateLimitException
 
 
 class DownloadManager(object):
