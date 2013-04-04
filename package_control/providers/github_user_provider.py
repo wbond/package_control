@@ -36,9 +36,12 @@ class GitHubUserProvider():
 
         return re.search('^https?://github.com/[^/]+/?$', repo) != None
 
-    def get_packages(self):
+    def get_packages(self, valid_sources=None):
         """
         Uses the GitHub API to construct necessary info for all packages
+
+        :param valid_sources:
+            A list of URLs that are permissible to fetch data from
 
         :return:
             A dict in the format:
@@ -64,6 +67,9 @@ class GitHubUserProvider():
         """
 
         client = GitHubClient(self.settings)
+
+        if valid_sources != None and self.repo not in valid_sources:
+            return False
 
         user_repos = client.user_info(self.repo)
         if user_repos == False:

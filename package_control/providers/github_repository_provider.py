@@ -43,9 +43,12 @@ class GitHubRepositoryProvider():
             repo)
         return master != None or branch != None
 
-    def get_packages(self):
+    def get_packages(self, valid_sources=None):
         """
         Uses the GitHub API to construct necessary info for a package
+
+        :param valid_sources:
+            A list of URLs that are permissible to fetch data from
 
         :return:
             A dict in the format:
@@ -70,6 +73,9 @@ class GitHubRepositoryProvider():
         """
 
         client = GitHubClient(self.settings)
+
+        if valid_sources != None and self.repo not in valid_sources:
+            return False
 
         repo_info = client.repo_info(self.repo)
         if repo_info == False:

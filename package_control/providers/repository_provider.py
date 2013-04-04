@@ -115,9 +115,12 @@ class RepositoryProvider(ReleaseSelector):
             console_write(u'Error parsing JSON from repository %s.' % location, True)
             return False
 
-    def get_packages(self):
+    def get_packages(self, valid_sources=None):
         """
         Provides access to the packages in this repository
+
+        :param valid_sources:
+            A list of URLs that are permissible to fetch data from
 
         :return:
             A dict in the format:
@@ -141,6 +144,9 @@ class RepositoryProvider(ReleaseSelector):
             }
             or False if there is an error
         """
+
+        if valid_sources != None and self.repo not in valid_sources:
+            return False
 
         self.fetch()
         if self.repo_info == False:
@@ -189,6 +195,9 @@ class RepositoryProvider(ReleaseSelector):
 
                 # Try to grab package-level details from GitHub or BitBucket
                 if details:
+                    if valid_sources != None and details not in valid_sources:
+                        continue
+
                     info['sources'].append(details)
 
                     github_repo_info = github_client.repo_info(details)
