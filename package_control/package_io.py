@@ -23,7 +23,7 @@ def read_package_file(package, relative_path, binary=False, debug=False):
             return result
 
     if debug:
-        console_write(u"Unable to find file %s in the package %s" % (relative_path, package))
+        console_write(u"Unable to find file %s in the package %s" % (relative_path, package), True)
     return False
 
 def package_file_exists(package, relative_path):
@@ -54,7 +54,7 @@ def _read_regular_file(package, relative_path, binary=False, debug=False):
 
     except (FileNotFoundError) as e:
         if debug:
-            console_write(u"Unable to find file %s in the package folder for %s" % (relative_path, package))
+            console_write(u"Unable to find file %s in the package folder for %s" % (relative_path, package), True)
         return False
 
 def _read_zip_file(package, relative_path, binary=False, debug=False):
