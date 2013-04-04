@@ -63,14 +63,14 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
 
     if not os.path.exists(zip_path):
         if debug:
-            console_write(u"Unable to find a sublime-package file for %s" % package)
+            console_write(u"Unable to find a sublime-package file for %s" % package, True)
         return False
 
     try:
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
     except (zipfile.BadZipfile):
-        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package)
+        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package, True)
         return False
 
     try:
@@ -81,7 +81,7 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
 
     except (KeyError) as e:
         if debug:
-            console_write(u"Unable to find file %s in the sublime-package file for %s" % (relative_path, package))
+            console_write(u"Unable to find file %s in the sublime-package file for %s" % (relative_path, package), True)
 
     except (IOError) as e:
         message = unicode_from_os(e)
@@ -108,7 +108,7 @@ def _zip_file_exists(package, relative_path):
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
     except (zipfile.BadZipfile):
-        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package_name)
+        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package_name, True)
         return False
 
     try:
