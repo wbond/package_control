@@ -151,7 +151,11 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
             except (HTTPError) as e:
                 # Make sure we obey Github's rate limiting headers
-                self.handle_rate_limit(e, url)
+                self.handle_rate_limit(e.headers, url)
+
+                # Handle cached responses
+                if unicode_from_os(e.code) == '304':
+                    return self.cache_result('get', url, int(e.code), e.headers, b'')
 
                 # Bitbucket and Github return 503 a decent amount
                 if unicode_from_os(e.code) == '503':
