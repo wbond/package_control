@@ -25,6 +25,8 @@ class DebuggableHTTPHandler(HTTPHandler):
     def http_open(self, req):
         def http_class_wrapper(host, **kwargs):
             kwargs['passwd'] = self.passwd
+            if 'debuglevel' not in kwargs:
+                kwargs['debuglevel'] = self._debuglevel
             return DebuggableHTTPConnection(host, **kwargs)
 
         return self.do_open(http_class_wrapper, req)
