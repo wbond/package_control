@@ -87,6 +87,9 @@ class ReleaseSelector():
         min_version = None
         max_version = None
 
+        if version_range == '*':
+            return True
+
         gt_match = re.match('>(\d+)$', version_range)
         ge_match = re.match('>=(\d+)$', version_range)
         lt_match = re.match('<(\d+)$', version_range)
