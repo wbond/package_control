@@ -1,13 +1,9 @@
 import sys
-import os
 import re
 import json
 import hashlib
 
 from ..console_write import console_write
-from ..open_compat import open_compat, read_compat
-from ..package_io import read_package_file
-from ..cache import get_cache
 
 
 class CachingDownloader(object):
@@ -46,7 +42,7 @@ class CachingDownloader(object):
             info = json.loads(info_json)
         except ValueError:
             return headers
-        
+
         etag = info.get('etag')
         if etag:
             headers['If-None-Match'] = etag
@@ -110,7 +106,7 @@ class CachingDownloader(object):
                 if debug:
                     console_write(u"Using cached content for %s" % url, True)
                 return cached_content
-            
+
             # If we got a 304, but did not have the cached content
             # stop here so we don't cache an empty response
             return content
@@ -166,6 +162,6 @@ class CachingDownloader(object):
 
         if sys.version_info >= (3,) or isinstance(url, unicode):
             url = url.encode('utf-8')
-        
+
         key = hashlib.md5(url).hexdigest()
         return key + suffix
