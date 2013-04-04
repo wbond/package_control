@@ -75,6 +75,7 @@ mods_load_order = [
     '.downloaders.binary_not_found_error',
     '.downloaders.non_clean_exit_error',
     '.downloaders.non_http_error',
+    '.downloaders.caching_downloader',
     '.downloaders.decoding_downloader',
     '.downloaders.limiting_downloader',
     '.downloaders.cert_provider',
