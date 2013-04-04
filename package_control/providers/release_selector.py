@@ -36,7 +36,7 @@ class ReleaseSelector():
 
             package_info['download'] = release
             package_info['last_modified'] = release.get('date')
-            del package_info['platforms']
+            del package_info['releases']
 
             return package_info
 
