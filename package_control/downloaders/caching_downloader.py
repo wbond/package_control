@@ -39,7 +39,7 @@ class CachingDownloader(object):
             return headers
 
         try:
-            info = json.loads(info_json)
+            info = json.loads(info_json.decode('utf-8'))
         except ValueError:
             return headers
 
@@ -101,7 +101,7 @@ class CachingDownloader(object):
         key = self.generate_key(url)
 
         if status == 304:
-            cached_content = self.settings['cache'].get(key, binary=True)
+            cached_content = self.settings['cache'].get(key)
             if cached_content:
                 if debug:
                     console_write(u"Using cached content for %s" % url, True)
@@ -140,8 +140,8 @@ class CachingDownloader(object):
         if debug:
             console_write(u"Caching %s in %s" % (url, key), True)
 
-        self.settings['cache'].set(info_key, struct_json)
-        self.settings['cache'].set(key, content, binary=True)
+        self.settings['cache'].set(info_key, struct_json.encode('utf-8'))
+        self.settings['cache'].set(key, content)
 
         return content
 

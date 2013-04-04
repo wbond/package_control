@@ -39,26 +39,22 @@ class HttpCache(object):
                 os.unlink(path)
 
 
-    def get(self, key, binary=False):
+    def get(self, key):
         """
         Returns a cached value
 
         :param key:
             The key to fetch the cache for
 
-        :param binary:
-            If the content is binary
-
         :return:
-            The cached value, or False
+            The (binary) cached value, or False
         """
 
         cache_file = os.path.join(self.base_path, key)
         if not os.path.exists(cache_file):
             return False
 
-        mode = 'rb' if binary else 'r'
-        with open_compat(cache_file, mode) as f:
+        with open_compat(cache_file, 'rb') as f:
             return read_compat(f)
 
 
@@ -67,7 +63,7 @@ class HttpCache(object):
         return os.path.exists(cache_file)
 
 
-    def set(self, key, content, binary=False):
+    def set(self, key, content):
         """
         Saves a value in the cache
 
@@ -75,13 +71,9 @@ class HttpCache(object):
             The key to save the cache with
 
         :param content:
-            The content to cache
-
-        :param binary:
-            If the content is binary
+            The (binary) content to cache
         """
 
         cache_file = os.path.join(self.base_path, key)
-        mode = 'wb' if binary else 'w'
-        with open_compat(cache_file, mode) as f:
+        with open_compat(cache_file, 'wb') as f:
             f.write(content)
