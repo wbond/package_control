@@ -22,9 +22,10 @@ from .rate_limit_exception import RateLimitException
 from .cert_provider import CertProvider
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
+from .caching_downloader import CachingDownloader
 
 
-class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader):
+class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, CachingDownloader):
     """
     A downloader that uses the Python urllib module
 
@@ -121,19 +122,27 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader):
         while tries > 0:
             tries -= 1
             try:
-                request = Request(url, headers={
+                request_headers = {
                     "User-Agent": self.settings.get('user_agent'),
                     # Don't be alarmed if the response from the server does not
                     # select one of these since the server runs a relatively new
                     # version of OpenSSL which supports compression on the SSL
                     # layer, and Apache will use that instead of HTTP-level
                     # encoding.
-                    "Accept-Encoding": "gzip,deflate"})
+                    "Accept-Encoding": "gzip,deflate"
+                }
+                request_headers = self.add_conditional_headers(url, request_headers)
+                request = Request(url, headers=request_headers)
                 http_file = urlopen(request, timeout=timeout)
                 self.handle_rate_limit(http_file.headers, url)
+
                 result = http_file.read()
                 encoding = http_file.headers.get('content-encoding')
-                return self.decode_response(encoding, result)
+                result = self.decode_response(encoding, result)
+
+                return self.cache_result('get', url, http_file.getcode(),
+                    http_file.headers, result)
+
 
             except (HTTPException) as e:
                 error_string = u'%s HTTP exception %s (%s) downloading %s.' % (

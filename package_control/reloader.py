@@ -34,6 +34,7 @@ mods_load_order = [
 
     '.sys_path',
     '.cache',
+    '.http_cache',
     '.clear_directory',
     '.cmd',
     '.console_write',

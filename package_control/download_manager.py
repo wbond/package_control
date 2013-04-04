@@ -21,11 +21,15 @@ from .downloaders.wget_downloader import WgetDownloader
 from .downloaders.curl_downloader import CurlDownloader
 from .downloaders.binary_not_found_error import BinaryNotFoundError
 from .downloaders.rate_limit_exception import RateLimitException
+from .http_cache import HttpCache
 
 
 class DownloadManager(object):
     def __init__(self, settings):
         self.settings = settings
+        if settings.get('http_cache'):
+            cache_length = settings.get('http_cache_length', 86400)
+            self.settings['cache'] = HttpCache(cache_length)
 
     def fetch(self, url, error_message):
         """

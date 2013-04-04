@@ -12,9 +12,10 @@ from .rate_limit_exception import RateLimitException
 from .cert_provider import CertProvider
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
+from .caching_downloader import CachingDownloader
 
 
-class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDownloader):
+class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDownloader, CachingDownloader):
     """
     A downloader that uses the command line program wget
 
@@ -55,13 +56,19 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
-            self.tmp_file, '-O', '-', '-U',
-            self.settings.get('user_agent'), '--header',
+            self.tmp_file, '-O', '-', '-U', self.settings.get('user_agent')]
+
+        request_headers = {
             # Don't be alarmed if the response from the server does not select
             # one of these since the server runs a relatively new version of
             # OpenSSL which supports compression on the SSL layer, and Apache
             # will use that instead of HTTP-level encoding.
-            'Accept-Encoding: gzip,deflate']
+            'Accept-Encoding': 'gzip,deflate'
+        }
+        request_headers = self.add_conditional_headers(url, request_headers)
+
+        for name, value in request_headers.items():
+            command.extend(['--header', "%s: %s" % (name, value)])
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
@@ -110,6 +117,9 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
                 if encoding:
                     result = self.decode_response(encoding, result)
 
+                result = self.cache_result('get', url, general['status'],
+                    headers, result)
+
                 return result
 
             except (NonCleanExitError) as e:
@@ -118,7 +128,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
                     general, headers = self.parse_output()
                     self.handle_rate_limit(headers, url)
 
-                    if general['status'] == '503':
+                    if general['status'] == 503:
                         # GitHub and BitBucket seem to rate limit via 503
                         error_string = u'Downloading %s was rate limited, trying again' % url
                         console_write(error_string, True)
@@ -239,7 +249,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
         general = {
             'version': '0.9',
-            'status':  '200',
+            'status':  200,
             'message': 'OK'
         }
         headers = {}
@@ -251,7 +261,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
             if line.find('HTTP/') == 0:
                 match = re.match('HTTP/(\d\.\d)\s+(\d+)\s+(.*)$', line)
                 general['version'] = match.group(1)
-                general['status'] = match.group(2)
+                general['status'] = int(match.group(2))
                 general['message'] = match.group(3)
             else:
                 name, value = line.split(':', 1)

@@ -9,9 +9,10 @@ from .non_clean_exit_error import NonCleanExitError
 from .rate_limit_exception import RateLimitException
 from .cert_provider import CertProvider
 from .limiting_downloader import LimitingDownloader
+from .caching_downloader import CachingDownloader
 
 
-class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader):
+class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDownloader):
     """
     A downloader that uses the command line program curl
 
@@ -60,6 +61,11 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader):
             # We have to capture the headers to check for rate limit info
             '--dump-header', self.tmp_file]
 
+        request_headers = self.add_conditional_headers(url, {})
+
+        for name, value in request_headers.items():
+            command.extend(['--header', "%s: %s" % (name, value)])
+
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
             secure_domain = secure_url_match.group(1)
@@ -106,11 +112,13 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader):
                     headers_str = read_compat(f)
                 self.clean_tmp_file()
 
-                status = '200 OK'
+                message = 'OK'
+                status = 200
                 headers = {}
                 for header in headers_str.splitlines():
                     if header[0:5] == 'HTTP/':
-                        status = re.sub('^HTTP/\d\.\d\s+', '', header)
+                        message = re.sub('^HTTP/\d\.\d\s+\d+\s+', '', header)
+                        status = int(re.sub('^HTTP/\d\.\d\s+(\d+)\s+.*$', '\\1', header))
                         continue
                     if header.strip() == '':
                         continue
@@ -122,10 +130,12 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader):
 
                 self.handle_rate_limit(headers, url)
 
-                if status != '200 OK':
+                if status not in [200, 304]:
                     e = NonCleanExitError(22)
-                    e.stderr = status
+                    e.stderr = "%s %s" % (status, message)
                     raise e
+
+                output = self.cache_result('get', url, status, headers, output)
 
                 return output
 
