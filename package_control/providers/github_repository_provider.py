@@ -62,7 +62,8 @@ class GitHubRepositoryProvider():
                         'version': version
                     },
                     'previous_names': [],
-                    'labels': []
+                    'labels': [],
+                    'sources': [the repo URL]
                 }
             }
             or False if there is an error
@@ -85,7 +86,9 @@ class GitHubRepositoryProvider():
             'author': repo_info['author'],
             'last_modified': download.get('date'),
             'download': download,
-            'previous_names': []
+            'previous_names': [],
+            'labels': [],
+            'sources': [self.repo]
         }}
 
     def get_renamed_packages(self):

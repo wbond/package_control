@@ -56,7 +56,8 @@ class BitBucketRepositoryProvider():
                         'version': version
                     },
                     'previous_names': [],
-                    'labels': []
+                    'labels': [],
+                    'sources': [the repo URL]
                 }
             }
             or False if there is an error
@@ -79,7 +80,9 @@ class BitBucketRepositoryProvider():
             'author': repo_info['author'],
             'last_modified': download.get('date'),
             'download': download,
-            'previous_names': []
+            'previous_names': [],
+            'labels': [],
+            'sources': [this.repo]
         }}
 
     def get_renamed_packages(self):

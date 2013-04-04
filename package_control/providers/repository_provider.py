@@ -134,7 +134,8 @@ class RepositoryProvider(ReleaseSelector):
                         'version': version
                     },
                     'previous_names': [old_name, ...],
-                    'labels': [label, ...]
+                    'labels': [label, ...],
+                    'sources': [url, ...]
                 },
                 ...
             }
@@ -171,7 +172,9 @@ class RepositoryProvider(ReleaseSelector):
         bitbucket_client = BitBucketClient(self.settings)
 
         for package in self.repo_info['packages']:
-            info = {}
+            info = {
+                'sources': [self.repo]
+            }
 
             for field in ['name', 'description', 'author', 'last_modified', 'previous_names', 'labels']:
                 if package.get(field):
@@ -186,6 +189,8 @@ class RepositoryProvider(ReleaseSelector):
 
                 # Try to grab package-level details from GitHub or BitBucket
                 if details:
+                    info['sources'].append(details)
+
                     github_repo_info = github_client.repo_info(details)
                     bitbucket_repo_info = bitbucket_client.repo_info(details)
 
