@@ -48,6 +48,17 @@ class DebuggableHTTPResponse(HTTPResponse):
                 console_write(u"  %s" % line.rstrip())
         return return_value
 
+    def is_keep_alive(self):
+        # Python 2
+        if hasattr(self.msg, 'headers'):
+            connection = self.msg.getheader('connection')
+        # Python 3
+        else:
+            connection = self.msg['connection']
+        if connection.lower() == 'keep-alive':
+            return True
+        return False
+
     def read(self, *args):
         try:
             return HTTPResponse.read(self, *args)

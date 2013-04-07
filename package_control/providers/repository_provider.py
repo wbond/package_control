@@ -14,7 +14,7 @@ from ..console_write import console_write
 from .release_selector import ReleaseSelector
 from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
-from ..download_manager import DownloadManager
+from ..download_manager import grab, release
 
 
 class RepositoryProvider(ReleaseSelector):
@@ -95,9 +95,10 @@ class RepositoryProvider(ReleaseSelector):
 
     def fetch_location(self, location):
         if re.match('https?://', self.repo, re.I):
-            download_manager = DownloadManager(self.settings)
+            download_manager = grab(location, self.settings)
             json_string = download_manager.fetch(location,
                 'Error downloading repository.')
+            release(location, download_manager)
 
         # Anything that is not a URL is expected to be a filesystem path
         else:

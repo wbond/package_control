@@ -16,9 +16,10 @@ try:
 
     from .validating_https_connection import ValidatingHTTPSConnection
     from .invalid_certificate_exception import InvalidCertificateException
+    from .persistent_handler import PersistentHandler
 
     if hasattr(urllib_compat, 'HTTPSHandler'):
-        class ValidatingHTTPSHandler(urllib_compat.HTTPSHandler):
+        class ValidatingHTTPSHandler(PersistentHandler, urllib_compat.HTTPSHandler):
             """
             A urllib handler that validates SSL certificates for HTTPS requests
             """

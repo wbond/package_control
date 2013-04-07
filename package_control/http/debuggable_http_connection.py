@@ -73,6 +73,10 @@ class DebuggableHTTPConnection(HTTPConnection):
     def request(self, method, url, body=None, headers={}):
         original_headers = headers.copy()
 
+        # By default urllib2 and urllib.request override the Connection header,
+        # however, it is preferred to be able to re-use it
+        original_headers['Connection'] = 'Keep-Alive'
+
         # Handles the challenge request response cycle before the real request
         proxy_auth = headers.get('Proxy-Authorization')
         if os.name == 'nt' and proxy_auth and proxy_auth.lstrip()[0:4] == 'NTLM':

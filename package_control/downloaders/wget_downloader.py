@@ -29,6 +29,9 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         self.debug = settings.get('debug')
         self.wget = self.find_binary('wget')
 
+    def close(self):
+        pass
+
     def download(self, url, error_message, timeout, tries):
         """
         Downloads a URL and returns the contents
@@ -152,6 +155,9 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
             break
         return False
+
+    def supports_ssl(self):
+        return True
 
     def parse_output(self):
         with open_compat(self.tmp_file, 'r') as f:

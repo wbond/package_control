@@ -53,6 +53,7 @@ mods_load_order = [
     '.http.debuggable_http_response',
     '.http.debuggable_https_response',
     '.http.debuggable_http_connection',
+    '.http.persistent_handler',
     '.http.debuggable_http_handler',
     '.http.validating_https_connection',
     '.http.validating_https_handler',

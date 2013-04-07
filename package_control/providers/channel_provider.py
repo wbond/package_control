@@ -11,7 +11,7 @@ except (ImportError):
 
 from ..console_write import console_write
 from .release_selector import ReleaseSelector
-from ..download_manager import DownloadManager
+from ..download_manager import grab, release
 
 
 class ChannelProvider(ReleaseSelector):
@@ -60,9 +60,10 @@ class ChannelProvider(ReleaseSelector):
             return
 
         if re.match('https?://', self.channel, re.I):
-            download_manager = DownloadManager(self.settings)
+            download_manager = grab(self.channel, self.settings)
             channel_json = download_manager.fetch(self.channel,
                 'Error downloading channel.')
+            release(self.channel, download_manager)
 
         # All other channels are expected to be filesystem paths
         else:

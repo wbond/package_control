@@ -1,13 +1,22 @@
 try:
     # Python 3
     from http.client import HTTPException
-    from urllib.request import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, install_opener, build_opener, Request, urlopen
+    from urllib.request import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, build_opener, Request
     from urllib.error import HTTPError, URLError
+    import urllib.request as urllib_compat
 except (ImportError):
     # Python 2
     from httplib import HTTPException
-    from urllib2 import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, install_opener, build_opener, Request, urlopen
+    from urllib2 import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, build_opener, Request
     from urllib2 import HTTPError, URLError
+    import urllib2 as urllib_compat
+
+try:
+    # Python 3.3
+    import ConnectionError
+except (ImportError):
+    # Python 2.6-3.2
+    from socket import error as ConnectionError
 
 import re
 import os
@@ -35,7 +44,15 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
     """
 
     def __init__(self, settings):
+        self.opener = None
         self.settings = settings
+
+    def close(self):
+        if not self.opener:
+            return
+        for handler in self.opener.handlers:
+            if isinstance(handler, ValidatingHTTPSHandler) or isinstance(handler, DebuggableHTTPHandler):
+                handler.close()
 
     def download(self, url, error_message, timeout, tries):
         """
@@ -63,61 +80,7 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
             The string contents of the URL, or False on error
         """
 
-        http_proxy = self.settings.get('http_proxy')
-        https_proxy = self.settings.get('https_proxy')
-        if http_proxy or https_proxy:
-            proxies = {}
-            if http_proxy:
-                proxies['http'] = http_proxy
-            if https_proxy:
-                proxies['https'] = https_proxy
-            proxy_handler = ProxyHandler(proxies)
-        else:
-            proxy_handler = ProxyHandler()
-
-        password_manager = HTTPPasswordMgrWithDefaultRealm()
-        proxy_username = self.settings.get('proxy_username')
-        proxy_password = self.settings.get('proxy_password')
-        if proxy_username and proxy_password:
-            if http_proxy:
-                password_manager.add_password(None, http_proxy, proxy_username,
-                    proxy_password)
-            if https_proxy:
-                password_manager.add_password(None, https_proxy, proxy_username,
-                    proxy_password)
-
-        handlers = [proxy_handler]
-        if os.name == 'nt':
-            ntlm_auth_handler = ProxyNtlmAuthHandler(password_manager)
-            handlers.append(ntlm_auth_handler)
-
-        basic_auth_handler = ProxyBasicAuthHandler(password_manager)
-        digest_auth_handler = ProxyDigestAuthHandler(password_manager)
-        handlers.extend([digest_auth_handler, basic_auth_handler])
-
-        debug = self.settings.get('debug')
-
-        if debug:
-            console_write(u"Urllib Debug Proxy", True)
-            console_write(u"  http_proxy: %s" % http_proxy)
-            console_write(u"  https_proxy: %s" % https_proxy)
-            console_write(u"  proxy_username: %s" % proxy_username)
-            console_write(u"  proxy_password: %s" % proxy_password)
-
-        secure_url_match = re.match('^https://([^/]+)', url)
-        if secure_url_match != None:
-            secure_domain = secure_url_match.group(1)
-            bundle_path = self.check_certs(secure_domain, timeout)
-            if not bundle_path:
-                return False
-            bundle_path = bundle_path.encode(sys.getfilesystemencoding())
-            handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
-                debug=debug, passwd=password_manager,
-                user_agent=self.settings.get('user_agent')))
-        else:
-            handlers.append(DebuggableHTTPHandler(debug=debug,
-                passwd=password_manager))
-        install_opener(build_opener(*handlers))
+        self.setup_opener(url, timeout)
 
         while tries > 0:
             tries -= 1
@@ -133,10 +96,13 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                 }
                 request_headers = self.add_conditional_headers(url, request_headers)
                 request = Request(url, headers=request_headers)
-                http_file = urlopen(request, timeout=timeout)
+                http_file = self.opener.open(request, timeout=timeout)
                 self.handle_rate_limit(http_file.headers, url)
 
                 result = http_file.read()
+                # Make sure the response is closed so we can re-use the connection
+                http_file.close()
+
                 encoding = http_file.headers.get('content-encoding')
                 result = self.decode_response(encoding, result)
 
@@ -150,6 +116,9 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                 console_write(error_string, True)
 
             except (HTTPError) as e:
+                # Make sure the response is closed so we can re-use the connection
+                e.close()
+
                 # Make sure we obey Github's rate limiting headers
                 self.handle_rate_limit(e.headers, url)
 
@@ -180,5 +149,99 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                     error_message, unicode_from_os(e.reason), url)
                 console_write(error_string, True)
 
+            except (ConnectionError):
+                # Handle broken pipes/reset connections by creating a new opener, and
+                # thus getting new handlers and a new connection
+                error_string = u'Connection went away while trying to download %s, trying again' % url
+                console_write(error_string, True)
+
+                self.opener = None
+                self.setup_opener(url, timeout)
+                tries += 1
+
+                continue
+
             break
         return False
+
+    def setup_opener(self, url, timeout):
+        """
+        Sets up a urllib OpenerDirector to be used for requests. There is a
+        fair amount of custom urllib code in Package Control, and part of it
+        is to handle proxies and keep-alives. Creating an opener the way
+        below is because the handlers have been customized to send the
+        "Connection: Keep-Alive" header and hold onto connections so they
+        can be re-used.
+
+        :param url:
+            The URL to download
+
+        :param timeout:
+            The int number of seconds to set the timeout to
+        """
+
+        if not self.opener:
+            http_proxy = self.settings.get('http_proxy')
+            https_proxy = self.settings.get('https_proxy')
+            if http_proxy or https_proxy:
+                proxies = {}
+                if http_proxy:
+                    proxies['http'] = http_proxy
+                if https_proxy:
+                    proxies['https'] = https_proxy
+                proxy_handler = ProxyHandler(proxies)
+            else:
+                proxy_handler = ProxyHandler()
+
+            password_manager = HTTPPasswordMgrWithDefaultRealm()
+            proxy_username = self.settings.get('proxy_username')
+            proxy_password = self.settings.get('proxy_password')
+            if proxy_username and proxy_password:
+                if http_proxy:
+                    password_manager.add_password(None, http_proxy, proxy_username,
+                        proxy_password)
+                if https_proxy:
+                    password_manager.add_password(None, https_proxy, proxy_username,
+                        proxy_password)
+
+            handlers = [proxy_handler]
+            if os.name == 'nt':
+                ntlm_auth_handler = ProxyNtlmAuthHandler(password_manager)
+                handlers.append(ntlm_auth_handler)
+
+            basic_auth_handler = ProxyBasicAuthHandler(password_manager)
+            digest_auth_handler = ProxyDigestAuthHandler(password_manager)
+            handlers.extend([digest_auth_handler, basic_auth_handler])
+
+            debug = self.settings.get('debug')
+
+            if debug:
+                console_write(u"Urllib Debug Proxy", True)
+                console_write(u"  http_proxy: %s" % http_proxy)
+                console_write(u"  https_proxy: %s" % https_proxy)
+                console_write(u"  proxy_username: %s" % proxy_username)
+                console_write(u"  proxy_password: %s" % proxy_password)
+
+            secure_url_match = re.match('^https://([^/]+)', url)
+            if secure_url_match != None:
+                secure_domain = secure_url_match.group(1)
+                bundle_path = self.check_certs(secure_domain, timeout)
+                if not bundle_path:
+                    return False
+                bundle_path = bundle_path.encode(sys.getfilesystemencoding())
+                handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
+                    debug=debug, passwd=password_manager,
+                    user_agent=self.settings.get('user_agent')))
+            else:
+                handlers.append(DebuggableHTTPHandler(debug=debug,
+                    passwd=password_manager))
+            self.opener = build_opener(*handlers)
+
+    def supports_ssl(self):
+        """
+        Indicates if the object can handle HTTPS requests
+
+        :return:
+            If the object supports HTTPS requests
+        """
+        return 'ssl' in sys.modules and hasattr(urllib_compat, 'HTTPSHandler')

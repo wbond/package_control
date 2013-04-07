@@ -27,7 +27,7 @@ from .cache import set_cache, get_cache
 from .versions import version_comparable, version_sort
 
 from .downloaders.repository_downloader import RepositoryDownloader
-from .download_manager import DownloadManager
+from .download_manager import grab, release
 
 from .providers.channel_provider import ChannelProvider
 
@@ -516,8 +516,9 @@ class PackageManager():
             old_version = self.get_metadata(package_name).get('version')
             is_upgrade = old_version != None
 
-            download_manager = DownloadManager(self.settings)
+            download_manager = grab(url, self.settings)
             package_bytes = download_manager.fetch(url, 'Error downloading package.')
+            release(url, download_manager)
             if package_bytes == False:
                 return False
             with open_compat(tmp_package_path, "wb") as package_file:
@@ -952,8 +953,9 @@ class PackageManager():
         params['sublime_version'] = self.settings.get('version')
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
-        download_manager = DownloadManager(self.settings)
+        download_manager = grab(url, self.settings)
         result = download_manager.fetch(url, 'Error submitting usage information.')
+        release(url, download_manager)
         if result == False:
             return
 

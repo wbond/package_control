@@ -1,14 +1,15 @@
 try:
     # Python 3
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, urlparse
 except (ImportError):
     # Python 2
     from urllib import urlencode
+    from urlparse import urlparse
 
 import json
 
 from ..console_write import console_write
-from ..download_manager import DownloadManager
+from ..download_manager import grab, release
 
 
 class JSONApiClient():
@@ -30,9 +31,10 @@ class JSONApiClient():
             joiner = '?%s' if url.find('?') == -1 else '&%s'
             url += joiner % params
 
-        download_manager = DownloadManager(self.settings)
+        download_manager = grab(url, self.settings)
         repository_json = download_manager.fetch(url,
             'Error downloading repository.')
+        release(url, download_manager)
         if repository_json == False:
             return False
         try:

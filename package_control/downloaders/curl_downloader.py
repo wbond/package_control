@@ -25,6 +25,9 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
         self.settings = settings
         self.curl = self.find_binary('curl')
 
+    def close(self):
+        pass
+
     def download(self, url, error_message, timeout, tries):
         """
         Downloads a URL and returns the contents
@@ -177,6 +180,9 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
             break
 
         return False
+
+    def supports_ssl(self):
+        return True
 
     def print_debug(self, string):
         section = 'General'

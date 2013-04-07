@@ -1,3 +1,5 @@
+import sys
+
 try:
     # Python 3
     from urllib.request import HTTPHandler
@@ -6,9 +8,10 @@ except (ImportError):
     from urllib2 import HTTPHandler
 
 from .debuggable_http_connection import DebuggableHTTPConnection
+from .persistent_handler import PersistentHandler
 
 
-class DebuggableHTTPHandler(HTTPHandler):
+class DebuggableHTTPHandler(PersistentHandler, HTTPHandler):
     """
     A custom HTTPHandler that formats debugging info for Sublime Text
     """
