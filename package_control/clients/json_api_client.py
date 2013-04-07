@@ -22,8 +22,11 @@ class JSONApiClient():
         :return: A dict or list from the JSON, or False on error
         """
 
-        if 'query_string_params' in self.settings:
-            params = urlencode(self.settings['query_string_params'])
+        # If there are extra params for the domain name, add them
+        extra_params = self.settings.get('query_string_params')
+        domain_name = urlparse(url).netloc
+        if extra_params and domain_name in extra_params:
+            params = urlencode(extra_params[domain_name])
             joiner = '?%s' if url.find('?') == -1 else '&%s'
             url += joiner % params
 
