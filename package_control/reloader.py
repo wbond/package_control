@@ -43,7 +43,6 @@ mods_load_order = [
     '.unicode',
     '.thread_progress',
     '.package_io',
-    '.download_manager',
     '.semver',
     '.versions',
 
@@ -85,6 +84,8 @@ mods_load_order = [
     '.downloaders.curl_downloader',
     '.downloaders.wget_downloader',
     '.downloaders.repository_downloader',
+
+    '.download_manager',
 
     '.upgraders',
     '.upgraders.vcs_upgrader',
