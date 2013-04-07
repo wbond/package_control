@@ -10,6 +10,8 @@ import re
 import socket
 from threading import Lock, Timer
 
+from . import __version__
+
 from .show_error import show_error
 from .console_write import console_write
 from .cache import set_cache, get_cache
@@ -101,6 +103,10 @@ class DownloadManager(object):
     def __init__(self, settings):
         # Cache the downloader for re-use
         self.downloader = None
+
+        user_agent = settings.get('user_agent')
+        if user_agent and user_agent.find('%s') != -1:
+            settings['user_agent'] = user_agent % __version__
 
         self.settings = settings
         if settings.get('http_cache'):
