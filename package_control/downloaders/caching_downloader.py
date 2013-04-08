@@ -145,7 +145,6 @@ class CachingDownloader(object):
 
         return content
 
-
     def generate_key(self, url, suffix=''):
         """
         Generates a key to store the cache under

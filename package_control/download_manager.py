@@ -1,14 +1,14 @@
+import sys
+import re
+import socket
+from threading import Lock, Timer
+
 try:
     # Python 3
     from urllib.parse import urlparse
 except (ImportError):
     # Python 2
     from urlparse import urlparse
-
-import sys
-import re
-import socket
-from threading import Lock, Timer
 
 from . import __version__
 

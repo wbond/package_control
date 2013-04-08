@@ -1,5 +1,6 @@
-import sublime
 import sys
+
+import sublime
 
 
 def console_write(string, prefix=False):
@@ -14,8 +15,8 @@ def console_write(string, prefix=False):
     """
 
     if int(sublime.version()) < 3000:
-	    if isinstance(string, unicode):
-	        string = string.encode('UTF-8')
+        if isinstance(string, unicode):
+            string = string.encode('UTF-8')
     if prefix:
         sys.stdout.write('Package Control: ')
     print(string)

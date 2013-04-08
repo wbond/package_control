@@ -1,3 +1,7 @@
+import re
+import os
+import sys
+
 try:
     # Python 3
     from http.client import HTTPException
@@ -17,10 +21,6 @@ try:
 except (ImportError):
     # Python 2.6-3.2
     from socket import error as ConnectionError
-
-import re
-import os
-import sys
 
 from ..console_write import console_write
 from ..unicode import unicode_from_os

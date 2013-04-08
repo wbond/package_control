@@ -1,6 +1,7 @@
-import sublime
 import os
 import locale
+
+import sublime
 
 
 def unicode_from_os(e):

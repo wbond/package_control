@@ -4,6 +4,7 @@
 import re
 import sys
 
+
 if sys.version_info[0] == 3:
     basestring = str
     cmp = lambda a, b: (a > b) - (a < b)

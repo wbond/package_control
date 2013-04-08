@@ -1,7 +1,8 @@
-import sublime
 import os
 import re
 import threading
+
+import sublime
 
 from .preferences_filename import preferences_filename
 from .thread_progress import ThreadProgress

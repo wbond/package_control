@@ -1,7 +1,8 @@
-import sublime
 import threading
 import os
 import shutil
+
+import sublime
 
 from .show_error import show_error
 from .console_write import console_write

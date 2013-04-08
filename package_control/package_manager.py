@@ -1,11 +1,3 @@
-try:
-    # Python 3
-    from urllib.parse import urlencode
-except (ImportError):
-    # Python 2
-    from urllib import urlencode
-
-import sublime
 import sys
 import os
 import re
@@ -18,6 +10,15 @@ from fnmatch import fnmatch
 import datetime
 import tempfile
 
+try:
+    # Python 3
+    from urllib.parse import urlencode
+except (ImportError):
+    # Python 2
+    from urllib import urlencode
+
+import sublime
+
 from .show_error import show_error
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
@@ -25,17 +26,12 @@ from .unicode import unicode_from_os
 from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
 from .versions import version_comparable, version_sort
-
 from .downloaders.repository_downloader import RepositoryDownloader
 from .download_manager import grab, release
-
 from .providers.channel_provider import ChannelProvider
-
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
-
 from .package_io import read_package_file
-
 from .providers import CHANNEL_PROVIDERS
 
 

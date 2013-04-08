@@ -1,7 +1,7 @@
-import sublime
-
 import os
 import time
+
+import sublime
 
 from .open_compat import open_compat, read_compat
 
@@ -16,7 +16,6 @@ class HttpCache(object):
         if not os.path.exists(self.base_path):
             os.mkdir(self.base_path)
         self.clear(int(ttl))
-
 
     def clear(self, ttl):
         """
@@ -38,7 +37,6 @@ class HttpCache(object):
             if mtime < time.time() - ttl:
                 os.unlink(path)
 
-
     def get(self, key):
         """
         Returns a cached value
@@ -57,11 +55,9 @@ class HttpCache(object):
         with open_compat(cache_file, 'rb') as f:
             return read_compat(f)
 
-
     def has(self, key):
         cache_file = os.path.join(self.base_path, key)
         return os.path.exists(cache_file)
-
 
     def set(self, key, content):
         """

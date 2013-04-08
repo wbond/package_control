@@ -12,18 +12,19 @@ from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
 from .package_message_command import PackageMessageCommand
 
+
 __all__ = [
-	'AddRepositoryChannelCommand',
-	'AddRepositoryCommand',
-	'CreateBinaryPackageCommand',
-	'CreatePackageCommand',
-	'DisablePackageCommand',
-	'DiscoverPackagesCommand',
-	'EnablePackageCommand',
-	'InstallPackageCommand',
-	'ListPackagesCommand',
-	'RemovePackageCommand',
-	'UpgradeAllPackagesCommand',
-	'UpgradePackageCommand',
-	'PackageMessageCommand'
+    'AddRepositoryChannelCommand',
+    'AddRepositoryCommand',
+    'CreateBinaryPackageCommand',
+    'CreatePackageCommand',
+    'DisablePackageCommand',
+    'DiscoverPackagesCommand',
+    'EnablePackageCommand',
+    'InstallPackageCommand',
+    'ListPackagesCommand',
+    'RemovePackageCommand',
+    'UpgradeAllPackagesCommand',
+    'UpgradePackageCommand',
+    'PackageMessageCommand'
 ]

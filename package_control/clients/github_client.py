@@ -1,11 +1,11 @@
+import re
+
 try:
     # Python 3
     from urllib.parse import urlencode, quote
 except (ImportError):
     # Python 2
     from urllib import urlencode, quote
-
-import re
 
 from ..versions import version_sort, version_filter
 from .json_api_client import JSONApiClient

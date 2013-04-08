@@ -1,7 +1,8 @@
-import sublime
 import os
 import re
 import json
+
+import sublime
 
 from ..console_write import console_write
 from ..open_compat import open_compat, read_compat

@@ -1,5 +1,6 @@
-import sublime
 import sys
+
+import sublime
 
 
 st_version = 2

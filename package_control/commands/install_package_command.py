@@ -1,6 +1,7 @@
+import threading
+
 import sublime
 import sublime_plugin
-import threading
 
 from ..show_error import show_error
 from ..package_installer import PackageInstaller

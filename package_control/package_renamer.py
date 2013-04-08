@@ -1,5 +1,6 @@
-import sublime
 import os
+
+import sublime
 
 from .console_write import console_write
 from .package_io import package_file_exists

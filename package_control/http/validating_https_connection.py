@@ -1,3 +1,10 @@
+import re
+import socket
+import base64
+import hashlib
+import os
+import sys
+
 try:
     # Python 3
     from http.client import HTTPS_PORT
@@ -6,13 +13,6 @@ except (ImportError):
     # Python 2
     from httplib import HTTPS_PORT
     from urllib2 import parse_keqv_list, parse_http_list
-
-import re
-import socket
-import base64
-import hashlib
-import os
-import sys
 
 if os.name == 'nt':
     try:
@@ -26,6 +26,7 @@ from ..console_write import console_write
 from .debuggable_https_response import DebuggableHTTPSResponse
 from .debuggable_http_connection import DebuggableHTTPConnection
 from .invalid_certificate_exception import InvalidCertificateException
+
 
 # The following code is wrapped in a try because the Linux versions of Sublime
 # Text do not include the ssl module due to the fact that different distros

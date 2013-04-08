@@ -1,12 +1,12 @@
+import gzip
+import zlib
+
 try:
     # Python 3
     from io import BytesIO as StringIO
 except (ImportError):
     # Python 2
     from StringIO import StringIO
-
-import gzip
-import zlib
 
 
 class DecodingDownloader(object):

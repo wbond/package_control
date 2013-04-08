@@ -1,6 +1,7 @@
-import sublime
 import os
 import zipfile
+
+import sublime
 
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
@@ -26,6 +27,7 @@ def read_package_file(package, relative_path, binary=False, debug=False):
         console_write(u"Unable to find file %s in the package %s" % (relative_path, package), True)
     return False
 
+
 def package_file_exists(package, relative_path):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
@@ -40,10 +42,12 @@ def package_file_exists(package, relative_path):
 
     return False
 
+
 def _get_package_dir(package):
     """:return: The full filesystem path to the package directory"""
 
     return os.path.join(sublime.packages_path(), package)
+
 
 def _read_regular_file(package, relative_path, binary=False, debug=False):
     package_dir = _get_package_dir(package)
@@ -56,6 +60,7 @@ def _read_regular_file(package, relative_path, binary=False, debug=False):
         if debug:
             console_write(u"Unable to find file %s in the package folder for %s" % (relative_path, package), True)
         return False
+
 
 def _read_zip_file(package, relative_path, binary=False, debug=False):
     zip_path = os.path.join(sublime.installed_packages_path(),
@@ -92,10 +97,12 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
 
     return False
 
+
 def _regular_file_exists(package, relative_path):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
     return os.path.exists(file_path)
+
 
 def _zip_file_exists(package, relative_path):
     zip_path = os.path.join(sublime.installed_packages_path(),

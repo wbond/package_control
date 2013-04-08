@@ -1,3 +1,5 @@
+import json
+
 try:
     # Python 3
     from urllib.parse import urlencode, urlparse
@@ -5,8 +7,6 @@ except (ImportError):
     # Python 2
     from urllib import urlencode
     from urlparse import urlparse
-
-import json
 
 from ..console_write import console_write
 from ..download_manager import grab, release

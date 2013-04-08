@@ -1,11 +1,11 @@
+import os
+
 try:
     # Python 3
     from urllib.request import BaseHandler, HTTPPasswordMgr
 except (ImportError):
     # Python 2
     from urllib2 import BaseHandler, HTTPPasswordMgr
-
-import os
 
 if os.name == 'nt':
     try:
@@ -16,7 +16,6 @@ if os.name == 'nt':
         from ntlm import ntlm
 
 
-if os.name == 'nt':
     class ProxyNtlmAuthHandler(BaseHandler):
         """
         Provides NTLM authentication for proxy servers.

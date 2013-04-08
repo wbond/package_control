@@ -1,6 +1,7 @@
+import re
+
 import sublime
 import sublime_plugin
-import re
 
 from ..show_error import show_error
 

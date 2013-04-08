@@ -1,9 +1,10 @@
-import sublime
 import threading
 import re
 import os
 import datetime
 import time
+
+import sublime
 
 from .console_write import console_write
 from .package_installer import PackageInstaller

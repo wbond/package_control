@@ -1,3 +1,7 @@
+import os
+import re
+import socket
+
 try:
     # Python 3
     from http.client import HTTPConnection
@@ -6,10 +10,6 @@ except (ImportError):
     # Python 2
     from httplib import HTTPConnection
     from urllib2 import URLError
-
-import os
-import re
-import socket
 
 if os.name == 'nt':
     try:

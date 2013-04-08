@@ -1,5 +1,6 @@
-import sublime
 import os
+
+import sublime
 
 from .file_not_found_error import FileNotFoundError
 
@@ -18,6 +19,7 @@ def open_compat(path, mode='r'):
 
     else:
         return open(path, mode)
+
 
 def read_compat(file_obj):
     if int(sublime.version()) > 3000:

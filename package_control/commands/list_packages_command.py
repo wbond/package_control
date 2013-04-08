@@ -1,7 +1,8 @@
-import sublime
-import sublime_plugin
 import threading
 import os
+
+import sublime
+import sublime_plugin
 
 from ..show_error import show_error
 from .existing_packages_command import ExistingPackagesCommand
