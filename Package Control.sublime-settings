@@ -89,8 +89,8 @@
 	// If HTTP responses should be cached to disk
 	"http_cache": true,
 
-	// Number of seconds to cache HTTP responses for
-	"http_cache_length": 86400,
+	// Number of seconds to cache HTTP responses for, defaults to one week
+	"http_cache_length": 604800,
 
 	// User agent for HTTP requests. If "%s" is present, will be replaced
 	// with the current version.
