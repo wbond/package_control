@@ -88,7 +88,7 @@ class BitBucketRepositoryProvider():
             'download': download,
             'previous_names': [],
             'labels': [],
-            'sources': [this.repo]
+            'sources': [self.repo]
         }}
 
     def get_renamed_packages(self):
