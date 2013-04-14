@@ -809,10 +809,10 @@ class PackageManager():
                     message = '\n\n%s:\n%s\n' % (package,
                         ('-' * len(package)))
                     output += message
-                upgrade_messages = os.path.join(package_dir,
+                upgrade_message_path = os.path.join(package_dir,
                     message_info.get(version))
                 message = '\n  '
-                with open_compat(upgrade_messages, 'r') as f:
+                with open_compat(upgrade_message_path, 'r') as f:
                     message += read_compat(f).replace('\n', '\n  ')
                 output += message + '\n'
 
