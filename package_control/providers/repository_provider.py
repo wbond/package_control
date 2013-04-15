@@ -183,7 +183,7 @@ class RepositoryProvider(ReleaseSelector):
                 'sources': [self.repo]
             }
 
-            for field in ['name', 'description', 'author', 'last_modified', 'previous_names', 'labels']:
+            for field in ['name', 'description', 'author', 'last_modified', 'previous_names', 'labels', 'homepage']:
                 if package.get(field):
                     info[field] = package.get(field)
 
