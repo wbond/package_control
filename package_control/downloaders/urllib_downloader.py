@@ -117,6 +117,7 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
             except (HTTPError) as e:
                 # Make sure the response is closed so we can re-use the connection
+                e.read()
                 e.close()
 
                 # Make sure we obey Github's rate limiting headers
