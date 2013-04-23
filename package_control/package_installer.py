@@ -72,7 +72,11 @@ class PackageInstaller():
 
             installed_version_name = 'v' + installed_version if \
                 installed and installed_version else 'unknown version'
-            new_version = 'v' + download['version']
+            if download.get('version'):
+                new_version = 'v' + download['version']
+            else:
+                """Don't show packages which don't have a version set"""
+                continue
 
             vcs = None
             package_dir = self.manager.get_package_dir(package)
