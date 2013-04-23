@@ -29,7 +29,18 @@ class GitHubClient(JSONApiClient):
         if not info:
             return info
 
-        return self.extract_repo_info(info)
+        output = self.extract_repo_info(info)
+        output['readme'] = None
+
+        query_string = urlencode({'ref': branch})
+        readme_url = self.make_api_url(user_repo, '/readme?%s' % query_string)
+        readme_info = self.fetch_json(readme_url)
+        if not readme_info:
+            return output
+
+        output['readme'] = 'https://raw.github.com/%s/%s/%s' % (user_repo,
+            branch, readme_info['path'])
+        return output
 
     def user_info(self, url):
         user_match = re.match('https?://github.com/([^/]+)/?$', url)
@@ -53,7 +64,8 @@ class GitHubClient(JSONApiClient):
             'name': result['name'],
             'description': result['description'] or 'No description provided',
             'homepage': result['homepage'] or result['html_url'],
-            'author': result['owner']['login']
+            'author': result['owner']['login'],
+            'donate': u'https://www.gittip.com/%s/' % result['owner']['login']
         }
 
     def commit_info(self, url):
@@ -83,7 +95,7 @@ class GitHubClient(JSONApiClient):
             return False
 
         query_string = urlencode({'sha': commit, 'per_page': 1})
-        commit_url = self.make_api_url(user_repo, '/commits?' + query_string)
+        commit_url = self.make_api_url(user_repo, '/commits?%s' % query_string)
         commit_info = self.fetch_json(commit_url)
         if commit_info == False:
             return False
@@ -106,9 +118,9 @@ class GitHubClient(JSONApiClient):
             # We specifically use nodeload.github.com here because the download
             # URLs all redirect there, and some of the downloaders don't follow
             # HTTP redirect headers
-            'url': 'https://nodeload.github.com/' + commit_info['user_repo'] + '/zip/' + quote(commit_info['commit']),
+            'url': 'https://nodeload.github.com/%s/zip/%s' % (commit_info['user_repo'], quote(commit_info['commit'])),
             'date': commit_date
         }
 
     def make_api_url(self, user_repo, suffix=''):
-        return 'https://api.github.com/repos/' + user_repo + suffix
+        return 'https://api.github.com/repos/%s%s' % (user_repo, suffix)

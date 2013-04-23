@@ -139,7 +139,9 @@ class RepositoryProvider(ReleaseSelector):
                     },
                     'previous_names': [old_name, ...],
                     'labels': [label, ...],
-                    'sources': [url, ...]
+                    'sources': [url, ...],
+                    'readme': url,
+                    'donate': url
                 },
                 ...
             }
@@ -183,7 +185,8 @@ class RepositoryProvider(ReleaseSelector):
                 'sources': [self.repo]
             }
 
-            for field in ['name', 'description', 'author', 'last_modified', 'previous_names', 'labels', 'homepage']:
+            for field in ['name', 'description', 'author', 'last_modified', 'previous_names',
+                    'labels', 'homepage', 'readme', 'donate']:
                 if package.get(field):
                     info[field] = package.get(field)
 
@@ -266,6 +269,10 @@ class RepositoryProvider(ReleaseSelector):
             for field in ['previous_names', 'labels']:
                 if field not in info:
                     info[field] = []
+
+            for field in ['readme', 'donate']:
+                if field not in info:
+                    info[field] = None
 
             if 'homepage' not in info:
                 info['homepage'] = self.repo

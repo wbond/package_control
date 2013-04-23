@@ -69,6 +69,42 @@
 			"author": "wbond"
 		},
 
+		// It is possible to provide the URL to a readme file. This URL
+		// should be to the raw source of the file, not rendered HTML.
+		// GitHub and BitBucket repositories will automatically provide
+		// these.
+		//
+		// The following extensions will be rendered:
+		//
+		// .markdown, .mdown, .mkd, .md
+		// .texttile
+		// .creole
+		// .rst
+		//
+		// All others are treated as plaintext.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"readme": "https://raw.github.com/wbond/sublime_alignment/master/readme.creole"
+		},
+
+		// The URL to donate to support the development of a package.
+		// GitHub and BitBucket repositories will default to:
+		//
+		// https://www.gittip.com/{username}/
+		//
+		// Other URLs with special integration include:
+		//
+		// https://flattr.com/profile/{username}
+		// https://www.dwolla.com/hub/{username}
+		//
+		// This may also contain a URL to another other donation-type site
+		// where users may support the author for their development of the
+		// package.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"donate": "https://www.gittip.com/wbond/"
+		},
+
 		// If you rename a package, you can provide the previous name(s)
 		// so that users with the old package name can be automatically
 		// upgraded to the new one.

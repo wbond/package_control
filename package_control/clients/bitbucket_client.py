@@ -4,6 +4,19 @@ from ..versions import version_sort, version_filter
 from .json_api_client import JSONApiClient
 
 
+_readme_filenames = [
+    'readme',
+    'readme.txt',
+    'readme.md',
+    'readme.mkd',
+    'readme.mdown',
+    'readme.markdown',
+    'readme.textile',
+    'readme.creole',
+    'readme.rst'
+]
+
+
 class BitBucketClient(JSONApiClient):
     def repo_info(self, url):
         repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
@@ -17,12 +30,42 @@ class BitBucketClient(JSONApiClient):
         if not info:
             return info
 
-        return {
+        output = {
             'name': info['name'],
             'description': info['description'] or 'No description provided',
             'homepage': info['website'] or url,
-            'author': info['owner']
+            'author': info['owner'],
+            'donate': u'https://www.gittip.com/%s/' % info['owner'],
+            'readme': None
         }
+
+        main_branch = self.branch_info(user_repo)
+        if not main_branch:
+            return output
+
+        listing_url = self.make_api_url(user_repo, '/src/%s/' % main_branch)
+        root_dir_info = self.fetch_json(listing_url)
+        if not root_dir_info:
+            return output
+
+        for entry in root_dir_info['files']:
+            if entry['path'].lower() in _readme_filenames:
+                output['readme'] = 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo,
+                    main_branch, entry['path'])
+                break
+
+        return output
+
+    def branch_info(self, user_repo):
+        """
+        Return the name of the default branch
+        """
+
+        main_branch_url = self.make_api_url(user_repo, '/main-branch')
+        main_branch_info = self.fetch_json(main_branch_url)
+        if main_branch_info == False:
+            return False
+        return main_branch_info['name']
 
     def commit_info(self, url):
         repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
@@ -33,11 +76,7 @@ class BitBucketClient(JSONApiClient):
             # Since HG allows for arbitrary main branch names, we have to hit
             # this URL just to get that info
             user_repo = repo_match.group(1)
-            main_branch_url = self.make_api_url(user_repo, '/main-branch')
-            main_branch_info = self.fetch_json(main_branch_url)
-            if main_branch_info == False:
-                return False
-            commit = main_branch_info['name']
+            commit = self.branch_info(user_repo)
 
         elif branch_match:
             user_repo = branch_match.group(1)
@@ -56,7 +95,7 @@ class BitBucketClient(JSONApiClient):
         else:
             return False
 
-        changeset_url = self.make_api_url(user_repo, '/changesets/' + commit)
+        changeset_url = self.make_api_url(user_repo, '/changesets/%s' % commit)
         commit_info = self.fetch_json(changeset_url)
         if commit_info == False:
             return False
@@ -76,9 +115,9 @@ class BitBucketClient(JSONApiClient):
 
         return {
             'version': re.sub('[\-: ]', '.', commit_date),
-            'url': 'https://bitbucket.org/' + commit_info['user_repo'] + '/get/' + commit_info['commit'] + '.zip',
+            'url': 'https://bitbucket.org/%s/get/%s.zip' % (commit_info['user_repo'], commit_info['commit']),
             'date': commit_date
         }
 
     def make_api_url(self, user_repo, suffix=''):
-        return 'https://api.bitbucket.org/1.0/repositories/' + user_repo + suffix
+        return 'https://api.bitbucket.org/1.0/repositories/%s%s' % (user_repo, suffix)

@@ -59,7 +59,9 @@ class GitHubUserProvider():
                     },
                     'previous_names': [],
                     'labels': [],
-                    'sources': [the user URL]
+                    'sources': [the user URL],
+                    'readme': url,
+                    'donate': url
                 },
                 ...
             }
@@ -88,7 +90,11 @@ class GitHubUserProvider():
                 'download': download,
                 'previous_names': [],
                 'labels': [],
-                'sources': [self.repo]
+                'sources': [self.repo],
+                'readme': repo_info['readme'],
+                # No implicit donation info for organizations since there
+                # are usually multiple users contributing
+                'donate': None
             }
 
         return output
