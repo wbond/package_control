@@ -53,7 +53,6 @@ class CachingDownloader(object):
 
         return headers
 
-
     def cache_result(self, method, url, status, headers, content):
         """
         Processes a request result, either caching the result, or returning
@@ -164,3 +163,23 @@ class CachingDownloader(object):
 
         key = hashlib.md5(url).hexdigest()
         return key + suffix
+
+    def retrieve_cached(self, url):
+        """
+        Tries to return the cached content for a URL
+
+        :param url:
+            The URL to get the cached content for
+
+        :return:
+            The cached content
+        """
+
+        key = self.generate_key(url)
+        if not self.settings['cache'].has(key):
+            return False
+
+        if self.settings.get('debug', False):
+            console_write(u"Using cached content for %s" % url, True)
+
+        return self.settings['cache'].get(key)

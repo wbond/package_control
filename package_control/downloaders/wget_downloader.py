@@ -32,7 +32,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
     def close(self):
         pass
 
-    def download(self, url, error_message, timeout, tries):
+    def download(self, url, error_message, timeout, tries, prefer_cached=False):
         """
         Downloads a URL and returns the contents
 
@@ -50,9 +50,17 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
             The int number of times to try and download the URL in the case of
             a timeout or HTTP 503 error
 
+        :param prefer_cached:
+            If a cached version should be returned instead of trying a new request
+
         :return:
             The string contents of the URL, or False on error
         """
+
+        if prefer_cached:
+            cached = self.retrieve_cached(url)
+            if cached:
+                return cached
 
         if not self.wget:
             return False

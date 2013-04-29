@@ -61,6 +61,7 @@ mods_load_order = [
     '.clients',
     '.clients.bitbucket_client',
     '.clients.github_client',
+    '.clients.readme_client',
     '.clients.json_api_client',
 
     '.providers',

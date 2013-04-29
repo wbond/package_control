@@ -16,11 +16,17 @@ class JSONApiClient():
     def __init__(self, settings):
         self.settings = settings
 
-    def fetch_json(self, url):
+    def fetch(self, url, prefer_cached=False):
         """
-        Retrieves and parses the JSON from a URL
+        Retrieves the contents of a URL
 
-        :return: A dict or list from the JSON, or False on error
+        :param url:
+            The URL to download the content from
+
+        :param prefer_cached:
+            If a cached copy of the content is preferred
+
+        :return: The bytes/string, or False on error
         """
 
         # If there are extra params for the domain name, add them
@@ -32,9 +38,25 @@ class JSONApiClient():
             url += joiner % params
 
         download_manager = grab(url, self.settings)
-        repository_json = download_manager.fetch(url,
-            'Error downloading repository.')
+        content = download_manager.fetch(url,
+            'Error downloading repository.', prefer_cached)
         release(url, download_manager)
+        return content
+
+    def fetch_json(self, url, prefer_cached=False):
+        """
+        Retrieves and parses the JSON from a URL
+
+        :param url:
+            The URL to download the JSON from
+
+        :param prefer_cached:
+            If a cached copy of the JSON is preferred
+
+        :return: A dict or list from the JSON, or False on error
+        """
+
+        repository_json = self.fetch(url, prefer_cached)
         if repository_json == False:
             return False
         try:

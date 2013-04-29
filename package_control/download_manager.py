@@ -118,7 +118,7 @@ class DownloadManager(object):
             self.downloader.close()
             self.downloader = None
 
-    def fetch(self, url, error_message):
+    def fetch(self, url, error_message, prefer_cached=False):
         """
         Downloads a URL and returns the contents
 
@@ -127,6 +127,9 @@ class DownloadManager(object):
 
         :param error_message:
             The error message to include if the download fails
+
+        :param prefer_cached:
+            If cached version of the URL content is preferred over a new request
 
         :return:
             The string contents of the URL, or False on error
@@ -173,7 +176,7 @@ class DownloadManager(object):
             return False
 
         try:
-            return self.downloader.download(url, error_message, timeout, 3)
+            return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
         except (RateLimitException) as e:
 
             rate_limited_domains.append(hostname)
