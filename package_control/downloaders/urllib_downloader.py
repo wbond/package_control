@@ -48,6 +48,10 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
         self.settings = settings
 
     def close(self):
+        """
+        Closes any persistent/open connections
+        """
+
         if not self.opener:
             return
         for handler in self.opener.handlers:

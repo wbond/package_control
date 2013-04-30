@@ -30,6 +30,10 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         self.wget = self.find_binary('wget')
 
     def close(self):
+        """
+        No-op for compatibility with UrllibDownloader and WinINetDownloader
+        """
+
         pass
 
     def download(self, url, error_message, timeout, tries, prefer_cached=False):
@@ -165,9 +169,28 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         return False
 
     def supports_ssl(self):
+        """
+        Indicates if the object can handle HTTPS requests
+
+        :return:
+            If the object supports HTTPS requests
+        """
+
         return True
 
     def parse_output(self):
+        """
+        Parses the wget output file, prints debug information and returns headers
+
+        :return:
+            A tuple of (general, headers) where general is a dict with the keys:
+              `version` - HTTP version number (string)
+              `status` - HTTP status code (integer)
+              `message` - HTTP status message (string)
+            And headers is a dict with the keys being lower-case version of the
+            HTTP header names.
+        """
+
         with open_compat(self.tmp_file, 'r') as f:
             output = read_compat(f).splitlines()
         self.clean_tmp_file()
@@ -240,6 +263,17 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         return self.parse_headers(header_lines)
 
     def skippable_line(self, line):
+        """
+        Determines if a debug line is skippable - usually because of extraneous
+        or duplicate information.
+
+        :param line:
+            The debug line to check
+
+        :return:
+            True if the line is skippable, otherwise None
+        """
+
         # Skip date lines
         if re.match('--\d{4}-\d{2}-\d{2}', line):
             return True
@@ -256,6 +290,21 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
             return True
 
     def parse_headers(self, output=None):
+        """
+        Parses HTTP headers into two dict objects
+
+        :param output:
+            An array of header lines, if None, loads from temp output file
+
+        :return:
+            A tuple of (general, headers) where general is a dict with the keys:
+              `version` - HTTP version number (string)
+              `status` - HTTP status code (integer)
+              `message` - HTTP status message (string)
+            And headers is a dict with the keys being lower-case version of the
+            HTTP header names.
+        """
+
         if not output:
             with open_compat(self.tmp_file, 'r') as f:
                 output = read_compat(f).splitlines()

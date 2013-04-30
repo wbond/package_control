@@ -26,6 +26,10 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
         self.curl = self.find_binary('curl')
 
     def close(self):
+        """
+        No-op for compatibility with UrllibDownloader and WinINetDownloader
+        """
+
         pass
 
     def download(self, url, error_message, timeout, tries, prefer_cached=False):
@@ -190,9 +194,26 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
         return False
 
     def supports_ssl(self):
+        """
+        Indicates if the object can handle HTTPS requests
+
+        :return:
+            If the object supports HTTPS requests
+        """
+
         return True
 
     def print_debug(self, string):
+        """
+        Takes debug output from curl and groups and prints it
+
+        :param string:
+            The complete debug output from curl
+
+        :return:
+            A string containing any stderr output
+        """
+
         section = 'General'
         last_section = None
 
