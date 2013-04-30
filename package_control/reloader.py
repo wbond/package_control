@@ -72,6 +72,8 @@ mods_load_order = [
     '.providers.repository_provider',
     '.providers.release_selector',
 
+    '.download_manager',
+
     '.downloaders',
     '.downloaders.rate_limit_exception',
     '.downloaders.binary_not_found_error',
@@ -85,9 +87,8 @@ mods_load_order = [
     '.downloaders.cli_downloader',
     '.downloaders.curl_downloader',
     '.downloaders.wget_downloader',
+    '.downloaders.wininet_downloader',
     '.downloaders.repository_downloader',
-
-    '.download_manager',
 
     '.upgraders',
     '.upgraders.vcs_upgrader',
