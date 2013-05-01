@@ -25,7 +25,8 @@ from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
-from .cache import set_cache, get_cache
+from .cache import (set_cache, get_cache, merge_cache_under_settings,
+    merge_cache_over_settings, set_cache_under_settings, set_cache_over_settings)
 from .versions import version_comparable, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
 from .download_manager import grab, release
@@ -125,30 +126,10 @@ class PackageManager():
             cache_key = channel + '.repositories'
             channel_repositories = get_cache(cache_key)
 
-            name_map_cache_key = channel + '.package_name_map'
-            name_map = get_cache('name_map_cache_key')
-            if name_map:
-                name_map.update(self.settings.get('package_name_map', {}))
-                self.settings['package_name_map'] = name_map
-
-            renamed_cache_key = channel + '.renamed_packages'
-            renamed_packages = get_cache(renamed_cache_key)
-            if renamed_packages:
-                renamed_packages.update(self.settings.get('renamed_packages', {}))
-                self.settings['renamed_packages'] = renamed_packages
-
-            unavailable_cache_key = channel + '.unavailable_packages'
-            unavailable_packages = get_cache(unavailable_cache_key)
-            if unavailable_packages:
-                unavailable_packages.extend(self.settings.get('unavailable_packages', []))
-                self.settings['unavailable_packages'] = unavailable_packages
-
-            certs_cache_key = channel + '.certs'
-            certs = self.settings.get('certs', {})
-            channel_certs = get_cache('certs_cache_key')
-            if channel_certs:
-                certs.update(channel_certs)
-                self.settings['certs'] = certs
+            merge_cache_under_settings(self, 'package_name_map', channel)
+            merge_cache_under_settings(self, 'renamed_packages', channel)
+            merge_cache_under_settings(self, 'unavailable_packages', channel, list_=True)
+            merge_cache_over_settings(self, 'certs', channel)
 
             # If any of the info was not retrieved from the cache, we need to
             # grab the channel to get it
@@ -174,28 +155,18 @@ class PackageManager():
 
                 # Have the local name map override the one from the channel
                 name_map = provider.get_name_map()
-                name_map.update(self.settings.get('package_name_map', {}))
-                self.settings['package_name_map'] = name_map
-                set_cache(name_map_cache_key, name_map, cache_ttl)
+                set_cache_under_settings(self, 'package_name_map', channel, name_map, cache_ttl)
 
                 renamed_packages = provider.get_renamed_packages()
-                set_cache(renamed_cache_key, renamed_packages, cache_ttl)
-                if renamed_packages:
-                    self.settings['renamed_packages'] = self.settings.get('renamed_packages', {})
-                    self.settings['renamed_packages'].update(renamed_packages)
+                set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)
 
                 unavailable_packages = provider.get_unavailable_packages()
-                set_cache(unavailable_cache_key, unavailable_packages, cache_ttl)
-                if unavailable_packages:
-                    self.settings['unavailable_packages'] = self.settings.get('unavailable_packages', [])
-                    self.settings['unavailable_packages'].extend(unavailable_packages)
+                set_cache_under_settings(self, 'unavailable_packages', channel, unavailable_packages, cache_ttl, list_=True)
 
                 certs = provider.get_certs()
-                set_cache(certs_cache_key, certs, cache_ttl)
-                if certs:
-                    self.settings['certs'] = self.settings.get('certs', {})
-                    self.settings['certs'].update(certs)
-                    set_cache('*.certs', self.settings['certs'], cache_ttl)
+                set_cache_over_settings(self, 'certs', channel, certs, cache_ttl)
+                # Save the master list of certs, used by downloaders/cert_provider.py
+                set_cache('*.certs', self.settings['certs'], cache_ttl)
 
             repositories.extend(channel_repositories)
         return [repo.strip() for repo in repositories]
@@ -270,20 +241,10 @@ class PackageManager():
             packages.update(repository_packages)
 
             renamed_packages = provider.get_renamed_packages()
-            if renamed_packages == False:
-                continue
-            renamed_cache_key = repo + '.renamed_packages'
-            set_cache(renamed_cache_key, renamed_packages, cache_ttl)
-            if renamed_packages:
-                self.settings['renamed_packages'] = self.settings.get('renamed_packages', {})
-                self.settings['renamed_packages'].update(renamed_packages)
+            set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
 
             unavailable_packages = provider.get_unavailable_packages()
-            unavailable_cache_key = repo + '.unavailable_packages'
-            set_cache(unavailable_cache_key, unavailable_packages, cache_ttl)
-            if unavailable_packages:
-                self.settings['unavailable_packages'] = self.settings.get('unavailable_packages', [])
-                self.settings['unavailable_packages'].extend(unavailable_packages)
+            set_cache_under_settings(self, 'unavailable_packages', repo, unavailable_packages, cache_ttl, list_=True)
 
         return packages
 
