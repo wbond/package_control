@@ -26,7 +26,6 @@ from ..console_write import console_write
 from ..unicode import unicode_from_os
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
-from ..http.proxy_ntlm_auth_handler import ProxyNtlmAuthHandler
 from .rate_limit_exception import RateLimitException
 from .cert_provider import CertProvider
 from .decoding_downloader import DecodingDownloader
@@ -218,9 +217,6 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                         proxy_password)
 
             handlers = [proxy_handler]
-            if os.name == 'nt':
-                ntlm_auth_handler = ProxyNtlmAuthHandler(password_manager)
-                handlers.append(ntlm_auth_handler)
 
             basic_auth_handler = ProxyBasicAuthHandler(password_manager)
             digest_auth_handler = ProxyDigestAuthHandler(password_manager)

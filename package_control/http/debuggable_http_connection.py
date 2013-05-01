@@ -11,14 +11,6 @@ except (ImportError):
     from httplib import HTTPConnection
     from urllib2 import URLError
 
-if os.name == 'nt':
-    try:
-        # Python 3
-        from ...lib.windows.ntlm import ntlm
-    except (ValueError):
-        # Python 2
-        from ntlm import ntlm
-
 from ..console_write import console_write
 from .debuggable_http_response import DebuggableHTTPResponse
 
@@ -76,42 +68,5 @@ class DebuggableHTTPConnection(HTTPConnection):
         # By default urllib2 and urllib.request override the Connection header,
         # however, it is preferred to be able to re-use it
         original_headers['Connection'] = 'Keep-Alive'
-
-        # Handles the challenge request response cycle before the real request
-        proxy_auth = headers.get('Proxy-Authorization')
-        if os.name == 'nt' and proxy_auth and proxy_auth.lstrip()[0:4] == 'NTLM':
-            # The default AbstractHTTPHandler automatically sets the
-            # Connection header to close because of urllib.addinfourl(), but in
-            # this case we are going to do some back and forth first for the NTLM
-            # proxy auth
-            headers['Connection'] = 'Keep-Alive'
-            self._send_request(method, url, body, headers)
-
-            response = self.getresponse()
-
-            content_length = int(response.getheader('content-length', 0))
-            if content_length:
-                response._safe_read(content_length)
-
-            proxy_authenticate = response.getheader('proxy-authenticate', None)
-            if not proxy_authenticate:
-                raise URLError('Invalid NTLM proxy authentication response')
-            ntlm_challenge = re.sub('^\s*NTLM\s+', '', proxy_authenticate)
-
-            if self.host.find(':') != -1:
-                host_port = self.host
-            else:
-                host_port = "%s:%s" % (self.host, self.port)
-            username, password = self.passwd.find_user_password(None, host_port)
-            domain = ''
-            user = username
-            if username.find('\\') != -1:
-                domain, user = username.split('\\', 1)
-
-            challenge, negotiate_flags = ntlm.parse_NTLM_CHALLENGE_MESSAGE(ntlm_challenge)
-            new_proxy_authorization = 'NTLM %s' % ntlm.create_NTLM_AUTHENTICATE_MESSAGE(challenge, user,
-                domain, password, negotiate_flags)
-            original_headers['Proxy-Authorization'] = new_proxy_authorization
-            response.close()
 
         HTTPConnection.request(self, method, url, body, original_headers)

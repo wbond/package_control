@@ -14,14 +14,6 @@ except (ImportError):
     from httplib import HTTPS_PORT
     from urllib2 import parse_keqv_list, parse_http_list
 
-if os.name == 'nt':
-    try:
-        # Python 3
-        from ...lib.windows.ntlm import ntlm
-    except (ValueError):
-        # Python 2
-        from ntlm import ntlm
-
 from ..console_write import console_write
 from .debuggable_https_response import DebuggableHTTPSResponse
 from .debuggable_http_connection import DebuggableHTTPConnection
@@ -99,7 +91,7 @@ try:
                     return True
             return False
 
-        def _tunnel(self, ntlm_follow_up=False):
+        def _tunnel(self):
             """
             This custom _tunnel method allows us to read and print the debug
             log for the whole response before throwing an error, and adds
@@ -160,7 +152,7 @@ try:
                     console_write(u"  %s" % line.rstrip())
 
             # Handle proxy auth for SSL connections since regular urllib punts on this
-            if code == 407 and self.passwd and ('Proxy-Authorization' not in self._tunnel_headers or ntlm_follow_up):
+            if code == 407 and self.passwd and 'Proxy-Authorization' not in self._tunnel_headers:
                 if content_length:
                     response._safe_read(content_length)
 
@@ -175,8 +167,6 @@ try:
                 username, password = self.passwd.find_user_password(None, "%s:%s" % (
                     self._proxy_host, self._proxy_port))
 
-                do_ntlm_follow_up = False
-
                 if 'digest' in supported_auth_methods:
                     response_value = self.build_digest_response(
                         supported_auth_methods['digest'], username, password)
@@ -188,26 +178,6 @@ try:
                     response_value = base64.b64encode(response_value).strip()
                     self._tunnel_headers['Proxy-Authorization'] = u"Basic %s" % response_value
 
-                elif 'ntlm' in supported_auth_methods and os.name == 'nt':
-                    ntlm_challenge = supported_auth_methods['ntlm']
-                    if not len(ntlm_challenge):
-                        type1_flags = ntlm.NTLM_TYPE1_FLAGS
-                        if username.find('\\') == -1:
-                            type1_flags &= ~ntlm.NTLM_NegotiateOemDomainSupplied
-
-                        negotiate_message = ntlm.create_NTLM_NEGOTIATE_MESSAGE(username, type1_flags)
-                        self._tunnel_headers['Proxy-Authorization'] = 'NTLM %s' % negotiate_message
-                        do_ntlm_follow_up = True
-                    else:
-                        domain = ''
-                        user = username
-                        if username.find('\\') != -1:
-                            domain, user = username.split('\\', 1)
-
-                        challenge, negotiate_flags = ntlm.parse_NTLM_CHALLENGE_MESSAGE(ntlm_challenge)
-                        self._tunnel_headers['Proxy-Authorization'] = 'NTLM %s' % ntlm.create_NTLM_AUTHENTICATE_MESSAGE(challenge, user,
-                            domain, password, negotiate_flags)
-
                 if 'Proxy-Authorization' in self._tunnel_headers:
                     self.host = self._proxy_host
                     self.port = self._proxy_port
@@ -217,7 +187,7 @@ try:
                         self.sock.close()
                         self.sock = socket.create_connection((self.host, self.port), self.timeout)
 
-                    return self._tunnel(do_ntlm_follow_up)
+                    return self._tunnel()
 
             if code != 200:
                 self.close()

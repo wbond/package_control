@@ -49,7 +49,6 @@ mods_load_order = [
 
     '.http',
     '.http.invalid_certificate_exception',
-    '.http.proxy_ntlm_auth_handler',
     '.http.debuggable_http_response',
     '.http.debuggable_https_response',
     '.http.debuggable_http_connection',
