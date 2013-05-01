@@ -276,9 +276,14 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 if self.debug:
                     console_write(u"WinINet %s Debug Write" % self.scheme.upper(), True)
-                    console_write(u"  <unknown headers sent by WinINet>")
+                    # Add in some known headers that WinINet sends since we can't get the real list
+                    console_write(u"  GET %s HTTP/1.1" % path)
                     for header, value in request_headers.items():
                         console_write(u"  %s: %s" % (header, value))
+                    console_write(u"  User-Agent: %s" % self.settings.get('user_agent'))
+                    console_write(u"  Host: %s" % hostname)
+                    console_write(u"  Connection: Keep-Alive")
+                    console_write(u"  Cache-Control: no-cache")
 
                 header_buffer_size = 8192
 
