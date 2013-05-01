@@ -13,7 +13,8 @@
 
 	// A list of CA certs needed for domains. The default channel provides a
 	// list of domains and an identifier (the md5 hash) for the CA cert(s)
-	// necessary for each.
+	// necessary for each. Not used on Windows since the system CA cert list
+	// is automatically used via WinINet.
 	//
 	// If a custom cert is required for a proxy or for an alternate channel
 	// or repository domain name, it should be added in one of the two forms:
@@ -69,20 +70,24 @@
 	// Packages to not auto upgrade
 	"auto_upgrade_ignore": [],
 
-	// Timeout for downloading channels, repositories and packages
+	// Timeout for downloading channels, repositories and packages. Doesn't
+	// have an effect on Windows due to a bug in WinINet.
 	"timeout": 30,
 
 	// The number of seconds to cache repository and package info for
 	"cache_length": 300,
 
-	// An HTTP proxy server to use for requests
+	// An HTTP proxy server to use for requests. Not used on Windows since the
+	// system proxy configuration is utilized via WinINet.
 	"http_proxy": "",
 	// An HTTPS proxy server to use for requests - this will inherit from
 	// http_proxy if it is set to "" or null and http_proxy has a value. You
-	// can set this to false to prevent inheriting from http_proxy.
+	// can set this to false to prevent inheriting from http_proxy. Not used on
+	// Windows since the system proxy configuration is utilized via WinINet.
 	"https_proxy": "",
 
-	// Username and password for both http_proxy and https_proxy
+	// Username and password for both http_proxy and https_proxy. Not used on
+	// Windows since the system proxy configuration is utilized via WinINet.
 	"proxy_username": "",
 	"proxy_password": "",
 
