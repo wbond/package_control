@@ -1,4 +1,4 @@
-from ctypes import windll, wintypes, GetLastError, FormatError, create_string_buffer, byref, sizeof, c_char_p, Structure
+from ctypes import windll, wintypes, GetLastError, FormatError, create_string_buffer, byref, pointer, sizeof, c_char_p, Structure
 import time
 import re
 import datetime
@@ -235,15 +235,23 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 self.use_count += 1
 
                 if self.debug and created_connection:
-                    proxy = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
+                    # Disabled for now due to crashes
+                    #proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
+                    proxy = ''
+                    #if proxy_struct.lpszProxy:
+                    #    proxy = proxy_struct.lpszProxy.decode('iso-8859-1')
+                    proxy_bypass = ''
+                    #if proxy_struct.lpszProxyBypass:
+                    #    proxy_bypass = proxy_struct.lpszProxyBypass.decode('iso-8859-1')
+
                     proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
                     proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
+
                     console_write(u"WinINet Debug Proxy", True)
-                    console_write(u"  proxy: %s" % (proxy.lpszProxy or ''))
-                    console_write(u"  proxy bypass: %s" % (proxy.lpszProxyBypass or ''))
+                    console_write(u"  proxy: %s" % proxy)
+                    console_write(u"  proxy bypass: %s" % proxy_bypass)
                     console_write(u"  proxy username: %s" % proxy_username)
                     console_write(u"  proxy password: %s" % proxy_password)
-                    shown_proxy = True
 
                     if self.scheme == 'https':
                         cert_struct = self.read_option(http_connection, self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT)
@@ -433,12 +441,15 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             to_read_was_read = wintypes.DWORD(option_buffer_size)
             if option == self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT:
                 option_buffer = InternetCertificateInfo()
+                ref = pointer(option_buffer)
             elif option == self.INTERNET_OPTION_PROXY:
                 option_buffer = InternetProxyInfo()
+                ref = pointer(option_buffer)
             else:
                 option_buffer = create_string_buffer(option_buffer_size)
+                ref = byref(option_buffer)
 
-            success = windll.wininet.InternetQueryOptionA(handle, option, byref(option_buffer), byref(to_read_was_read))
+            success = windll.wininet.InternetQueryOptionA(handle, option, ref, byref(to_read_was_read))
             if not success:
                 if GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
                     raise NonHttpError(self.extract_error())
