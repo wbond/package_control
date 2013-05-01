@@ -27,6 +27,7 @@ class GitHubUserProvider():
     """
 
     def __init__(self, repo, settings):
+        self.cache = {}
         self.repo = repo
         self.settings = settings
 
@@ -35,6 +36,13 @@ class GitHubUserProvider():
         """Indicates if this provider can handle the provided repo"""
 
         return re.search('^https?://github.com/[^/]+/?$', repo) != None
+
+    def prefetch(self):
+        """
+        Go out and perform HTTP operations, caching the result
+        """
+
+        self.get_packages()
 
     def get_packages(self, valid_sources=None):
         """
@@ -68,13 +76,18 @@ class GitHubUserProvider():
             or False if there is an error
         """
 
+        if 'get_packages' in self.cache:
+            return self.cache['get_packages']
+
         client = GitHubClient(self.settings)
 
         if valid_sources != None and self.repo not in valid_sources:
+            self.cache['get_packages'] = False
             return False
 
         user_repos = client.user_info(self.repo)
         if user_repos == False:
+            self.cache['get_packages'] = False
             return False
 
         output = {}
@@ -97,6 +110,7 @@ class GitHubUserProvider():
                 'donate': None
             }
 
+        self.cache['get_packages'] = output
         return output
 
     def get_renamed_packages(self):

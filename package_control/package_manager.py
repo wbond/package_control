@@ -12,10 +12,11 @@ import tempfile
 
 try:
     # Python 3
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, urlparse
 except (ImportError):
     # Python 2
     from urllib import urlencode
+    from urlparse import urlparse
 
 import sublime
 
@@ -26,13 +27,13 @@ from .unicode import unicode_from_os
 from .clear_directory import clear_directory
 from .cache import set_cache, get_cache
 from .versions import version_comparable, version_sort
-from .downloaders.repository_downloader import RepositoryDownloader
+from .downloaders.background_downloader import BackgroundDownloader
 from .download_manager import grab, release
 from .providers.channel_provider import ChannelProvider
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file
-from .providers import CHANNEL_PROVIDERS
+from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 
 
 class PackageManager():
@@ -216,79 +217,69 @@ class PackageManager():
         cache_ttl = self.settings.get('cache_length')
         repositories = self.list_repositories()
         packages = {}
-        downloaders = []
-        grouped_downloaders = {}
+        downloaders = {}
+        active = []
+        repos_to_download = []
+        name_map = self.settings.get('package_name_map', {})
 
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
         for repo in repositories[::-1]:
             cache_key = repo + '.packages'
             repository_packages = get_cache(cache_key)
-            if repository_packages:
+
+            if repository_packages != None:
                 packages.update(repository_packages)
 
-            if repository_packages == None:
-                downloader = RepositoryDownloader(self.settings,
-                    self.settings.get('package_name_map', {}), repo)
-                domain = re.sub('^https?://[^/]*?(\w+\.\w+)($|/.*$)', '\\1',
-                    repo)
+            else:
+                domain = urlparse(repo).hostname
+                if domain not in downloaders:
+                    downloaders[domain] = BackgroundDownloader(self.settings,
+                        REPOSITORY_PROVIDERS)
+                downloaders[domain].add_url(repo)
+                repos_to_download.append(repo)
 
-                # downloaders are grouped by domain so that multiple can
-                # be run in parallel without running into API access limits
-                if not grouped_downloaders.get(domain):
-                    grouped_downloaders[domain] = []
-                grouped_downloaders[domain].append(downloader)
-
-        # Allows creating a separate named function for each downloader
-        # delay. Not having this contained in a function causes all of the
-        # schedules to reference the same downloader.start()
-        def schedule(downloader, delay):
-            downloader.has_started = False
-
-            def inner():
-                downloader.start()
-                downloader.has_started = True
-            sublime.set_timeout(inner, delay)
-
-        # Grabs every repo grouped by domain and delays the start
-        # of each download from that domain by a fixed amount
-        for domain_downloaders in list(grouped_downloaders.values()):
-            for i in range(len(domain_downloaders)):
-                downloader = domain_downloaders[i]
-                downloaders.append(downloader)
-                schedule(downloader, i * 150)
-
-        complete = []
+        for downloader in list(downloaders.values()):
+            downloader.start()
+            active.append(downloader)
 
         # Wait for all of the downloaders to finish
-        while downloaders:
-            downloader = downloaders.pop()
-            if downloader.has_started:
-                downloader.join()
-                complete.append(downloader)
-            else:
-                downloaders.insert(0, downloader)
+        while active:
+            downloader = active.pop()
+            downloader.join()
 
-        # Grabs the results and stuff if all in the cache
-        for downloader in complete:
-            repository_packages = downloader.packages
-            if repository_packages == False:
+        # Grabs the results and stuff it all in the cache
+        for repo in repos_to_download:
+            domain = urlparse(repo).hostname
+            downloader = downloaders[domain]
+            provider = downloader.get_provider(repo)
+
+            _repository_packages = provider.get_packages()
+            if _repository_packages == False:
                 continue
-            cache_key = downloader.repo + '.packages'
+
+            # Allow name mapping of packages for schema version < 2.0
+            repository_packages = {}
+            for name, info in _repository_packages.items():
+                name = name_map.get(name, name)
+                info['name'] = name
+                repository_packages[name] = info
+
+            cache_key = repo + '.packages'
             set_cache(cache_key, repository_packages, cache_ttl)
             packages.update(repository_packages)
 
-            renamed_packages = downloader.renamed_packages
+            renamed_packages = provider.get_renamed_packages()
             if renamed_packages == False:
                 continue
-            renamed_cache_key = downloader.repo + '.renamed_packages'
+            renamed_cache_key = repo + '.renamed_packages'
             set_cache(renamed_cache_key, renamed_packages, cache_ttl)
             if renamed_packages:
                 self.settings['renamed_packages'] = self.settings.get('renamed_packages', {})
                 self.settings['renamed_packages'].update(renamed_packages)
 
-            unavailable_packages = downloader.unavailable_packages
-            unavailable_cache_key = downloader.repo + '.unavailable_packages'
+            unavailable_packages = provider.get_unavailable_packages()
+            unavailable_cache_key = repo + '.unavailable_packages'
             set_cache(unavailable_cache_key, unavailable_packages, cache_ttl)
             if unavailable_packages:
                 self.settings['unavailable_packages'] = self.settings.get('unavailable_packages', [])

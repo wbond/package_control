@@ -30,6 +30,7 @@ class GitHubRepositoryProvider():
     """
 
     def __init__(self, repo, settings):
+        self.cache = {}
         # Clean off the trailing .git to be more forgiving
         self.repo = re.sub('\.git$', '', repo)
         self.settings = settings
@@ -42,6 +43,13 @@ class GitHubRepositoryProvider():
         branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
             repo)
         return master != None or branch != None
+
+    def prefetch(self):
+        """
+        Go out and perform HTTP operations, caching the result
+        """
+
+        self.get_packages()
 
     def get_packages(self, valid_sources=None):
         """
@@ -74,20 +82,26 @@ class GitHubRepositoryProvider():
             or False if there is an error
         """
 
+        if 'get_packages' in self.cache:
+            return self.cache['get_packages']
+
         client = GitHubClient(self.settings)
 
         if valid_sources != None and self.repo not in valid_sources:
+            self.cache['get_packages'] = False
             return False
 
         repo_info = client.repo_info(self.repo)
         if repo_info == False:
+            self.cache['get_packages'] = False
             return False
 
         download = client.download_info(self.repo)
         if download == False:
+            self.cache['get_packages'] = False
             return False
 
-        return {repo_info['name']: {
+        self.cache['get_packages'] = {repo_info['name']: {
             'name': repo_info['name'],
             'description': repo_info['description'],
             'homepage': repo_info['homepage'],
@@ -100,6 +114,7 @@ class GitHubRepositoryProvider():
             'readme': repo_info['readme'],
             'donate': repo_info['donate']
         }}
+        return self.cache['get_packages']
 
     def get_renamed_packages(self):
         """For API-compatibility with :class:`PackageProvider`"""

@@ -53,6 +53,13 @@ class ChannelProvider(ReleaseSelector):
 
         return True
 
+    def prefetch(self):
+        """
+        Go out and perform HTTP operations, caching the result
+        """
+
+        self.fetch()
+
     def fetch(self):
         """Retrieves and loads the JSON for other methods to use"""
 

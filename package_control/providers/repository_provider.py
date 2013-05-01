@@ -46,6 +46,7 @@ class RepositoryProvider(ReleaseSelector):
     """
 
     def __init__(self, repo, settings):
+        self.cache = {}
         self.repo_info = None
         self.schema_version = 0.0
         self.repo = repo
@@ -57,6 +58,13 @@ class RepositoryProvider(ReleaseSelector):
         """Indicates if this provider can handle the provided repo"""
 
         return True
+
+    def prefetch(self):
+        """
+        Go out and perform HTTP operations, caching the result
+        """
+
+        self.get_packages()
 
     def fetch(self):
         """Retrieves and loads the JSON for other methods to use"""
@@ -148,11 +156,16 @@ class RepositoryProvider(ReleaseSelector):
             or False if there is an error
         """
 
+        if 'get_packages' in self.cache:
+            return self.cache['get_packages']
+
         if valid_sources != None and self.repo not in valid_sources:
+            self.cache['get_packages'] = False
             return False
 
         self.fetch()
         if self.repo_info == False:
+            self.cache['get_packages'] = False
             return False
 
         output = {}
@@ -161,20 +174,24 @@ class RepositoryProvider(ReleaseSelector):
 
         if 'schema_version' not in self.repo_info:
             console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
+            self.cache['get_packages'] = False
             return False
 
         try:
             self.schema_version = float(self.repo_info.get('schema_version'))
         except (ValueError):
             console_write(u'%s the "schema_version" is not a valid number.' % schema_error, True)
+            self.cache['get_packages'] = False
             return False
 
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
             console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error, True)
+            self.cache['get_packages'] = False
             return False
 
         if 'packages' not in self.repo_info:
             console_write(u'%s the "packages" JSON key is missing.' % schema_error, True)
+            self.cache['get_packages'] = False
             return False
 
         github_client = GitHubClient(self.settings)
@@ -306,6 +323,7 @@ class RepositoryProvider(ReleaseSelector):
                     continue
                 output[new_name]['previous_names'].append(old_name)
 
+        self.cache['get_packages'] = output
         return output
 
     def get_renamed_packages(self):

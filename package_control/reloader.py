@@ -88,7 +88,7 @@ mods_load_order = [
     '.downloaders.curl_downloader',
     '.downloaders.wget_downloader',
     '.downloaders.wininet_downloader',
-    '.downloaders.repository_downloader',
+    '.downloaders.background_downloader',
 
     '.upgraders',
     '.upgraders.vcs_upgrader',
