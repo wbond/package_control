@@ -116,7 +116,7 @@ class BitBucketClient(JSONApiClient):
             tags_list = self.fetch_json(tags_url)
             if tags_list == False:
                 return False
-            tags = version_filter(tags_list.keys())
+            tags = version_filter(tags_list.keys(), self.settings.get('install_prereleases'))
             tags = version_sort(tags, reverse=True)
             commit = tags[0]
 

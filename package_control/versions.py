@@ -45,8 +45,24 @@ def version_comparable(string):
     return SemVer(semver_compat(string))
 
 
-def version_filter(versions):
-    return [version for version in versions if SemVer.valid(version)]
+def version_exclude_prerelease(versions):
+    output = []
+    for version in versions:
+        if SemVer(semver_compat(version)).prerelease != None:
+            continue
+        output.append(version)
+    return output
+
+
+def version_filter(versions, allow_prerelease=False):
+    output = []
+    for version in versions:
+        if not SemVer.valid(version):
+            continue
+        if not allow_prerelease and SemVer(version).prerelease != None:
+            continue
+        output.append(version)
+    return output
 
 
 def version_sort(sortable, **kwargs):

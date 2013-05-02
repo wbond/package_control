@@ -40,6 +40,11 @@
 		"sublime.wbond.net": ["7f4f8622b4fd001c7f648e09aae7edaa", ""]
 	},
 
+	// Install pre-release versions of packages. If this is false, versions
+	// under 1.0.0 will still be installed. Only packages using the SemVer
+	// -prerelease suffixes will be ignored.
+	"install_prereleases": false,
+
 	// If debugging information for HTTP/HTTPS connections should be printed
 	// to the Sublime Text console
 	"debug": false,

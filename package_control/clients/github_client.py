@@ -149,7 +149,8 @@ class GitHubClient(JSONApiClient):
             tags_list = self.fetch_json(tags_url)
             if tags_list == False:
                 return False
-            tags = version_filter([tag['name'] for tag in tags_list])
+            tags = [tag['name'] for tag in tags_list]
+            tags = version_filter(tags, self.settings.get('install_prereleases'))
             tags = version_sort(tags, reverse=True)
             commit = tags[0]
 

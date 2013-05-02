@@ -25,6 +25,7 @@ class BitBucketRepositoryProvider():
           `proxy_username`,
           `proxy_password`,
           `query_string_params`
+          `install_prereleases`
     """
 
     def __init__(self, repo, settings):

@@ -1,6 +1,6 @@
 import sublime
 
-from ..versions import version_sort
+from ..versions import version_sort, version_exclude_prerelease
 
 
 class ReleaseSelector():
@@ -21,6 +21,8 @@ class ReleaseSelector():
         """
 
         releases = version_sort(package_info['releases'])
+        if not self.settings.get('install_prereleases'):
+            releases = version_exclude_prerelease(releases)
 
         for release in releases:
             platforms = release.get('platforms', '*')
