@@ -7,6 +7,11 @@ import time
 _channel_repository_cache = {}
 
 
+def clear_cache():
+    global _channel_repository_cache
+    _channel_repository_cache = {}
+
+
 def get_cache(key, default=None):
     """
     Gets an in-memory cache value
@@ -26,6 +31,7 @@ def get_cache(key, default=None):
     if expires and expires > time.time():
         return struct.get('data')
     return default
+
 
 def merge_cache_over_settings(destination, setting, key_prefix):
     """
@@ -48,6 +54,7 @@ def merge_cache_over_settings(destination, setting, key_prefix):
     if value:
         existing.update(value)
         destination.settings[setting] = existing
+
 
 def merge_cache_under_settings(destination, setting, key_prefix, list_=False):
     """
@@ -79,6 +86,7 @@ def merge_cache_under_settings(destination, setting, key_prefix, list_=False):
                 value.update(existing)
         destination.settings[setting] = value
 
+
 def set_cache(key, data, ttl=300):
     """
     Sets an in-memory cache value
@@ -97,6 +105,7 @@ def set_cache(key, data, ttl=300):
         'data': data,
         'expires': time.time() + ttl
     }
+
 
 def set_cache_over_settings(destination, setting, key_prefix, value, ttl):
     """
@@ -124,6 +133,7 @@ def set_cache_over_settings(destination, setting, key_prefix, value, ttl):
     existing.update(value)
     set_cache(key_prefix + '.' + setting, value, ttl)
     destination.settings[setting] = value
+
 
 def set_cache_under_settings(destination, setting, key_prefix, value, ttl, list_=False):
     """

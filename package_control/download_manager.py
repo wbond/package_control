@@ -94,6 +94,7 @@ def close_all_connections():
         for domain, managers in _managers.items():
             for manager in managers:
                 manager.close()
+        _managers = {}
 
     finally:
         _lock.release()

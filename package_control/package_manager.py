@@ -25,7 +25,7 @@ from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
-from .cache import (set_cache, get_cache, merge_cache_under_settings,
+from .cache import (clear_cache, set_cache, get_cache, merge_cache_under_settings,
     merge_cache_over_settings, set_cache_under_settings, set_cache_over_settings)
 from .versions import version_comparable, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
@@ -79,6 +79,15 @@ class PackageManager():
 
         self.settings['platform'] = sublime.platform()
         self.settings['version'] = sublime.version()
+
+        # Use the cache to see if settings have changed since the last
+        # time the package manager was created, and clearing any cached
+        # values if they have.
+        previous_settings = get_cache('settings', {})
+        if self.settings != previous_settings and previous_settings != {}:
+            console_write(u'Settings change detected, clearing cache', True)
+            clear_cache()
+        set_cache('settings', self.settings)
 
     def get_metadata(self, package):
         """
