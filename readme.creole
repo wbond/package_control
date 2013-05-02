@@ -1,7 +1,7 @@
 = Sublime Package Control
 
 A Sublime Text 2/3 (http://www.sublimetext.com) package manager for easily
-discovering, install, upgrading and removing packages. Also includes an
+discovering, installing, upgrading and removing packages. Also includes an
 automatic updater and package creation tool.
 
 Packages can be installed from GitHub, BitBucket or custom package repositories.
