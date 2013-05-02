@@ -37,6 +37,9 @@ class CertProvider(object):
         ca_bundle_path = os.path.join(sublime.packages_path(), 'User', 'Package Control.ca-bundle')
         if not os.path.exists(ca_bundle_path) or os.stat(ca_bundle_path).st_size == 0:
             bundle_contents = read_package_file('Package Control', 'Package Control.ca-bundle', True)
+            if not bundle_contents:
+                console_write(u'Unable to copy distributed Package Control.ca-bundle', True)
+                return False
             with open_compat(ca_bundle_path, 'wb') as f:
                 f.write(bundle_contents)
 
@@ -83,6 +86,9 @@ class CertProvider(object):
         ca_list_path = os.path.join(sublime.packages_path(), 'User', 'Package Control.ca-list')
         if not os.path.exists(ca_list_path) or os.stat(ca_list_path).st_size == 0:
             list_contents = read_package_file('Package Control', 'Package Control.ca-list')
+            if not list_contents:
+                console_write(u'Unable to copy distributed Package Control.ca-list', True)
+                return False
             with open_compat(ca_list_path, 'w') as f:
                 f.write(list_contents)
 
