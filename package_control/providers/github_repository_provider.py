@@ -77,6 +77,7 @@ class GitHubRepositoryProvider():
                     'labels': [],
                     'sources': [the repo URL],
                     'readme': url,
+                    'issues': url,
                     'donate': url
                 }
             }
@@ -113,6 +114,7 @@ class GitHubRepositoryProvider():
             'labels': [],
             'sources': [self.repo],
             'readme': repo_info['readme'],
+            'issues': repo_info['issues'],
             'donate': repo_info['donate']
         }}
         return self.cache['get_packages']

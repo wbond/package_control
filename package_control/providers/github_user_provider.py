@@ -70,6 +70,7 @@ class GitHubUserProvider():
                     'labels': [],
                     'sources': [the user URL],
                     'readme': url,
+                    'issues': url,
                     'donate': url
                 },
                 ...
@@ -106,6 +107,7 @@ class GitHubUserProvider():
                 'labels': [],
                 'sources': [self.repo],
                 'readme': repo_info['readme'],
+                'issues': repo_info['issues'],
                 # No implicit donation info for organizations since there
                 # are usually multiple users contributing
                 'donate': None

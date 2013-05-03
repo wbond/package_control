@@ -62,8 +62,9 @@ class GitHubClient(JSONApiClient):
               `description`
               `homepage` - URL of the homepage
               `author`
-              `donate` - URL of a donate page
               `readme` - URL of the readme
+              `issues` - URL of bug tracker
+              `donate` - URL of a donate page
         """
 
         user_repo, branch = self._user_repo_branch(url)
@@ -89,7 +90,7 @@ class GitHubClient(JSONApiClient):
 
     def user_info(self, url):
         """
-        Retrieve general information about all repository that are
+        Retrieve general information about all repositories that are
         part of a user/organization.
 
         :param url:
@@ -102,8 +103,9 @@ class GitHubClient(JSONApiClient):
               `description`
               `homepage` - URL of the homepage
               `author`
-              `donate` - URL of a donate page
               `readme` - URL of the readme
+              `issues` - URL of bug tracker
+              `donate` - URL of a donate page
         """
 
         user_match = re.match('https?://github.com/([^/]+)/?$', url)
@@ -128,9 +130,9 @@ class GitHubClient(JSONApiClient):
 
         :param url:
             The URL to the repository, in one of the forms:
-              https://bitbucket.org/{user}/{repo}
-              https://bitbucket.org/{user}/{repo}/src/{branch}
-              https://bitbucket.org/{user}/{repo}/#tags
+              https://github.com/{user}/{repo}
+              https://github.com/{user}/{repo}/tree/{branch}
+              https://github.com/{user}/{repo}/tags
             If the last option, grabs the info from the newest
             tag that is a valid semver version.
 
@@ -184,14 +186,18 @@ class GitHubClient(JSONApiClient):
               `description`
               `homepage` - URL of the homepage
               `author`
+              `issues` - URL of bug tracker
               `donate` - URL of a donate page
         """
+
+        issues_url = u'https://github.com/%s/%s/issues' % (result['owner']['login'], result['name'])
 
         return {
             'name': result['name'],
             'description': result['description'] or 'No description provided',
             'homepage': result['homepage'] or result['html_url'],
             'author': result['owner']['login'],
+            'issues': issues_url if result['has_issues'] else None,
             'donate': u'https://www.gittip.com/%s/' % result['owner']['login']
         }
 

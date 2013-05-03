@@ -228,7 +228,10 @@ class ChannelProvider(ReleaseSelector):
                         'version': version
                     },
                     'previous_names': [old_name, ...],
-                    'labels': [label, ...]
+                    'labels': [label, ...],
+                    'readme': url,
+                    'issues': url,
+                    'donate': url
                 },
                 ...
             }

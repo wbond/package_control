@@ -87,6 +87,15 @@
 			"readme": "https://raw.github.com/wbond/sublime_alignment/master/readme.creole"
 		},
 
+		// If a package has a public bug tracker, the URL should be
+		// included via the "issues" key. Both GitHub and BitBucket
+		// repositories will automatically provide this if they have
+		// issues enabled.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"issues": "https://github.com/wbond/sublime_alignment/issues"
+		},
+
 		// The URL to donate to support the development of a package.
 		// GitHub and BitBucket repositories will default to:
 		//

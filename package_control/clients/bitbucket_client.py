@@ -66,8 +66,9 @@ class BitBucketClient(JSONApiClient):
               `description`
               `homepage` - URL of the homepage
               `author`
-              `donate` - URL of a donate page
               `readme` - URL of the readme
+              `issues` - URL of bug tracker
+              `donate` - URL of a donate page
         """
 
         user_repo, branch = self._user_repo_branch(url)
@@ -80,13 +81,16 @@ class BitBucketClient(JSONApiClient):
         if not info:
             return info
 
+        issues_url = u'https://bitbucket.org/%s/issues' % user_repo
+
         return {
             'name': info['name'],
             'description': info['description'] or 'No description provided',
             'homepage': info['website'] or url,
             'author': info['owner'],
             'donate': u'https://www.gittip.com/%s/' % info['owner'],
-            'readme': self._readme_url(user_repo, branch)
+            'readme': self._readme_url(user_repo, branch),
+            'issues': issues_url if info['has_issues'] else None
         }
 
     def _commit_info(self, url):
