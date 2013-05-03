@@ -4,13 +4,13 @@ import sys
 
 try:
     # Python 3
-    from http.client import HTTPException
+    from http.client import HTTPException, BadStatusLine
     from urllib.request import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, build_opener, Request
     from urllib.error import HTTPError, URLError
     import urllib.request as urllib_compat
 except (ImportError):
     # Python 2
-    from httplib import HTTPException
+    from httplib import HTTPException, BadStatusLine
     from urllib2 import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, build_opener, Request
     from urllib2 import HTTPError, URLError
     import urllib2 as urllib_compat
@@ -53,9 +53,10 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
         if not self.opener:
             return
-        for handler in self.opener.handlers:
-            if isinstance(handler, ValidatingHTTPSHandler) or isinstance(handler, DebuggableHTTPHandler):
-                handler.close()
+        handler = self.get_handler()
+        if handler:
+            handler.close()
+        self.opener = None
 
     def download(self, url, error_message, timeout, tries, prefer_cached=False):
         """
@@ -120,8 +121,17 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                 return self.cache_result('get', url, http_file.getcode(),
                     http_file.headers, result)
 
-
             except (HTTPException) as e:
+                # Since we use keep-alives, it is possible the other end closed
+                # the connection, and we may just need to re-open
+                if isinstance(e, BadStatusLine):
+                    handler = self.get_handler()
+                    if handler and handler.use_count > 1:
+                        self.close()
+                        self.setup_opener(url, timeout)
+                        tries += 1
+                        continue
+
                 error_string = u'%s HTTP exception %s (%s) downloading %s.' % (
                     error_message, e.__class__.__name__, unicode_from_os(e), url)
                 console_write(error_string, True)
@@ -175,6 +185,18 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
             break
         return False
+
+    def get_handler(self):
+        """
+        Get the HTTPHandler object for the current connection
+        """
+
+        if not self.opener:
+            return None
+
+        for handler in self.opener.handlers:
+            if isinstance(handler, ValidatingHTTPSHandler) or isinstance(handler, DebuggableHTTPHandler):
+                return handler
 
     def setup_opener(self, url, timeout):
         """
