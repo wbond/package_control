@@ -35,6 +35,7 @@ from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
+from . import __version__
 
 
 class PackageManager():
@@ -194,6 +195,12 @@ class PackageManager():
                 ...
             }
         """
+
+        if self.settings.get('debug'):
+            console_write(u"Fetching list of available packages", True)
+            console_write(u"  Platform: %s-%s" % (sublime.platform(),sublime.arch()))
+            console_write(u"  Sublime Text Version: %s" % sublime.version())
+            console_write(u"  Package Control Version: %s" % __version__)
 
         cache_ttl = self.settings.get('cache_length')
         repositories = self.list_repositories()
