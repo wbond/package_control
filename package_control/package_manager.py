@@ -449,9 +449,6 @@ class PackageManager():
             pristine_package_path = os.path.join(os.path.dirname(
                 sublime.packages_path()), 'Pristine Packages', package_filename)
 
-            package_metadata_file = os.path.join(unpacked_package_dir,
-                'package-metadata.json')
-
             if os.path.exists(os.path.join(unpacked_package_dir, '.git')):
                 if self.settings.get('ignore_vcs_packages'):
                     show_error(u'Skipping git package %s since the setting ignore_vcs_packages is set to true' % package_name)
@@ -546,6 +543,9 @@ class PackageManager():
                 tmp_working_dir = os.path.join(tmp_dir, 'working')
                 os.mkdir(tmp_working_dir)
                 package_dir = tmp_working_dir
+
+            package_metadata_file = os.path.join(package_dir,
+                'package-metadata.json')
 
             if not os.path.exists(package_dir):
                 os.mkdir(package_dir)
