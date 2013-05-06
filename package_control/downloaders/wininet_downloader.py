@@ -294,7 +294,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     to_read_was_read = wintypes.DWORD(header_buffer_size)
                     headers_buffer = create_string_buffer(header_buffer_size)
 
-                    success = windll.wininet.HttpQueryInfoA(http_connection, self.HTTP_QUERY_RAW_HEADERS_CRLF, byref(headers_buffer), byref(to_read_was_read), 0)
+                    success = windll.wininet.HttpQueryInfoA(http_connection, self.HTTP_QUERY_RAW_HEADERS_CRLF, byref(headers_buffer), byref(to_read_was_read), None)
                     if not success:
                         if GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
                             raise NonHttpError(self.extract_error())
