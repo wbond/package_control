@@ -85,11 +85,19 @@ class PackageManager():
         # Use the cache to see if settings have changed since the last
         # time the package manager was created, and clearing any cached
         # values if they have.
-        previous_settings = get_cache('settings', {})
-        if self.settings != previous_settings and previous_settings != {}:
+        previous_settings = get_cache('filtered_settings', {})
+
+        # Reduce the settings down to exclude channel info since that will
+        # make the settings always different
+        filtered_settings = self.settings.copy()
+        for key in ['repositories', 'channels', 'package_name_map', 'certs', 'cache']:
+            if key in filtered_settings:
+                del filtered_settings[key]
+
+        if filtered_settings != previous_settings and previous_settings != {}:
             console_write(u'Settings change detected, clearing cache', True)
             clear_cache()
-        set_cache('settings', self.settings)
+        set_cache('filtered_settings', filtered_settings)
 
     def get_metadata(self, package):
         """
