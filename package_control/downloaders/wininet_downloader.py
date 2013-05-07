@@ -1,8 +1,11 @@
-from ctypes import windll, wintypes, GetLastError, FormatError, create_string_buffer, byref, pointer, sizeof, c_char_p, Structure
+from ctypes import windll, wintypes
+import ctypes
 import time
 import re
 import datetime
 import struct
+
+wininet = windll.wininet
 
 try:
     # Python 3
@@ -12,11 +15,8 @@ except (ImportError):
     from urlparse import urlparse
 
 from ..console_write import console_write
-from ..unicode import unicode_from_os
-from ..open_compat import open_compat, read_compat
 from .non_http_error import NonHttpError
 from .http_error import HttpError
-from .non_clean_exit_error import NonCleanExitError
 from .rate_limit_exception import RateLimitException
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
@@ -84,12 +84,12 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         closed = False
 
         if self.tcp_connection:
-            windll.wininet.InternetCloseHandle(self.tcp_connection)
+            wininet.InternetCloseHandle(self.tcp_connection)
             self.tcp_connection = None
             closed = True
 
         if self.network_connection:
-            windll.wininet.InternetCloseHandle(self.network_connection)
+            wininet.InternetCloseHandle(self.network_connection)
             self.network_connection = None
             closed = True
 
@@ -164,7 +164,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         if not self.tcp_connection:
             created_connection = True
             try:
-                self.network_connection = windll.wininet.InternetOpenW(self.settings.get('user_agent'),
+                self.network_connection = wininet.InternetOpenW(self.settings.get('user_agent'),
                     self.INTERNET_OPEN_TYPE_PRECONFIG, None, None, 0)
 
                 if not self.network_connection:
@@ -172,18 +172,18 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 win_timeout = wintypes.DWORD(int(timeout) * 1000)
                 # Apparently INTERNET_OPTION_CONNECT_TIMEOUT just doesn't work, leaving it in hoping they may fix in the future
-                windll.wininet.InternetSetOptionA(self.network_connection,
-                    self.INTERNET_OPTION_CONNECT_TIMEOUT, win_timeout, sizeof(win_timeout))
-                windll.wininet.InternetSetOptionA(self.network_connection,
-                    self.INTERNET_OPTION_SEND_TIMEOUT, win_timeout, sizeof(win_timeout))
-                windll.wininet.InternetSetOptionA(self.network_connection,
-                    self.INTERNET_OPTION_RECEIVE_TIMEOUT, win_timeout, sizeof(win_timeout))
+                wininet.InternetSetOptionA(self.network_connection,
+                    self.INTERNET_OPTION_CONNECT_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+                wininet.InternetSetOptionA(self.network_connection,
+                    self.INTERNET_OPTION_SEND_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+                wininet.InternetSetOptionA(self.network_connection,
+                    self.INTERNET_OPTION_RECEIVE_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
 
                 # Don't allow HTTPS sites to redirect to HTTP sites
                 tcp_flags  = self.INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS
                 # Try to re-use an existing connection to the server
                 tcp_flags |= self.INTERNET_FLAG_EXISTING_CONNECT
-                self.tcp_connection = windll.wininet.InternetConnectW(self.network_connection,
+                self.tcp_connection = wininet.InternetConnectW(self.network_connection,
                     hostname, port, None, None, self.INTERNET_SERVICE_HTTP, tcp_flags, 0)
 
                 if not self.tcp_connection:
@@ -219,7 +219,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 if self.scheme == 'https':
                     http_flags |= self.INTERNET_FLAG_SECURE
 
-                http_connection = windll.wininet.HttpOpenRequestW(self.tcp_connection, 'GET', path, 'HTTP/1.1', None, None, http_flags, 0)
+                http_connection = wininet.HttpOpenRequestW(self.tcp_connection, 'GET', path, 'HTTP/1.1', None, None, http_flags, 0)
                 if not http_connection:
                     raise NonHttpError(self.extract_error())
 
@@ -228,7 +228,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     request_header_lines.append(u"%s: %s" % (header, value))
                 request_header_lines = "\r\n".join(request_header_lines)
 
-                success = windll.wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
+                success = wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
                 if not success:
                     raise NonHttpError(self.extract_error())
 
@@ -236,13 +236,13 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 if self.debug and created_connection:
                     # Disabled for now due to crashes
-                    #proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
+                    proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
                     proxy = ''
-                    #if proxy_struct.lpszProxy:
-                    #    proxy = proxy_struct.lpszProxy.decode('iso-8859-1')
+                    if proxy_struct.lpszProxy:
+                        proxy = proxy_struct.lpszProxy.decode('iso-8859-1')
                     proxy_bypass = ''
-                    #if proxy_struct.lpszProxyBypass:
-                    #    proxy_bypass = proxy_struct.lpszProxyBypass.decode('iso-8859-1')
+                    if proxy_struct.lpszProxyBypass:
+                        proxy_bypass = proxy_struct.lpszProxyBypass.decode('iso-8859-1')
 
                     proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
                     proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
@@ -292,11 +292,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     try_again = False
 
                     to_read_was_read = wintypes.DWORD(header_buffer_size)
-                    headers_buffer = create_string_buffer(header_buffer_size)
+                    headers_buffer = ctypes.create_string_buffer(header_buffer_size)
 
-                    success = windll.wininet.HttpQueryInfoA(http_connection, self.HTTP_QUERY_RAW_HEADERS_CRLF, byref(headers_buffer), byref(to_read_was_read), None)
+                    success = wininet.HttpQueryInfoA(http_connection, self.HTTP_QUERY_RAW_HEADERS_CRLF, ctypes.byref(headers_buffer), ctypes.byref(to_read_was_read), None)
                     if not success:
-                        if GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
+                        if ctypes.GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
                             raise NonHttpError(self.extract_error())
                         # The error was a buffer that was too small, so try again
                         header_buffer_size = to_read_was_read.value
@@ -314,14 +314,14 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                             console_write(u"  %s" % header)
 
                 buffer_length = 65536
-                output_buffer = create_string_buffer(buffer_length)
+                output_buffer = ctypes.create_string_buffer(buffer_length)
                 bytes_read = wintypes.DWORD()
 
                 result = b''
                 try_again = True
                 while try_again:
                     try_again = False
-                    windll.wininet.InternetReadFile(http_connection, output_buffer, buffer_length, byref(bytes_read))
+                    wininet.InternetReadFile(http_connection, output_buffer, buffer_length, ctypes.byref(bytes_read))
                     if bytes_read.value > 0:
                         result += output_buffer.raw[:bytes_read.value]
                         try_again = True
@@ -360,7 +360,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
             finally:
                 if http_connection:
-                    windll.wininet.InternetCloseHandle(http_connection)
+                    wininet.InternetCloseHandle(http_connection)
 
             break
         return False
@@ -391,8 +391,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             A string with a nice description of the error
         """
 
-        error_num = GetLastError()
-        error_string = FormatError(error_num)
+        error_num = ctypes.GetLastError()
+        error_string = ctypes.FormatError(error_num)
 
         # Try to fill in some known errors
         if error_string == "<no description>":
@@ -444,27 +444,28 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             try_again = False
 
             to_read_was_read = wintypes.DWORD(option_buffer_size)
-            if option == self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT:
-                option_buffer = InternetCertificateInfo()
-                ref = pointer(option_buffer)
-            elif option == self.INTERNET_OPTION_PROXY:
-                option_buffer = InternetProxyInfo()
-                ref = pointer(option_buffer)
-            else:
-                option_buffer = create_string_buffer(option_buffer_size)
-                ref = byref(option_buffer)
+            option_buffer = ctypes.create_string_buffer(option_buffer_size)
+            ref = ctypes.byref(option_buffer)
 
-            success = windll.wininet.InternetQueryOptionA(handle, option, ref, byref(to_read_was_read))
+            success = wininet.InternetQueryOptionA(handle, option, ref, ctypes.byref(to_read_was_read))
             if not success:
-                if GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
+                if ctypes.GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
                     raise NonHttpError(self.extract_error())
                 # The error was a buffer that was too small, so try again
                 option_buffer_size = to_read_was_read.value
                 try_again = True
                 continue
 
-            if option in [self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT, self.INTERNET_OPTION_PROXY]:
-                return option_buffer
+            if option == self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT:
+                length = min(len(option_buffer), ctypes.sizeof(InternetCertificateInfo))
+                cert_info = InternetCertificateInfo()
+                ctypes.memmove(ctypes.addressof(cert_info), option_buffer, length)
+                return cert_info
+            elif option == self.INTERNET_OPTION_PROXY:
+                length = min(len(option_buffer), ctypes.sizeof(InternetProxyInfo))
+                proxy_info = InternetProxyInfo()
+                ctypes.memmove(ctypes.addressof(proxy_info), option_buffer, length)
+                return proxy_info
             else:
                 option = b''
                 if to_read_was_read.value > 0:
@@ -507,7 +508,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         return (general, headers)
 
 
-class FileTime(Structure):
+class FileTime(ctypes.Structure):
     """
     A Windows struct used by InternetCertificateInfo for certificate
     date information
@@ -519,7 +520,7 @@ class FileTime(Structure):
     ]
 
 
-class InternetCertificateInfo(Structure):
+class InternetCertificateInfo(ctypes.Structure):
     """
     A Windows struct used to store information about an SSL certificate
     """
@@ -527,22 +528,22 @@ class InternetCertificateInfo(Structure):
     _fields_ = [
         ("ftExpiry", FileTime),
         ("ftStart", FileTime),
-        ("lpszSubjectInfo", c_char_p),
-        ("lpszIssuerInfo", c_char_p),
-        ("lpszProtocolName", c_char_p),
-        ("lpszSignatureAlgName", c_char_p),
-        ("lpszEncryptionAlgName", c_char_p),
+        ("lpszSubjectInfo", ctypes.c_char_p),
+        ("lpszIssuerInfo", ctypes.c_char_p),
+        ("lpszProtocolName", ctypes.c_char_p),
+        ("lpszSignatureAlgName", ctypes.c_char_p),
+        ("lpszEncryptionAlgName", ctypes.c_char_p),
         ("dwKeySize", wintypes.DWORD)
     ]
 
 
-class InternetProxyInfo(Structure):
+class InternetProxyInfo(ctypes.Structure):
     """
     A Windows struct usd to store information about the configured proxy server
     """
 
     _fields_ = [
         ("dwAccessType", wintypes.DWORD),
-        ("lpszProxy", c_char_p),
-        ("lpszProxyBypass", c_char_p)
+        ("lpszProxy", ctypes.c_char_p),
+        ("lpszProxyBypass", ctypes.c_char_p)
     ]
