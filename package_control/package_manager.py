@@ -740,8 +740,11 @@ class PackageManager():
             If the backup succeeded
         """
 
+        package_dir = os.path.join(sublime.packages_path(), package_name)
+        if not os.path.exists(package_dir):
+            return True
+
         try:
-            package_dir = os.path.join(sublime.packages_path(), package_name)
             backup_dir = os.path.join(os.path.dirname(
                 sublime.packages_path()), 'Backup',
                 datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
@@ -756,7 +759,8 @@ class PackageManager():
         except (OSError, IOError) as e:
             show_error(u'An error occurred while trying to backup the package directory for %s.\n\n%s' % (
                 package_name, unicode_from_os(e)))
-            shutil.rmtree(package_backup_dir)
+            if os.path.exists(package_backup_dir):
+                shutil.rmtree(package_backup_dir)
             return False
 
     def print_messages(self, package, package_dir, is_upgrade, old_version):
