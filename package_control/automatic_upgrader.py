@@ -6,6 +6,8 @@ import time
 
 import sublime
 
+from . import logger
+log = logger.get(__name__)
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
@@ -25,7 +27,6 @@ class AutomaticUpgrader(threading.Thread):
             A list of package names for the packages that were found to be
             installed on the machine.
         """
-
         self.installer = PackageInstaller()
         self.manager = self.installer.manager
 
@@ -115,7 +116,8 @@ class AutomaticUpgrader(threading.Thread):
         date_format = '%Y-%m-%d %H:%M:%S'
         message_string = u'Skipping automatic upgrade, last run at %s, next run at %s or after' % (
             last_run.strftime(date_format), next_run.strftime(date_format))
-        console_write(message_string, True)
+        log.info(message_string)
+
 
     def upgrade_packages(self):
         """
