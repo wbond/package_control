@@ -20,6 +20,7 @@ except (ImportError):
 
 import sublime
 
+from . import logger
 from .show_error import show_error
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
@@ -71,6 +72,11 @@ class PackageManager():
                 continue
             self.settings[setting] = settings.get(setting)
 
+        # Initialize the global logger for the rest of program life.
+        debug = self.settings.get('debug')
+        logger.init(debug=debug)
+        log = logger.get(__name__)
+
         # https_proxy will inherit from http_proxy unless it is set to a
         # string value or false
         no_https_proxy = self.settings.get('https_proxy') in ["", None]
@@ -95,9 +101,10 @@ class PackageManager():
                 del filtered_settings[key]
 
         if filtered_settings != previous_settings and previous_settings != {}:
-            console_write(u'Settings change detected, clearing cache', True)
+            log.info(u'Settings change detected, clearing cache')
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
+        log.debug("Package Manager initialized!")
 
     def get_metadata(self, package):
         """
