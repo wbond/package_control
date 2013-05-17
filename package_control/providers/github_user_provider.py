@@ -108,9 +108,7 @@ class GitHubUserProvider():
                 'sources': [self.repo],
                 'readme': repo_info['readme'],
                 'issues': repo_info['issues'],
-                # No implicit donation info for organizations since there
-                # are usually multiple users contributing
-                'donate': None
+                'donate': repo_info['donate']
             }
 
         self.cache['get_packages'] = output
