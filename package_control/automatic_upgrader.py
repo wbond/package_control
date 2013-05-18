@@ -6,7 +6,9 @@ import time
 
 import sublime
 
-from .console_write import console_write
+from . import logger
+log = logger.get(__name__)
+
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
 from .open_compat import open_compat, read_compat
@@ -98,10 +100,10 @@ class AutomaticUpgrader(threading.Thread):
         if not self.missing_packages or not self.should_install_missing:
             return
 
-        console_write(u'Installing %s missing packages' % len(self.missing_packages), True)
+        log.info(u'Installing %s missing packages', len(self.missing_packages))
         for package in self.missing_packages:
             if self.installer.manager.install_package(package):
-                console_write(u'Installed missing package %s' % package, True)
+                log.info(u'Installed missing package %s', package)
 
     def print_skip(self):
         """
@@ -115,7 +117,7 @@ class AutomaticUpgrader(threading.Thread):
         date_format = '%Y-%m-%d %H:%M:%S'
         message_string = u'Skipping automatic upgrade, last run at %s, next run at %s or after' % (
             last_run.strftime(date_format), next_run.strftime(date_format))
-        console_write(message_string, True)
+        log.info(message_string)
 
     def upgrade_packages(self):
         """
@@ -146,10 +148,10 @@ class AutomaticUpgrader(threading.Thread):
             break
 
         if not packages:
-            console_write(u'No updated packages', True)
+            log.info(u'No updated packages')
             return
 
-        console_write(u'Installing %s upgrades' % len(packages), True)
+        log.info(u'Installing %s upgrades', len(packages))
         for package in packages:
             self.installer.manager.install_package(package[0])
             version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2])
@@ -157,4 +159,4 @@ class AutomaticUpgrader(threading.Thread):
                 vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
                 version = 'latest %s commit' % vcs
             message_string = u'Upgraded %s to %s' % (package[0], version)
-            console_write(message_string, True)
+            log.info(message_string)

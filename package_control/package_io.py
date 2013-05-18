@@ -3,28 +3,29 @@ import zipfile
 
 import sublime
 
-from .console_write import console_write
+from . import logger
+log = logger.get(__name__)
+
 from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .file_not_found_error import FileNotFoundError
 
 
-def read_package_file(package, relative_path, binary=False, debug=False):
+def read_package_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
 
     if os.path.exists(package_dir):
-        result = _read_regular_file(package, relative_path, binary, debug)
+        result = _read_regular_file(package, relative_path, binary)
         if result != False:
             return result
 
     if int(sublime.version()) >= 3000:
-        result = _read_zip_file(package, relative_path, binary, debug)
+        result = _read_zip_file(package, relative_path, binary)
         if result != False:
             return result
 
-    if debug:
-        console_write(u"Unable to find file %s in the package %s" % (relative_path, package), True)
+    log.debug(u"Unable to find file %s in the package %s", relative_path, package)
     return False
 
 
@@ -49,7 +50,7 @@ def _get_package_dir(package):
     return os.path.join(sublime.packages_path(), package)
 
 
-def _read_regular_file(package, relative_path, binary=False, debug=False):
+def _read_regular_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
     try:
@@ -57,25 +58,23 @@ def _read_regular_file(package, relative_path, binary=False, debug=False):
             return read_compat(f)
 
     except (FileNotFoundError) as e:
-        if debug:
-            console_write(u"Unable to find file %s in the package folder for %s" % (relative_path, package), True)
+        log.debug(u"Unable to find file %s in the package folder for %s", relative_path, package)
         return False
 
 
-def _read_zip_file(package, relative_path, binary=False, debug=False):
+def _read_zip_file(package, relative_path, binary=False):
     zip_path = os.path.join(sublime.installed_packages_path(),
         package + '.sublime-package')
 
     if not os.path.exists(zip_path):
-        if debug:
-            console_write(u"Unable to find a sublime-package file for %s" % package, True)
+        log.debug(u"Unable to find a sublime-package file for %s", package)
         return False
 
     try:
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
     except (zipfile.BadZipfile):
-        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package, True)
+        log.warning(u'An error occurred while trying to unzip the sublime-package file for %s.', package)
         return False
 
     try:
@@ -85,15 +84,14 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
         return contents
 
     except (KeyError) as e:
-        if debug:
-            console_write(u"Unable to find file %s in the sublime-package file for %s" % (relative_path, package), True)
+        log.debug(u"Unable to find file %s in the sublime-package file for %s", relative_pat, package)
 
     except (IOError) as e:
         message = unicode_from_os(e)
-        console_write(u'Unable to read file from sublime-package file for %s due to an invalid filename' % package, True)
+        log.warning(u'Unable to read file from sublime-package file for %s due to an invalid filename', package)
 
     except (UnicodeDecodeError):
-        console_write(u'Unable to read file from sublime-package file for %s due to an invalid filename or character encoding issue' % package, True)
+        log.warning(u'Unable to read file from sublime-package file for %s due to an invalid filename or character encoding issue', package)
 
     return False
 
@@ -115,7 +113,7 @@ def _zip_file_exists(package, relative_path):
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
     except (zipfile.BadZipfile):
-        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package_name, True)
+        log.warning(u'An error occurred while trying to unzip the sublime-package file for %s.', package_name)
         return False
 
     try:

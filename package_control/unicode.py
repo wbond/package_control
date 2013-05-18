@@ -39,7 +39,7 @@ def unicode_from_os(e):
         return unicode(e, encoding)
 
     # If the "correct" encoding did not work, try some defaults, and then just
-    # obliterate characters that we can't seen to decode properly
+    # obliterate characters that we can't seem to decode properly
     except UnicodeDecodeError:
         for encoding in fallback_encodings:
             try:

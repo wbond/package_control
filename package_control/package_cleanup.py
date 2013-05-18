@@ -5,7 +5,8 @@ import shutil
 import sublime
 
 from .show_error import show_error
-from .console_write import console_write
+from . import logger
+log = logger.get(__name__)
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
 from .automatic_upgrader import AutomaticUpgrader
@@ -37,7 +38,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
             if os.path.exists(cleanup_file):
                 try:
                     shutil.rmtree(package_dir)
-                    console_write(u'Removed old directory for package %s' % package_name, True)
+                    log.info(u'Removed old directory for package %s', package_name)
 
                 except (OSError) as e:
                     if not os.path.exists(cleanup_file):
@@ -46,7 +47,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
                     error_string = (u'Unable to remove old directory for package ' +
                         u'%s - deferring until next start: %s') % (
                         package_name, unicode_from_os(e))
-                    console_write(error_string, True)
+                    log.error(error_string)
 
             # Finish reinstalling packages that could not be upgraded due to
             # in-use files

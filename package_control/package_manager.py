@@ -20,8 +20,10 @@ except (ImportError):
 
 import sublime
 
+from . import logger
+log = logger.get(__name__)
+
 from .show_error import show_error
-from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory
@@ -71,6 +73,10 @@ class PackageManager():
                 continue
             self.settings[setting] = settings.get(setting)
 
+        # Configure global logger module.
+        debug = self.settings.get('debug')
+        logger.init(debug=debug)
+
         # https_proxy will inherit from http_proxy unless it is set to a
         # string value or false
         no_https_proxy = self.settings.get('https_proxy') in ["", None]
@@ -95,7 +101,7 @@ class PackageManager():
                 del filtered_settings[key]
 
         if filtered_settings != previous_settings and previous_settings != {}:
-            console_write(u'Settings change detected, clearing cache', True)
+            log.info(u'Settings change detected, clearing cache')
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
 
@@ -112,8 +118,7 @@ class PackageManager():
         """
 
         try:
-            debug = self.settings.get('debug')
-            metadata_json = read_package_file(package, 'package-metadata.json', debug=debug)
+            metadata_json = read_package_file(package, 'package-metadata.json')
             if metadata_json:
                 return json.loads(metadata_json)
 
@@ -204,11 +209,12 @@ class PackageManager():
             }
         """
 
-        if self.settings.get('debug'):
-            console_write(u"Fetching list of available packages", True)
-            console_write(u"  Platform: %s-%s" % (sublime.platform(),sublime.arch()))
-            console_write(u"  Sublime Text Version: %s" % sublime.version())
-            console_write(u"  Package Control Version: %s" % __version__)
+        log.debug(u"\n".join(["Fetching list of available packages",
+                              "  Platform: %s-%s",
+                              "  Sublime Text Version: %s",
+                              "  Package Control Version: %s"]),
+                              sublime.platform(), sublime.arch(),
+                              sublime.version(), __version__)
 
         cache_ttl = self.settings.get('cache_length')
         repositories = self.list_repositories()
@@ -432,7 +438,7 @@ class PackageManager():
         packages = self.list_available_packages()
 
         if package_name in self.settings.get('unavailable_packages', []):
-            console_write(u'The package "%s" is not available on this platform.' % package_name, True)
+            log.warning(u'The package "%s" is not available on this platform.', package_name)
             return False
 
         if package_name not in list(packages.keys()):
@@ -463,14 +469,14 @@ class PackageManager():
                     return False
                 return GitUpgrader(self.settings['git_binary'],
                     self.settings['git_update_command'], unpacked_package_dir,
-                    self.settings['cache_length'], self.settings['debug']).run()
+                    self.settings['cache_length']).run()
             elif os.path.exists(os.path.join(unpacked_package_dir, '.hg')):
                 if self.settings.get('ignore_vcs_packages'):
                     show_error(u'Skipping hg package %s since the setting ignore_vcs_packages is set to true' % package_name)
                     return False
                 return HgUpgrader(self.settings['hg_binary'],
                     self.settings['hg_update_command'], unpacked_package_dir,
-                    self.settings['cache_length'], self.settings['debug']).run()
+                    self.settings['cache_length']).run()
 
             old_version = self.get_metadata(package_name).get('version')
             is_upgrade = old_version != None
@@ -576,7 +582,7 @@ class PackageManager():
                 if os.name == 'nt':
                     regex = ':|\*|\?|"|<|>|\|'
                     if re.search(regex, dest) != None:
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+                        log.warning(u'Skipping file from package named %s due to an invalid filename', path)
                         continue
 
                 # If there was only a single directory in the package, we remove
@@ -615,10 +621,10 @@ class PackageManager():
                         if re.search('[Ee]rrno 13', message):
                             overwrite_failed = True
                             break
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+                        log.warning(u'Skipping file from package named %s due to an invalid filename', path)
 
                     except (UnicodeDecodeError):
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+                        log.warning(u'Skipping file from package named %s due to an invalid filename', path)
             package_zip.close()
 
             # If upgrading failed, queue the package to upgrade upon next start
@@ -760,7 +766,7 @@ class PackageManager():
                 os.makedirs(backup_dir)
             package_backup_dir = os.path.join(backup_dir, package_name)
             if os.path.exists(package_backup_dir):
-                console_write(u"FOLDER %s ALREADY EXISTS!" % package_backup_dir)
+                log.warning(u"FOLDER %s ALREADY EXISTS!", package_backup_dir)
             shutil.copytree(package_dir, package_backup_dir)
             return True
 
@@ -800,7 +806,7 @@ class PackageManager():
         try:
             message_info = json.loads(read_compat(messages_fp))
         except (ValueError):
-            console_write(u'Error parsing messages.json for %s' % package, True)
+            log.error(u'Error parsing messages.json for %s', package)
             return
         messages_fp.close()
 
@@ -978,4 +984,4 @@ class PackageManager():
             if result['result'] != 'success':
                 raise ValueError()
         except (ValueError):
-            console_write(u'Error submitting usage information for %s' % params['package'], True)
+            log.error(u'Error submitting usage information for %s', params['package'])

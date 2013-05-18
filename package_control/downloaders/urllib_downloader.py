@@ -22,7 +22,9 @@ except (ImportError):
     # Python 2.6-3.2
     from socket import error as ConnectionError
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from ..unicode import unicode_from_os
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
@@ -132,9 +134,8 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                         tries += 1
                         continue
 
-                error_string = u'%s HTTP exception %s (%s) downloading %s.' % (
+                log.error(u'%s HTTP exception %s (%s) downloading %s.',
                     error_message, e.__class__.__name__, unicode_from_os(e), url)
-                console_write(error_string, True)
 
             except (HTTPError) as e:
                 # Make sure the response is closed so we can re-use the connection
@@ -150,32 +151,27 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
                 # Bitbucket and Github return 503 a decent amount
                 if unicode_from_os(e.code) == '503':
-                    error_string = u'Downloading %s was rate limited, trying again' % url
-                    console_write(error_string, True)
+                    log.warning(u'Downloading %s was rate limited, trying again', url)
                     continue
 
-                error_string = u'%s HTTP error %s downloading %s.' % (
+                log.error(u'%s HTTP error %s downloading %s.',
                     error_message, unicode_from_os(e.code), url)
-                console_write(error_string, True)
 
             except (URLError) as e:
 
                 # Bitbucket and Github timeout a decent amount
                 if unicode_from_os(e.reason) == 'The read operation timed out' \
                         or unicode_from_os(e.reason) == 'timed out':
-                    error_string = u'Downloading %s timed out, trying again' % url
-                    console_write(error_string, True)
+                    log.warning(u'Downloading %s timed out, trying again', url)
                     continue
 
-                error_string = u'%s URL error %s downloading %s.' % (
+                log.error(u'%s URL error %s downloading %s.',
                     error_message, unicode_from_os(e.reason), url)
-                console_write(error_string, True)
 
             except (ConnectionError):
                 # Handle broken pipes/reset connections by creating a new opener, and
                 # thus getting new handlers and a new connection
-                error_string = u'Connection went away while trying to download %s, trying again' % url
-                console_write(error_string, True)
+                log.warning(u'Connection went away while trying to download %s, trying again', url)
 
                 self.opener = None
                 self.setup_opener(url, timeout)
@@ -244,14 +240,11 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
             digest_auth_handler = ProxyDigestAuthHandler(password_manager)
             handlers.extend([digest_auth_handler, basic_auth_handler])
 
-            debug = self.settings.get('debug')
-
-            if debug:
-                console_write(u"Urllib Debug Proxy", True)
-                console_write(u"  http_proxy: %s" % http_proxy)
-                console_write(u"  https_proxy: %s" % https_proxy)
-                console_write(u"  proxy_username: %s" % proxy_username)
-                console_write(u"  proxy_password: %s" % proxy_password)
+            log.debug(u"Urllib Debug Proxy"+
+                      u"\n  http_proxy: %s" % http_proxy +
+                      u"\n  https_proxy: %s" % https_proxy +
+                      u"\n  proxy_username: %s" % proxy_username +
+                      u"\n  proxy_password: %s" % proxy_password)
 
             secure_url_match = re.match('^https://([^/]+)', url)
             if secure_url_match != None:
@@ -261,11 +254,9 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                     return False
                 bundle_path = bundle_path.encode(sys.getfilesystemencoding())
                 handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
-                    debug=debug, passwd=password_manager,
-                    user_agent=self.settings.get('user_agent')))
+                    passwd=password_manager, user_agent=self.settings.get('user_agent')))
             else:
-                handlers.append(DebuggableHTTPHandler(debug=debug,
-                    passwd=password_manager))
+                handlers.append(DebuggableHTTPHandler(passwd=password_manager))
             self.opener = build_opener(*handlers)
 
     def supports_ssl(self):

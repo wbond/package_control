@@ -3,7 +3,8 @@ import re
 import json
 import hashlib
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
 
 
 class CachingDownloader(object):
@@ -80,21 +81,18 @@ class CachingDownloader(object):
         debug = self.settings.get('debug', False)
 
         if not self.settings.get('cache'):
-            if debug:
-                console_write(u"Skipping cache since there is no cache object", True)
+            log.debug(u"Skipping cache since there is no cache object")
             return content
 
         if method.lower() != 'get':
-            if debug:
-                console_write(u"Skipping cache since the HTTP method != GET", True)
+            log.debug(u"Skipping cache since the HTTP method != GET")
             return content
 
         status = int(status)
 
         # Don't do anything unless it was successful or not modified
         if status not in [200, 304]:
-            if debug:
-                console_write(u"Skipping cache since the HTTP status code not one of: 200, 304", True)
+            log.debug(u"Skipping cache since the HTTP status code not one of: 200, 304")
             return content
 
         key = self.generate_key(url)
@@ -102,8 +100,7 @@ class CachingDownloader(object):
         if status == 304:
             cached_content = self.settings['cache'].get(key)
             if cached_content:
-                if debug:
-                    console_write(u"Using cached content for %s" % url, True)
+                log.debug(u"Using cached content for %s", url)
                 return cached_content
 
             # If we got a 304, but did not have the cached content
@@ -122,8 +119,7 @@ class CachingDownloader(object):
 
         # Don't ever cache zip files for the sake of hard drive space
         if headers.get('content-type') == 'application/zip':
-            if debug:
-                console_write(u"Skipping cache since the response is a zip file", True)
+            log.debug(u"Skipping cache since the response is a zip file")
             return content
 
         etag = headers.get('etag')
@@ -136,8 +132,7 @@ class CachingDownloader(object):
         struct_json = json.dumps(struct, indent=4)
 
         info_key = self.generate_key(url, '.info')
-        if debug:
-            console_write(u"Caching %s in %s" % (url, key), True)
+        log.debug(u"Caching %s in %s", url, key)
 
         self.settings['cache'].set(info_key, struct_json.encode('utf-8'))
         self.settings['cache'].set(key, content)
@@ -179,7 +174,6 @@ class CachingDownloader(object):
         if not self.settings['cache'].has(key):
             return False
 
-        if self.settings.get('debug', False):
-            console_write(u"Using cached content for %s" % url, True)
+        log.debug(u"Using cached content for %s", url)
 
         return self.settings['cache'].get(key)

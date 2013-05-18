@@ -5,7 +5,8 @@ except (ImportError):
     # Python 2
     from httplib import HTTPResponse, IncompleteRead
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
 
 
 class DebuggableHTTPResponse(HTTPResponse):
@@ -26,8 +27,6 @@ class DebuggableHTTPResponse(HTTPResponse):
     def begin(self):
         return_value = HTTPResponse.begin(self)
         if self.debuglevel == -1:
-            console_write(u'Urllib %s Debug Read' % self._debug_protocol, True)
-
             # Python 2
             if hasattr(self.msg, 'headers'):
                 headers = self.msg.headers
@@ -44,8 +43,11 @@ class DebuggableHTTPResponse(HTTPResponse):
             }
             status_line = versions[self.version] + ' ' + str(self.status) + ' ' + self.reason
             headers.insert(0, status_line)
-            for line in headers:
-                console_write(u"  %s" % line.rstrip())
+
+            lines = [u"  %s" % line.rstrip() for line in headers]
+            log.debug(u"Urllib %s Debug Read" % self._debug_protocol +
+                      u"\n".join(lines))
+
         return return_value
 
     def is_keep_alive(self):

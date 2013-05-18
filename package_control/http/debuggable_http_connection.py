@@ -11,7 +11,9 @@ except (ImportError):
     from httplib import HTTPConnection
     from urllib2 import URLError
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from .debuggable_http_response import DebuggableHTTPResponse
 
 
@@ -31,7 +33,8 @@ class DebuggableHTTPConnection(HTTPConnection):
         self._tunnel_host = None
         self._tunnel_port = None
         self._tunnel_headers = {}
-        if 'debug' in kwargs and kwargs['debug']:
+
+        if logger.isDebug():
             self.debuglevel = 5
         elif 'debuglevel' in kwargs:
             self.debuglevel = kwargs['debuglevel']
@@ -39,9 +42,8 @@ class DebuggableHTTPConnection(HTTPConnection):
         HTTPConnection.__init__(self, host, port=port, timeout=timeout)
 
     def connect(self):
-        if self.debuglevel == -1:
-            console_write(u'Urllib %s Debug General' % self._debug_protocol, True)
-            console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
+        log.debug(u"Urllib %s Debug General" % self._debug_protocol +
+                  u"\n  Connecting to %s on port %s" % (self.host, self.port))
         HTTPConnection.connect(self)
 
     def send(self, string):
@@ -54,11 +56,12 @@ class DebuggableHTTPConnection(HTTPConnection):
             reset_debug = 5
             self.debuglevel = -1
         HTTPConnection.send(self, string)
-        if reset_debug or self.debuglevel == -1:
+        if reset_debug or logger.isDebug():
             if len(string.strip()) > 0:
-                console_write(u'Urllib %s Debug Write' % self._debug_protocol, True)
+                lines = ""
                 for line in string.strip().splitlines():
-                    console_write(u'  ' + line.decode('iso-8859-1'))
+                    lines += u'\n  ' + line.decode('iso-8859-1')
+                log.debug(u'Urllib %s Debug Write' % self._debug_protocol + lines)
             if reset_debug:
                 self.debuglevel = reset_debug
 

@@ -18,7 +18,6 @@ class GitHubRepositoryProvider():
     :param settings:
         A dict containing at least the following fields:
           `cache_length`,
-          `debug`,
           `timeout`,
           `user_agent`
         Optional fields:

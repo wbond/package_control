@@ -4,7 +4,9 @@ import os
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from ..unicode import unicode_from_os
 from ..show_error import show_error
 from ..cmd import create_cmd
@@ -29,12 +31,11 @@ class VcsUpgrader():
         The lenth of time to cache if incoming changesets are available
     """
 
-    def __init__(self, vcs_binary, update_command, working_copy, cache_length, debug):
+    def __init__(self, vcs_binary, update_command, working_copy, cache_length):
         self.binary = vcs_binary
         self.update_command = update_command
         self.working_copy = working_copy
         self.cache_length = cache_length
-        self.debug = debug
 
     def execute(self, args, cwd):
         """
@@ -62,8 +63,7 @@ class VcsUpgrader():
                 if windll.kernel32.GetShortPathNameW(cwd, buf, len(buf)):
                     cwd = buf.value
 
-        if self.debug:
-            console_write(u"Trying to execute command %s" % create_cmd(args), True)
+        log.debug(u"Trying to execute command %s", create_cmd(args))
 
         try:
             proc = subprocess.Popen(args, stdin=subprocess.PIPE,
@@ -94,18 +94,15 @@ class VcsUpgrader():
         """
 
         if self.binary:
-            if self.debug:
-                error_string = u"Using \"%s_binary\" from settings \"%s\"" % (
-                    self.vcs_type, self.binary)
-                console_write(error_string, True)
+            log.debug(u"Using \"%s_binary\" from settings \"%s\"",
+                        self.vcs_type, self.binary)
             return self.binary
 
         # Try the path first
         for dir in os.environ['PATH'].split(os.pathsep):
             path = os.path.join(dir, name)
             if os.path.exists(path):
-                if self.debug:
-                    console_write(u"Found %s at \"%s\"" % (self.vcs_type, path), True)
+                log.debug(u"Found %s at \"%s\"", self.vcs_type, path)
                 return path
 
         # This is left in for backwards compatibility and for windows
@@ -126,10 +123,8 @@ class VcsUpgrader():
         for dir in dirs:
             path = os.path.join(dir, name)
             if os.path.exists(path):
-                if self.debug:
-                    console_write(u"Found %s at \"%s\"" % (self.vcs_type, path), True)
+                log.debug(u"Found %s at \"%s\"", self.vcs_type, path)
                 return path
 
-        if self.debug:
-            console_write(u"Could not find %s on your machine" % self.vcs_type, True)
+        log.debug(u"Could not find %s on your machine", self.vcs_type)
         return None
