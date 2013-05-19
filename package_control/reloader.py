@@ -33,12 +33,12 @@ if st_version == 3:
 mods_load_order = [
     '',
 
+    '.logger',
     '.sys_path',
     '.cache',
     '.http_cache',
     '.clear_directory',
     '.cmd',
-    '.console_write',
     '.preferences_filename',
     '.show_error',
     '.unicode',

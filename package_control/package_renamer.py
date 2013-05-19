@@ -2,7 +2,9 @@ import os
 
 import sublime
 
-from .console_write import console_write
+from . import logger
+log = logger.get(__name__)
+
 from .package_io import package_file_exists
 
 
@@ -84,13 +86,13 @@ class PackageRenamer():
                 os.rename(package_dir, new_package_dir)
                 installed_pkgs.append(new_package_name)
 
-                console_write(u'Renamed %s to %s' % (package_name, new_package_name), True)
+                log.info(u'Renamed %s to %s', package_name, new_package_name)
 
             else:
                 installer.manager.remove_package(package_name)
                 message_string = u'Removed %s since package with new name (%s) already exists' % (
                     package_name, new_package_name)
-                console_write(message_string, True)
+                log.info(message_string)
 
             try:
                 installed_pkgs.remove(package_name)

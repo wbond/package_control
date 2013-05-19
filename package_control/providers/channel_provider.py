@@ -9,7 +9,9 @@ except (ImportError):
     # Python 2
     from urlparse import urlparse
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from .release_selector import ReleaseSelector
 from ..download_manager import grab, release
 
@@ -29,7 +31,6 @@ class ChannelProvider(ReleaseSelector):
     :param settings:
         A dict containing at least the following fields:
           `cache_length`,
-          `debug`,
           `timeout`,
           `user_agent`
         Optional fields:
@@ -87,25 +88,25 @@ class ChannelProvider(ReleaseSelector):
         try:
             channel_info = json.loads(channel_json.decode('utf-8'))
         except (ValueError):
-            console_write(u'Error parsing JSON from channel %s.' % self.channel, True)
+            log.error(u'Error parsing JSON from channel %s.', self.channel)
             channel_info = False
 
         schema_error = u'Channel %s does not appear to be a valid channel file because ' % self.channel
 
         if 'schema_version' not in channel_info:
-            console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
+            log.warning(u'%s the "schema_version" JSON key is missing.', schema_error)
             self.channel_info = False
             return
 
         try:
             self.schema_version = float(channel_info.get('schema_version'))
         except (ValueError):
-            console_write(u'%s the "schema_version" is not a valid number.' % schema_error, True)
+            log.warning(u'%s the "schema_version" is not a valid number.', schema_error)
             self.channel_info = False
             return
 
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
-            console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error, True)
+            log.warning(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.', schema_error)
             self.channel_info = False
             return
 
@@ -143,7 +144,7 @@ class ChannelProvider(ReleaseSelector):
             return False
 
         if 'repositories' not in self.channel_info:
-            console_write(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel, True)
+            log.warning(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.', self.channel)
             return False
 
         # Determine a relative root so repositories can be defined

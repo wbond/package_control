@@ -7,6 +7,9 @@ except (ImportError):
     # Python 2
     from urllib2 import HTTPHandler
 
+from .. import logger
+log = logger.get(__name__)
+
 from .debuggable_http_connection import DebuggableHTTPConnection
 from .persistent_handler import PersistentHandler
 
@@ -16,10 +19,10 @@ class DebuggableHTTPHandler(PersistentHandler, HTTPHandler):
     A custom HTTPHandler that formats debugging info for Sublime Text
     """
 
-    def __init__(self, debuglevel=0, debug=False, **kwargs):
+    def __init__(self, debuglevel=0, **kwargs):
         # This is a special value that will not trigger the standard debug
         # functionality, but custom code where we can format the output
-        if debug:
+        if logger.isDebug():
             self._debuglevel = 5
         else:
             self._debuglevel = debuglevel

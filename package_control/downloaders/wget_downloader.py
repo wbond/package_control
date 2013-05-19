@@ -2,7 +2,9 @@ import tempfile
 import re
 import os
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from ..unicode import unicode_from_os
 from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
@@ -26,7 +28,6 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
     def __init__(self, settings):
         self.settings = settings
-        self.debug = settings.get('debug')
         self.wget = self.find_binary('wget')
 
     def close(self):
@@ -93,7 +94,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
                 return False
             command.append(u'--ca-certificate=' + bundle_path)
 
-        if self.debug:
+        if logger.isDebug():
             command.append('-d')
         else:
             command.append('-S')
@@ -108,12 +109,11 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         if proxy_password:
             command.append(u"--proxy-password=%s" % proxy_password)
 
-        if self.debug:
-            console_write(u"Wget Debug Proxy", True)
-            console_write(u"  http_proxy: %s" % http_proxy)
-            console_write(u"  https_proxy: %s" % https_proxy)
-            console_write(u"  proxy_username: %s" % proxy_username)
-            console_write(u"  proxy_password: %s" % proxy_password)
+        log.debug(u"Wget Debug Proxy"+
+          u"\n  http_proxy: %s" % http_proxy +
+          u"\n  https_proxy: %s" % https_proxy +
+          u"\n  proxy_username: %s" % proxy_username +
+          u"\n  proxy_password: %s" % proxy_password)
 
         command.append(url)
 
@@ -145,8 +145,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
                     if general['status'] == 503:
                         # GitHub and BitBucket seem to rate limit via 503
-                        error_string = u'Downloading %s was rate limited, trying again' % url
-                        console_write(error_string, True)
+                        log.warning(u'Downloading %s was rate limited, trying again', url)
                         continue
 
                     download_error = 'HTTP error %s %s' % (general['status'],
@@ -158,12 +157,10 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
                     # GitHub and BitBucket seem to time out a lot
                     if download_error.find('timed out') != -1:
-                        error_string = u'Downloading %s timed out, trying again' % url
-                        console_write(error_string, True)
+                        log.warning(u'Downloading %s timed out, trying again', url)
                         continue
 
-                error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
-                console_write(error_string, True)
+                log.error(u'%s %s downloading %s.', error_message, download_error, url)
 
             break
         return False
@@ -197,7 +194,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
         error = None
         header_lines = []
-        if self.debug:
+        if logger.isDebug():
             section = 'General'
             last_section = None
             for line in output:
@@ -229,12 +226,12 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
                     continue
 
                 if section != last_section:
-                    console_write(u"Wget HTTP Debug %s" % section, True)
+                    log.debug(u"Wget HTTP Debug %s" % section)
 
                 if section == 'Read':
                     header_lines.append(line)
 
-                console_write(u'  ' + line)
+                log.debug(u'  ' + line)
                 last_section = section
 
         else:

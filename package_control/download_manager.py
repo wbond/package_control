@@ -12,8 +12,10 @@ except (ImportError):
 
 from . import __version__
 
+from . import logger
+log = logger.get(__name__)
+
 from .show_error import show_error
-from .console_write import console_write
 from .cache import set_cache, get_cache
 from .unicode import unicode_from_os
 
@@ -160,20 +162,20 @@ class DownloadManager(object):
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
 
-        if self.settings.get('debug'):
+        if logger.isDebug():
             try:
                 ip = socket.gethostbyname(hostname)
             except (socket.gaierror) as e:
                 ip = unicode_from_os(e)
 
-            console_write(u"Download Debug", True)
-            console_write(u"  URL: %s" % url)
-            console_write(u"  Resolved IP: %s" % ip)
-            console_write(u"  Timeout: %s" % str(timeout))
+            log.debug(u"\n".join(["Download Debug",
+                                  "  URL: %s",
+                                  "  Resolved IP: %s",
+                                  "  Timeout: %s"]),
+                                  url, ip, str(timeout))
 
         if hostname in rate_limited_domains:
-            if self.settings.get('debug'):
-                console_write(u"  Skipping due to hitting rate limit for %s" % hostname)
+            log.debug(u"  Skipping due to hitting rate limit for %s" % hostname)
             return False
 
         try:
@@ -185,6 +187,6 @@ class DownloadManager(object):
 
             error_string = (u'Hit rate limit of %s for %s, skipping all futher ' +
                 u'download requests for this domain') % (e.limit, e.host)
-            console_write(error_string, True)
+            log.error(error_string)
 
         return False

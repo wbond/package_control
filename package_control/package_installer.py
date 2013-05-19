@@ -92,8 +92,7 @@ class PackageInstaller():
                     vcs = 'git'
                     incoming = GitUpgrader(settings.get('git_binary'),
                         settings.get('git_update_command'), package_dir,
-                        settings.get('cache_length'), settings.get('debug')
-                        ).incoming()
+                        settings.get('cache_length')).incoming()
                 elif os.path.exists(os.path.join(sublime.packages_path(),
                         package, '.hg')):
                     if settings.get('ignore_vcs_packages'):
@@ -101,8 +100,7 @@ class PackageInstaller():
                     vcs = 'hg'
                     incoming = HgUpgrader(settings.get('hg_binary'),
                         settings.get('hg_update_command'), package_dir,
-                        settings.get('cache_length'), settings.get('debug')
-                        ).incoming()
+                        settings.get('cache_length')).incoming()
 
                 if installed:
                     if not installed_version:

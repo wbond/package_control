@@ -4,7 +4,9 @@ import json
 
 import sublime
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from ..open_compat import open_compat, read_compat
 from ..package_io import read_package_file
 from ..cache import get_cache
@@ -38,7 +40,7 @@ class CertProvider(object):
         if not os.path.exists(ca_bundle_path) or os.stat(ca_bundle_path).st_size == 0:
             bundle_contents = read_package_file('Package Control', 'Package Control.ca-bundle', True)
             if not bundle_contents:
-                console_write(u'Unable to copy distributed Package Control.ca-bundle', True)
+                log.error(u'Unable to copy distributed Package Control.ca-bundle')
                 return False
             with open_compat(ca_bundle_path, 'wb') as f:
                 f.write(bundle_contents)
@@ -54,7 +56,7 @@ class CertProvider(object):
                 wildcard_info[1], domain, timeout) or cert_match
 
         if not cert_match:
-            console_write(u'No CA certs available for %s.' % domain, True)
+            log.error(u'No CA certs available for %s.', domain)
             return False
 
         return ca_bundle_path
@@ -87,7 +89,7 @@ class CertProvider(object):
         if not os.path.exists(ca_list_path) or os.stat(ca_list_path).st_size == 0:
             list_contents = read_package_file('Package Control', 'Package Control.ca-list')
             if not list_contents:
-                console_write(u'Unable to copy distributed Package Control.ca-list', True)
+                log.error(u'Unable to copy distributed Package Control.ca-list')
                 return False
             with open_compat(ca_list_path, 'w') as f:
                 f.write(list_contents)
@@ -132,7 +134,7 @@ class CertProvider(object):
         """
 
         cert_downloader = self.__class__(self.settings)
-        console_write(u"Downloading CA cert for %s from \"%s\"" % (domain, url), True)
+        log.info(u"Downloading CA cert for %s from \"%s\"", domain, url)
         return cert_downloader.download(url,
             'Error downloading CA certs for %s.' % domain, timeout, 1)
 
@@ -156,11 +158,11 @@ class CertProvider(object):
         """
 
         if os.path.exists(path):
-            console_write(u"Copying CA cert for %s from \"%s\"" % (domain, path), True)
+            log.info(u"Copying CA cert for %s from \"%s\"", domain, path)
             with open_compat(path, 'rb') as f:
                 return f.read()
         else:
-            console_write(u"Unable to find CA cert for %s at \"%s\"" % (domain, path), True)
+            log.info(u"Unable to find CA cert for %s at \"%s\"", domain, path)
 
     def save_cert(self, cert_id, contents):
         """

@@ -14,7 +14,9 @@ except (ImportError):
     # Python 2
     from urlparse import urlparse
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from .non_http_error import NonHttpError
 from .http_error import HttpError
 from .rate_limit_exception import RateLimitException
@@ -68,7 +70,6 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
     def __init__(self, settings):
         self.settings = settings
-        self.debug = settings.get('debug')
         self.network_connection = None
         self.tcp_connection = None
         self.use_count = 0
@@ -93,11 +94,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             self.network_connection = None
             closed = True
 
-        if self.debug:
-            s = '' if self.use_count == 1 else 's'
-            console_write(u"WinINet %s Debug General" % self.scheme.upper(), True)
-            console_write(u"  Closing connection to %s on port %s after %s request%s" % (
-                self.hostname, self.port, self.use_count, s))
+        s = '' if self.use_count == 1 else 's'
+        log.debug(u"WinINet %s Debug General" % self.scheme.upper() +
+                  u"\n  Closing connection to %s on port %s after %s request%s" %
+                  (self.hostname, self.port, self.use_count, s))
 
         self.hostname = None
         self.port = None
@@ -194,15 +194,13 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 self.scheme = url_info.scheme
 
             except (NonHttpError, HttpError) as e:
-                error_string = u'%s %s downloading %s.' % (error_message, e.args[0], url)
-                console_write(error_string, True)
+                log.error(u'%s %s downloading %s.', error_message, e.args[0], url)
                 return False
 
         else:
-            if self.debug:
-                console_write(u"WinINet %s Debug General" % self.scheme.upper(), True)
-                console_write(u"  Re-using connection to %s on port %s for request #%s" % (
-                    self.hostname, self.port, self.use_count))
+            log.debug(u"WinINet %s Debug General" % self.scheme.upper() +
+                      u"\n  Re-using connection to %s on port %s for request #%s" %
+                      (self.hostname, self.port, self.use_count))
 
         while tries > 0:
             tries -= 1
@@ -234,7 +232,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 self.use_count += 1
 
-                if self.debug and created_connection:
+                if logger.isDebug() and created_connection:
                     # Disabled for now due to crashes
                     proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
                     proxy = ''
@@ -247,11 +245,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
                     proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
 
-                    console_write(u"WinINet Debug Proxy", True)
-                    console_write(u"  proxy: %s" % proxy)
-                    console_write(u"  proxy bypass: %s" % proxy_bypass)
-                    console_write(u"  proxy username: %s" % proxy_username)
-                    console_write(u"  proxy password: %s" % proxy_password)
+                    log.debug(u"WinINet Debug Proxy"+
+                              u"\n  http_proxy: %s" % http_proxy +
+                              u"\n  proxy bypass: %s" % proxy_bypass +
+                              u"\n  proxy_username: %s" % proxy_username +
+                              u"\n  proxy_password: %s" % proxy_password)
 
                     if self.scheme == 'https':
                         cert_struct = self.read_option(http_connection, self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT)
@@ -266,24 +264,27 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                         issue_date = self.convert_filetime_to_datetime(cert_struct.ftStart)
                         expiration_date = self.convert_filetime_to_datetime(cert_struct.ftExpiry)
 
-                        console_write(u"WinINet HTTPS Debug General", True)
-                        console_write(u"  Server SSL Certificate:")
-                        console_write(u"    subject: %s" % ", ".join(subject_parts))
-                        console_write(u"    issuer: %s" % ", ".join(issuer_parts))
-                        console_write(u"    common name: %s" % common_name)
-                        console_write(u"    issue date: %s" % issue_date.strftime('%a, %d %b %Y %H:%M:%S GMT'))
-                        console_write(u"    expire date: %s" % expiration_date.strftime('%a, %d %b %Y %H:%M:%S GMT'))
+                        log.debug(u"WinINet HTTPS Debug General" +
+                        u"\n  Server SSL Certificate:" +
+                        u"\n    subject: %s" % ", ".join(subject_parts) +
+                        u"\n    issuer: %s" % ", ".join(issuer_parts) +
+                        u"\n    common name: %s" % common_name +
+                        u"\n    issue date: %s" % issue_date.strftime('%a, %d %b %Y %H:%M:%S GMT') +
+                        u"\n    expire date: %s" % expiration_date.strftime('%a, %d %b %Y %H:%M:%S GMT'))
 
-                if self.debug:
-                    console_write(u"WinINet %s Debug Write" % self.scheme.upper(), True)
+                if logger.isDebug():
                     # Add in some known headers that WinINet sends since we can't get the real list
-                    console_write(u"  GET %s HTTP/1.1" % path)
+                    headerList = ""
                     for header, value in request_headers.items():
-                        console_write(u"  %s: %s" % (header, value))
-                    console_write(u"  User-Agent: %s" % self.settings.get('user_agent'))
-                    console_write(u"  Host: %s" % hostname)
-                    console_write(u"  Connection: Keep-Alive")
-                    console_write(u"  Cache-Control: no-cache")
+                        headerList += u"\n  %s: %s" % (header, value)
+
+                    log.debug(u"WinINet %s Debug Write" % self.scheme.upper() +
+                              u"\n  GET %s HTTP/1.1" % path +
+                              headerList +
+                              u"\n  User-Agent: %s" % self.settings.get('user_agent') +
+                              u"\n  Host: %s" % hostname +
+                              u"\n  Connection: Keep-Alive" +
+                              u"\n  Cache-Control: no-cache")
 
                 header_buffer_size = 8192
 
@@ -308,10 +309,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                         headers += headers_buffer.raw[:to_read_was_read.value]
                     headers = headers.decode('iso-8859-1').rstrip("\r\n").split("\r\n")
 
-                    if self.debug:
-                        console_write(u"WinINet %s Debug Read" % self.scheme.upper(), True)
-                        for header in headers:
-                            console_write(u"  %s" % header)
+                    if logger.isDebug():
+                        headerList = [u"  %s" % header for header in headers]
+                        log.debug(u"WinINet %s Debug Read" % self.scheme.upper() +
+                                  u"\n".join(headerList))
 
                 buffer_length = 65536
                 output_buffer = ctypes.create_string_buffer(buffer_length)
@@ -331,8 +332,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 if general['status'] == 503:
                     # GitHub and BitBucket seem to rate limit via 503
-                    error_string = u'Downloading %s was rate limited, trying again' % url
-                    console_write(error_string, True)
+                    log.warning(u'Downloading %s was rate limited, trying again', url)
                     continue
 
                 encoding = headers.get('content-encoding')
@@ -351,12 +351,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 # GitHub and BitBucket seem to time out a lot
                 if e.args[0].find('timed out') != -1:
-                    error_string = u'Downloading %s timed out, trying again' % url
-                    console_write(error_string, True)
+                    log.warning(u'Downloading %s timed out, trying again', url)
                     continue
 
-                error_string = u'%s %s downloading %s.' % (error_message, e.args[0], url)
-                console_write(error_string, True)
+                log.error(u'%s %s downloading %s.', error_message, e.args[0], url)
 
             finally:
                 if http_connection:

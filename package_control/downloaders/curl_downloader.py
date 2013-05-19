@@ -2,7 +2,9 @@ import tempfile
 import re
 import os
 
-from ..console_write import console_write
+from .. import logger
+log = logger.get(__name__)
+
 from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
@@ -89,8 +91,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
                 return False
             command.extend(['--cacert', bundle_path])
 
-        debug = self.settings.get('debug')
-        if debug:
+        if logger.isDebug():
             command.append('-v')
 
         http_proxy = self.settings.get('http_proxy')
@@ -98,12 +99,13 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
         proxy_username = self.settings.get('proxy_username')
         proxy_password = self.settings.get('proxy_password')
 
-        if debug:
-            console_write(u"Curl Debug Proxy", True)
-            console_write(u"  http_proxy: %s" % http_proxy)
-            console_write(u"  https_proxy: %s" % https_proxy)
-            console_write(u"  proxy_username: %s" % proxy_username)
-            console_write(u"  proxy_password: %s" % proxy_password)
+        log.debug(u"\n".join(["Curl Debug Proxy",
+                              "  http_proxy: %s",
+                              "  https_proxy: %s",
+                              "  proxy_username: %s",
+                              "  proxy_password: %s"]),
+                              http_proxy, https_proxy,
+                              proxy_username, proxy_password)
 
         if http_proxy or https_proxy:
             command.append('--proxy-anyauth')
@@ -140,7 +142,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
                     name, value = header.split(':', 1)
                     headers[name.lower()] = value.strip()
 
-                if debug:
+                if logger.isDebug():
                     self.print_debug(self.stderr.decode('utf-8'))
 
                 self.handle_rate_limit(headers, url)
@@ -157,7 +159,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
             except (NonCleanExitError) as e:
                 # Stderr is used for both the error message and the debug info
                 # so we need to process it to extra the debug info
-                if self.settings.get('debug'):
+                if logger.isDebug():
                     if hasattr(e.stderr, 'decode'):
                         e.stderr = e.stderr.decode('utf-8')
                     e.stderr = self.print_debug(e.stderr)
@@ -168,8 +170,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
                     code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
                     if code == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        error_string = u'Downloading %s was rate limited, trying again' % url
-                        console_write(error_string, True)
+                        log.warning(u'Downloading %s was rate limited, trying again', url)
                         continue
 
                     download_error = u'HTTP error ' + code
@@ -179,15 +180,13 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
 
                 elif e.returncode == 28:
                     # GitHub and BitBucket seem to time out a lot
-                    error_string = u'Downloading %s timed out, trying again' % url
-                    console_write(error_string, True)
+                    log.warning(u'Downloading %s timed out, trying again', url)
                     continue
 
                 else:
                     download_error = e.stderr.rstrip()
 
-                error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
-                console_write(error_string, True)
+                log.error(u'%s %s downloading %s.', error_message, download_error, url)
 
             break
 
@@ -247,9 +246,9 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
                 continue
 
             if section != last_section:
-                console_write(u"Curl HTTP Debug %s" % section, True)
+                log.debug(u"Curl HTTP Debug %s", section)
 
-            console_write(u'  ' + line)
+            log.debug(u'  ' + line)
             last_section = section
 
         return output
