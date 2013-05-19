@@ -1,22 +1,49 @@
 import logging
+from logging import StreamHandler, Formatter
 
 '''
-Warpper for the python logging module.
+Warpper of the python logging module for Sublime Text plugins.
 by @blopker
 '''
 
-def init(debug=False):
-    ''' Initializes the root logger for the
+log = False
+
+def init(name, debug=True):
+    ''' Initializes the named logger for the
         rest of this program's execution.
-        All children loggers will assume the
-        root's log level if theirs is not set'''
+        All children loggers will assume this
+        loggers's log level if theirs is not set'''
+
+    global log
+
+    if log != False:
+        # Logger already initialized.
+        return
+
+    log = logging.getLogger(name)
+    handler = StreamHandler()
+
+    plugin_name = name.split('.')[0]
+
     if debug:
-        logging.basicConfig(level=logging.DEBUG)
+        log.setLevel(logging.DEBUG)
+        handler.setFormatter(_getDebugFmt(plugin_name))
     else:
-        logging.basicConfig(level=logging.INFO,
-                            format="Package Control: %(message)s")
+        log.setLevel(logging.INFO)
+        handler.setFormatter(_getFmt(plugin_name))
+
+    log.addHandler(handler)
+
     # Not shown if debug=False
-    log.debug("Logger initialized.")
+    log.debug("Logger for %s initialized.", plugin_name)
+
+def _getDebugFmt(plugin_name):
+    fmt = '%(levelname)s:' + plugin_name + '.%(module)s: %(message)s'
+    return Formatter(fmt=fmt)
+
+def _getFmt(plugin_name):
+    fmt = plugin_name + ': %(message)s'
+    return Formatter(fmt=fmt)
 
 def get(name):
     ''' Get a new named logger. Usually called like: logger.get(__name__).
@@ -26,6 +53,3 @@ def get(name):
 def isDebug():
     ''' Returns True if debugging is enabled. '''
     return log.getEffectiveLevel() == logging.DEBUG
-
-# Needs to be at the bottom here so get() is defined first.
-log = get(__name__)

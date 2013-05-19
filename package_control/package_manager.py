@@ -75,7 +75,7 @@ class PackageManager():
 
         # Configure global logger module.
         debug = self.settings.get('debug')
-        logger.init(debug=debug)
+        logger.init('Package Control', debug=debug)
 
         # https_proxy will inherit from http_proxy unless it is set to a
         # string value or false
