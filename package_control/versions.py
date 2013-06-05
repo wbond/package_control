@@ -65,10 +65,13 @@ def version_filter(versions, allow_prerelease=False):
     return output
 
 
+def _version_sort_key(item):
+    return SemVer(semver_compat(item))
+
+
 def version_sort(sortable, **kwargs):
-    sortable_compat = [SemVer(semver_compat(version)) for version in sortable]
     try:
-        return sorted(sortable_compat, **kwargs)
+        return sorted(sortable, key=_version_sort_key, **kwargs)
     except (ValueError) as e:
         console_write(u"Error sorting versions - %s" % e, True)
         return []
