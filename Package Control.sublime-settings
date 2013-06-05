@@ -89,6 +89,10 @@
 	// User agent for HTTP requests
 	"user_agent": "Sublime Package Control",
 
+	// Set the package downloader (choose from urllib2, curl, or wget). Defaults
+	// to autodetect if null.
+	"downloader": null,
+
 	// Setting this to true will cause Package Control to ignore all git
 	// and hg repositories - this may help if trying to list packages to install
 	// hangs
