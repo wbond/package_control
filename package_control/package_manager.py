@@ -67,7 +67,8 @@ class PackageManager():
                 'submit_usage', 'submit_url', 'renamed_packages',
                 'files_to_include', 'files_to_include_binary', 'certs',
                 'ignore_vcs_packages', 'proxy_username', 'proxy_password',
-                'debug', 'user_agent']:
+                'downloader', 'debug', 'user_agent']:
+
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -147,23 +148,47 @@ class PackageManager():
             The string contents of the URL, or False on error
         """
 
-        has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
-        is_ssl = re.search('^https://', url) != None
-        downloader = None
+        downloader_name = self.settings.get("downloader")
+        if downloader_name == None:
+          has_ssl = 'ssl' in sys.modules and hasattr(urllib2, 'HTTPSHandler')
+          is_ssl = re.search('^https://', url) != None
+          downloader = None
 
-        if (is_ssl and has_ssl) or not is_ssl:
-            downloader = UrlLib2Downloader(self.settings)
-        else:
-            for downloader_class in [CurlDownloader, WgetDownloader]:
-                try:
-                    downloader = downloader_class(self.settings)
-                    break
-                except (BinaryNotFoundError):
-                    pass
+          if (is_ssl and has_ssl) or not is_ssl:
+              downloader = UrlLib2Downloader(self.settings)
+          else:
+              for downloader_class in [CurlDownloader, WgetDownloader]:
+                  try:
+                      downloader = downloader_class(self.settings)
+                      break
+                  except (BinaryNotFoundError):
+                      pass
 
-        if not downloader:
-            show_error(u'Unable to download %s due to no ssl module available and no capable program found. Please install curl or wget.' % url)
+          if not downloader:
+              show_error(u'Unable to download %s due to no ssl module available and no capable program found. Please install curl or wget.' % url)
+              return False
+
+        elif downloader_name == "urllib2":
+          downloader = UrlLib2Downloader(self.settings)
+
+        elif downloader_name == "curl":
+          try:
+            downloader = CurlDownloader(self.settings)
+          except (BinaryNotFoundError):
+            show_error(u'Unable to download %s because curl was not found' % url)
             return False
+
+        elif downloader_name == "wget":
+          try:
+            downloader = WgetDownloader(self.settings)
+          except (BinaryNotFoundError):
+            show_error(u'Unable to download %s because wget was not found' % url)
+            return False
+
+        else:
+          show_error(u'Invalid downloader name: %s' % downloader_name)
+          return False
+
 
         url = url.replace(' ', '%20')
         hostname = urlparse.urlparse(url).hostname.lower()
