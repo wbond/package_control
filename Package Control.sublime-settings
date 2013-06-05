@@ -77,6 +77,7 @@
 
 	// An HTTP proxy server to use for requests
 	"http_proxy": "",
+
 	// An HTTPS proxy server to use for requests - this will inherit from
 	// http_proxy if it is set to "" or null and http_proxy has a value. You
 	// can set this to false to prevent inheriting from http_proxy.
@@ -88,6 +89,12 @@
 
 	// User agent for HTTP requests
 	"user_agent": "Sublime Package Control",
+
+	// Extra options to pass to the cURL downloader
+	"extra_curl_options": [],
+
+	// Extra options to pass to the wget downloader
+	"extra_wget_options": [],
 
 	// Setting this to true will cause Package Control to ignore all git
 	// and hg repositories - this may help if trying to list packages to install

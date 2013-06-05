@@ -88,6 +88,10 @@ class CurlDownloader(CliDownloader):
         if proxy_username or proxy_password:
             command.extend(['-U', u"%s:%s" % (proxy_username, proxy_password)])
 
+        extra_options = self.settings.get('extra_curl_options')
+        if extra_options:
+          command.extend(extra_options)
+
         if http_proxy:
             os.putenv('http_proxy', http_proxy)
         if https_proxy:
