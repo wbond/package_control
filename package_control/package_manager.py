@@ -13,6 +13,7 @@ import tempfile
 try:
     # Python 3
     from urllib.parse import urlencode, urlparse
+    import compileall
 except (ImportError):
     # Python 2
     from urllib import urlencode
@@ -273,14 +274,19 @@ class PackageManager():
 
         return packages
 
-    def list_packages(self):
-        """ :return: A list of all installed, non-default, package names"""
+    def list_packages(self, unpacked_only=False):
+        """
+        :param unpacked_only:
+            Only list packages that are not inside of .sublime-package files
+
+        :return: A list of all installed, non-default, package names
+        """
 
         package_names = os.listdir(sublime.packages_path())
         package_names = [path for path in package_names if
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
 
-        if int(sublime.version()) > 3000:
+        if int(sublime.version()) > 3000 and unpacked_only == False:
             package_files = os.listdir(sublime.installed_packages_path())
             package_names += [file.replace('.sublime-package', '') for file in package_files]
 
@@ -376,6 +382,9 @@ class PackageManager():
             show_error(u'An error occurred creating the package file %s in %s.\n\n%s' % (
                 package_filename, package_destination, unicode_from_os(e)))
             return False
+
+        if int(sublime.version()) >= 3000:
+            compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
 
         dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
         if not binary_package:
