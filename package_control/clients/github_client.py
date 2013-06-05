@@ -26,15 +26,15 @@ class GitHubClient(JSONApiClient):
             tag that is a valid semver version.
 
         :return:
-            False if error, or a dict with the following keys:
+            False if error, None if no match, or a dict with the following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
         commit_info = self._commit_info(url)
-        if commit_info == False:
-            return False
+        if not commit_info:
+            return commit_info
 
         commit_date = commit_info['timestamp'][0:19].replace('T', ' ')
 
@@ -57,7 +57,7 @@ class GitHubClient(JSONApiClient):
               https://github.com/{user}/{repo}/tree/{branch}
 
         :return:
-            False if error, or a dict with the following keys:
+            False if error, None if no match, or a dict with the following keys:
               `name`
               `description`
               `homepage` - URL of the homepage
@@ -69,7 +69,7 @@ class GitHubClient(JSONApiClient):
 
         user_repo, branch = self._user_repo_branch(url)
         if not user_repo:
-            return False
+            return user_repo
 
         api_url = self._make_api_url(user_repo)
 
@@ -98,7 +98,7 @@ class GitHubClient(JSONApiClient):
               https://github.com/{user}
 
         :return:
-            False if error, or am list of dicts with the following keys:
+            False if error, None if no match, or am list of dicts with the following keys:
               `name`
               `description`
               `homepage` - URL of the homepage
@@ -110,7 +110,7 @@ class GitHubClient(JSONApiClient):
 
         user_match = re.match('https?://github.com/([^/]+)/?$', url)
         if user_match == None:
-            return False
+            return None
 
         user = user_match.group(1)
         api_url = self._make_api_url(user)
@@ -137,7 +137,7 @@ class GitHubClient(JSONApiClient):
             tag that is a valid semver version.
 
         :return:
-            False if error, or a dict with the following keys:
+            False if error, None if no match, or a dict with the following keys:
               `user_repo` - the user/repo name
               `timestamp` - the ISO-8601 UTC timestamp string
               `commit` - the branch or tag name
@@ -159,7 +159,7 @@ class GitHubClient(JSONApiClient):
         else:
             user_repo, commit = self._user_repo_branch(url)
             if not user_repo:
-                return False
+                return user_repo
 
         query_string = urlencode({'sha': commit, 'per_page': 1})
         commit_url = self._make_api_url(user_repo, '/commits?%s' % query_string)
@@ -248,7 +248,7 @@ class GitHubClient(JSONApiClient):
               https://github.com/{user}/{repo}/tree/{branch}
 
         :return:
-            A tuple of (user/repo, branch name) or (False, False) if error
+            A tuple of (user/repo, branch name) or (None, None) if no match
         """
 
         branch = 'master'
@@ -258,7 +258,7 @@ class GitHubClient(JSONApiClient):
 
         repo_match = re.match('https?://github.com/([^/]+/[^/]+)($|/.*$)', url)
         if repo_match == None:
-            return (False, False)
+            return (None, None)
 
         user_repo = repo_match.group(1)
         return (user_repo, branch)

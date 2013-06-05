@@ -53,6 +53,8 @@ class RepositoryProvider(ReleaseSelector):
         self.repo = repo
         self.settings = settings
         self.unavailable_packages = []
+        self.failed_sources = []
+        self.broken_packages = []
 
     @classmethod
     def match_url(cls, repo):
@@ -67,6 +69,26 @@ class RepositoryProvider(ReleaseSelector):
 
         self.get_packages()
 
+    def get_failed_sources(self):
+        """
+        List of any URLs that could not be accessed while accessing this repository
+
+        :return:
+            A list of strings containing URLs
+        """
+
+        return self.failed_sources
+
+    def get_broken_packages(self):
+        """
+        List of package names for packages that are missing information
+
+        :return:
+            A list of strings containing package names
+        """
+
+        return self.broken_packages
+
     def fetch(self):
         """Retrieves and loads the JSON for other methods to use"""
 
@@ -75,7 +97,7 @@ class RepositoryProvider(ReleaseSelector):
 
         self.repo_info = self.fetch_location(self.repo)
         if self.repo_info == False:
-             return False
+            return False
 
         if 'includes' not in self.repo_info:
             return
@@ -155,18 +177,19 @@ class RepositoryProvider(ReleaseSelector):
                 },
                 ...
             }
-            or False if there is an error
+            False if there is an error or None if no match
         """
 
         if 'get_packages' in self.cache:
             return self.cache['get_packages']
 
         if valid_sources != None and self.repo not in valid_sources:
-            self.cache['get_packages'] = False
-            return False
+            self.cache['get_packages'] = None
+            return None
 
         self.fetch()
         if self.repo_info == False:
+            self.failed_sources = [self.repo]
             self.cache['get_packages'] = False
             return False
 
@@ -176,6 +199,7 @@ class RepositoryProvider(ReleaseSelector):
 
         if 'schema_version' not in self.repo_info:
             console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
+            self.failed_sources = [self.repo]
             self.cache['get_packages'] = False
             return False
 
@@ -183,16 +207,19 @@ class RepositoryProvider(ReleaseSelector):
             self.schema_version = float(self.repo_info.get('schema_version'))
         except (ValueError):
             console_write(u'%s the "schema_version" is not a valid number.' % schema_error, True)
+            self.failed_sources = [self.repo]
             self.cache['get_packages'] = False
             return False
 
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
             console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error, True)
+            self.failed_sources = [self.repo]
             self.cache['get_packages'] = False
             return False
 
         if 'packages' not in self.repo_info:
             console_write(u'%s the "packages" JSON key is missing.' % schema_error, True)
+            self.failed_sources = [self.repo]
             self.cache['get_packages'] = False
             return False
 
@@ -233,6 +260,7 @@ class RepositoryProvider(ReleaseSelector):
                     elif bitbucket_repo_info:
                         info = dict(chain(bitbucket_repo_info.items(), info.items()))
                     else:
+                        self.failed_sources.append(details)
                         console_write(u'Invalid "details" key for one of the packages in the repository %s.' % self.repo, True)
                         continue
 
@@ -264,6 +292,7 @@ class RepositoryProvider(ReleaseSelector):
                         elif bitbucket_download:
                             download_info = dict(chain(bitbucket_download.items(), download_info.items()))
                         else:
+                            self.failed_sources.append(download_details)
                             console_write(u'Invalid "details" key under the "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
                             continue
 
@@ -282,6 +311,7 @@ class RepositoryProvider(ReleaseSelector):
                 continue
 
             if 'download' not in info and 'releases' not in info:
+                self.broken_packages.append(info['name'])
                 console_write(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
                 continue
 

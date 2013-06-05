@@ -45,6 +45,25 @@ class GitHubUserProvider():
 
         self.get_packages()
 
+    def get_failed_sources(self):
+        """
+        List of any URLs that could not be accessed while accessing this repository
+
+        :return:
+            A list of strings containing URLs
+        """
+
+        if 'get_packages' in self.cache and self.cache['get_packages'] == False:
+            return [self.repo]
+        return []
+
+    def get_broken_packages(self):
+        """
+        For API-compatibility with RepositoryProvider
+        """
+
+        return []
+
     def get_packages(self, valid_sources=None):
         """
         Uses the GitHub API to construct necessary info for all packages
@@ -75,7 +94,7 @@ class GitHubUserProvider():
                 },
                 ...
             }
-            or False if there is an error
+            False if there is an error or None if no match
         """
 
         if 'get_packages' in self.cache:
@@ -84,13 +103,13 @@ class GitHubUserProvider():
         client = GitHubClient(self.settings)
 
         if valid_sources != None and self.repo not in valid_sources:
-            self.cache['get_packages'] = False
-            return False
+            self.cache['get_packages'] = None
+            return None
 
         user_repos = client.user_info(self.repo)
-        if user_repos == False:
-            self.cache['get_packages'] = False
-            return False
+        if not user_repos:
+            self.cache['get_packages'] = user_repos
+            return user_repos
 
         output = {}
         for repo_info in user_repos:
@@ -115,13 +134,13 @@ class GitHubUserProvider():
         return output
 
     def get_renamed_packages(self):
-        """For API-compatibility with :class:`PackageProvider`"""
+        """For API-compatibility with RepositoryProvider"""
 
         return {}
 
     def get_unavailable_packages(self):
         """
-        Method for compatibility with PackageProvider class. These providers
+        Method for compatibility with RepositoryProvider class. These providers
         are based on API calls, and thus do not support different platform
         downloads, making it impossible for there to be unavailable packages.
 

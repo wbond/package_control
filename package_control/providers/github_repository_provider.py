@@ -52,6 +52,25 @@ class GitHubRepositoryProvider():
 
         self.get_packages()
 
+    def get_failed_sources(self):
+        """
+        List of any URLs that could not be accessed while accessing this repository
+
+        :return:
+            A list of strings containing URLs
+        """
+
+        if 'get_packages' in self.cache and self.cache['get_packages'] == False:
+            return [self.repo]
+        return []
+
+    def get_broken_packages(self):
+        """
+        For API-compatibility with RepositoryProvider
+        """
+
+        return []
+
     def get_packages(self, valid_sources=None):
         """
         Uses the GitHub API to construct necessary info for a package
@@ -81,7 +100,7 @@ class GitHubRepositoryProvider():
                     'donate': url
                 }
             }
-            or False if there is an error
+            False if there is an error or None if no match
         """
 
         if 'get_packages' in self.cache:
@@ -90,18 +109,18 @@ class GitHubRepositoryProvider():
         client = GitHubClient(self.settings)
 
         if valid_sources != None and self.repo not in valid_sources:
-            self.cache['get_packages'] = False
-            return False
+            self.cache['get_packages'] = None
+            return None
 
         repo_info = client.repo_info(self.repo)
-        if repo_info == False:
-            self.cache['get_packages'] = False
-            return False
+        if not repo_info:
+            self.cache['get_packages'] = repo_info
+            return repo_info
 
         download = client.download_info(self.repo)
-        if download == False:
-            self.cache['get_packages'] = False
-            return False
+        if not download:
+            self.cache['get_packages'] = download
+            return download
 
         self.cache['get_packages'] = {repo_info['name']: {
             'name': repo_info['name'],
@@ -120,13 +139,13 @@ class GitHubRepositoryProvider():
         return self.cache['get_packages']
 
     def get_renamed_packages(self):
-        """For API-compatibility with :class:`PackageProvider`"""
+        """For API-compatibility with RepositoryProvider"""
 
         return {}
 
     def get_unavailable_packages(self):
         """
-        Method for compatibility with PackageProvider class. These providers
+        Method for compatibility with RepositoryProvider class. These providers
         are based on API calls, and thus do not support different platform
         downloads, making it impossible for there to be unavailable packages.
 

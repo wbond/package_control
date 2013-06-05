@@ -33,15 +33,15 @@ class BitBucketClient(JSONApiClient):
             tag that is a valid semver version.
 
         :return:
-            False if error, or a dict with the following keys:
+            False if error, None if no match, or a dict with the following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
         commit_info = self._commit_info(url)
-        if commit_info == False:
-            return False
+        if not commit_info:
+            return commit_info
 
         commit_date = commit_info['timestamp'][0:19]
 
@@ -61,7 +61,7 @@ class BitBucketClient(JSONApiClient):
               https://bitbucket.org/{user}/{repo}/src/{branch}
 
         :return:
-            False if error, or a dict with the following keys:
+            False if error, None if no match, or a dict with the following keys:
               `name`
               `description`
               `homepage` - URL of the homepage
@@ -73,7 +73,7 @@ class BitBucketClient(JSONApiClient):
 
         user_repo, branch = self._user_repo_branch(url)
         if not user_repo:
-            return False
+            return user_repo
 
         api_url = self._make_api_url(user_repo)
 
@@ -106,7 +106,7 @@ class BitBucketClient(JSONApiClient):
             tag that is a valid semver version.
 
         :return:
-            False if error, or a dict with the following keys:
+            False if error, None if no match, or a dict with the following keys:
               `user_repo` - the user/repo name
               `timestamp` - the ISO-8601 UTC timestamp string
               `commit` - the branch or tag name
@@ -127,7 +127,7 @@ class BitBucketClient(JSONApiClient):
         else:
             user_repo, commit = self._user_repo_branch(url)
             if not user_repo:
-                return False
+                return user_repo
 
         changeset_url = self._make_api_url(user_repo, '/changesets/%s' % commit)
         commit_info = self.fetch_json(changeset_url)
@@ -213,7 +213,7 @@ class BitBucketClient(JSONApiClient):
               https://bitbucket.org/{user}/{repo}/src/{branch}
 
         :return:
-            A tuple of (user/repo, branch name) or (False, False) if error
+            A tuple of (user/repo, branch name), (False, False) if error, or (None, None) if not matching
         """
 
         repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
@@ -230,6 +230,6 @@ class BitBucketClient(JSONApiClient):
             branch = branch_match.group(2)
 
         else:
-            return (False, False)
+            return (None, None)
 
         return (user_repo, branch)
