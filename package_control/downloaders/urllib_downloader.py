@@ -2,6 +2,8 @@ import re
 import os
 import sys
 
+from .. import http
+
 try:
     # Python 3
     from http.client import HTTPException, BadStatusLine
