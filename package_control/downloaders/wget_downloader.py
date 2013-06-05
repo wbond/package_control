@@ -90,6 +90,10 @@ class WgetDownloader(CliDownloader):
             console_write(u"  proxy_username: %s" % proxy_username)
             console_write(u"  proxy_password: %s" % proxy_password)
 
+        extra_options = self.settings.get('extra_wget_options')
+        if extra_options:
+            command.extend(extra_options)
+
         command.append(url)
 
         if http_proxy:

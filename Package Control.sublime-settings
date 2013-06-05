@@ -93,6 +93,9 @@
 	// Extra options to pass to the cURL downloader
 	"extra_curl_options": [],
 
+	// Extra options to pass to the wget downloader
+	"extra_wget_options": [],
+
 	// Setting this to true will cause Package Control to ignore all git
 	// and hg repositories - this may help if trying to list packages to install
 	// hangs
