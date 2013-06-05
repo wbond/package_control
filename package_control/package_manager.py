@@ -67,7 +67,7 @@ class PackageManager():
                 'submit_usage', 'submit_url', 'renamed_packages',
                 'files_to_include', 'files_to_include_binary', 'certs',
                 'ignore_vcs_packages', 'proxy_username', 'proxy_password',
-                'debug', 'user_agent']:
+                'debug', 'user_agent', 'extra_curl_options']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
