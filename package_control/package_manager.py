@@ -288,7 +288,7 @@ class PackageManager():
 
         if int(sublime.version()) > 3000 and unpacked_only == False:
             package_files = os.listdir(sublime.installed_packages_path())
-            package_names += [file.replace('.sublime-package', '') for file in package_files]
+            package_names += [f.replace('.sublime-package', '') for f in package_files if re.search('\.sublime-package$', f) != None]
 
         # Ignore things to be deleted
         ignored = ['User']
