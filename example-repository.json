@@ -114,6 +114,12 @@
 			"donate": "https://www.gittip.com/wbond/"
 		},
 
+		// The URL to purchase a license to the package
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"buy": "https://wbond.net/sublime_packages/alignment/buy"
+		},
+
 		// If you rename a package, you can provide the previous name(s)
 		// so that users with the old package name can be automatically
 		// upgraded to the new one.

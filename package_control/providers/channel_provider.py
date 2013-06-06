@@ -231,7 +231,8 @@ class ChannelProvider(ReleaseSelector):
                     'labels': [label, ...],
                     'readme': url,
                     'issues': url,
-                    'donate': url
+                    'donate': url,
+                    'buy': url
                 },
                 ...
             }

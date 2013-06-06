@@ -173,7 +173,8 @@ class RepositoryProvider(ReleaseSelector):
                     'sources': [url, ...],
                     'readme': url,
                     'issues': url,
-                    'donate': url
+                    'donate': url,
+                    'buy': url
                 },
                 ...
             }
@@ -232,7 +233,7 @@ class RepositoryProvider(ReleaseSelector):
             }
 
             for field in ['name', 'description', 'author', 'last_modified', 'previous_names',
-                    'labels', 'homepage', 'readme', 'issues', 'donate']:
+                    'labels', 'homepage', 'readme', 'issues', 'donate', 'buy']:
                 if package.get(field):
                     info[field] = package.get(field)
 
@@ -319,7 +320,7 @@ class RepositoryProvider(ReleaseSelector):
                 if field not in info:
                     info[field] = []
 
-            for field in ['readme', 'issues', 'donate']:
+            for field in ['readme', 'issues', 'donate', 'buy']:
                 if field not in info:
                     info[field] = None
 

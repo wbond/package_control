@@ -90,7 +90,8 @@ class GitHubUserProvider():
                     'sources': [the user URL],
                     'readme': url,
                     'issues': url,
-                    'donate': url
+                    'donate': url,
+                    'buy': None
                 },
                 ...
             }
@@ -127,7 +128,8 @@ class GitHubUserProvider():
                 'sources': [self.repo],
                 'readme': repo_info['readme'],
                 'issues': repo_info['issues'],
-                'donate': repo_info['donate']
+                'donate': repo_info['donate'],
+                'buy': None
             }
 
         self.cache['get_packages'] = output

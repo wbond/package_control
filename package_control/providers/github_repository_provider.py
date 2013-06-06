@@ -97,7 +97,8 @@ class GitHubRepositoryProvider():
                     'sources': [the repo URL],
                     'readme': url,
                     'issues': url,
-                    'donate': url
+                    'donate': url,
+                    'buy': None
                 }
             }
             False if there is an error or None if no match
@@ -134,7 +135,8 @@ class GitHubRepositoryProvider():
             'sources': [self.repo],
             'readme': repo_info['readme'],
             'issues': repo_info['issues'],
-            'donate': repo_info['donate']
+            'donate': repo_info['donate'],
+            'buy': None
         }}
         return self.cache['get_packages']
 
