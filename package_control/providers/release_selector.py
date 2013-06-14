@@ -1,3 +1,4 @@
+import re
 import sublime
 
 from ..versions import version_sort, version_exclude_prerelease
@@ -33,7 +34,7 @@ class ReleaseSelector():
             if not best_platform:
                 continue
 
-            if not self.is_compatible_version(release.get('sublime_text', '<2999')):
+            if not self.is_compatible_version(release.get('sublime_text', '<3000')):
                 continue
 
             package_info['download'] = release
@@ -85,9 +86,9 @@ class ReleaseSelector():
 
         return None
 
-    def is_compatible_version(version_range):
-        min_version = None
-        max_version = None
+    def is_compatible_version(self, version_range):
+        min_version = float("-inf")
+        max_version = float("inf")
 
         if version_range == '*':
             return True
@@ -112,9 +113,9 @@ class ReleaseSelector():
         else:
             return None
 
-        if min_version > sublime.version():
+        if min_version > int(sublime.version()):
             return False
-        if max_version < sublime.version():
+        if max_version < int(sublime.version()):
             return False
 
         return True

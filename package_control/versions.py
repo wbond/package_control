@@ -10,8 +10,8 @@ def semver_compat(v):
 
     # Allowing passing in a dict containing info about a package
     if isinstance(v, dict):
-        if not hasattr(v, 'version'):
-            return 0
+        if 'version' not in v:
+            return '0'
         v = v['version']
 
     # We prepend 0 to all date-based version numbers so that developers
