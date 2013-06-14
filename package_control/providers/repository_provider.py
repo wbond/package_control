@@ -279,11 +279,11 @@ class RepositoryProvider(ReleaseSelector):
                 for release in releases:
                     # Make sure that explicit fields are copied over
                     for field in ['platforms', 'sublime_text', 'version', 'url', 'date']:
-                        if field in releases[0]:
-                            download_info[field] = releases[0][field]
+                        if field in release:
+                            download_info[field] = release[field]
 
-                    download_details = releases[0]['details']
-                    if download_details:
+                    if 'details' in release:
+                        download_details = release['details']
                         github_download = github_client.download_info(download_details)
                         bitbucket_download = bitbucket_client.download_info(download_details)
 
