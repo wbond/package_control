@@ -9,7 +9,7 @@ from ..thread_progress import ThreadProgress
 
 
 class RemovePackageCommand(sublime_plugin.WindowCommand,
-        ExistingPackagesCommand):
+                           ExistingPackagesCommand):
     """
     A command that presents a list of installed packages, allowing the user to
     select one to remove
@@ -58,10 +58,10 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
 
         ignored.remove(package)
         thread = RemovePackageThread(self.manager, package,
-            ignored)
+                                     ignored)
         thread.start()
         ThreadProgress(thread, 'Removing package %s' % package,
-            'Package %s successfully removed' % package)
+                       'Package %s successfully removed' % package)
 
 
 class RemovePackageThread(threading.Thread):

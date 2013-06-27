@@ -12,12 +12,14 @@ try:
     if hasattr(urllib2, 'HTTPSHandler'):
         class ValidatingHTTPSHandler(urllib2.HTTPSHandler):
             """
-            A urllib2 handler that validates SSL certificates for HTTPS requests
+            A urllib2 handler that validates SSL certificates
+            for HTTPS requests
             """
 
             def __init__(self, **kwargs):
-                # This is a special value that will not trigger the standard debug
-                # functionality, but custom code where we can format the output
+                # This is a special value that will not trigger
+                # the standard debug functionality, but custom
+                # code where we can format the output
                 self._debuglevel = 0
                 if 'debug' in kwargs and kwargs['debug']:
                     self._debuglevel = 5

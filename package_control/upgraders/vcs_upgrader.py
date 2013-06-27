@@ -7,7 +7,8 @@ from ..cmd import create_cmd
 
 class VcsUpgrader():
     """
-    Base class for updating packages that are a version control repository on local disk
+    Base class for updating packages that are a
+    version control repository on local disk
 
     :param vcs_binary:
         The full filesystem path to the executable for the version control
@@ -24,7 +25,8 @@ class VcsUpgrader():
         The lenth of time to cache if incoming changesets are available
     """
 
-    def __init__(self, vcs_binary, update_command, working_copy, cache_length, debug):
+    def __init__(self, vcs_binary, update_command, working_copy,
+                 cache_length, debug):
         self.binary = vcs_binary
         self.update_command = update_command
         self.working_copy = working_copy
@@ -50,17 +52,20 @@ class VcsUpgrader():
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         if self.debug:
-            console_write(u"Trying to execute command %s" % create_cmd(args), True)
+            console_write(
+                u"Trying to execute command %s" % create_cmd(args), True)
 
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            startupinfo=startupinfo, cwd=dir)
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                startupinfo=startupinfo, cwd=dir)
 
         return proc.stdout.read().replace('\r\n', '\n').rstrip(' \n\r')
 
     def find_binary(self, name):
         """
-        Locates the executable by looking in the PATH and well-known directories
+        Locates the executable by looking in the PATH
+        and well-known directories
 
         :param name:
             The string filename of the executable
@@ -80,7 +85,8 @@ class VcsUpgrader():
             path = os.path.join(dir, name)
             if os.path.exists(path):
                 if self.debug:
-                    console_write(u"Found %s at \"%s\"" % (self.vcs_type, path), True)
+                    console_write(u"Found %s at \"%s\""
+                                  % (self.vcs_type, path), True)
                 return path
 
         # This is left in for backwards compatibility and for windows
@@ -88,13 +94,13 @@ class VcsUpgrader():
         # not be part of the PATH
         if os.name == 'nt':
             dirs = ['C:\\Program Files\\Git\\bin',
-                'C:\\Program Files (x86)\\Git\\bin',
-                'C:\\Program Files\\TortoiseGit\\bin',
-                'C:\\Program Files\\Mercurial',
-                'C:\\Program Files (x86)\\Mercurial',
-                'C:\\Program Files (x86)\\TortoiseHg',
-                'C:\\Program Files\\TortoiseHg',
-                'C:\\cygwin\\bin']
+                    'C:\\Program Files (x86)\\Git\\bin',
+                    'C:\\Program Files\\TortoiseGit\\bin',
+                    'C:\\Program Files\\Mercurial',
+                    'C:\\Program Files (x86)\\Mercurial',
+                    'C:\\Program Files (x86)\\TortoiseHg',
+                    'C:\\Program Files\\TortoiseHg',
+                    'C:\\cygwin\\bin']
         else:
             dirs = ['/usr/local/git/bin']
 
@@ -102,9 +108,11 @@ class VcsUpgrader():
             path = os.path.join(dir, name)
             if os.path.exists(path):
                 if self.debug:
-                    console_write(u"Found %s at \"%s\"" % (self.vcs_type, path), True)
+                    console_write(u"Found %s at \"%s\"" % (
+                        self.vcs_type, path), True)
                 return path
 
         if self.debug:
-            console_write(u"Could not find %s on your machine" % self.vcs_type, True)
+            console_write(u"Could not find %s on your machine"
+                          % self.vcs_type, True)
         return None

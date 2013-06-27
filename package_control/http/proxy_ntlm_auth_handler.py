@@ -31,14 +31,16 @@ if os.name == 'nt':
                 host_port = req.host
             else:
                 host_port = "%s:%s" % (req.host, req.port)
-            username, password = self.passwd.find_user_password(None, host_port)
+            username, password = self.passwd.find_user_password(
+                None, host_port)
             if not username:
                 return None
 
             if username.find('\\') == -1:
                 type1_flags &= ~ntlm.NTLM_NegotiateOemDomainSupplied
 
-            negotiate_message = ntlm.create_NTLM_NEGOTIATE_MESSAGE(username, type1_flags)
+            negotiate_message = ntlm.create_NTLM_NEGOTIATE_MESSAGE(
+                username, type1_flags)
             auth = 'NTLM %s' % negotiate_message
             if req.headers.get(self.auth_header, None) == auth:
                 return None
@@ -50,4 +52,5 @@ else:
     # Let the user know if this is used on an unsupported platform
     class ProxyNtlmAuthHandler(urllib2.BaseHandler):
         def __init__(self, password_manager=None):
-            raise Exception("ProxyNtlmAuthHandler is only implemented on Windows")
+            raise Exception(
+                "ProxyNtlmAuthHandler is only implemented on Windows")
