@@ -8,7 +8,7 @@ from ..providers.package_provider import PackageProvider
 
 # The providers (in order) to check when trying to download repository info
 _package_providers = [BitBucketPackageProvider, GitHubPackageProvider,
-    GitHubUserProvider, PackageProvider]
+                      GitHubUserProvider, PackageProvider]
 
 
 class RepositoryDownloader(threading.Thread):
@@ -38,7 +38,7 @@ class RepositoryDownloader(threading.Thread):
             if provider.match_url():
                 break
         packages = provider.get_packages()
-        if packages == False:
+        if packages is False:
             self.packages = False
             return
 

@@ -29,8 +29,8 @@ class GitHubPackageProvider(NonCachingProvider):
 
         master = re.search('^https?://github.com/[^/]+/[^/]+/?$', self.repo)
         branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
-            self.repo)
-        return master != None or branch != None
+                           self.repo)
+        return master is not None or branch is not None
 
     def get_packages(self):
         """Uses the GitHub API to construct necessary info for a package"""
@@ -38,14 +38,14 @@ class GitHubPackageProvider(NonCachingProvider):
         branch = 'master'
         branch_match = re.search(
             '^https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', self.repo)
-        if branch_match != None:
+        if branch_match is not None:
             branch = branch_match.group(1)
 
         api_url = re.sub('^https?://github.com/([^/]+)/([^/]+)($|/.*$)',
-            'https://api.github.com/repos/\\1/\\2', self.repo)
+                         'https://api.github.com/repos/\\1/\\2', self.repo)
 
         repo_info = self.fetch_json(api_url)
-        if repo_info == False:
+        if repo_info is False:
             return False
 
         # In addition to hitting the main API endpoint for this repo, we
@@ -55,7 +55,7 @@ class GitHubPackageProvider(NonCachingProvider):
             urllib.urlencode({'sha': branch, 'per_page': 1})
 
         commit_info = self.fetch_json(commit_api_url)
-        if commit_info == False:
+        if commit_info is False:
             return False
 
         # We specifically use nodeload.github.com here because the download
@@ -67,7 +67,7 @@ class GitHubPackageProvider(NonCachingProvider):
 
         commit_date = commit_info[0]['commit']['committer']['date']
         timestamp = datetime.datetime.strptime(commit_date[0:19],
-            '%Y-%m-%dT%H:%M:%S')
+                                               '%Y-%m-%dT%H:%M:%S')
         utc_timestamp = timestamp.strftime(
             '%Y.%m.%d.%H.%M.%S')
 
@@ -77,8 +77,9 @@ class GitHubPackageProvider(NonCachingProvider):
 
         package = {
             'name': repo_info['name'],
-            'description': repo_info['description'] if \
-                repo_info['description'] else 'No description provided',
+            'description': (repo_info['description']
+                            if repo_info['description']
+                            else 'No description provided'),
             'url': homepage,
             'author': repo_info['owner']['login'],
             'last_modified': timestamp.strftime('%Y-%m-%d %H:%M:%S'),

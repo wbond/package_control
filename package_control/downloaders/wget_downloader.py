@@ -52,16 +52,17 @@ class WgetDownloader(CliDownloader):
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
-            self.tmp_file, '-O', '-', '-U',
-            self.settings.get('user_agent'), '--header',
-            # Don't be alarmed if the response from the server does not select
-            # one of these since the server runs a relatively new version of
-            # OpenSSL which supports compression on the SSL layer, and Apache
-            # will use that instead of HTTP-level encoding.
-            'Accept-Encoding: gzip,deflate']
+                   self.tmp_file, '-O', '-', '-U',
+                   self.settings.get('user_agent'), '--header',
+                   # Don't be alarmed if the response from
+                   # the server does not select one of these since the
+                   # server runs a relatively new version of OpenSSL which
+                   # supports compression on the SSL layer, and Apache
+                   # will use that instead of HTTP-level encoding.
+                   'Accept-Encoding: gzip,deflate']
 
         secure_url_match = re.match('^https://([^/]+)', url)
-        if secure_url_match != None:
+        if secure_url_match is not None:
             secure_domain = secure_url_match.group(1)
             bundle_path = self.check_certs(secure_domain, timeout)
             if not bundle_path:
@@ -117,12 +118,14 @@ class WgetDownloader(CliDownloader):
 
                     if general['status'] == '503':
                         # GitHub and BitBucket seem to rate limit via 503
-                        error_string = u'Downloading %s was rate limited, trying again' % url
+                        error_string = (
+                            u'Downloading %s was rate limited, trying again'
+                            % url)
                         console_write(error_string, True)
                         continue
 
                     download_error = 'HTTP error %s %s' % (general['status'],
-                        general['message'])
+                                                           general['message'])
 
                 except (NonHttpError) as (e):
 
@@ -130,11 +133,13 @@ class WgetDownloader(CliDownloader):
 
                     # GitHub and BitBucket seem to time out a lot
                     if download_error.find('timed out') != -1:
-                        error_string = u'Downloading %s timed out, trying again' % url
+                        error_string = (
+                            u'Downloading %s timed out, trying again' % url)
                         console_write(error_string, True)
                         continue
 
-                error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
+                error_string = u'%s %s downloading %s.' % (
+                    error_message, download_error, url)
                 console_write(error_string, True)
 
             break

@@ -70,10 +70,10 @@ class UrlLib2Downloader(Downloader):
         if proxy_username and proxy_password:
             if http_proxy:
                 password_manager.add_password(None, http_proxy, proxy_username,
-                    proxy_password)
+                                              proxy_password)
             if https_proxy:
                 password_manager.add_password(None, https_proxy, proxy_username,
-                    proxy_password)
+                                              proxy_password)
 
         handlers = [proxy_handler]
         if os.name == 'nt':
@@ -94,18 +94,21 @@ class UrlLib2Downloader(Downloader):
             console_write(u"  proxy_password: %s" % proxy_password)
 
         secure_url_match = re.match('^https://([^/]+)', url)
-        if secure_url_match != None:
+        if secure_url_match is not None:
             secure_domain = secure_url_match.group(1)
             bundle_path = self.check_certs(secure_domain, timeout)
             if not bundle_path:
                 return False
             bundle_path = bundle_path.encode(sys.getfilesystemencoding())
             handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
-                debug=debug, passwd=password_manager,
-                user_agent=self.settings.get('user_agent')))
+                                                   debug=debug,
+                                                   passwd=password_manager,
+                                                   user_agent=
+                                                   self.settings.get(
+                                                       'user_agent')))
         else:
             handlers.append(DebuggableHTTPHandler(debug=debug,
-                passwd=password_manager))
+                                                  passwd=password_manager))
         urllib2.install_opener(urllib2.build_opener(*handlers))
 
         while tries > 0:
@@ -114,8 +117,9 @@ class UrlLib2Downloader(Downloader):
                 request = urllib2.Request(url, headers={
                     "User-Agent": self.settings.get('user_agent'),
                     # Don't be alarmed if the response from the server does not
-                    # select one of these since the server runs a relatively new
-                    # version of OpenSSL which supports compression on the SSL
+                    # select one of these since the server
+                    # runs a relatively new version of OpenSSL which
+                    # supports compression on the SSL
                     # layer, and Apache will use that instead of HTTP-level
                     # encoding.
                     "Accept-Encoding": "gzip,deflate"})
@@ -127,7 +131,8 @@ class UrlLib2Downloader(Downloader):
 
             except (httplib.HTTPException) as (e):
                 error_string = u'%s HTTP exception %s (%s) downloading %s.' % (
-                    error_message, e.__class__.__name__, unicode_from_os(e), url)
+                    error_message, e.__class__.__name__, unicode_from_os(e),
+                    url)
                 console_write(error_string, True)
 
             except (urllib2.HTTPError) as (e):
@@ -136,7 +141,8 @@ class UrlLib2Downloader(Downloader):
 
                 # Bitbucket and Github return 503 a decent amount
                 if unicode_from_os(e.code) == '503':
-                    error_string = u'Downloading %s was rate limited, trying again' % url
+                    error_string = (
+                        u'Downloading %s was rate limited, trying again' % url)
                     console_write(error_string, True)
                     continue
 
@@ -147,9 +153,11 @@ class UrlLib2Downloader(Downloader):
             except (urllib2.URLError) as (e):
 
                 # Bitbucket and Github timeout a decent amount
-                if unicode_from_os(e.reason) == 'The read operation timed out' \
-                        or unicode_from_os(e.reason) == 'timed out':
-                    error_string = u'Downloading %s timed out, trying again' % url
+                if unicode_from_os(e.reason) == ('The read operation timed out'
+                                                 or unicode_from_os(e.reason)
+                                                 == 'timed out'):
+                    error_string = (
+                        u'Downloading %s timed out, trying again' % url)
                     console_write(error_string, True)
                     continue
 
