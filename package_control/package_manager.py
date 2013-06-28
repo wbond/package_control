@@ -166,7 +166,7 @@ class PackageManager():
             return False
 
         url = url.replace(' ', '%20')
-        hostname = urlparse.urlparse(url).hostname.lower()
+        hostname = urlparse.urlparse(url).hostname
         timeout = self.settings.get('timeout', 3)
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
@@ -182,7 +182,7 @@ class PackageManager():
             console_write(u"  Resolved IP: %s" % ip)
             console_write(u"  Timeout: %s" % str(timeout))
 
-        if hostname in rate_limited_domains:
+        if hostname.lower() in rate_limited_domains:
             if self.settings.get('debug'):
                 console_write(u"  Skipping due to hitting rate limit for %s" % hostname)
             return False
@@ -191,7 +191,7 @@ class PackageManager():
             return downloader.download(url, error_message, timeout, 3)
         except (RateLimitException) as (e):
 
-            rate_limited_domains.append(hostname)
+            rate_limited_domains.append(hostname.lower())
             set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
 
             error_string = (u'Hit rate limit of %s for %s, skipping all futher ' +
