@@ -15,7 +15,7 @@ class PackageCreator():
         """
 
         self.manager = PackageManager()
-        self.packages = self.manager.list_packages()
+        self.packages = self.manager.list_packages(unpacked_only=True)
         if not self.packages:
             show_error('There are no packages available to be packaged')
             return

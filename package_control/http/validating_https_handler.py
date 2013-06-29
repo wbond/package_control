@@ -1,4 +1,12 @@
-import urllib2
+try:
+    # Python 3
+    from urllib.error import URLError
+    import urllib.request as urllib_compat
+except (ImportError):
+    # Python 2
+    from urllib2 import URLError
+    import urllib2 as urllib_compat
+
 
 # The following code is wrapped in a try because the Linux versions of Sublime
 # Text do not include the ssl module due to the fact that different distros
@@ -8,11 +16,12 @@ try:
 
     from .validating_https_connection import ValidatingHTTPSConnection
     from .invalid_certificate_exception import InvalidCertificateException
+    from .persistent_handler import PersistentHandler
 
-    if hasattr(urllib2, 'HTTPSHandler'):
-        class ValidatingHTTPSHandler(urllib2.HTTPSHandler):
+    if hasattr(urllib_compat, 'HTTPSHandler'):
+        class ValidatingHTTPSHandler(PersistentHandler, urllib_compat.HTTPSHandler):
             """
-            A urllib2 handler that validates SSL certificates for HTTPS requests
+            A urllib handler that validates SSL certificates for HTTPS requests
             """
 
             def __init__(self, **kwargs):
@@ -33,15 +42,17 @@ try:
 
                 try:
                     return self.do_open(http_class_wrapper, req)
-                except urllib2.URLError, e:
+                except URLError as e:
                     if type(e.reason) == ssl.SSLError and e.reason.args[0] == 1:
                         raise InvalidCertificateException(req.host, '',
                                                           e.reason.args[1])
                     raise
 
-            https_request = urllib2.AbstractHTTPHandler.do_request_
+            https_request = urllib_compat.AbstractHTTPHandler.do_request_
+    else:
+        raise ImportError()
 
-except (ImportError) as (e):
+except (ImportError) as e:
 
     class ValidatingHTTPSHandler():
         def __init__(self, **kwargs):

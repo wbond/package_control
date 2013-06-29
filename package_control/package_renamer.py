@@ -1,7 +1,9 @@
-import sublime
 import os
 
+import sublime
+
 from .console_write import console_write
+from .package_io import package_file_exists
 
 
 class PackageRenamer():
@@ -44,8 +46,7 @@ class PackageRenamer():
         # Rename directories for packages that have changed names
         for package_name in renamed_packages:
             package_dir = os.path.join(sublime.packages_path(), package_name)
-            metadata_path = os.path.join(package_dir, 'package-metadata.json')
-            if not os.path.exists(metadata_path):
+            if not package_file_exists(package_name, 'package-metadata.json'):
                 continue
 
             new_package_name = renamed_packages[package_name]

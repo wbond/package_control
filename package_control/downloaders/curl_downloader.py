@@ -1,15 +1,18 @@
 import tempfile
 import re
 import os
-import urlparse
 
 from ..console_write import console_write
+from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
-from ..http.rate_limit_exception import RateLimitException
+from .rate_limit_exception import RateLimitException
+from .cert_provider import CertProvider
+from .limiting_downloader import LimitingDownloader
+from .caching_downloader import CachingDownloader
 
 
-class CurlDownloader(CliDownloader):
+class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDownloader):
     """
     A downloader that uses the command line program curl
 
@@ -22,7 +25,14 @@ class CurlDownloader(CliDownloader):
         self.settings = settings
         self.curl = self.find_binary('curl')
 
-    def download(self, url, error_message, timeout, tries):
+    def close(self):
+        """
+        No-op for compatibility with UrllibDownloader and WinINetDownloader
+        """
+
+        pass
+
+    def download(self, url, error_message, timeout, tries, prefer_cached=False):
         """
         Downloads a URL and returns the contents
 
@@ -40,9 +50,17 @@ class CurlDownloader(CliDownloader):
             The int number of times to try and download the URL in the case of
             a timeout or HTTP 503 error
 
+        :param prefer_cached:
+            If a cached version should be returned instead of trying a new request
+
         :return:
             The string contents of the URL, or False on error
         """
+
+        if prefer_cached:
+            cached = self.retrieve_cached(url)
+            if cached:
+                return cached
 
         if not self.curl:
             return False
@@ -57,6 +75,11 @@ class CurlDownloader(CliDownloader):
             '--compressed',
             # We have to capture the headers to check for rate limit info
             '--dump-header', self.tmp_file]
+
+        request_headers = self.add_conditional_headers(url, {})
+
+        for name, value in request_headers.items():
+            command.extend(['--header', "%s: %s" % (name, value)])
 
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
@@ -100,39 +123,43 @@ class CurlDownloader(CliDownloader):
             try:
                 output = self.execute(command)
 
-                with open(self.tmp_file, 'r') as f:
-                    headers = f.read()
+                with open_compat(self.tmp_file, 'r') as f:
+                    headers_str = read_compat(f)
                 self.clean_tmp_file()
 
-                limit = 1
-                limit_remaining = 1
-                status = '200 OK'
-                for header in headers.splitlines():
+                message = 'OK'
+                status = 200
+                headers = {}
+                for header in headers_str.splitlines():
                     if header[0:5] == 'HTTP/':
-                        status = re.sub('^HTTP/\d\.\d\s+', '', header)
-                    if header.lower()[0:22] == 'x-ratelimit-remaining:':
-                        limit_remaining = header.lower()[22:].strip()
-                    if header.lower()[0:18] == 'x-ratelimit-limit:':
-                        limit = header.lower()[18:].strip()
+                        message = re.sub('^HTTP/\d\.\d\s+\d+\s+', '', header)
+                        status = int(re.sub('^HTTP/\d\.\d\s+(\d+)\s+.*$', '\\1', header))
+                        continue
+                    if header.strip() == '':
+                        continue
+                    name, value = header.split(':', 1)
+                    headers[name.lower()] = value.strip()
 
                 if debug:
-                    self.print_debug(self.stderr)
+                    self.print_debug(self.stderr.decode('utf-8'))
 
-                if str(limit_remaining) == '0':
-                    hostname = urlparse.urlparse(url).hostname
-                    raise RateLimitException(hostname, limit)
+                self.handle_rate_limit(headers, url)
 
-                if status != '200 OK':
+                if status not in [200, 304]:
                     e = NonCleanExitError(22)
-                    e.stderr = status
+                    e.stderr = "%s %s" % (status, message)
                     raise e
+
+                output = self.cache_result('get', url, status, headers, output)
 
                 return output
 
-            except (NonCleanExitError) as (e):
+            except (NonCleanExitError) as e:
                 # Stderr is used for both the error message and the debug info
                 # so we need to process it to extra the debug info
                 if self.settings.get('debug'):
+                    if hasattr(e.stderr, 'decode'):
+                        e.stderr = e.stderr.decode('utf-8')
                     e.stderr = self.print_debug(e.stderr)
 
                 self.clean_tmp_file()
@@ -166,7 +193,27 @@ class CurlDownloader(CliDownloader):
 
         return False
 
+    def supports_ssl(self):
+        """
+        Indicates if the object can handle HTTPS requests
+
+        :return:
+            If the object supports HTTPS requests
+        """
+
+        return True
+
     def print_debug(self, string):
+        """
+        Takes debug output from curl and groups and prints it
+
+        :param string:
+            The complete debug output from curl
+
+        :return:
+            A string containing any stderr output
+        """
+
         section = 'General'
         last_section = None
 

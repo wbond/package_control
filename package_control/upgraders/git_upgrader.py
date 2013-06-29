@@ -66,7 +66,11 @@ class GitUpgrader(VcsUpgrader):
         binary = self.retrieve_binary()
         if not binary:
             return False
-        self.execute([binary, 'fetch'], self.working_copy)
+
+        res = self.execute([binary, 'fetch'], self.working_copy)
+        if res == False:
+            return False
+
         args = [binary, 'log']
         args.append('..' + '/'.join(self.update_command[-2:]))
         output = self.execute(args, self.working_copy)

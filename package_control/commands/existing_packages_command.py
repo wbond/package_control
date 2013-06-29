@@ -1,6 +1,7 @@
-import sublime
 import os
 import re
+
+import sublime
 
 from ..package_manager import PackageManager
 

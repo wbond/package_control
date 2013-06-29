@@ -1,0 +1,275 @@
+{
+	"schema_version": "2.0",
+
+	// Packages can be specified with a simple URL to a GitHub or BitBucket
+	// repository, but details can be overridden for every field. It is
+	// also possible not utilize GitHub or BitBucket at all, but just to
+	// host your packages on any server with an SSL certificate.
+	"packages": [
+
+		// This is what most packages should aim to model.
+		//
+		// The majority of the information about a package ("name",
+		// "description", "author") are all pulled from the GitHub (or
+		// BitBucket) repository info.
+		//
+		// If the word "sublime" exists in the repository name, the name
+		// can be overridden by the "name" key.
+		//
+		// A release is created from the the tag that is the highest semantic
+		// versioning version number in the list of tags.
+		{
+			"name": "Alignment",
+			"details": "https://github.com/wbond/sublime_alignment",
+			"releases": [
+				{
+					"details": "https://github.com/wbond/sublime_alignment/tags"
+				}
+			]
+		},
+
+		// Here is an equivalent package being pulled from BitBucket
+		{
+			"name": "Alignment",
+			"details": "https://bitbucket.org/wbond/sublime_alignment",
+			"releases": [
+				{
+					"details": "https://bitbucket.org/wbond/sublime_alignment#tags"
+				}
+			]
+		},
+
+		// Pull most details from GitHub, releases from master branch.
+		// This form is discouraged because users will upgrade to every single
+		// commit you make to master.
+		{
+			"details": "https://github.com/wbond/sublime_alignment"
+		},
+
+		// Pull most details from a BitBucket repository and releases from
+		// the branch "default" or "master", depending on how your repository
+		// is configured.
+		// Similar to the above example, this form is discouraged because users
+		// will upgrade to every single commit you make to master.
+		{
+			"details": "https://bitbucket.org/wbond/sublime_alignment"
+		},
+
+		// Use a custom name instead of just the URL slug
+		{
+			"name": "Alignment",
+			"details": "https://github.com/wbond/sublime_alignment"
+		},
+
+		// You can also override the homepage and author
+		{
+			"name": "Alignment",
+			"details": "https://github.com/wbond/sublime_alignment",
+			"homepage": "http://wbond.net/sublime_packages/alignment",
+			"author": "wbond"
+		},
+
+		// It is possible to provide the URL to a readme file. This URL
+		// should be to the raw source of the file, not rendered HTML.
+		// GitHub and BitBucket repositories will automatically provide
+		// these.
+		//
+		// The following extensions will be rendered:
+		//
+		// .markdown, .mdown, .mkd, .md
+		// .texttile
+		// .creole
+		// .rst
+		//
+		// All others are treated as plaintext.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"readme": "https://raw.github.com/wbond/sublime_alignment/master/readme.creole"
+		},
+
+		// If a package has a public bug tracker, the URL should be
+		// included via the "issues" key. Both GitHub and BitBucket
+		// repositories will automatically provide this if they have
+		// issues enabled.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"issues": "https://github.com/wbond/sublime_alignment/issues"
+		},
+
+		// The URL to donate to support the development of a package.
+		// GitHub and BitBucket repositories will default to:
+		//
+		// https://www.gittip.com/{username}/
+		//
+		// Other URLs with special integration include:
+		//
+		// https://flattr.com/profile/{username}
+		// https://www.dwolla.com/hub/{username}
+		//
+		// This may also contain a URL to another other donation-type site
+		// where users may support the author for their development of the
+		// package.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"donate": "https://www.gittip.com/wbond/"
+		},
+
+		// The URL to purchase a license to the package
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"buy": "https://wbond.net/sublime_packages/alignment/buy"
+		},
+
+		// If you rename a package, you can provide the previous name(s)
+		// so that users with the old package name can be automatically
+		// upgraded to the new one.
+		{
+			"name": "Alignment",
+			"details": "https://github.com/wbond/sublime_alignment",
+			"previous_names": ["sublime_alignment"]
+		},
+
+		// Packages can be labelled for the purpose of creating a
+		// folksonomy so users may more easily find relevant packages.
+		// Labels should be all lower case and should use spaces instead
+		// of _ or - to separate words.
+		//
+		// Some suggested labels are listed below, however, anything can
+		// be used as a label:
+		//
+		// auto-complete
+		// browser integration
+		// build system
+		// code navigation
+		// code sharing
+		// color scheme
+		// deprecated
+		// diff/merge
+		// editor emulation
+		// file creation
+		// file navigation
+		// formatting
+		// ftp
+		// language syntax
+		// linting
+		// minification
+		// search
+		// snippets
+		// terminal/shell/repl
+		// testing
+		// text manipulation
+		// text navigation
+		// theme
+		// todo
+		// vcs
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"labels": ["text manipulation", "formatting"]
+		},
+
+		// In addition to the recommendation above of pulling releases
+		// from tags that are semantic version numbers, releases can also
+		// comefrom a custom branch.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"releases": [
+				{
+					"details": "https://github.com/wbond/sublime_alignment/tree/custom_branch"
+				}
+			]
+		},
+
+		// An equivalent package being pulled from BitBucket.
+		{
+			"details": "https://bitbucket.org/wbond/sublime_alignment",
+			"releases": [
+				{
+					"details": "https://bitbucket.org/wbond/sublime_alignment/src/custom_branch"
+				}
+			]
+		},
+
+		// If your package is only compatible with specific builds of
+		// Sublime Text, this will cause the package to be hidden from
+		// users with incompatible versions.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"releases": [
+				{
+					// Could also be >2999 for ST3. Leaving this out indicates
+					// the package works with both ST2 and ST3.
+					"sublime_text": "<3000",
+					"details": "https://github.com/wbond/sublime_alignment"
+				}
+			]
+		},
+
+		// The "platforms" key allows specifying what platform(s) the release
+		// is valid for. As shown, there can be multiple releases of a package
+		// at any given time. However, only the latest version for any given
+		// platform/arch will be shown to the user.
+		//
+		// The "platforms" key allows specifying a single platform, or a list
+		// of platforms. Valid platform indentifiers include:
+		//
+		// "*"
+		// "windows", "windows-x64", "windows-x32"
+		// "osx", "osx-x64"
+		// "linux", "linux-x32", "linux-x64"
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"releases": [
+				{
+					// Defaults to "*", or all platforms.
+					"platforms": ["osx", "linux"],
+					"details": "https://github.com/wbond/sublime_alignment/tree/posix"
+				},
+				{
+					"platforms": "windows",
+					"details": "https://github.com/wbond/sublime_alignment/tree/win32"
+				}
+			]
+		},
+
+		// If you don't use a "details" key for a "releases" entry, you need to
+		// specify the "version", "url" and "date" manually.
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"releases": [
+				{
+					// The version number needs to be a semantic version number per
+					// http://semver.org 2.x.x
+					"version": "2.0.0",
+
+					// The URL needs to be a zip file containing the package. It is permissible
+					// for the zip file to contain a single root folder with any name. All
+					// file will be extracted out of this single root folder. This allows
+					// zip files from GitHub and BitBucket to be used a sources.
+					"url": "https://nodeload.github.com/wbond/sublime_alignment/zip/v2.0.0",
+
+					// The date MUST be in the form "YYYY-MM-DD HH:MM:SS" and SHOULD be UTC
+					"date": "2011-09-18 20:12:41"
+				}
+			]
+		}
+	],
+
+	// If you need/want to split your repository up into multiple smaller files
+	// for the sake of organization, the "includes" key allows you to enter
+	// URL paths that will be combined together and dynamically inserted
+	// into the "packages" key. These URLs these can be relative or absolute.
+	"includes": [
+
+		// Here is an example of how relative paths work for URLs. If this file
+		// was loaded from:
+		//   "https://sublime.wbond.net/example-repository.json"
+		// then the following files would be loaded from:
+		//   "https://sublime.wbond.net/repository/0-9.json"
+		//   "https://sublime.wbond.net/repository/a.json"
+		"./repository/0-9.json",
+		"./repository/a.json",
+
+		// An example of an absolute URL
+		"https://sublime.wbond.net/repository/b.json"
+	]
+}

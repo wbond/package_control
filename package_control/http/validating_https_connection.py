@@ -1,18 +1,24 @@
-import httplib
-import urllib2
 import re
 import socket
 import base64
 import hashlib
 import os
+import sys
 
-if os.name == 'nt':
-    from ntlm import ntlm
+try:
+    # Python 3
+    from http.client import HTTPS_PORT
+    from urllib.request import parse_keqv_list, parse_http_list
+except (ImportError):
+    # Python 2
+    from httplib import HTTPS_PORT
+    from urllib2 import parse_keqv_list, parse_http_list
 
 from ..console_write import console_write
 from .debuggable_https_response import DebuggableHTTPSResponse
 from .debuggable_http_connection import DebuggableHTTPConnection
 from .invalid_certificate_exception import InvalidCertificateException
+
 
 # The following code is wrapped in a try because the Linux versions of Sublime
 # Text do not include the ssl module due to the fact that different distros
@@ -26,17 +32,19 @@ try:
         allows proxy authentication for HTTPS connections.
         """
 
-        default_port = httplib.HTTPS_PORT
+        default_port = HTTPS_PORT
 
         response_class = DebuggableHTTPSResponse
         _debug_protocol = 'HTTPS'
 
         def __init__(self, host, port=None, key_file=None, cert_file=None,
-                ca_certs=None, strict=None, **kwargs):
+                ca_certs=None, **kwargs):
             passed_args = {}
             if 'timeout' in kwargs:
                 passed_args['timeout'] = kwargs['timeout']
-            DebuggableHTTPConnection.__init__(self, host, port, strict, **passed_args)
+            if 'debug' in kwargs:
+                passed_args['debug'] = kwargs['debug']
+            DebuggableHTTPConnection.__init__(self, host, port, **passed_args)
 
             self.passwd = kwargs.get('passwd')
             self.key_file = key_file
@@ -83,7 +91,7 @@ try:
                     return True
             return False
 
-        def _tunnel(self, ntlm_follow_up=False):
+        def _tunnel(self):
             """
             This custom _tunnel method allows us to read and print the debug
             log for the whole response before throwing an error, and adds
@@ -99,25 +107,33 @@ try:
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
             request = "CONNECT %s:%d HTTP/1.1\r\n" % (self.host, self.port)
-            for header, value in self._tunnel_headers.iteritems():
+            for header, value in self._tunnel_headers.items():
                 request += "%s: %s\r\n" % (header, value)
-            self.send(request + "\r\n")
+            request += "\r\n"
 
-            response = self.response_class(self.sock, strict=self.strict,
-                method=self._method)
+            if sys.version_info >= (3,):
+                request = bytes(request, 'iso-8859-1')
+
+            self.send(request)
+
+            response = self.response_class(self.sock, method=self._method)
             (version, code, message) = response._read_status()
 
             status_line = u"%s %s %s" % (version, code, message.rstrip())
             headers = [status_line]
 
             if self.debuglevel in [-1, 5]:
-                console_write(u'Urllib2 %s Debug Read' % self._debug_protocol, True)
+                console_write(u'Urllib %s Debug Read' % self._debug_protocol, True)
                 console_write(u"  %s" % status_line)
 
             content_length = 0
             close_connection = False
             while True:
                 line = response.fp.readline()
+
+                if sys.version_info >= (3,):
+                    line = str(line, encoding='iso-8859-1')
+
                 if line == '\r\n':
                     break
 
@@ -135,8 +151,8 @@ try:
                 if self.debuglevel in [-1, 5]:
                     console_write(u"  %s" % line.rstrip())
 
-            # Handle proxy auth for SSL connections since regular urllib2 punts on this
-            if code == 407 and self.passwd and ('Proxy-Authorization' not in self._tunnel_headers or ntlm_follow_up):
+            # Handle proxy auth for SSL connections since regular urllib punts on this
+            if code == 407 and self.passwd and 'Proxy-Authorization' not in self._tunnel_headers:
                 if content_length:
                     response._safe_read(content_length)
 
@@ -151,8 +167,6 @@ try:
                 username, password = self.passwd.find_user_password(None, "%s:%s" % (
                     self._proxy_host, self._proxy_port))
 
-                do_ntlm_follow_up = False
-
                 if 'digest' in supported_auth_methods:
                     response_value = self.build_digest_response(
                         supported_auth_methods['digest'], username, password)
@@ -164,26 +178,6 @@ try:
                     response_value = base64.b64encode(response_value).strip()
                     self._tunnel_headers['Proxy-Authorization'] = u"Basic %s" % response_value
 
-                elif 'ntlm' in supported_auth_methods and os.name == 'nt':
-                    ntlm_challenge = supported_auth_methods['ntlm']
-                    if not len(ntlm_challenge):
-                        type1_flags = ntlm.NTLM_TYPE1_FLAGS
-                        if username.find('\\') == -1:
-                            type1_flags &= ~ntlm.NTLM_NegotiateOemDomainSupplied
-
-                        negotiate_message = ntlm.create_NTLM_NEGOTIATE_MESSAGE(username, type1_flags)
-                        self._tunnel_headers['Proxy-Authorization'] = 'NTLM %s' % negotiate_message
-                        do_ntlm_follow_up = True
-                    else:
-                        domain = ''
-                        user = username
-                        if username.find('\\') != -1:
-                            domain, user = username.split('\\', 1)
-
-                        challenge, negotiate_flags = ntlm.parse_NTLM_CHALLENGE_MESSAGE(ntlm_challenge)
-                        self._tunnel_headers['Proxy-Authorization'] = 'NTLM %s' % ntlm.create_NTLM_AUTHENTICATE_MESSAGE(challenge, user,
-                            domain, password, negotiate_flags)
-
                 if 'Proxy-Authorization' in self._tunnel_headers:
                     self.host = self._proxy_host
                     self.port = self._proxy_port
@@ -193,7 +187,7 @@ try:
                         self.sock.close()
                         self.sock = socket.create_connection((self.host, self.port), self.timeout)
 
-                    return self._tunnel(do_ntlm_follow_up)
+                    return self._tunnel()
 
             if code != 200:
                 self.close()
@@ -220,7 +214,7 @@ try:
                 string of fields for the Proxy-Authorization: Digest header
             """
 
-            fields = urllib2.parse_keqv_list(urllib2.parse_http_list(fields))
+            fields = parse_keqv_list(parse_http_list(fields))
 
             realm = fields.get('realm')
             nonce = fields.get('nonce')
@@ -254,7 +248,7 @@ try:
                 response = hash(u"%s:%s:%s" % (ha1, nonce, ha2))
             elif qop == 'auth':
                 nc = '00000001'
-                cnonce = hash(urllib2.randombytes(8))[:8]
+                cnonce = hash(os.urandom(8))[:8]
                 response = hash(u"%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
             else:
                 return None
@@ -283,7 +277,7 @@ try:
             """
 
             if self.debuglevel == -1:
-                console_write(u"Urllib2 HTTPS Debug General", True)
+                console_write(u"Urllib HTTPS Debug General", True)
                 console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
 
             self.sock = socket.create_connection((self.host, self.port), self.timeout)
@@ -291,9 +285,9 @@ try:
                 self._tunnel()
 
             if self.debuglevel == -1:
-                console_write(u"Urllib2 HTTPS Debug General", True)
+                console_write(u"Urllib HTTPS Debug General", True)
                 console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
-                console_write(u"  CA certs file at %s" % (self.ca_certs))
+                console_write(u"  CA certs file at %s" % (self.ca_certs.decode(sys.getfilesystemencoding())))
 
             self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                 certfile=self.cert_file, cert_reqs=self.cert_reqs,

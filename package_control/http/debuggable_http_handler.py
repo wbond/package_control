@@ -1,9 +1,17 @@
-import urllib2
+import sys
+
+try:
+    # Python 3
+    from urllib.request import HTTPHandler
+except (ImportError):
+    # Python 2
+    from urllib2 import HTTPHandler
 
 from .debuggable_http_connection import DebuggableHTTPConnection
+from .persistent_handler import PersistentHandler
 
 
-class DebuggableHTTPHandler(urllib2.HTTPHandler):
+class DebuggableHTTPHandler(PersistentHandler, HTTPHandler):
     """
     A custom HTTPHandler that formats debugging info for Sublime Text
     """
@@ -20,6 +28,8 @@ class DebuggableHTTPHandler(urllib2.HTTPHandler):
     def http_open(self, req):
         def http_class_wrapper(host, **kwargs):
             kwargs['passwd'] = self.passwd
+            if 'debuglevel' not in kwargs:
+                kwargs['debuglevel'] = self._debuglevel
             return DebuggableHTTPConnection(host, **kwargs)
 
         return self.do_open(http_class_wrapper, req)

@@ -1,9 +1,10 @@
 import sys
 import os
-import sublime
 
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer
+
+import sublime
 
 
 def add_to_path(path):

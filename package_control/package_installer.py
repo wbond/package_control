@@ -1,13 +1,15 @@
-import sublime
 import os
 import re
 import threading
+
+import sublime
 
 from .preferences_filename import preferences_filename
 from .thread_progress import ThreadProgress
 from .package_manager import PackageManager
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
+from .versions import version_comparable
 
 
 class PackageInstaller():
@@ -53,12 +55,12 @@ class PackageInstaller():
         installed_packages = self.manager.list_packages()
 
         package_list = []
-        for package in sorted(packages.iterkeys(), key=lambda s: s.lower()):
+        for package in sorted(iter(packages.keys()), key=lambda s: s.lower()):
             if ignore_packages and package in ignore_packages:
                 continue
             package_entry = [package]
             info = packages[package]
-            download = info['downloads'][0]
+            download = info['download']
 
             if package in installed_packages:
                 installed = True
@@ -116,13 +118,13 @@ class PackageInstaller():
                             extra = ' %s with %s' % (installed_version_name,
                                 new_version)
                     else:
-                        res = self.manager.compare_versions(
-                            installed_version, download['version'])
-                        if res < 0:
+                        installed_version = version_comparable(installed_version)
+                        download_version = version_comparable(download['version'])
+                        if download_version > installed_version:
                             action = 'upgrade'
                             extra = ' to %s from %s' % (new_version,
                                 installed_version_name)
-                        elif res > 0:
+                        elif download_version < installed_version:
                             action = 'downgrade'
                             extra = ' to %s from %s' % (new_version,
                                 installed_version_name)
@@ -142,7 +144,7 @@ class PackageInstaller():
                 description = 'No description provided'
             package_entry.append(description)
             package_entry.append(action + extra + ' ' +
-                re.sub('^https?://', '', info['url']))
+                re.sub('^https?://', '', info['homepage']))
             package_list.append(package_entry)
         return package_list
 

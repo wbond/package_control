@@ -5,10 +5,9 @@ from ..console_write import console_write
 from ..cmd import create_cmd
 from .non_clean_exit_error import NonCleanExitError
 from .binary_not_found_error import BinaryNotFoundError
-from .downloader import Downloader
 
 
-class CliDownloader(Downloader):
+class CliDownloader(object):
     """
     Base for downloaders that use a command line program
 

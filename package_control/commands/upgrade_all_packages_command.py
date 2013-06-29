@@ -1,7 +1,8 @@
-import sublime
-import sublime_plugin
 import time
 import threading
+
+import sublime
+import sublime_plugin
 
 from ..thread_progress import ThreadProgress
 from ..package_installer import PackageInstaller, PackageInstallerThread
