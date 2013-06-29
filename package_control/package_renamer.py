@@ -50,7 +50,7 @@ class PackageRenamer():
 
             new_package_name = renamed_packages[package_name]
             new_package_dir = os.path.join(sublime.packages_path(),
-                new_package_name)
+                                           new_package_name)
 
             changing_case = package_name.lower() == new_package_name.lower()
             case_insensitive_fs = sublime.platform() in ['windows', 'osx']
@@ -76,14 +76,15 @@ class PackageRenamer():
                 if os.name == 'nt' and changing_case:
                     temp_package_name = '__' + new_package_name
                     temp_package_dir = os.path.join(sublime.packages_path(),
-                        temp_package_name)
+                                                    temp_package_name)
                     os.rename(package_dir, temp_package_dir)
                     package_dir = temp_package_dir
 
                 os.rename(package_dir, new_package_dir)
                 installed_pkgs.append(new_package_name)
 
-                console_write(u'Renamed %s to %s' % (package_name, new_package_name), True)
+                console_write(u'Renamed %s to %s' % (package_name,
+                                                     new_package_name), True)
 
             else:
                 installer.manager.remove_package(package_name)
@@ -109,7 +110,7 @@ class PackageRenamer():
 
         installed_packages = list(set(installed_packages))
         installed_packages = sorted(installed_packages,
-            key=lambda s: s.lower())
+                                    key=lambda s: s.lower())
 
         if installed_packages != self.installed_packages:
             self.settings.set('installed_packages', installed_packages)
