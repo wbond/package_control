@@ -161,6 +161,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         if (self.hostname and self.hostname != hostname) or (self.port and self.port != port):
             self.close()
 
+        # Reset the error info to a known clean state
+        ctypes.windll.kernel32.SetLastError(0)
+
         # Save the internet setup in the class for re-use
         if not self.tcp_connection:
             created_connection = True
