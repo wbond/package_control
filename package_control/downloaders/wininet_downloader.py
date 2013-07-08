@@ -4,6 +4,7 @@ import time
 import re
 import datetime
 import struct
+import locale
 
 wininet = windll.wininet
 
@@ -392,26 +393,42 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         """
 
         error_num = ctypes.GetLastError()
-        error_string = ctypes.FormatError(error_num)
+        raw_error_string = ctypes.FormatError(error_num)
+
+        error_string = None
+
+        encoding = locale.getpreferredencoding()
+
+        try:
+            error_string = raw_error_string.decode(encoding, errors='strict')
+        except (UnicodeDecodeError) as e:
+            for fallback_encoding in ['utf-8', 'cp1252']:
+                try:
+                    error_string = raw_error_string.decode(fallback_encoding, errors='strict')
+                    break
+                except:
+                    pass
+            if not error_string:
+                error_string = raw_error_string.decode(encoding, errors='replace')
 
         # Try to fill in some known errors
-        if error_string == "<no description>":
+        if error_string == u"<no description>":
             if error_num == 12007:
-                error_string = 'host not found'
+                error_string = u'host not found'
             if error_num == 12029:
-                error_string = 'connection refused'
+                error_string = u'connection refused'
             if error_num == 12169:
-                error_string = 'invalid secure certificate'
+                error_string = u'invalid secure certificate'
             if error_num == 12157:
-                error_string = 'secure channel error, server not providing SSL'
+                error_string = u'secure channel error, server not providing SSL'
             if error_num == 12002:
-                error_string = 'operation timed out'
+                error_string = u'operation timed out'
 
-        if error_string == "<no description>":
-            return "(errno %s)" % error_num
+        if error_string == u"<no description>":
+            return u"(errno %s)" % error_num
 
         error_string = error_string[0].upper() + error_string[1:]
-        return "%s (errno %s)" % (error_string, error_num)
+        return u"%s (errno %s)" % (error_string, error_num)
 
     def supports_ssl(self):
         """
