@@ -219,14 +219,14 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 if self.scheme == 'https':
                     http_flags |= self.INTERNET_FLAG_SECURE
 
-                http_connection = wininet.HttpOpenRequestW(self.tcp_connection, 'GET', path, 'HTTP/1.1', None, None, http_flags, 0)
+                http_connection = wininet.HttpOpenRequestW(self.tcp_connection, u'GET', path, u'HTTP/1.1', None, None, http_flags, 0)
                 if not http_connection:
                     raise NonHttpError(self.extract_error())
 
                 request_header_lines = []
                 for header, value in request_headers.items():
                     request_header_lines.append(u"%s: %s" % (header, value))
-                request_header_lines = "\r\n".join(request_header_lines)
+                request_header_lines = u"\r\n".join(request_header_lines)
 
                 success = wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
                 if not success:
