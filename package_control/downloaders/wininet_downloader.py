@@ -343,7 +343,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     headers, result)
 
                 if general['status'] not in [200, 304]:
-                    raise HttpError("HTTP error %s %s" % (general['status'], general['message']))
+                    raise HttpError("HTTP error %s %s" % (general['status'], general['message']), general['status'])
 
                 return result
 
