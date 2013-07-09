@@ -280,7 +280,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 http_connection = wininet.HttpOpenRequestW(self.tcp_connection, u'GET', path, u'HTTP/1.1', None, None, http_flags, 0)
                 if not http_connection:
-                    raise NonHttpError(self.extract_error())
+                    error_string = u'%s %s during HTTP connection phase of downloading %s.' % (error_message, self.extract_error(), url)
+                    console_write(error_string, True)
+                    return False
 
                 request_header_lines = []
                 for header, value in request_headers.items():
@@ -289,7 +291,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 success = wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
                 if not success:
-                    raise NonHttpError(self.extract_error())
+                    error_string = u'%s %s during HTTP write phase of downloading %s.' % (error_message, self.extract_error(), url)
+                    console_write(error_string, True)
+                    return False
 
                 self.use_count += 1
 
@@ -344,7 +348,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     success = wininet.HttpQueryInfoA(http_connection, self.HTTP_QUERY_RAW_HEADERS_CRLF, ctypes.byref(headers_buffer), ctypes.byref(to_read_was_read), None)
                     if not success:
                         if ctypes.GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
-                            raise NonHttpError(self.extract_error())
+                            error_string = u'%s %s during header read phase of downloading %s.' % (error_message, self.extract_error(), url)
+                            console_write(error_string, True)
+                            return False
                         # The error was a buffer that was too small, so try again
                         header_buffer_size = to_read_was_read.value
                         try_again = True
