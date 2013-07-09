@@ -455,6 +455,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 error_string = u'host not found'
             if error_num == 12029:
                 error_string = u'connection refused'
+            if error_num == 12057:
+                error_string = u'error checking for server certificate revocation'
             if error_num == 12169:
                 error_string = u'invalid secure certificate'
             if error_num == 12157:
