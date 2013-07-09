@@ -143,6 +143,10 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
                     general, headers = self.parse_output()
                     self.handle_rate_limit(headers, url)
 
+                    if general['status'] == 304:
+                        return self.cache_result('get', url, general['status'],
+                            headers, None)
+
                     if general['status'] == 503:
                         # GitHub and BitBucket seem to rate limit via 503
                         error_string = u'Downloading %s was rate limited, trying again' % url
