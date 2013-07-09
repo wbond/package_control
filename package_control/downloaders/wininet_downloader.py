@@ -16,6 +16,7 @@ except (ImportError):
     from urlparse import urlparse
 
 from ..console_write import console_write
+from ..unicode import unicode_from_os
 from .non_http_error import NonHttpError
 from .http_error import HttpError
 from .rate_limit_exception import RateLimitException
@@ -398,21 +399,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         error_num = ctypes.GetLastError()
         raw_error_string = ctypes.FormatError(error_num)
 
-        error_string = None
-
-        encoding = locale.getpreferredencoding()
-
-        try:
-            error_string = raw_error_string.decode(encoding, errors='strict')
-        except (UnicodeDecodeError) as e:
-            for fallback_encoding in ['utf-8', 'cp1252']:
-                try:
-                    error_string = raw_error_string.decode(fallback_encoding, errors='strict')
-                    break
-                except:
-                    pass
-            if not error_string:
-                error_string = raw_error_string.decode(encoding, errors='replace')
+        error_string = unicode_from_os(raw_error_string)
 
         # Try to fill in some known errors
         if error_string == u"<no description>":
