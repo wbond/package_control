@@ -56,6 +56,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
     INTERNET_OPTION_PROXY = 38
     INTERNET_OPTION_PROXY_USERNAME = 43
     INTERNET_OPTION_PROXY_PASSWORD = 44
+    INTERNET_OPTION_CONNECTED_STATE = 50
 
     # HttpOpenRequest constants
     INTERNET_FLAG_KEEP_CONNECTION = 0x00400000
@@ -67,6 +68,13 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
     # HttpQueryInfo constants
     HTTP_QUERY_RAW_HEADERS_CRLF = 22
 
+    # InternetConnectedState constants
+    INTERNET_STATE_CONNECTED = 1
+    INTERNET_STATE_DISCONNECTED = 2
+    INTERNET_STATE_DISCONNECTED_BY_USER = 0x10
+    INTERNET_STATE_IDLE = 0x100
+    INTERNET_STATE_BUSY = 0x200
+
 
     def __init__(self, settings):
         self.settings = settings
@@ -77,6 +85,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         self.hostname = None
         self.port = None
         self.scheme = None
+        self.was_offline = None
 
     def close(self):
         """
@@ -84,6 +93,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         """
 
         closed = False
+        changed_state_back = False
 
         if self.tcp_connection:
             wininet.InternetCloseHandle(self.tcp_connection)
@@ -95,16 +105,27 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             self.network_connection = None
             closed = True
 
+        if self.was_offline:
+            dw_connected_state = wintypes.DWORD(self.INTERNET_STATE_DISCONNECTED_BY_USER)
+            dw_flags = wintypes.DWORD(0)
+            connected_info = InternetConnectedInfo(dw_connected_state, dw_flags)
+            wininet.InternetSetOptionA(None,
+                self.INTERNET_OPTION_CONNECTED_STATE, ctypes.byref(connected_info), ctypes.sizeof(connected_info))
+            changed_state_back = True
+
         if self.debug:
             s = '' if self.use_count == 1 else 's'
             console_write(u"WinINet %s Debug General" % self.scheme.upper(), True)
             console_write(u"  Closing connection to %s on port %s after %s request%s" % (
                 self.hostname, self.port, self.use_count, s))
+            if changed_state_back:
+                console_write(u"  Changed Internet Explorer back to Work Offline")
 
         self.hostname = None
         self.port = None
         self.scheme = None
         self.use_count = 0
+        self.was_offline = None
 
     def download(self, url, error_message, timeout, tries, prefer_cached=False):
         """
@@ -157,6 +178,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         request_headers = self.add_conditional_headers(url, request_headers)
 
         created_connection = False
+        # If we switched Internet Explorer out of "Work Offline" mode
+        changed_to_online = False
 
         # If the user is requesting a connection to another server, close the connection
         if (self.hostname and self.hostname != hostname) or (self.port and self.port != port):
@@ -168,40 +191,71 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         # Save the internet setup in the class for re-use
         if not self.tcp_connection:
             created_connection = True
-            try:
-                self.network_connection = wininet.InternetOpenW(self.settings.get('user_agent'),
-                    self.INTERNET_OPEN_TYPE_PRECONFIG, None, None, 0)
 
-                if not self.network_connection:
-                    raise NonHttpError(self.extract_error())
+            # Connect to the internet if necessary
+            state = self.read_option(0, self.INTERNET_OPTION_CONNECTED_STATE)
+            state = ord(state)
+            if state & self.INTERNET_STATE_DISCONNECTED or state & self.INTERNET_STATE_DISCONNECTED_BY_USER:
+                # Track the previous state so we can go back once complete
+                self.was_offline = True
 
-                win_timeout = wintypes.DWORD(int(timeout) * 1000)
-                # Apparently INTERNET_OPTION_CONNECT_TIMEOUT just doesn't work, leaving it in hoping they may fix in the future
-                wininet.InternetSetOptionA(self.network_connection,
-                    self.INTERNET_OPTION_CONNECT_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
-                wininet.InternetSetOptionA(self.network_connection,
-                    self.INTERNET_OPTION_SEND_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
-                wininet.InternetSetOptionA(self.network_connection,
-                    self.INTERNET_OPTION_RECEIVE_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+                dw_connected_state = wintypes.DWORD(self.INTERNET_STATE_CONNECTED)
+                dw_flags = wintypes.DWORD(0)
+                connected_info = InternetConnectedInfo(dw_connected_state, dw_flags)
+                wininet.InternetSetOptionA(None,
+                    self.INTERNET_OPTION_CONNECTED_STATE, ctypes.byref(connected_info), ctypes.sizeof(connected_info))
+                changed_to_online = True
 
-                # Don't allow HTTPS sites to redirect to HTTP sites
-                tcp_flags  = self.INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS
-                # Try to re-use an existing connection to the server
-                tcp_flags |= self.INTERNET_FLAG_EXISTING_CONNECT
-                self.tcp_connection = wininet.InternetConnectW(self.network_connection,
-                    hostname, port, None, None, self.INTERNET_SERVICE_HTTP, tcp_flags, 0)
+            self.network_connection = wininet.InternetOpenW(self.settings.get('user_agent'),
+                self.INTERNET_OPEN_TYPE_PRECONFIG, None, None, 0)
 
-                if not self.tcp_connection:
-                    raise NonHttpError(self.extract_error())
-
-                self.hostname = hostname
-                self.port = port
-                self.scheme = url_info.scheme
-
-            except (NonHttpError, HttpError) as e:
-                error_string = u'%s %s downloading %s.' % (error_message, e.args[0], url)
+            if not self.network_connection:
+                error_string = u'%s %s during network phase of downloading %s.' % (error_message, self.extract_error(), url)
                 console_write(error_string, True)
                 return False
+
+            win_timeout = wintypes.DWORD(int(timeout) * 1000)
+            # Apparently INTERNET_OPTION_CONNECT_TIMEOUT just doesn't work, leaving it in hoping they may fix in the future
+            wininet.InternetSetOptionA(self.network_connection,
+                self.INTERNET_OPTION_CONNECT_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+            wininet.InternetSetOptionA(self.network_connection,
+                self.INTERNET_OPTION_SEND_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+            wininet.InternetSetOptionA(self.network_connection,
+                self.INTERNET_OPTION_RECEIVE_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+
+            # Don't allow HTTPS sites to redirect to HTTP sites
+            tcp_flags  = self.INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS
+            # Try to re-use an existing connection to the server
+            tcp_flags |= self.INTERNET_FLAG_EXISTING_CONNECT
+            self.tcp_connection = wininet.InternetConnectW(self.network_connection,
+                hostname, port, None, None, self.INTERNET_SERVICE_HTTP, tcp_flags, 0)
+
+            if not self.tcp_connection:
+                error_string = u'%s %s during connection phase of downloading %s.' % (error_message, self.extract_error(), url)
+                console_write(error_string, True)
+                return False
+
+            if self.debug:
+                proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
+                proxy = ''
+                if proxy_struct.lpszProxy:
+                    proxy = proxy_struct.lpszProxy.decode('iso-8859-1')
+                proxy_bypass = ''
+                if proxy_struct.lpszProxyBypass:
+                    proxy_bypass = proxy_struct.lpszProxyBypass.decode('iso-8859-1')
+
+                proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
+                proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
+
+                console_write(u"WinINet Debug Proxy", True)
+                console_write(u"  proxy: %s" % proxy)
+                console_write(u"  proxy bypass: %s" % proxy_bypass)
+                console_write(u"  proxy username: %s" % proxy_username)
+                console_write(u"  proxy password: %s" % proxy_password)
+
+            self.hostname = hostname
+            self.port = port
+            self.scheme = url_info.scheme
 
         else:
             if self.debug:
@@ -240,24 +294,6 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 self.use_count += 1
 
                 if self.debug and created_connection:
-                    # Disabled for now due to crashes
-                    proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
-                    proxy = ''
-                    if proxy_struct.lpszProxy:
-                        proxy = proxy_struct.lpszProxy.decode('iso-8859-1')
-                    proxy_bypass = ''
-                    if proxy_struct.lpszProxyBypass:
-                        proxy_bypass = proxy_struct.lpszProxyBypass.decode('iso-8859-1')
-
-                    proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
-                    proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
-
-                    console_write(u"WinINet Debug Proxy", True)
-                    console_write(u"  proxy: %s" % proxy)
-                    console_write(u"  proxy bypass: %s" % proxy_bypass)
-                    console_write(u"  proxy username: %s" % proxy_username)
-                    console_write(u"  proxy password: %s" % proxy_password)
-
                     if self.scheme == 'https':
                         cert_struct = self.read_option(http_connection, self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT)
 
@@ -272,12 +308,18 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                         expiration_date = self.convert_filetime_to_datetime(cert_struct.ftExpiry)
 
                         console_write(u"WinINet HTTPS Debug General", True)
+                        if changed_to_online:
+                            console_write(u"  Internet Explorer was set to Work Offline, temporarily going online")
                         console_write(u"  Server SSL Certificate:")
                         console_write(u"    subject: %s" % ", ".join(subject_parts))
                         console_write(u"    issuer: %s" % ", ".join(issuer_parts))
                         console_write(u"    common name: %s" % common_name)
                         console_write(u"    issue date: %s" % issue_date.strftime('%a, %d %b %Y %H:%M:%S GMT'))
                         console_write(u"    expire date: %s" % expiration_date.strftime('%a, %d %b %Y %H:%M:%S GMT'))
+
+                    elif changed_to_online:
+                        console_write(u"WinINet HTTP Debug General", True)
+                        console_write(u"  Internet Explorer was set to Work Offline, temporarily going online")
 
                 if self.debug:
                     console_write(u"WinINet %s Debug Write" % self.scheme.upper(), True)
@@ -553,4 +595,15 @@ class InternetProxyInfo(ctypes.Structure):
         ("dwAccessType", wintypes.DWORD),
         ("lpszProxy", ctypes.c_char_p),
         ("lpszProxyBypass", ctypes.c_char_p)
+    ]
+
+
+class InternetConnectedInfo(ctypes.Structure):
+    """
+    A Windows struct usd to store information about the global internet connection state
+    """
+
+    _fields_ = [
+        ("dwConnectedState", wintypes.DWORD),
+        ("dwFlags", wintypes.DWORD)
     ]
