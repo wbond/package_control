@@ -55,7 +55,7 @@ class DebuggableHTTPResponse(HTTPResponse):
         # Python 3
         else:
             connection = self.msg['connection']
-        if connection.lower() == 'keep-alive':
+        if connection and connection.lower() == 'keep-alive':
             return True
         return False
 
