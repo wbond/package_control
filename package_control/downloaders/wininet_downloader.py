@@ -451,18 +451,16 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
         # Try to fill in some known errors
         if error_string == u"<no description>":
-            if error_num == 12007:
-                error_string = u'host not found'
-            if error_num == 12029:
-                error_string = u'connection refused'
-            if error_num == 12057:
-                error_string = u'error checking for server certificate revocation'
-            if error_num == 12169:
-                error_string = u'invalid secure certificate'
-            if error_num == 12157:
-                error_string = u'secure channel error, server not providing SSL'
-            if error_num == 12002:
-                error_string = u'operation timed out'
+            error_lookup = {
+                12007: u'host not found',
+                12029: u'connection refused',
+                12057: u'error checking for server certificate revocation',
+                12169: u'invalid secure certificate',
+                12157: u'secure channel error, server not providing SSL',
+                12002: u'operation timed out'
+            }
+            if error_num in error_lookup:
+                error_string = error_lookup[error_num]
 
         if error_string == u"<no description>":
             return u"(errno %s)" % error_num
