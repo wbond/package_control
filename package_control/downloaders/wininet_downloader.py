@@ -193,7 +193,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             created_connection = True
 
             # Connect to the internet if necessary
-            state = self.read_option(0, self.INTERNET_OPTION_CONNECTED_STATE)
+            state = self.read_option(None, self.INTERNET_OPTION_CONNECTED_STATE)
             state = ord(state)
             if state & self.INTERNET_STATE_DISCONNECTED or state & self.INTERNET_STATE_DISCONNECTED_BY_USER:
                 # Track the previous state so we can go back once complete
