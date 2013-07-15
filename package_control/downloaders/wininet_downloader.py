@@ -304,15 +304,31 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     if self.scheme == 'https':
                         cert_struct = self.read_option(http_connection, self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT)
 
-                        issuer_info = cert_struct.lpszIssuerInfo.decode('cp1252')
-                        issuer_parts = issuer_info.split("\r\n")
-                        subject_info = cert_struct.lpszSubjectInfo.decode('cp1252')
-                        subject_parts = subject_info.split("\r\n")
+                        if cert_struct.lpszIssuerInfo:
+                            issuer_info = cert_struct.lpszIssuerInfo.decode('cp1252')
+                            issuer_parts = issuer_info.split("\r\n")
+                        else:
+                            issuer_parts = ['No issuer info']
+
+                        if cert_struct.lpszSubjectInfo:
+                            subject_info = cert_struct.lpszSubjectInfo.decode('cp1252')
+                            subject_parts = subject_info.split("\r\n")
+                        else:
+                            subject_parts = ["No subject info"]
 
                         common_name = subject_parts[-1]
 
-                        issue_date = self.convert_filetime_to_datetime(cert_struct.ftStart)
-                        expiration_date = self.convert_filetime_to_datetime(cert_struct.ftExpiry)
+                        if cert_struct.ftStart.dwLowDateTime != 0 and cert_struct.ftStart.dwHighDateTime != 0:
+                            issue_date = self.convert_filetime_to_datetime(cert_struct.ftStart)
+                            issue_date = issue_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                        else:
+                            issue_date = u"No issue date"
+
+                        if cert_struct.ftExpiry.dwLowDateTime != 0 and cert_struct.ftExpiry.dwHighDateTime != 0:
+                            expiration_date = self.convert_filetime_to_datetime(cert_struct.ftExpiry)
+                            expiration_date = expiration_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                        else:
+                            expiration_date = u"No expiration date"
 
                         console_write(u"WinINet HTTPS Debug General", True)
                         if changed_to_online:
@@ -321,8 +337,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                         console_write(u"    subject: %s" % ", ".join(subject_parts))
                         console_write(u"    issuer: %s" % ", ".join(issuer_parts))
                         console_write(u"    common name: %s" % common_name)
-                        console_write(u"    issue date: %s" % issue_date.strftime('%a, %d %b %Y %H:%M:%S GMT'))
-                        console_write(u"    expire date: %s" % expiration_date.strftime('%a, %d %b %Y %H:%M:%S GMT'))
+                        console_write(u"    issue date: %s" % issue_date)
+                        console_write(u"    expire date: %s" % expiration_date)
 
                     elif changed_to_online:
                         console_write(u"WinINet HTTP Debug General", True)
