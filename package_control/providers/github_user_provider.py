@@ -68,10 +68,10 @@ class GitHubUserProvider(NonCachingProvider):
                 'downloads': [
                     {
                         'version': utc_timestamp,
-                        # We specifically use nodeload.github.com here because
+                        # We specifically use codeload.github.com here because
                         # the download URLs all redirect there, and some of the
                         # downloaders don't follow HTTP redirect headers
-                        'url': 'https://nodeload.github.com/' + \
+                        'url': 'https://codeload.github.com/' + \
                             package_info['owner']['login'] + '/' + \
                             package_info['name'] + '/zip/master'
                     }

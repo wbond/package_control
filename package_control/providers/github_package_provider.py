@@ -58,10 +58,10 @@ class GitHubPackageProvider(NonCachingProvider):
         if commit_info == False:
             return False
 
-        # We specifically use nodeload.github.com here because the download
+        # We specifically use codeload.github.com here because the download
         # URLs all redirect there, and some of the downloaders don't follow
         # HTTP redirect headers
-        download_url = 'https://nodeload.github.com/' + \
+        download_url = 'https://codeload.github.com/' + \
             repo_info['owner']['login'] + '/' + \
             repo_info['name'] + '/zip/' + urllib.quote(branch)
 

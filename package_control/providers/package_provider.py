@@ -89,6 +89,8 @@ class PackageProvider(PlatformComparator):
                 download['url'] = re.sub(
                     '^(https://nodeload.github.com/[^/]+/[^/]+/)zipball(/.*)$',
                     '\\1zip\\2', download['url'])
+                download['url'] = download['url'].replace(
+                    'nodeload.github.com', 'codeload.github.com')
                 rewritten_downloads.append(download)
 
             info = {

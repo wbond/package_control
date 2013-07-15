@@ -11,7 +11,7 @@
 				"*": [
 					{
 						"version": "1.1",
-						"url": "http://nodeload.github.com/john_smith/github_example/zipball/master"
+						"url": "https://codeload.github.com/john_smith/github_example/zip/master"
 					}
 				]
 			}
