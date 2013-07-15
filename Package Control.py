@@ -1413,11 +1413,11 @@ class Downloader():
 
         cert_info = certs_list.get(domain)
         if cert_info:
-            cert_match = self.locate_cert(certs_dir, cert_info[0], cert_info[1])
+            cert_match = self.locate_cert(certs_dir, cert_info[0], cert_info[1], domain)
 
         wildcard_info = certs_list.get('*')
         if wildcard_info:
-            cert_match = self.locate_cert(certs_dir, wildcard_info[0], wildcard_info[1]) or cert_match
+            cert_match = self.locate_cert(certs_dir, wildcard_info[0], wildcard_info[1], domain) or cert_match
 
         if not cert_match:
             print '%s: No CA certs available for %s.' % (__name__, domain)
@@ -1425,7 +1425,7 @@ class Downloader():
 
         return ca_bundle_path
 
-    def locate_cert(self, certs_dir, cert_id, location):
+    def locate_cert(self, certs_dir, cert_id, location, domain):
         """
         Makes sure the SSL cert specified has been added to the CA cert
         bundle that is present on the machine
@@ -1450,7 +1450,7 @@ class Downloader():
         if not os.path.exists(cert_path):
             if str(location) != '':
                 if re.match('^https?://', location):
-                    contents = self.download_cert(cert_id, location)
+                    contents = self.download_cert(cert_id, location, domain)
                 else:
                     contents = self.load_cert(cert_id, location)
                 if contents:
@@ -1459,7 +1459,7 @@ class Downloader():
             return False
         return True
 
-    def download_cert(self, cert_id, url):
+    def download_cert(self, cert_id, url, domain):
         """
         Downloads CA cert(s) from a URL
 
