@@ -489,6 +489,7 @@ class PackageManager():
             package_bytes = download_manager.fetch(url, 'Error downloading package.')
             release(url, download_manager)
             if package_bytes == False:
+                show_error(u'Unable to download %s. Please view the console for more details.' % package_name)
                 return False
             with open_compat(tmp_package_path, "wb") as package_file:
                 package_file.write(package_bytes)
