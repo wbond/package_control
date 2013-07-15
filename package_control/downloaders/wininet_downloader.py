@@ -235,23 +235,6 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 console_write(error_string, True)
                 return False
 
-            if self.debug:
-                proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
-                proxy = ''
-                if proxy_struct.lpszProxy:
-                    proxy = proxy_struct.lpszProxy.decode('iso-8859-1')
-                proxy_bypass = ''
-                if proxy_struct.lpszProxyBypass:
-                    proxy_bypass = proxy_struct.lpszProxyBypass.decode('iso-8859-1')
-
-                proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
-                proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
-
-                console_write(u"WinINet Debug Proxy", True)
-                console_write(u"  proxy: %s" % proxy)
-                console_write(u"  proxy bypass: %s" % proxy_bypass)
-                console_write(u"  proxy username: %s" % proxy_username)
-                console_write(u"  proxy password: %s" % proxy_password)
 
             self.hostname = hostname
             self.port = port
@@ -290,6 +273,26 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 request_header_lines = u"\r\n".join(request_header_lines)
 
                 success = wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
+
+                # If we try to query before here, the proxy info will not be available to the first request
+                if self.debug:
+                    proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
+                    proxy = ''
+                    if proxy_struct.lpszProxy:
+                        proxy = proxy_struct.lpszProxy.decode('cp1252')
+                    proxy_bypass = ''
+                    if proxy_struct.lpszProxyBypass:
+                        proxy_bypass = proxy_struct.lpszProxyBypass.decode('cp1252')
+
+                    proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
+                    proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
+
+                    console_write(u"WinINet Debug Proxy", True)
+                    console_write(u"  proxy: %s" % proxy)
+                    console_write(u"  proxy bypass: %s" % proxy_bypass)
+                    console_write(u"  proxy username: %s" % proxy_username)
+                    console_write(u"  proxy password: %s" % proxy_password)
+
                 if not success:
                     error_string = u'%s %s during HTTP write phase of downloading %s.' % (error_message, self.extract_error(), url)
                     console_write(error_string, True)
