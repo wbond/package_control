@@ -981,6 +981,11 @@ class PackageManager():
             self.get_metadata('Package Control').get('version')
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
+
+        # For Python 2, we need to explicitly encoding the params
+        for param in params:
+            params[param] = params[param].encode('UTF-8')
+
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
         download_manager = grab(url, self.settings)
