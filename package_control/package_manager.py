@@ -265,7 +265,7 @@ class PackageManager():
 
             certs_cache_key = channel + '.certs'
             certs = self.settings.get('certs', {})
-            channel_certs = get_cache('certs_cache_key')
+            channel_certs = get_cache(certs_cache_key)
             if channel_certs:
                 certs.update(channel_certs)
                 self.settings['certs'] = certs
@@ -401,6 +401,8 @@ class PackageManager():
         # Grabs the results and stuff if all in the cache
         for downloader in complete:
             repository_packages = downloader.packages
+            if repository_packages == False:
+                continue
 
             # Handle the transition from nodeload to codeload
             for _name in repository_packages:
@@ -409,8 +411,6 @@ class PackageManager():
                     download['url'] = download['url'].replace(
                         'nodeload.github.com', 'codeload.github.com')
 
-            if repository_packages == False:
-                continue
             cache_key = downloader.repo + '.packages'
             set_cache(cache_key, repository_packages, cache_ttl)
             packages.update(repository_packages)
