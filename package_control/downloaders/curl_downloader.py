@@ -166,7 +166,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
 
                 if e.returncode == 22:
                     code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
-                    if code == '503':
+                    if code == '503' and tries != 0:
                         # GitHub and BitBucket seem to rate limit via 503
                         error_string = u'Downloading %s was rate limited, trying again' % url
                         console_write(error_string, True)

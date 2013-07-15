@@ -151,7 +151,7 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                     return self.cache_result('get', url, int(e.code), e.headers, b'')
 
                 # Bitbucket and Github return 503 a decent amount
-                if unicode_from_os(e.code) == '503':
+                if unicode_from_os(e.code) == '503' and tries != 0:
                     error_string = u'Downloading %s was rate limited, trying again' % url
                     console_write(error_string, True)
                     continue

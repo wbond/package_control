@@ -382,7 +382,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 general, headers = self.parse_headers(headers)
                 self.handle_rate_limit(headers, url)
 
-                if general['status'] == 503:
+                if general['status'] == 503 and tries != 0:
                     # GitHub and BitBucket seem to rate limit via 503
                     error_string = u'Downloading %s was rate limited, trying again' % url
                     console_write(error_string, True)
