@@ -40,10 +40,10 @@ class GitHubClient(JSONApiClient):
 
         return {
             'version': re.sub('[\-: ]', '.', commit_date),
-            # We specifically use nodeload.github.com here because the download
+            # We specifically use codeload.github.com here because the download
             # URLs all redirect there, and some of the downloaders don't follow
             # HTTP redirect headers
-            'url': 'https://nodeload.github.com/%s/zip/%s' % (commit_info['user_repo'], quote(commit_info['commit'])),
+            'url': 'https://codeload.github.com/%s/zip/%s' % (commit_info['user_repo'], quote(commit_info['commit'])),
             'date': commit_date
         }
 

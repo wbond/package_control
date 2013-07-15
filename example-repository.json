@@ -245,7 +245,7 @@
 					// for the zip file to contain a single root folder with any name. All
 					// file will be extracted out of this single root folder. This allows
 					// zip files from GitHub and BitBucket to be used a sources.
-					"url": "https://nodeload.github.com/wbond/sublime_alignment/zip/v2.0.0",
+					"url": "https://codeload.github.com/wbond/sublime_alignment/zip/v2.0.0",
 
 					// The date MUST be in the form "YYYY-MM-DD HH:MM:SS" and SHOULD be UTC
 					"date": "2011-09-18 20:12:41"
