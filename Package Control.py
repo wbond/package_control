@@ -1027,6 +1027,8 @@ class PackageProvider(PlatformComparator):
                 download['url'] = re.sub(
                     '^(https://nodeload.github.com/[^/]+/[^/]+/)zipball(/.*)$',
                     '\\1zip\\2', download['url'])
+                download['url'] = download['url'].replace(
+                    'nodeload.github.com', 'codeload.github.com')
                 rewritten_downloads.append(download)
 
             info = {
@@ -1148,10 +1150,10 @@ class GitHubPackageProvider(NonCachingProvider):
         if commit_info == False:
             return False
 
-        # We specifically use nodeload.github.com here because the download
+        # We specifically use codeload.github.com here because the download
         # URLs all redirect there, and some of the downloaders don't follow
         # HTTP redirect headers
-        download_url = 'https://nodeload.github.com/' + \
+        download_url = 'https://codeload.github.com/' + \
             repo_info['owner']['login'] + '/' + \
             repo_info['name'] + '/zip/' + urllib.quote(branch)
 
@@ -1251,10 +1253,10 @@ class GitHubUserProvider(NonCachingProvider):
                 'downloads': [
                     {
                         'version': utc_timestamp,
-                        # We specifically use nodeload.github.com here because
+                        # We specifically use codeload.github.com here because
                         # the download URLs all redirect there, and some of the
                         # downloaders don't follow HTTP redirect headers
-                        'url': 'https://nodeload.github.com/' + \
+                        'url': 'https://codeload.github.com/' + \
                             package_info['owner']['login'] + '/' + \
                             package_info['name'] + '/zip/master'
                     }
@@ -2816,10 +2818,19 @@ class PackageManager():
                     if provider.get_packages(repo) == False:
                         continue
                     packages_cache_key = repo + '.packages'
+
+                    # Handle the transition from nodeload to codeload
+                    channel_packages = provider.get_packages(repo)
+                    for _name in channel_packages:
+                        package_info = channel_packages[_name]
+                        for download in package_info['downloads']:
+                            download['url'] = download['url'].replace(
+                                'nodeload.github.com', 'codeload.github.com')
+
                     _channel_repository_cache[packages_cache_key] = {
                         'time': time.time() + self.settings.get('cache_length',
                             300),
-                        'data': provider.get_packages(repo)
+                        'data': channel_packages
                     }
 
                 # Have the local name map override the one from the channel
@@ -2946,6 +2957,14 @@ class PackageManager():
             if repository_packages == False:
                 continue
             cache_key = downloader.repo + '.packages'
+
+            # Handle the transition from nodeload to codeload
+            for _name in repository_packages:
+                package_info = repository_packages[_name]
+                for download in package_info['downloads']:
+                    download['url'] = download['url'].replace(
+                        'nodeload.github.com', 'codeload.github.com')
+
             _channel_repository_cache[cache_key] = {
                 'time': time.time() + self.settings.get('cache_length', 300),
                 'data': repository_packages
