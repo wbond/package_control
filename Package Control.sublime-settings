@@ -91,8 +91,8 @@
 	// Windows since the system proxy configuration is utilized via WinINet.
 	"https_proxy": "",
 
-	// Username and password for both http_proxy and https_proxy. Not used on
-	// Windows since the system proxy configuration is utilized via WinINet.
+	// Username and password for both http_proxy and https_proxy. May be used
+	// with WinINet to set credentials for system-level proxy config.
 	"proxy_username": "",
 	"proxy_password": "",
 

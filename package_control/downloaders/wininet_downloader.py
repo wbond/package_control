@@ -235,6 +235,17 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 console_write(error_string, True)
                 return False
 
+            # Normally the proxy info would come from IE, but this allows storing it in
+            # the Package Control settings file.
+            proxy_username = self.settings.get('proxy_username')
+            proxy_password = self.settings.get('proxy_password')
+            if proxy_username and proxy_password:
+                username = ctypes.c_wchar_p(proxy_username)
+                password = ctypes.c_wchar_p(proxy_password)
+                wininet.InternetSetOptionW(self.tcp_connection,
+                    self.INTERNET_OPTION_PROXY_USERNAME, ctypes.cast(username, ctypes.c_void_p), len(proxy_username))
+                wininet.InternetSetOptionW(self.tcp_connection,
+                    self.INTERNET_OPTION_PROXY_PASSWORD, ctypes.cast(password, ctypes.c_void_p), len(proxy_password))
 
             self.hostname = hostname
             self.port = port
