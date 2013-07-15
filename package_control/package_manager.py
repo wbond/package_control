@@ -9,6 +9,7 @@ import shutil
 from fnmatch import fnmatch
 import datetime
 import tempfile
+import locale
 
 try:
     # Python 3
@@ -329,6 +330,11 @@ class PackageManager():
 
     def get_package_dir(self, package):
         """:return: The full filesystem path to the package directory"""
+
+        # In ST2 we need to explicitly encoding - Python 3 does this for us in ST3
+        if int(sublime.version()) < 3000:
+            encoding = 'UTF-8' if os.name == 'darwin' else locale.getpreferredencoding()
+            package = package.encode(encoding)
 
         return os.path.join(sublime.packages_path(), package)
 

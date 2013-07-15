@@ -85,8 +85,7 @@ class PackageInstaller():
                 extra = ''
 
             else:
-                if os.path.exists(os.path.join(sublime.packages_path(),
-                        package, '.git')):
+                if os.path.exists(os.path.join(package_dir, '.git')):
                     if settings.get('ignore_vcs_packages'):
                         continue
                     vcs = 'git'
@@ -94,8 +93,7 @@ class PackageInstaller():
                         settings.get('git_update_command'), package_dir,
                         settings.get('cache_length'), settings.get('debug')
                         ).incoming()
-                elif os.path.exists(os.path.join(sublime.packages_path(),
-                        package, '.hg')):
+                elif os.path.exists(os.path.join(package_dir, '.hg')):
                     if settings.get('ignore_vcs_packages'):
                         continue
                     vcs = 'hg'
