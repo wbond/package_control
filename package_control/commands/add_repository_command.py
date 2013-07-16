@@ -23,7 +23,9 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
         :param input:
             A string of the URL to the new repository
         """
-
+        
+        input = input.strip()
+        
         if re.match('https?://', input, re.I) == None:
             show_error(u"Unable to add the repository \"%s\" since it does not appear to be served via HTTP (http:// or https://)." % input)
             return
