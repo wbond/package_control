@@ -460,7 +460,7 @@ class PackageManager():
         try:
             # This is refers to the zipfile later on, so we define it here so we can
             # close the zip file if set during the finally clause
-            package_file = None
+            package_zip = None
 
             tmp_package_path = os.path.join(tmp_dir, package_filename)
 
@@ -643,6 +643,7 @@ class PackageManager():
                         console_write(u'Skipping file from package named %s due to an invalid filename' % package_name, True)
 
             package_zip.close()
+            package_zip = None
 
             # If upgrading failed, queue the package to upgrade upon next start
             if overwrite_failed:
@@ -709,7 +710,7 @@ class PackageManager():
                 try:
                     # Remove the downloaded file since we are going to overwrite it
                     os.remove(tmp_package_path)
-                    package_file = zipfile.ZipFile(tmp_package_path, "w",
+                    package_zip = zipfile.ZipFile(tmp_package_path, "w",
                         compression=zipfile.ZIP_DEFLATED)
                 except (OSError, IOError) as e:
                     show_error(u'An error occurred creating the package file %s in %s.\n\n%s' % (
@@ -725,10 +726,10 @@ class PackageManager():
                         relative_path = re.sub(package_dir_regex, '', full_path)
                         if os.path.isdir(full_path):
                             continue
-                        package_file.write(full_path, relative_path)
+                        package_zip.write(full_path, relative_path)
 
-                package_file.close()
-                package_file = None
+                package_zip.close()
+                package_zip = None
 
                 if os.path.exists(package_path):
                     os.remove(package_path)
@@ -745,8 +746,8 @@ class PackageManager():
         finally:
             # We need to make sure the zipfile is closed to
             # help prevent permissions errors on Windows
-            if package_file:
-                package_file.close()
+            if package_zip:
+                package_zip.close()
 
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
