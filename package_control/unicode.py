@@ -1,7 +1,15 @@
 import os
 import locale
+import sys
 
 import sublime
+
+
+# Sublime Text on OS X does not seem to report the correct encoding
+# so we hard-code that to UTF-8
+_encoding = 'utf-8' if os.name == 'darwin' else locale.getpreferredencoding()
+
+_fallback_encodings = ['utf-8', 'cp1252']
 
 
 def unicode_from_os(e):
@@ -17,12 +25,6 @@ def unicode_from_os(e):
         The unicode version of the exception message
     """
 
-    fallback_encodings = ['utf-8', 'cp1252']
-
-    # Sublime Text on OS X does not seem to report the correct encoding
-    # so we hard-code that to UTF-8
-    encoding = 'UTF-8' if os.name == 'darwin' else locale.getpreferredencoding()
-
     if int(sublime.version()) > 3000:
         return str(e)
 
@@ -36,12 +38,12 @@ def unicode_from_os(e):
         if isinstance(e, int):
             e = str(e)
 
-        return unicode(e, encoding)
+        return unicode(e, _encoding)
 
     # If the "correct" encoding did not work, try some defaults, and then just
     # obliterate characters that we can't seen to decode properly
     except UnicodeDecodeError:
-        for encoding in fallback_encodings:
+        for encoding in _fallback_encodings:
             try:
                 return unicode(e, encoding, errors='strict')
             except:

@@ -15,10 +15,12 @@ try:
     # Python 3
     from urllib.parse import urlencode, urlparse
     import compileall
+    str_cls = str
 except (ImportError):
     # Python 2
     from urllib import urlencode
     from urlparse import urlparse
+    str_cls = unicode
 
 import sublime
 
@@ -319,6 +321,7 @@ class PackageManager():
             bundled_packages_path = os.path.join(os.path.dirname(sublime.executable_path()),
                 'Packages')
             files = os.listdir(bundled_packages_path)
+
         else:
             files = os.listdir(os.path.join(os.path.dirname(
                 sublime.packages_path()), 'Pristine Packages'))
@@ -330,11 +333,6 @@ class PackageManager():
 
     def get_package_dir(self, package):
         """:return: The full filesystem path to the package directory"""
-
-        # In ST2 we need to explicitly encoding - Python 3 does this for us in ST3
-        if int(sublime.version()) < 3000:
-            encoding = 'UTF-8' if os.name == 'darwin' else locale.getpreferredencoding()
-            package = package.encode(encoding)
 
         return os.path.join(sublime.packages_path(), package)
 
@@ -364,7 +362,7 @@ class PackageManager():
         :return: bool if the package file was successfully created
         """
 
-        package_dir = self.get_package_dir(package_name) + '/'
+        package_dir = self.get_package_dir(package_name)
 
         if not os.path.exists(package_dir):
             show_error(u'The folder for the package name specified, %s, does not exist in %s' % (
@@ -511,7 +509,15 @@ class PackageManager():
             root_level_paths = []
             last_path = None
             for path in package_zip.namelist():
+                try:
+                    if not isinstance(path, str_cls):
+                        path = path.decode('utf-8', errors='strict')
+                except (UnicodeDecodeError):
+                    console_write(u'One or more of the zip file entries in %s is not encoded using UTF-8, aborting' % package_name, True)
+                    return False
+
                 last_path = path
+
                 if path.find('/') in [len(path) - 1, -1]:
                     root_level_paths.append(path)
                 # Make sure there are no paths that look like security vulnerabilities
@@ -581,18 +587,18 @@ class PackageManager():
             extracted_paths = []
             for path in package_zip.namelist():
                 dest = path
+
                 try:
-                    # Python 3 seems to return the paths as str instead of
-                    # bytes, so we only need this for Python 2
-                    if int(sublime.version()) < 3000 and not isinstance(dest, unicode):
-                        dest = unicode(dest, 'utf-8', 'strict')
+                    if not isinstance(dest, str_cls):
+                        dest = dest.decode('utf-8', errors='strict')
                 except (UnicodeDecodeError):
-                    dest = unicode(dest, 'cp1252', 'replace')
+                    console_write(u'One or more of the zip file entries in %s is not encoded using UTF-8, aborting' % package_name, True)
+                    return False
 
                 if os.name == 'nt':
                     regex = ':|\*|\?|"|<|>|\|'
                     if re.search(regex, dest) != None:
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+                        console_write(u'Skipping file from package named %s due to an invalid filename' % package_name, True)
                         continue
 
                 # If there was only a single directory in the package, we remove
@@ -631,10 +637,11 @@ class PackageManager():
                         if re.search('[Ee]rrno 13', message):
                             overwrite_failed = True
                             break
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+                        console_write(u'Skipping file from package named %s due to an invalid filename' % package_name, True)
 
                     except (UnicodeDecodeError):
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % path, True)
+                        console_write(u'Skipping file from package named %s due to an invalid filename' % package_name, True)
+
             package_zip.close()
 
             # If upgrading failed, queue the package to upgrade upon next start
@@ -984,7 +991,8 @@ class PackageManager():
 
         # For Python 2, we need to explicitly encoding the params
         for param in params:
-            params[param] = params[param].encode('UTF-8')
+            if isinstance(params[param], str_cls):
+                params[param] = params[param].encode('utf-8')
 
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
