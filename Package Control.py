@@ -73,7 +73,12 @@ else:
 
 
     def plugin_loaded():
-        # Make sure the user's locale can handle non-ascii
+        # Make sure the user's locale can handle non-ASCII. A whole bunch of
+        # work was done to try and make Package Control work even if the locale
+        # was poorly set, by manually encoding all file paths, but it ended up
+        # being a fool's errand since the package loading code built into
+        # Sublime Text is not written to work that way, and although packages
+        # could be installed, they could not be loaded properly.
         encoding = 'utf-8' if os.name == 'darwin' else locale.getpreferredencoding()
         try:
             u"fran\u00e7ais".encode(encoding)
