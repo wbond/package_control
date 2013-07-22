@@ -1,6 +1,7 @@
 import sublime
 import sys
 import os
+import locale
 
 
 st_version = 2
@@ -72,6 +73,22 @@ else:
 
 
     def plugin_loaded():
+        # Make sure the user's locale can handle non-ascii
+        encoding = 'utf-8' if os.name == 'darwin' else locale.getpreferredencoding()
+        try:
+            u"fran\u00e7ais".encode(encoding)
+        except (UnicodeEncodeError) as e:
+            message = (u"Package Control\n\nYour system's locale is set to a " +
+                u"value that can not handle non-ASCII characters. Package " +
+                u"Control can not properly work unless this is fixed.\n\n" +
+                u"On Linux, please reference your distribution's docs for " +
+                u"information on properly setting the LANG environmental " +
+                u"variable. As a temporary work-around, you can launch " +
+                u"Sublime Text from the terminal with:\n\n" +
+                u"LANG=en_US.UTF-8 sublime_text")
+            sublime.error_message(message)
+            return
+
         # Start shortly after Sublime starts so package renames don't cause errors
         # with keybindings, settings, etc disappearing in the middle of parsing
         sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
