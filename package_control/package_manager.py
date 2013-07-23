@@ -613,7 +613,7 @@ class PackageManager():
 
                 dest = os.path.join(package_dir, dest)
 
-                def add_extracted_dirs(dir):
+                def add_extracted_dirs(dir_):
                     while dir_ not in extracted_paths:
                         extracted_paths.append(dir_)
                         dir_ = os.path.dirname(dir_)
