@@ -400,7 +400,7 @@ class PackageManager():
 
         package_dir_regex = re.compile('^' + re.escape(package_dir))
         for root, dirs, files in os.walk(package_dir):
-            [dirs.remove(dir) for dir in dirs if dir in dirs_to_ignore]
+            [dirs.remove(dir_) for dir_ in dirs if dir_ in dirs_to_ignore]
             paths = dirs
             paths.extend(files)
             for path in paths:
@@ -614,10 +614,10 @@ class PackageManager():
                 dest = os.path.join(package_dir, dest)
 
                 def add_extracted_dirs(dir):
-                    while dir not in extracted_paths:
-                        extracted_paths.append(dir)
-                        dir = os.path.dirname(dir)
-                        if dir == package_dir:
+                    while dir_ not in extracted_paths:
+                        extracted_paths.append(dir_)
+                        dir_ = os.path.dirname(dir_)
+                        if dir_ == package_dir:
                             break
 
                 if path.endswith('/'):

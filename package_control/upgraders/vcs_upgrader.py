@@ -101,8 +101,8 @@ class VcsUpgrader():
             return self.binary
 
         # Try the path first
-        for dir in os.environ['PATH'].split(os.pathsep):
-            path = os.path.join(dir, name)
+        for dir_ in os.environ['PATH'].split(os.pathsep):
+            path = os.path.join(dir_, name)
             if os.path.exists(path):
                 if self.debug:
                     console_write(u"Found %s at \"%s\"" % (self.vcs_type, path), True)
@@ -123,8 +123,8 @@ class VcsUpgrader():
         else:
             dirs = ['/usr/local/git/bin']
 
-        for dir in dirs:
-            path = os.path.join(dir, name)
+        for dir_ in dirs:
+            path = os.path.join(dir_, name)
             if os.path.exists(path):
                 if self.debug:
                     console_write(u"Found %s at \"%s\"" % (self.vcs_type, path), True)
