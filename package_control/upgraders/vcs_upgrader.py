@@ -121,7 +121,9 @@ class VcsUpgrader():
                 'C:\\Program Files\\TortoiseHg',
                 'C:\\cygwin\\bin']
         else:
-            dirs = ['/usr/local/git/bin']
+            # ST seems to launch with a minimal set of environmental variables
+            # on OS X, so we add some common paths for it
+            dirs = ['/usr/local/git/bin', '/usr/local/bin']
 
         for dir_ in dirs:
             path = os.path.join(dir_, name)
