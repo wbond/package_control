@@ -79,7 +79,7 @@ else:
         # being a fool's errand since the package loading code built into
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
-        encoding = 'utf-8' if os.name == 'darwin' else locale.getpreferredencoding()
+        encoding = 'utf-8' if sublime.platform() == 'osx' else locale.getpreferredencoding()
         try:
             u"fran\u00e7ais".encode(encoding)
         except (UnicodeEncodeError) as e:

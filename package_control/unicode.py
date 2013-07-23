@@ -7,7 +7,7 @@ import sublime
 
 # Sublime Text on OS X does not seem to report the correct encoding
 # so we hard-code that to UTF-8
-_encoding = 'utf-8' if os.name == 'darwin' else locale.getpreferredencoding()
+_encoding = 'utf-8' if sublime.platform() == 'osx' else locale.getpreferredencoding()
 
 _fallback_encodings = ['utf-8', 'cp1252']
 
