@@ -511,7 +511,7 @@ class PackageManager():
             for path in package_zip.namelist():
                 try:
                     if not isinstance(path, str_cls):
-                        path = path.decode('utf-8', errors='strict')
+                        path = path.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
                     console_write(u'One or more of the zip file entries in %s is not encoded using UTF-8, aborting' % package_name, True)
                     return False
@@ -590,7 +590,7 @@ class PackageManager():
 
                 try:
                     if not isinstance(dest, str_cls):
-                        dest = dest.decode('utf-8', errors='strict')
+                        dest = dest.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
                     console_write(u'One or more of the zip file entries in %s is not encoded using UTF-8, aborting' % package_name, True)
                     return False
