@@ -79,9 +79,8 @@ else:
         # being a fool's errand since the package loading code built into
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
-        encoding = 'utf-8' if sublime.platform() == 'osx' else locale.getpreferredencoding()
         try:
-            u"fran\u00e7ais".encode(encoding)
+            os.path.exists(os.path.join(sublime.packages_path(), u"fran\u00e7ais"))
         except (UnicodeEncodeError) as e:
             message = (u"Package Control\n\nYour system's locale is set to a " +
                 u"value that can not handle non-ASCII characters. Package " +
