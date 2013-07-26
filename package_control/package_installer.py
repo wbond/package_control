@@ -146,29 +146,35 @@ class PackageInstaller():
             package_list.append(package_entry)
         return package_list
 
-    def disable_package(self, package):
+    def disable_packages(self, packages):
         """
-        Disables a package before installing or upgrading to prevent errors
-        where Sublime Text tries to read files that no longer exist, or read a
-        half-written file.
+        Disables one or more packages before installing or upgrading to prevent
+        errors where Sublime Text tries to read files that no longer exist, or
+        read a half-written file.
 
-        :param package: The string package name
+        :param packages: The string package name, or an array of strings
         """
+
+        if not isinstance(packages, list):
+            packages = [packages]
 
         # Don't disable Package Control so it does not get stuck disabled
-        if package == 'Package Control':
-            return False
+        if 'Package Control' in packages:
+            packages.remove('Package Control')
+
+        disabled = []
 
         settings = sublime.load_settings(preferences_filename())
         ignored = settings.get('ignored_packages')
         if not ignored:
             ignored = []
-        if not package in ignored:
-            ignored.append(package)
-            settings.set('ignored_packages', ignored)
-            sublime.save_settings(preferences_filename())
-            return True
-        return False
+        for package in packages:
+            if not package in ignored:
+                ignored.append(package)
+                disabled.append(package)
+        settings.set('ignored_packages', ignored)
+        sublime.save_settings(preferences_filename())
+        return disabled
 
     def reenable_package(self, package):
         """
@@ -200,7 +206,7 @@ class PackageInstaller():
             return
         name = self.package_list[picked][0]
 
-        if self.disable_package(name):
+        if name in self.disable_packages(name):
             on_complete = lambda: self.reenable_package(name)
         else:
             on_complete = None

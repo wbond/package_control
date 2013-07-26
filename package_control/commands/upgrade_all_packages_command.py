@@ -40,7 +40,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
         self.package_renamer.rename_packages(self)
         package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
-        disabled_packages = {}
+        disabled_packages = []
 
         def do_upgrades():
             # Pause so packages can be disabled
@@ -53,7 +53,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
                 return lambda: self.reenable_package(name)
 
             for info in package_list:
-                if disabled_packages.get(info[0]):
+                if info[0] in disabled_packages:
                     on_complete = make_on_complete(info[0])
                 else:
                     on_complete = None
@@ -68,8 +68,10 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
         # in the main thread. We then create a new background thread so that
         # the upgrade process does not block the UI.
         def disable_packages():
+            package_names = []
             for info in package_list:
-                disabled_packages[info[0]] = self.disable_package(info[0])
+                package_names.append(info[0])
+            disabled_packages = self.disable_packages(package_names)
             threading.Thread(target=do_upgrades).start()
 
         sublime.set_timeout(disable_packages, 1)

@@ -176,11 +176,18 @@ class AutomaticUpgrader(threading.Thread):
             return
 
         console_write(u'Installing %s upgrades' % len(packages), True)
-        for package in packages:
-            self.installer.manager.install_package(package[0])
-            version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', package[2])
-            if version == package[2] and version.find('pull with') != -1:
+
+        disabled_packages = self.installer.disable_packages([info[0] for info in packages])
+        # Wait so that the ignored packages can be "unloaded"
+        time.sleep(0.5)
+
+        for info in packages:
+            self.installer.manager.install_package(info[0])
+            version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', info[2])
+            if version == info[2] and version.find('pull with') != -1:
                 vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
                 version = 'latest %s commit' % vcs
-            message_string = u'Upgraded %s to %s' % (package[0], version)
+            message_string = u'Upgraded %s to %s' % (info[0], version)
             console_write(message_string, True)
+            if info[0] in disabled_packages:
+                self.installer.reenable_package(info[0])
