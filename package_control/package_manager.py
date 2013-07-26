@@ -166,7 +166,9 @@ class PackageManager():
             return False
 
         url = url.replace(' ', '%20')
-        hostname = urlparse.urlparse(url).hostname.lower()
+        hostname = urlparse.urlparse(url).hostname
+        if hostname:
+            hostname = hostname.lower()
         timeout = self.settings.get('timeout', 3)
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
