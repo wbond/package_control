@@ -285,6 +285,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 success = wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
 
+                if success is None:
+                    error_string = u'%s %s during HTTP write phase of downloading %s.' % (error_message, self.extract_error(), url)
+                    console_write(error_string, True)
+                    return False
+
                 # If we try to query before here, the proxy info will not be available to the first request
                 if self.debug:
                     proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
@@ -303,11 +308,6 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     console_write(u"  proxy bypass: %s" % proxy_bypass)
                     console_write(u"  proxy username: %s" % proxy_username)
                     console_write(u"  proxy password: %s" % proxy_password)
-
-                if success is None:
-                    error_string = u'%s %s during HTTP write phase of downloading %s.' % (error_message, self.extract_error(), url)
-                    console_write(error_string, True)
-                    return False
 
                 self.use_count += 1
 
@@ -366,19 +366,6 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     console_write(u"  Connection: Keep-Alive")
                     console_write(u"  Cache-Control: no-cache")
 
-                buffer_length = 65536
-                output_buffer = ctypes.create_string_buffer(buffer_length)
-                bytes_read = wintypes.DWORD()
-
-                result = b''
-                try_again = True
-                while try_again:
-                    try_again = False
-                    wininet.InternetReadFile(http_connection, output_buffer, buffer_length, ctypes.byref(bytes_read))
-                    if bytes_read.value > 0:
-                        result += output_buffer.raw[:bytes_read.value]
-                        try_again = True
-
                 header_buffer_size = 8192
 
                 try_again = True
@@ -409,10 +396,18 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                         for header in headers:
                             console_write(u"  %s" % header)
 
-                if headers == ['']:
-                    error_string = u'No response headers found downloading %s.' % url
-                    console_write(error_string, True)
-                    return False
+                buffer_length = 65536
+                output_buffer = ctypes.create_string_buffer(buffer_length)
+                bytes_read = wintypes.DWORD()
+
+                result = b''
+                try_again = True
+                while try_again:
+                    try_again = False
+                    wininet.InternetReadFile(http_connection, output_buffer, buffer_length, ctypes.byref(bytes_read))
+                    if bytes_read.value > 0:
+                        result += output_buffer.raw[:bytes_read.value]
+                        try_again = True
 
                 general, headers = self.parse_headers(headers)
                 self.handle_rate_limit(headers, url)
