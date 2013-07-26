@@ -285,7 +285,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 success = wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
 
-                if success is None:
+                if not success:
                     error_string = u'%s %s during HTTP write phase of downloading %s.' % (error_message, self.extract_error(), url)
                     console_write(error_string, True)
                     return False
