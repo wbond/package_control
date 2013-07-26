@@ -15,8 +15,8 @@ from .open_compat import open_compat, read_compat
 class AutomaticUpgrader(threading.Thread):
     """
     Automatically checks for updated packages and installs them. controlled
-    by the `auto_upgrade`, `auto_upgrade_ignore`, `auto_upgrade_frequency` and
-    `auto_upgrade_last_run` settings.
+    by the `auto_upgrade`, `auto_upgrade_ignore`, and `auto_upgrade_frequency`
+    settings.
     """
 
     def __init__(self, found_packages):
@@ -37,17 +37,41 @@ class AutomaticUpgrader(threading.Thread):
         self.auto_upgrade = self.settings.get('auto_upgrade')
         self.auto_upgrade_ignore = self.settings.get('auto_upgrade_ignore')
 
-        self.next_run = int(time.time())
+        self.load_last_run()
+        self.determine_next_run()
+
+        # Detect if a package is missing that should be installed
+        self.missing_packages = list(set(self.installed_packages) -
+            set(found_packages))
+
+        if self.auto_upgrade and self.next_run <= time.time():
+            self.save_last_run(time.time())
+
+        threading.Thread.__init__(self)
+
+    def load_last_run(self):
+        """
+        Loads the last run time from disk into memory
+        """
+
         self.last_run = None
-        last_run_file = os.path.join(sublime.packages_path(), 'User',
+
+        self.last_run_file = os.path.join(sublime.packages_path(), 'User',
             'Package Control.last-run')
 
-        if os.path.isfile(last_run_file):
-            with open_compat(last_run_file) as fobj:
+        if os.path.isfile(self.last_run_file):
+            with open_compat(self.last_run_file) as fobj:
                 try:
                     self.last_run = int(read_compat(fobj))
                 except ValueError:
                     pass
+
+    def determine_next_run(self):
+        """
+        Figure out when the next run should happen
+        """
+
+        self.next_run = int(time.time())
 
         frequency = self.settings.get('auto_upgrade_frequency')
         if frequency:
@@ -56,15 +80,17 @@ class AutomaticUpgrader(threading.Thread):
             else:
                 self.next_run = time.time()
 
-        # Detect if a package is missing that should be installed
-        self.missing_packages = list(set(self.installed_packages) -
-            set(found_packages))
+    def save_last_run(self, last_run):
+        """
+        Saves a record of when the last run was
 
-        if self.auto_upgrade and self.next_run <= time.time():
-            with open_compat(last_run_file, 'w') as fobj:
-                fobj.write(str(int(time.time())))
+        :param last_run:
+            The unix timestamp of when to record the last run as
+        """
 
-        threading.Thread.__init__(self)
+        with open_compat(self.last_run_file, 'w') as fobj:
+            fobj.write(str(int(last_run)))
+
 
     def load_settings(self):
         """
@@ -138,9 +164,9 @@ class AutomaticUpgrader(threading.Thread):
                 continue
 
             def reset_last_run():
-                settings = sublime.load_settings(self.settings_file)
-                settings.set('auto_upgrade_last_run', None)
-                sublime.save_settings(self.settings_file)
+                # Re-save the last run time so it runs again after PC has
+                # been updated
+                self.save_last_run(self.last_run)
             sublime.set_timeout(reset_last_run, 1)
             packages = [package]
             break
