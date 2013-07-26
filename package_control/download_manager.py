@@ -155,7 +155,9 @@ class DownloadManager(object):
             return False
 
         url = url.replace(' ', '%20')
-        hostname = urlparse(url).hostname.lower()
+        hostname = urlparse(url).hostname
+        if hostname:
+            hostname = hostname.lower()
         timeout = self.settings.get('timeout', 3)
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
