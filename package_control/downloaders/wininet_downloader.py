@@ -304,7 +304,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     console_write(u"  proxy username: %s" % proxy_username)
                     console_write(u"  proxy password: %s" % proxy_password)
 
-                if not success:
+                if success is None:
                     error_string = u'%s %s during HTTP write phase of downloading %s.' % (error_message, self.extract_error(), url)
                     console_write(error_string, True)
                     return False
@@ -366,6 +366,19 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     console_write(u"  Connection: Keep-Alive")
                     console_write(u"  Cache-Control: no-cache")
 
+                buffer_length = 65536
+                output_buffer = ctypes.create_string_buffer(buffer_length)
+                bytes_read = wintypes.DWORD()
+
+                result = b''
+                try_again = True
+                while try_again:
+                    try_again = False
+                    wininet.InternetReadFile(http_connection, output_buffer, buffer_length, ctypes.byref(bytes_read))
+                    if bytes_read.value > 0:
+                        result += output_buffer.raw[:bytes_read.value]
+                        try_again = True
+
                 header_buffer_size = 8192
 
                 try_again = True
@@ -396,18 +409,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                         for header in headers:
                             console_write(u"  %s" % header)
 
-                buffer_length = 65536
-                output_buffer = ctypes.create_string_buffer(buffer_length)
-                bytes_read = wintypes.DWORD()
-
-                result = b''
-                try_again = True
-                while try_again:
-                    try_again = False
-                    wininet.InternetReadFile(http_connection, output_buffer, buffer_length, ctypes.byref(bytes_read))
-                    if bytes_read.value > 0:
-                        result += output_buffer.raw[:bytes_read.value]
-                        try_again = True
+                if headers == ['']:
+                    error_string = u'No response headers found downloading %s.' % url
+                    console_write(error_string, True)
+                    return False
 
                 general, headers = self.parse_headers(headers)
                 self.handle_rate_limit(headers, url)
