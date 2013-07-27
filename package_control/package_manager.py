@@ -70,7 +70,7 @@ class PackageManager():
                 'files_to_include', 'files_to_include_binary', 'certs',
                 'ignore_vcs_packages', 'proxy_username', 'proxy_password',
                 'debug', 'user_agent', 'http_cache', 'http_cache_length',
-                'install_prereleases']:
+                'install_prereleases', 'openssl_binary']:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)

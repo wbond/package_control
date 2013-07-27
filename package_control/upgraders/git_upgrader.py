@@ -10,7 +10,7 @@ class GitUpgrader(VcsUpgrader):
     Allows upgrading a local git-repository-based package
     """
 
-    vcs_type = 'git'
+    cli_name = 'git'
 
     def retrieve_binary(self):
         """

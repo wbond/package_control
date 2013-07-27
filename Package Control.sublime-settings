@@ -121,6 +121,10 @@
 	// Be sure to keep the remote name as the last argument
 	"hg_update_command": ["pull", "--update", "default"],
 
+	// Full path to the openssl binary, if not found on your machine. This is
+	// only used when running the Grab CA Certs command.
+	"openssl_binary": "",
+
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
 		".hg", ".git", ".svn", "_darcs", "CVS"

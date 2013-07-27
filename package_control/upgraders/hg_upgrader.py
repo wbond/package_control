@@ -10,7 +10,7 @@ class HgUpgrader(VcsUpgrader):
     Allows upgrading a local mercurial-repository-based package
     """
 
-    vcs_type = 'hg'
+    cli_name = 'hg'
 
     def retrieve_binary(self):
         """

@@ -28,6 +28,10 @@
         "command": "enable_package"
     },
     {
+        "caption": "Package Control: Grab CA Certs",
+        "command": "grab_certs"
+    },
+    {
         "caption": "Package Control: Install Package",
         "command": "install_package"
     },
