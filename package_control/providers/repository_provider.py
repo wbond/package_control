@@ -134,6 +134,14 @@ class RepositoryProvider(ReleaseSelector):
         # Anything that is not a URL is expected to be a filesystem path
         else:
             json_string = False
+
+            if not os.path.exists(location):
+                console_write(u'Error, file %s does not exist' % location, True)
+                return False
+
+            if self.settings.get('debug'):
+                console_write(u'Loading %s as a repository' % location, True)
+
             # We open as binary so we get bytes like the DownloadManager
             with open(location, 'rb') as f:
                 json_string = f.read()

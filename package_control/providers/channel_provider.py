@@ -76,6 +76,14 @@ class ChannelProvider(ReleaseSelector):
         # All other channels are expected to be filesystem paths
         else:
             channel_json = False
+
+            if not os.path.exists(self.channel):
+                console_write(u'Error, file %s does not exist' % self.channel, True)
+                return False
+
+            if self.settings.get('debug'):
+                console_write(u'Loading %s as a channel' % self.channel, True)
+
             # We open as binary so we get bytes like the DownloadManager
             with open(self.channel, 'rb') as f:
                 channel_json = f.read()
