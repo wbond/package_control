@@ -167,6 +167,8 @@ class DownloadManager(object):
                 ip = socket.gethostbyname(hostname)
             except (socket.gaierror) as e:
                 ip = unicode_from_os(e)
+            except (TypeError) as e:
+                ip = None
 
             console_write(u"Download Debug", True)
             console_write(u"  URL: %s" % url)
