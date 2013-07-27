@@ -3,6 +3,7 @@ import sys
 try:
     # Python 2
     import urllib2
+    import httplib
 
     # Monkey patch AbstractBasicAuthHandler to prevent infinite recursion
     def non_recursive_http_error_auth_reqed(self, authreq, host, req, headers):
@@ -26,7 +27,8 @@ try:
 
     urllib2.AbstractBasicAuthHandler.http_error_auth_reqed = non_recursive_http_error_auth_reqed
 
-    # Money patch urllib2.Request for Python 2.6.1-2
+    # Money patch urllib2.Request and httplib.HTTPConnection so that
+    # HTTPS proxies work in Python 2.6.1-2
     if sys.version_info < (2, 6, 3):
 
         urllib2.Request._tunnel_host = None
@@ -36,9 +38,27 @@ try:
                 self._tunnel_host = self.host
             else:
                 self.type = type
-                self.__r_host = self.__original
+                # The _Request prefix is to handle python private name mangling
+                self._Request__r_host = self._Request__original
             self.host = host
         urllib2.Request.set_proxy = py268_set_proxy
+
+    if sys.version_info < (2, 6, 5):
+
+        def py268_set_tunnel(self, host, port=None, headers=None):
+            """ Sets up the host and the port for the HTTP CONNECT Tunnelling.
+
+            The headers argument should be a mapping of extra HTTP headers
+            to send with the CONNECT request.
+            """
+            self._tunnel_host = host
+            self._tunnel_port = port
+            if headers:
+                self._tunnel_headers = headers
+            else:
+                self._tunnel_headers.clear()
+        httplib.HTTPConnection._set_tunnel = py268_set_tunnel
+
 
 except (ImportError):
     # Python 3 does not need to be patched
