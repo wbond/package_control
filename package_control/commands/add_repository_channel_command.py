@@ -23,6 +23,8 @@ class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
             A string of the URL to the new channel
         """
 
+        input = input.strip()
+
         if re.match('https?://', input, re.I) == None:
             show_error(u"Unable to add the channel \"%s\" since it does not appear to be served via HTTP (http:// or https://)." % input)
             return
