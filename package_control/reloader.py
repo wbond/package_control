@@ -36,7 +36,7 @@ mods_load_order = [
     '.sys_path',
     '.cache',
     '.http_cache',
-    '.ca_cert_extractor',
+    '.ca_certs',
     '.clear_directory',
     '.cmd',
     '.console_write',

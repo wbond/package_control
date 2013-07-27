@@ -15,7 +15,7 @@ import sublime_plugin
 
 from ..show_error import show_error
 from ..open_compat import open_compat
-from ..ca_cert_extractor import CaCertExtractor
+from ..ca_certs import build_ca_cert_bundle
 from ..thread_progress import ThreadProgress
 from ..package_manager import PackageManager
 
@@ -86,9 +86,7 @@ class GrabCertsThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        extractor = CaCertExtractor(self.settings.get('openssl_binary'),
-            self.settings.get('debug'))
-        cert, cert_hash = extractor.fetch(self.domain)
+        cert, cert_hash = build_ca_cert_bundle(self.settings, self.domain)
 
         certs_dir = os.path.join(sublime.packages_path(), 'User',
             'Package Control.ca-certs')
