@@ -223,6 +223,8 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
             # Placeholder for body of request
             if line and line[0:2] == '{ ':
                 continue
+            if line and line[0:18] == '} [data not shown]':
+                continue
 
             if len(line) > 1:
                 subtract = 0
@@ -240,7 +242,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
                 # If the line does not start with "* ", "< ", "> " or "  "
                 # then it is a real stderr message
                 if subtract == 0 and line[0:2] != '  ':
-                    output += line
+                    output += line.rstrip() + ' '
                     continue
 
             if line.strip() == '':
@@ -252,4 +254,4 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
             console_write(u'  ' + line)
             last_section = section
 
-        return output
+        return output.rstrip()
