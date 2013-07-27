@@ -6,7 +6,7 @@ import sublime_plugin
 from ..show_error import show_error
 
 
-class AddRepositoryChannelCommand(sublime_plugin.WindowCommand):
+class AddChannelCommand(sublime_plugin.WindowCommand):
     """
     A command to add a new channel (list of repositories) to the user's machine
     """

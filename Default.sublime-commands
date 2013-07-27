@@ -5,7 +5,7 @@
     },
     {
         "caption": "Package Control: Add Channel",
-        "command": "add_repository_channel"
+        "command": "add_channel"
     },
     {
         "caption": "Package Control: Create Binary Package File",

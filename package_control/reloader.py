@@ -101,7 +101,7 @@ mods_load_order = [
     '.package_renamer',
 
     '.commands',
-    '.commands.add_repository_channel_command',
+    '.commands.add_channel_command',
     '.commands.add_repository_command',
     '.commands.create_binary_package_command',
     '.commands.create_package_command',
