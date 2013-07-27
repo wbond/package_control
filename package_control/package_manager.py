@@ -94,7 +94,7 @@ class PackageManager():
         # Reduce the settings down to exclude channel info since that will
         # make the settings always different
         filtered_settings = self.settings.copy()
-        for key in ['repositories', 'channels', 'package_name_map', 'certs', 'cache']:
+        for key in ['repositories', 'channels', 'package_name_map', 'cache']:
             if key in filtered_settings:
                 del filtered_settings[key]
 
@@ -152,7 +152,6 @@ class PackageManager():
             merge_cache_under_settings(self, 'package_name_map', channel)
             merge_cache_under_settings(self, 'renamed_packages', channel)
             merge_cache_under_settings(self, 'unavailable_packages', channel, list_=True)
-            merge_cache_over_settings(self, 'certs', channel)
 
             # If any of the info was not retrieved from the cache, we need to
             # grab the channel to get it
@@ -186,10 +185,11 @@ class PackageManager():
                 unavailable_packages = provider.get_unavailable_packages()
                 set_cache_under_settings(self, 'unavailable_packages', channel, unavailable_packages, cache_ttl, list_=True)
 
-                certs = provider.get_certs()
-                set_cache_over_settings(self, 'certs', channel, certs, cache_ttl)
+                provider_certs = provider.get_certs()
+                certs = self.settings.get('certs', {}).copy()
+                certs.update(provider_certs)
                 # Save the master list of certs, used by downloaders/cert_provider.py
-                set_cache('*.certs', self.settings['certs'], cache_ttl)
+                set_cache('*.certs', certs, cache_ttl)
 
             repositories.extend(channel_repositories)
         return [repo.strip() for repo in repositories]

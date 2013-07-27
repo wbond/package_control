@@ -2,6 +2,7 @@ import os
 import hashlib
 
 from .cmd import Cli
+from .console_write import console_write
 
 
 class CaCertExtractor(Cli):
@@ -31,8 +32,14 @@ class CaCertExtractor(Cli):
         certs = []
         temp = []
 
+        if self.debug:
+            console_write(u'OpenSSL s_client Debug Output', True)
+
         in_block = False
         for line in result.splitlines():
+            if self.debug:
+                console_write(u'  ' + line)
+
             if line.find('BEGIN CERTIFICATE') != -1:
                 in_block = True
             if in_block:
@@ -44,6 +51,8 @@ class CaCertExtractor(Cli):
 
         # Remove the cert for the domain itself, just leaving the
         # chain cert and the CA cert
+        if self.debug:
+            console_write(u'Removing first SSL cert from output since it is the cert for %s' % domain)
         certs.pop(0)
 
         lines = []

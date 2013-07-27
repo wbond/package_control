@@ -54,7 +54,10 @@ class CertProvider(object):
                 wildcard_info[1], domain, timeout) or cert_match
 
         if not cert_match:
-            console_write(u'No CA certs available for %s.' % domain, True)
+            console_write((u'No CA certs available for %s. If you are on a ' +
+                u'trusted network, you can add CA certs by running the ' +
+                u'"Grab CA Certs" command from the command palette.') % domain,
+                True)
             return False
 
         return ca_bundle_path
