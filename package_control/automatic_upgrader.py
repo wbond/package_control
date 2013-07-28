@@ -154,12 +154,12 @@ class AutomaticUpgrader(threading.Thread):
 
         self.package_renamer.rename_packages(self.installer)
 
-        packages = self.installer.make_package_list(['install',
+        package_list = self.installer.make_package_list(['install',
             'reinstall', 'downgrade', 'overwrite', 'none'],
             ignore_packages=self.auto_upgrade_ignore)
 
         # If Package Control is being upgraded, just do that and restart
-        for package in packages:
+        for package in package_list:
             if package[0] != 'Package Control':
                 continue
 
@@ -168,26 +168,48 @@ class AutomaticUpgrader(threading.Thread):
                 # been updated
                 self.save_last_run(self.last_run)
             sublime.set_timeout(reset_last_run, 1)
-            packages = [package]
+            package_list = [package]
             break
 
-        if not packages:
+        if not package_list:
             console_write(u'No updated packages', True)
             return
 
-        console_write(u'Installing %s upgrades' % len(packages), True)
+        console_write(u'Installing %s upgrades' % len(package_list), True)
 
-        disabled_packages = self.installer.disable_packages([info[0] for info in packages])
-        # Wait so that the ignored packages can be "unloaded"
-        time.sleep(0.5)
+        disabled_packages = []
 
-        for info in packages:
-            self.installer.manager.install_package(info[0])
-            version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', info[2])
-            if version == info[2] and version.find('pull with') != -1:
-                vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
-                version = 'latest %s commit' % vcs
-            message_string = u'Upgraded %s to %s' % (info[0], version)
-            console_write(message_string, True)
-            if info[0] in disabled_packages:
-                self.installer.reenable_package(info[0])
+        def do_upgrades():
+            # Wait so that the ignored packages can be "unloaded"
+            time.sleep(0.5)
+
+            # We use a function to generate the on-complete lambda because if
+            # we don't, the lambda will bind to info at the current scope, and
+            # thus use the last value of info from the loop
+            def make_on_complete(name):
+                return lambda: self.reenable_package(name)
+
+            for info in package_list:
+                if info[0] in disabled_packages:
+                    on_complete = make_on_complete(info[0])
+                else:
+                    on_complete = None
+
+                self.installer.manager.install_package(info[0])
+
+                version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', info[2])
+                if version == info[2] and version.find('pull with') != -1:
+                    vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
+                    version = 'latest %s commit' % vcs
+                message_string = u'Upgraded %s to %s' % (info[0], version)
+                console_write(message_string, True)
+                if on_complete:
+                    sublime.set_timeout(on_complete, 1)
+
+        # Disabling a package means changing settings, which can only be done
+        # in the main thread. We then create a new background thread so that
+        # the upgrade process does not block the UI.
+        def disable_packages():
+            disabled_packages = self.installer.disable_packages([info[0] for info in package_list])
+            threading.Thread(target=do_upgrades).start()
+        sublime.set_timeout(disable_packages, 1)
