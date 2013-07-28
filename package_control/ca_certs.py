@@ -92,7 +92,7 @@ def get_system_ca_bundle_path(settings):
 
     elif platform == 'osx':
         ca_path = os.path.join(sublime.packages_path(), 'User',
-            'Package Control.ca-bundle')
+            'Package Control.system-ca-bundle')
 
         exists = os.path.exists(ca_path)
         # The bundle is old if it is a week or more out of date
@@ -100,8 +100,10 @@ def get_system_ca_bundle_path(settings):
 
         if not exists or is_old:
             if debug:
-                console_write(u"Generating new CA bundle from system keychain at %s" % ca_path, True)
+                console_write(u"Generating new CA bundle from system keychain", True)
             _osx_create_ca_bundle(settings, ca_path)
+            if debug:
+                console_write(u"Finished generating new CA bundle at %s" % ca_path, True)
         elif debug:
             console_write(u"Found previously exported CA bundle at %s" % ca_path, True)
 
@@ -120,6 +122,7 @@ def get_ca_cert_by_subject(settings, subject):
 
     temp = []
 
+    in_block = False
     for line in contents.splitlines():
         if line.find('BEGIN CERTIFICATE') != -1:
             in_block = True
@@ -185,7 +188,7 @@ def openssl_get_cert_name(settings, cert):
     binary = runner.retrieve_binary()
 
     args = [binary, 'x509', '-noout', '-subject', '-nameopt',
-        'sep_multiline,lname']
+        'sep_multiline,lname,utf8']
     result = runner.execute(args, os.path.dirname(binary), cert)
 
     # First look for the common name
@@ -256,6 +259,7 @@ def _osx_create_ca_bundle(settings, destination):
     certs = []
     temp = []
 
+    in_block = False
     for line in result.splitlines():
         if line.find('BEGIN CERTIFICATE') != -1:
             in_block = True
@@ -270,7 +274,10 @@ def _osx_create_ca_bundle(settings, destination):
 
             if distrusted_certs:
                 # If it is a distrusted cert, we move on to the next
-                if openssl_get_cert_name(settings, cert) in distrusted_certs:
+                cert_name = openssl_get_cert_name(settings, cert)
+                if cert_name in distrusted_certs:
+                    if settings.get('debug'):
+                        console_write(u'Skipping root certficate %s because it is distrusted' % cert_name, True)
                     continue
 
             certs.append(cert)
@@ -324,12 +331,17 @@ def _osx_get_distrusted_certs(settings):
 
         distrusted = re.match('^\s+Result\s+Type\s+:\s+kSecTrustSettingsResultDeny', line)
         if ssl_policy and distrusted and cert_name not in distrusted_certs:
+            if settings.get('debug'):
+                console_write(u'Found SSL distrust setting for root certificate %s' % cert_name, True)
             distrusted_certs.append(cert_name)
 
     return distrusted_certs
 
 
 class OpensslCli(Cli):
+
+    cli_name = 'openssl'
+    
     def retrieve_binary(self):
         """
         Returns the path to the openssl executable
