@@ -89,8 +89,6 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         if secure_url_match != None:
             secure_domain = secure_url_match.group(1)
             bundle_path = self.check_certs(secure_domain, timeout)
-            if not bundle_path:
-                return False
             command.append(u'--ca-certificate=' + bundle_path)
 
         if self.debug:

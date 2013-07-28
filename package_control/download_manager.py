@@ -20,6 +20,7 @@ from .unicode import unicode_from_os
 from .downloaders import DOWNLOADERS
 from .downloaders.binary_not_found_error import BinaryNotFoundError
 from .downloaders.rate_limit_exception import RateLimitException
+from .downloaders.no_ca_cert_exception import NoCaCertException
 from .http_cache import HttpCache
 
 
@@ -161,6 +162,7 @@ class DownloadManager(object):
         timeout = self.settings.get('timeout', 3)
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
+        no_ca_cert_domains = get_cache('no_ca_cert_domains', [])
 
         if self.settings.get('debug'):
             try:
@@ -180,8 +182,14 @@ class DownloadManager(object):
                 console_write(u"  Skipping due to hitting rate limit for %s" % hostname)
             return False
 
+        if hostname in no_ca_cert_domains:
+            if self.settings.get('debug'):
+                console_write(u"  Skipping since there are no CA certs for %s" % hostname)
+            return False
+
         try:
             return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
+
         except (RateLimitException) as e:
 
             rate_limited_domains.append(hostname)
@@ -189,6 +197,17 @@ class DownloadManager(object):
 
             error_string = (u'Hit rate limit of %s for %s, skipping all futher ' +
                 u'download requests for this domain') % (e.limit, e.host)
+            console_write(error_string, True)
+
+        except (NoCaCertException) as e:
+
+            no_ca_cert_domains.append(hostname)
+            set_cache('no_ca_cert_domains', no_ca_cert_domains, self.settings.get('cache_length'))
+
+            error_string = (u'No CA certs available for %s, skipping all futher ' +
+                u'download requests for this domain. If you are on a trusted ' +
+                u'network, you can add the CA certs by running the "Grab ' +
+                u'CA Certs" command from the command palette.') % e.host
             console_write(error_string, True)
 
         return False

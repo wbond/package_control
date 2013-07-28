@@ -8,6 +8,7 @@ from ..console_write import console_write
 from ..open_compat import open_compat, read_compat
 from ..package_io import read_package_file
 from ..cache import get_cache
+from .no_ca_cert_exception import NoCaCertException
 
 
 class CertProvider(object):
@@ -54,11 +55,7 @@ class CertProvider(object):
                 wildcard_info[1], domain, timeout) or cert_match
 
         if not cert_match:
-            console_write((u'No CA certs available for %s. If you are on a ' +
-                u'trusted network, you can add CA certs by running the ' +
-                u'"Grab CA Certs" command from the command palette.') % domain,
-                True)
-            return False
+            raise NoCaCertException(domain)
 
         return ca_bundle_path
 

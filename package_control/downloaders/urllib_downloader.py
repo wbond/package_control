@@ -259,8 +259,6 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
             if secure_url_match != None:
                 secure_domain = secure_url_match.group(1)
                 bundle_path = self.check_certs(secure_domain, timeout)
-                if not bundle_path:
-                    return False
                 bundle_path = bundle_path.encode(sys.getfilesystemencoding())
                 handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
                     debug=debug, passwd=password_manager,
