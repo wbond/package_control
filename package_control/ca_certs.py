@@ -10,7 +10,7 @@ from .console_write import console_write
 from .open_compat import open_compat, read_compat
 
 
-def build_ca_cert_bundle(settings, domain):
+def find_root_ca_cert(settings, domain):
     runner = OpensslCli(settings.get('openssl_binary'), settings.get('debug'))
     binary = runner.retrieve_binary()
 
@@ -38,16 +38,8 @@ def build_ca_cert_bundle(settings, domain):
     # Look for the "parent" root CA cert
     subject = openssl_get_cert_subject(settings, certs[-1])
     issuer = openssl_get_cert_issuer(settings, certs[-1])
-    parent_ca = get_ca_cert_by_subject(settings, issuer)
-    certs.append(parent_ca)
 
-    lines = []
-    for cert in certs:
-        args = [binary, 'x509', '-inform', 'PEM', '-text']
-        result = runner.execute(args, os.path.dirname(binary), cert)
-        lines.append(result)
-
-    cert = u"\n".join(lines)
+    cert = get_ca_cert_by_subject(settings, issuer)
     cert_hash = hashlib.md5(cert.encode('utf-8')).hexdigest()
 
     return [cert, cert_hash]
@@ -341,7 +333,7 @@ def _osx_get_distrusted_certs(settings):
 class OpensslCli(Cli):
 
     cli_name = 'openssl'
-    
+
     def retrieve_binary(self):
         """
         Returns the path to the openssl executable
