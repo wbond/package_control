@@ -8,6 +8,7 @@ from ..console_write import console_write
 from ..open_compat import open_compat, read_compat
 from ..package_io import read_package_file
 from ..cache import get_cache
+from ..ca_certs import get_system_ca_bundle_path
 from .no_ca_cert_exception import NoCaCertException
 
 
@@ -30,6 +31,15 @@ class CertProvider(object):
         :return:
             The CA cert bundle path on success, or False on error
         """
+
+        # Try to use the system CA bundle
+        ca_bundle_path = get_system_ca_bundle_path(self.settings)
+        if ca_bundle_path:
+            return ca_bundle_path
+
+        # If the system bundle did not work, fall back to our CA distribution
+        # system. Hopefully this will be going away soon.
+        console_write(u'Unable to find system CA cert bundle, falling back to certs provided by Package Control')
 
         cert_match = False
 
