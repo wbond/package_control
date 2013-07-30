@@ -155,12 +155,15 @@ class RepositoryProvider(ReleaseSelector):
             console_write(u'Error parsing JSON from repository %s.' % location, True)
             return False
 
-    def get_packages(self, valid_sources=None):
+    def get_packages(self, valid_sources=None, generator=False):
         """
         Provides access to the packages in this repository
 
         :param valid_sources:
             A list of URLs that are permissible to fetch data from
+
+        :param generator:
+            If the function should function as a generator, yielding after each package
 
         :return:
             A dict in the format:
@@ -192,15 +195,20 @@ class RepositoryProvider(ReleaseSelector):
         if 'get_packages' in self.cache:
             return self.cache['get_packages']
 
+        def fail(value):
+            if value == False:
+                self.failed_sources = [self.repo]
+            self.cache['get_packages'] = value
+            if generator:
+                raise StopIteration()
+            return value
+
         if valid_sources != None and self.repo not in valid_sources:
-            self.cache['get_packages'] = None
-            return None
+            return fail(None)
 
         self.fetch()
         if self.repo_info == False:
-            self.failed_sources = [self.repo]
-            self.cache['get_packages'] = False
-            return False
+            return fail(False)
 
         output = {}
 
@@ -208,29 +216,21 @@ class RepositoryProvider(ReleaseSelector):
 
         if 'schema_version' not in self.repo_info:
             console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
-            self.failed_sources = [self.repo]
-            self.cache['get_packages'] = False
-            return False
+            return fail(False)
 
         try:
             self.schema_version = float(self.repo_info.get('schema_version'))
         except (ValueError):
             console_write(u'%s the "schema_version" is not a valid number.' % schema_error, True)
-            self.failed_sources = [self.repo]
-            self.cache['get_packages'] = False
-            return False
+            return fail(False)
 
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
             console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error, True)
-            self.failed_sources = [self.repo]
-            self.cache['get_packages'] = False
-            return False
+            return fail(False)
 
         if 'packages' not in self.repo_info:
             console_write(u'%s the "packages" JSON key is missing.' % schema_error, True)
-            self.failed_sources = [self.repo]
-            self.cache['get_packages'] = False
-            return False
+            return fail(False)
 
         github_client = GitHubClient(self.settings)
         bitbucket_client = BitBucketClient(self.settings)
@@ -357,6 +357,9 @@ class RepositoryProvider(ReleaseSelector):
                         date = release['date']
                 info['last_modified'] = date
 
+            if generator:
+                yield info['name'], info
+
             output[info['name']] = info
 
         # Backfill the "previous_names" keys for old schemas
@@ -369,7 +372,9 @@ class RepositoryProvider(ReleaseSelector):
                 output[new_name]['previous_names'].append(old_name)
 
         self.cache['get_packages'] = output
-        return output
+
+        if not generator:
+            return output
 
     def get_renamed_packages(self):
         """:return: A dict of the packages that have been renamed"""
