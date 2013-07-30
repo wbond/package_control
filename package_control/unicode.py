@@ -2,12 +2,10 @@ import os
 import locale
 import sys
 
-import sublime
-
 
 # Sublime Text on OS X does not seem to report the correct encoding
 # so we hard-code that to UTF-8
-_encoding = 'utf-8' if sublime.platform() == 'osx' else locale.getpreferredencoding()
+_encoding = 'utf-8' if sys.platform == 'darwin' else locale.getpreferredencoding()
 
 _fallback_encodings = ['utf-8', 'cp1252']
 
@@ -25,7 +23,7 @@ def unicode_from_os(e):
         The unicode version of the exception message
     """
 
-    if int(sublime.version()) > 3000:
+    if sys.version_info >= (3,):
         return str(e)
 
     try:

@@ -3,11 +3,19 @@ import os
 import re
 import time
 
-import sublime
-
 from .cmd import Cli
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
+
+
+# Have somewhere to store the CA bundle, even when not running in Sublime Text
+try:
+    import sublime
+    ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
+except (ImportError):
+    ca_bundle_dir = os.path.join(os.path.expanduser('~'), '.package_control')
+    if not os.path.exists(ca_bundle_dir):
+        os.mkdir(ca_bundle_dir)
 
 
 def find_root_ca_cert(settings, domain):
@@ -61,30 +69,18 @@ def get_system_ca_bundle_path(settings):
         The full filesystem path to the .ca-bundle file, or False on error
     """
 
-    platform = sublime.platform()
+    platform = sys.platform
     debug = settings.get('debug')
 
     ca_path = False
 
-    if platform == 'linux':
-        # Common CA cert paths
-        paths = [
-            '/usr/lib/ssl/certs/ca-certificates.crt',
-            '/etc/ssl/certs/ca-certificates.crt',
-            '/etc/pki/tls/certs/ca-bundle.crt',
-            '/etc/ssl/ca-bundle.pem'
-        ]
-        for path in paths:
-            if os.path.exists(path):
-                ca_path = path
-                break
+    if platform == 'win32':
+        console_write(u"Unable to get system CA cert path since Windows does not ship with them", True)
+        return False
 
-        if debug and ca_path:
-            console_write(u"Found system CA bundle at %s" % ca_path, True)
-
-    elif platform == 'osx':
-        ca_path = os.path.join(sublime.packages_path(), 'User',
-            'Package Control.system-ca-bundle')
+    # OS X
+    if platform == 'darwin':
+        ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
 
         exists = os.path.exists(ca_path)
         # The bundle is old if it is a week or more out of date
@@ -99,9 +95,22 @@ def get_system_ca_bundle_path(settings):
         elif debug:
             console_write(u"Found previously exported CA bundle at %s" % ca_path, True)
 
-    elif platform == 'windows':
-        console_write(u"Unable to get system CA cert path since Windows does not ship with them", True)
-        return False
+    # Linux
+    else:
+        # Common CA cert paths
+        paths = [
+            '/usr/lib/ssl/certs/ca-certificates.crt',
+            '/etc/ssl/certs/ca-certificates.crt',
+            '/etc/pki/tls/certs/ca-bundle.crt',
+            '/etc/ssl/ca-bundle.pem'
+        ]
+        for path in paths:
+            if os.path.exists(path):
+                ca_path = path
+                break
+
+        if debug and ca_path:
+            console_write(u"Found system CA bundle at %s" % ca_path, True)
 
     return ca_path
 
