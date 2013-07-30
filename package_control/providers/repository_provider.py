@@ -273,9 +273,6 @@ class RepositoryProvider(ReleaseSelector):
                         console_write(u'Invalid "details" key for one of the packages in the repository %s.' % self.repo, True)
                         continue
 
-                download_details = None
-                download_info = {}
-
                 # If no releases info was specified, also grab the download info from GH or BB
                 if not releases and details:
                     releases = [{'details': details}]
@@ -285,6 +282,9 @@ class RepositoryProvider(ReleaseSelector):
                 # https://bitbucket.org/user/repo#tags)
                 info['releases'] = []
                 for release in releases:
+                    download_details = None
+                    download_info = {}
+
                     # Make sure that explicit fields are copied over
                     for field in ['platforms', 'sublime_text', 'version', 'url', 'date']:
                         if field in release:
