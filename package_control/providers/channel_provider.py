@@ -11,6 +11,9 @@ except (ImportError):
 
 from ..console_write import console_write
 from .release_selector import ReleaseSelector
+from .provider_exception import ProviderException
+from ..downloaders.downloader_exception import DownloaderException
+from ..clients.client_exception import ClientException
 from ..download_manager import grab, release
 
 
@@ -57,12 +60,22 @@ class ChannelProvider(ReleaseSelector):
     def prefetch(self):
         """
         Go out and perform HTTP operations, caching the result
+
+        :raises:
+            ProviderException: when an error occurs trying to open a file
+            DownloaderException: when an error occurs trying to open a URL
         """
 
         self.fetch()
 
     def fetch(self):
-        """Retrieves and loads the JSON for other methods to use"""
+        """
+        Retrieves and loads the JSON for other methods to use
+
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+        """
 
         if self.channel_info != None:
             return
@@ -75,11 +88,8 @@ class ChannelProvider(ReleaseSelector):
 
         # All other channels are expected to be filesystem paths
         else:
-            channel_json = False
-
             if not os.path.exists(self.channel):
-                console_write(u'Error, file %s does not exist' % self.channel, True)
-                return False
+                raise ProviderException(u'Error, file %s does not exist' % self.channel)
 
             if self.settings.get('debug'):
                 console_write(u'Loading %s as a channel' % self.channel, True)
@@ -88,43 +98,37 @@ class ChannelProvider(ReleaseSelector):
             with open(self.channel, 'rb') as f:
                 channel_json = f.read()
 
-        if channel_json == False:
-            self.channel_info = False
-            return
-
         try:
             channel_info = json.loads(channel_json.decode('utf-8'))
         except (ValueError):
-            console_write(u'Error parsing JSON from channel %s.' % self.channel, True)
-            channel_info = False
+            raise ProviderException(u'Error parsing JSON from channel %s.' % self.channel)
 
         schema_error = u'Channel %s does not appear to be a valid channel file because ' % self.channel
 
         if 'schema_version' not in channel_info:
-            console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
-            self.channel_info = False
-            return
+            raise ProviderException(u'%s the "schema_version" JSON key is missing.' % schema_error)
 
         try:
             self.schema_version = float(channel_info.get('schema_version'))
         except (ValueError):
-            console_write(u'%s the "schema_version" is not a valid number.' % schema_error, True)
-            self.channel_info = False
-            return
+            raise ProviderException(u'%s the "schema_version" is not a valid number.' % schema_error)
 
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
-            console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error, True)
-            self.channel_info = False
-            return
+            raise ProviderException(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error)
 
         self.channel_info = channel_info
 
     def get_name_map(self):
-        """:return: A dict of the mapping for URL slug -> package name"""
+        """
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A dict of the mapping for URL slug -> package name
+        """
 
         self.fetch()
-        if self.channel_info == False:
-            return False
 
         if self.schema_version >= 2.0:
             return {}
@@ -132,11 +136,16 @@ class ChannelProvider(ReleaseSelector):
         return self.channel_info.get('package_name_map', {})
 
     def get_renamed_packages(self):
-        """:return: A dict of the packages that have been renamed"""
+        """
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A dict of the packages that have been renamed
+        """
 
         self.fetch()
-        if self.channel_info == False:
-            return False
 
         if self.schema_version >= 2.0:
             return {}
@@ -144,15 +153,19 @@ class ChannelProvider(ReleaseSelector):
         return self.channel_info.get('renamed_packages', {})
 
     def get_repositories(self):
-        """:return: A list of the repository URLs"""
+        """
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A list of the repository URLs
+        """
 
         self.fetch()
-        if self.channel_info == False:
-            return False
 
         if 'repositories' not in self.channel_info:
-            console_write(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel, True)
-            return False
+            raise ProviderException(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel)
 
         # Determine a relative root so repositories can be defined
         # relative to the location of the channel file.
@@ -206,12 +219,16 @@ class ChannelProvider(ReleaseSelector):
         included in the channel, as of the time when Package Control was
         last released.
 
-        :return: A dict of {'Domain Name': ['cert_file_hash', 'cert_file_download_url']}
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A dict of {'Domain Name': ['cert_file_hash', 'cert_file_download_url']}
         """
 
         self.fetch()
-        if self.channel_info == False:
-            return False
+
         return self.channel_info.get('certs', {})
 
     def get_packages(self, repo):
@@ -220,6 +237,10 @@ class ChannelProvider(ReleaseSelector):
 
         :param repo:
             The URL of the repository to get the cached info of
+
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
 
         :return:
             A dict in the format:
@@ -244,21 +265,19 @@ class ChannelProvider(ReleaseSelector):
                 },
                 ...
             }
-            or False if there is an error
         """
 
         self.fetch()
-        if self.channel_info == False:
-            return False
 
         # The 2.0 channel schema renamed the key cached package info was
         # stored under in order to be more clear to new users.
         packages_key = 'packages_cache' if self.schema_version >= 2.0 else 'packages'
 
         if self.channel_info.get(packages_key, False) == False:
-            return False
+            return {}
+
         if self.channel_info[packages_key].get(repo, False) == False:
-            return False
+            return {}
 
         output = {}
         for package in self.channel_info[packages_key][repo]:

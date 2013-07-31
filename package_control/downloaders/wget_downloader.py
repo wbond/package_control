@@ -9,6 +9,7 @@ from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
 from .non_clean_exit_error import NonCleanExitError
 from .rate_limit_exception import RateLimitException
+from .downloader_exception import DownloaderException
 from .cert_provider import CertProvider
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
@@ -22,6 +23,9 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
     :param settings:
         A dict of the various Package Control settings. The Sublime Text
         Settings API is not used because this code is run in a thread.
+
+    :raises:
+        BinaryNotFoundError: when wget can not be found
     """
 
     def __init__(self, settings):
@@ -57,17 +61,19 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         :param prefer_cached:
             If a cached version should be returned instead of trying a new request
 
+        :raises:
+            NoCaCertException: when no CA certs can be found for the url
+            RateLimitException: when a rate limit is hit
+            DownloaderException: when any other download error occurs
+
         :return:
-            The string contents of the URL, or False on error
+            The string contents of the URL
         """
 
         if prefer_cached:
             cached = self.retrieve_cached(url)
             if cached:
                 return cached
-
-        if not self.wget:
-            return False
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
@@ -120,6 +126,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
         if https_proxy:
             os.putenv('https_proxy', https_proxy)
 
+        error_string = None
         while tries > 0:
             tries -= 1
             try:
@@ -147,12 +154,14 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
                     if general['status'] == 503 and tries != 0:
                         # GitHub and BitBucket seem to rate limit via 503
-                        error_string = u'Downloading %s was rate limited, trying again' % url
-                        console_write(error_string, True)
+                        error_string = u'Downloading %s was rate limited' % url
+                        if tries:
+                            error_string += ', trying again'
+                            if self.debug:
+                                console_write(error_string, True)
                         continue
 
-                    download_error = 'HTTP error %s %s' % (general['status'],
-                        general['message'])
+                    download_error = 'HTTP error %s' % general['status']
 
                 except (NonHttpError) as e:
 
@@ -160,15 +169,18 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
                     # GitHub and BitBucket seem to time out a lot
                     if download_error.find('timed out') != -1:
-                        error_string = u'Downloading %s timed out, trying again' % url
-                        console_write(error_string, True)
+                        error_string = u'Downloading %s timed out' % url
+                        if tries:
+                            error_string += ', trying again'
+                            if self.debug:
+                                console_write(error_string, True)
                         continue
 
                 error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
-                console_write(error_string, True)
 
             break
-        return False
+
+        raise DownloaderException(error_string)
 
     def supports_ssl(self):
         """

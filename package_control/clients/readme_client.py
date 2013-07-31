@@ -10,6 +10,7 @@ except (ImportError):
     from urllib import urlencode
 
 from .json_api_client import JSONApiClient
+from ..downloaders.downloader_exception import DownloaderException
 
 
 # Used to map file extensions to formats
@@ -33,8 +34,12 @@ class ReadmeClient(JSONApiClient):
         :param url:
             The URL of the readme file
 
+        :raises:
+            DownloaderException: if there is an error downloading the readme
+            ClientException: if there is an error parsing the response
+
         :return:
-            False if error, or a dict with the following keys:
+            A dict with the following keys:
               `filename`
               `format` - `markdown`, `textile`, `creole`, `rst` or `txt`
               `contents` - contents of the readme as str/unicode
@@ -51,17 +56,14 @@ class ReadmeClient(JSONApiClient):
 
             query_string = urlencode({'ref': branch})
             readme_json_url = 'https://api.github.com/repos/%s/readme?%s' % (user_repo, query_string)
-            info = self.fetch_json(readme_json_url, prefer_cached=True)
-            if info:
-                try:
-                    contents = base64.b64decode(info['content'])
-                except (ValueError) as e:
-                    pass
+            try:
+                info = self.fetch_json(readme_json_url, prefer_cached=True)
+                contents = base64.b64decode(info['content'])
+            except (ValueError) as e:
+                pass
 
         if not contents:
             contents = self.fetch(url)
-            if not contents:
-                return False
 
         basename, ext = os.path.splitext(url)
         format = 'txt'

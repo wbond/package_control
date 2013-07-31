@@ -35,6 +35,7 @@ class GitHubRepositoryProvider():
         # Clean off the trailing .git to be more forgiving
         self.repo = re.sub('\.git$', '', repo)
         self.settings = settings
+        self.failed_sources = {}
 
     @classmethod
     def match_url(cls, repo):
@@ -48,28 +49,30 @@ class GitHubRepositoryProvider():
     def prefetch(self):
         """
         Go out and perform HTTP operations, caching the result
+
+        :raises:
+            DownloaderException: when there is an issue download package info
+            ClientException: when there is an issue parsing package info
         """
 
-        self.get_packages()
+        [name for name, info in self.get_packages()]
 
     def get_failed_sources(self):
         """
         List of any URLs that could not be accessed while accessing this repository
 
         :return:
-            A list of strings containing URLs
+            A generator of ("https://github.com/user/repo", Exception()) tuples
         """
 
-        if 'get_packages' in self.cache and self.cache['get_packages'] == False:
-            return [self.repo]
-        return []
+        return self.failed_sources.items()
 
     def get_broken_packages(self):
         """
         For API-compatibility with RepositoryProvider
         """
 
-        return []
+        return {}.items()
 
     def get_packages(self, valid_sources=None):
         """
@@ -78,10 +81,15 @@ class GitHubRepositoryProvider():
         :param valid_sources:
             A list of URLs that are permissible to fetch data from
 
+        :raises:
+            DownloaderException: when there is an issue download package info
+            ClientException: when there is an issue parsing package info
+
         :return:
-            A dict in the format:
-            {
-                'Package Name': {
+            A generator of
+            (
+                'Package Name',
+                {
                     'name': name,
                     'description': description,
                     'author': author,
@@ -100,45 +108,45 @@ class GitHubRepositoryProvider():
                     'donate': url,
                     'buy': None
                 }
-            }
-            False if there is an error or None if no match
+            )
+            tuples
         """
 
         if 'get_packages' in self.cache:
-            return self.cache['get_packages']
+            return self.cache['get_packages'].items()
 
         client = GitHubClient(self.settings)
 
         if valid_sources != None and self.repo not in valid_sources:
-            self.cache['get_packages'] = None
-            return None
+            raise StopIteration()
 
-        repo_info = client.repo_info(self.repo)
-        if not repo_info:
-            self.cache['get_packages'] = repo_info
-            return repo_info
+        try:
+            repo_info = client.repo_info(self.repo)
+            download = client.download_info(self.repo)
 
-        download = client.download_info(self.repo)
-        if not download:
-            self.cache['get_packages'] = download
-            return download
+            name = repo_info['name']
+            deails = {
+                'name': name,
+                'description': repo_info['description'],
+                'homepage': repo_info['homepage'],
+                'author': repo_info['author'],
+                'last_modified': download.get('date'),
+                'download': download,
+                'previous_names': [],
+                'labels': [],
+                'sources': [self.repo],
+                'readme': repo_info['readme'],
+                'issues': repo_info['issues'],
+                'donate': repo_info['donate'],
+                'buy': None
+            }
+            self.cache['get_packages'] = {name: details}
+            yield (name, details)
 
-        self.cache['get_packages'] = {repo_info['name']: {
-            'name': repo_info['name'],
-            'description': repo_info['description'],
-            'homepage': repo_info['homepage'],
-            'author': repo_info['author'],
-            'last_modified': download.get('date'),
-            'download': download,
-            'previous_names': [],
-            'labels': [],
-            'sources': [self.repo],
-            'readme': repo_info['readme'],
-            'issues': repo_info['issues'],
-            'donate': repo_info['donate'],
-            'buy': None
-        }}
-        return self.cache['get_packages']
+        except (Exception) as e:
+            self.failed_sources[self.repo] = e
+            self.cache['get_packages'] = {}
+            raise StopIteration()
 
     def get_renamed_packages(self):
         """For API-compatibility with RepositoryProvider"""

@@ -12,6 +12,9 @@ except (ImportError):
 
 from ..console_write import console_write
 from .release_selector import ReleaseSelector
+from .provider_exception import ProviderException
+from ..downloaders.downloader_exception import DownloaderException
+from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..download_manager import grab, release
@@ -53,8 +56,8 @@ class RepositoryProvider(ReleaseSelector):
         self.repo = repo
         self.settings = settings
         self.unavailable_packages = []
-        self.failed_sources = []
-        self.broken_packages = []
+        self.failed_sources = {}
+        self.broken_packages = {}
 
     @classmethod
     def match_url(cls, repo):
@@ -65,39 +68,47 @@ class RepositoryProvider(ReleaseSelector):
     def prefetch(self):
         """
         Go out and perform HTTP operations, caching the result
+
+        :raises:
+            DownloaderException: when there is an issue download package info
+            ClientException: when there is an issue parsing package info
         """
 
-        self.get_packages()
+        [name for name, info in self.get_packages()]
 
     def get_failed_sources(self):
         """
         List of any URLs that could not be accessed while accessing this repository
 
         :return:
-            A list of strings containing URLs
+            A generator of ("https://example.com", Exception()) tuples
         """
 
-        return self.failed_sources
+        return self.failed_sources.items()
 
     def get_broken_packages(self):
         """
         List of package names for packages that are missing information
 
         :return:
-            A list of strings containing package names
+            A generator of ("Package Name", Exception()) tuples
         """
 
-        return self.broken_packages
+        return self.broken_packages.items()
 
     def fetch(self):
-        """Retrieves and loads the JSON for other methods to use"""
+        """
+        Retrieves and loads the JSON for other methods to use
+
+        :raises:
+            ProviderException: when an error occurs trying to open a file
+            DownloaderException: when an error occurs trying to open a URL
+        """
 
         if self.repo_info != None:
             return
 
         self.repo_info = self.fetch_location(self.repo)
-        if self.repo_info == False:
-            return False
 
         if 'includes' not in self.repo_info:
             return
@@ -119,12 +130,24 @@ class RepositoryProvider(ReleaseSelector):
             if re.match('^\./|\.\./', include):
                 include = os.path.normpath(relative_base + include)
             include_info = self.fetch_location(include)
-            if include_info == False:
-                continue
             included_packages = include_info.get('packages', [])
             self.repo_info['packages'].extend(included_packages)
 
     def fetch_location(self, location):
+        """
+        Fetches the contents of a URL of file path
+
+        :param location:
+            The URL or file path
+
+        :raises:
+            ProviderException: when an error occurs trying to open a file
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A dict of the parsed JSON
+        """
+
         if re.match('https?://', self.repo, re.I):
             download_manager = grab(location, self.settings)
             json_string = download_manager.fetch(location,
@@ -133,11 +156,8 @@ class RepositoryProvider(ReleaseSelector):
 
         # Anything that is not a URL is expected to be a filesystem path
         else:
-            json_string = False
-
             if not os.path.exists(location):
-                console_write(u'Error, file %s does not exist' % location, True)
-                return False
+                raise ProviderException(u'Error, file %s does not exist' % location)
 
             if self.settings.get('debug'):
                 console_write(u'Loading %s as a repository' % location, True)
@@ -146,29 +166,28 @@ class RepositoryProvider(ReleaseSelector):
             with open(location, 'rb') as f:
                 json_string = f.read()
 
-        if json_string == False:
-            return json_string
-
         try:
             return json.loads(json_string.decode('utf-8'))
         except (ValueError):
-            console_write(u'Error parsing JSON from repository %s.' % location, True)
-            return False
+            raise ProviderException(u'Error parsing JSON from repository %s.' % location)
 
-    def get_packages(self, valid_sources=None, generator=False):
+    def get_packages(self, valid_sources=None):
         """
         Provides access to the packages in this repository
 
         :param valid_sources:
             A list of URLs that are permissible to fetch data from
 
-        :param generator:
-            If the function should function as a generator, yielding after each package
+        :raises:
+            ProviderException: when an error occurs trying to open a file
+            DownloaderException: when there is an issue download package info
+            ClientException: when there is an issue parsing package info
 
         :return:
-            A dict in the format:
-            {
-                'Package Name': {
+            A generator of
+            (
+                'Package Name',
+                {
                     'name': name,
                     'description': description,
                     'author': author,
@@ -186,55 +205,58 @@ class RepositoryProvider(ReleaseSelector):
                     'issues': url,
                     'donate': url,
                     'buy': url
-                },
-                ...
-            }
-            False if there is an error or None if no match
+                }
+            )
+            tuples
         """
 
         if 'get_packages' in self.cache:
-            return self.cache['get_packages']
-
-        def fail(value):
-            if value == False:
-                self.failed_sources = [self.repo]
-            self.cache['get_packages'] = value
-            if generator:
-                raise StopIteration()
-            return value
+            return self.cache['get_packages'].items()
 
         if valid_sources != None and self.repo not in valid_sources:
-            return fail(None)
+            raise StopIteration()
 
         self.fetch()
-        if self.repo_info == False:
-            return fail(False)
 
-        output = {}
-
+        def fail(message):
+            exception = ProviderException(message)
+            self.failed_sources[self.repo] = exception
+            self.cache['get_packages'] = {}
+            return self.cache['get_packages'].items()
         schema_error = u'Repository %s does not appear to be a valid repository file because ' % self.repo
 
         if 'schema_version' not in self.repo_info:
-            console_write(u'%s the "schema_version" JSON key is missing.' % schema_error, True)
-            return fail(False)
+            error_string = u'%s the "schema_version" JSON key is missing.' % schema_error
+            return fail(error_string)
 
         try:
             self.schema_version = float(self.repo_info.get('schema_version'))
         except (ValueError):
-            console_write(u'%s the "schema_version" is not a valid number.' % schema_error, True)
-            return fail(False)
+            error_string = u'%s the "schema_version" is not a valid number.' % schema_error
+            return fail(error_string)
 
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
-            console_write(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error, True)
-            return fail(False)
+            error_string = u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error
+            return fail(error_string)
 
         if 'packages' not in self.repo_info:
-            console_write(u'%s the "packages" JSON key is missing.' % schema_error, True)
-            return fail(False)
+            error_string = u'%s the "packages" JSON key is missing.' % schema_error
+            return fail(error_string)
 
         github_client = GitHubClient(self.settings)
         bitbucket_client = BitBucketClient(self.settings)
 
+        # Backfill the "previous_names" keys for old schemas
+        previous_names = {}
+        if self.schema_version < 2.0:
+            renamed = self.get_renamed_packages()
+            for old_name in renamed:
+                new_name = renamed[old_name]
+                if new_name not in previous_names:
+                    previous_names[new_name] = []
+                previous_names[new_name].append(old_name)
+
+        output = {}
         for package in self.repo_info['packages']:
             info = {
                 'sources': [self.repo]
@@ -259,18 +281,23 @@ class RepositoryProvider(ReleaseSelector):
 
                     info['sources'].append(details)
 
-                    github_repo_info = github_client.repo_info(details)
-                    bitbucket_repo_info = bitbucket_client.repo_info(details)
+                    try:
+                        github_repo_info = github_client.repo_info(details)
+                        bitbucket_repo_info = bitbucket_client.repo_info(details)
 
-                    # When grabbing details, prefer explicit field values over the values
-                    # from the GitHub or BitBucket API
-                    if github_repo_info:
-                        info = dict(chain(github_repo_info.items(), info.items()))
-                    elif bitbucket_repo_info:
-                        info = dict(chain(bitbucket_repo_info.items(), info.items()))
-                    else:
-                        self.failed_sources.append(details)
-                        console_write(u'Invalid "details" key for one of the packages in the repository %s.' % self.repo, True)
+                        # When grabbing details, prefer explicit field values over the values
+                        # from the GitHub or BitBucket API
+                        if github_repo_info:
+                            info = dict(chain(github_repo_info.items(), info.items()))
+                        elif bitbucket_repo_info:
+                            info = dict(chain(bitbucket_repo_info.items(), info.items()))
+                        else:
+                            raise ProviderException(u'Invalid "details" value "%s" for one of the packages in the repository %s.' % (details, self.repo))
+
+                    except (DownloaderException, ClientException, ProviderException) as e:
+                        if 'name' in info:
+                            self.broken_packages[info['name']] = e
+                        self.failed_sources[details] = e
                         continue
 
                 # If no releases info was specified, also grab the download info from GH or BB
@@ -292,17 +319,23 @@ class RepositoryProvider(ReleaseSelector):
 
                     if 'details' in release:
                         download_details = release['details']
-                        github_download = github_client.download_info(download_details)
-                        bitbucket_download = bitbucket_client.download_info(download_details)
 
-                        # Overlay the explicit field values over values fetched from the APIs
-                        if github_download:
-                            download_info = dict(chain(github_download.items(), download_info.items()))
-                        elif bitbucket_download:
-                            download_info = dict(chain(bitbucket_download.items(), download_info.items()))
-                        else:
-                            self.failed_sources.append(download_details)
-                            console_write(u'Invalid "details" key under the "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
+                        try:
+                            github_download = github_client.download_info(download_details)
+                            bitbucket_download = bitbucket_client.download_info(download_details)
+
+                            # Overlay the explicit field values over values fetched from the APIs
+                            if github_download:
+                                download_info = dict(chain(github_download.items(), download_info.items()))
+                            elif bitbucket_download:
+                                download_info = dict(chain(bitbucket_download.items(), download_info.items()))
+                            else:
+                                raise ProviderException(u'Invalid "details" value "%s" under the "releases" key for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
+
+                        except (DownloaderException, ClientException, ProviderException) as e:
+                            if 'name' in info:
+                                self.broken_packages[info['name']] = e
+                            self.failed_sources[download_details] = e
                             continue
 
                     info['releases'].append(download_info)
@@ -320,8 +353,7 @@ class RepositoryProvider(ReleaseSelector):
                 continue
 
             if 'download' not in info and 'releases' not in info:
-                self.broken_packages.append(info['name'])
-                console_write(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo), True)
+                self.broken_packages[info['name']] = ProviderException(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo))
                 continue
 
             for field in ['previous_names', 'labels']:
@@ -357,24 +389,13 @@ class RepositoryProvider(ReleaseSelector):
                         date = release['date']
                 info['last_modified'] = date
 
-            if generator:
-                yield info['name'], info
+            if info['name'] in previous_names:
+                info['previous_names'].extend(previous_names[info['name']])
 
             output[info['name']] = info
-
-        # Backfill the "previous_names" keys for old schemas
-        if self.schema_version < 2.0:
-            renamed = self.get_renamed_packages()
-            for old_name in renamed:
-                new_name = renamed[old_name]
-                if new_name not in output:
-                    continue
-                output[new_name]['previous_names'].append(old_name)
+            yield (info['name'], info)
 
         self.cache['get_packages'] = output
-
-        if not generator:
-            return output
 
     def get_renamed_packages(self):
         """:return: A dict of the packages that have been renamed"""

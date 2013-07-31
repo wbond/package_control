@@ -1,21 +1,11 @@
-try:
-    # Python 3
-    from http.client import HTTPException
-    from urllib.error import URLError
-except (ImportError):
-    # Python 2
-    from httplib import HTTPException
-    from urllib2 import URLError
+from .downloader_exception import DownloaderException
 
 
-class NoCaCertException(HTTPException, URLError):
+class NoCaCertException(DownloaderException):
     """
     An exception for when there is no CA cert for a domain name
     """
 
-    def __init__(self, host):
-        HTTPException.__init__(self)
-        self.host = host
-
-    def __str__(self):
-        return ('No CA certs available for %s' % self.host)
+    def __init__(self, message, domain):
+        self.domain = domain
+        super(NoCaCertException, self).__init__(message)

@@ -10,6 +10,7 @@ from ..package_io import read_package_file
 from ..cache import get_cache
 from ..ca_certs import get_system_ca_bundle_path
 from .no_ca_cert_exception import NoCaCertException
+from .downloader_exception import DownloaderException
 
 
 class CertProvider(object):
@@ -28,8 +29,11 @@ class CertProvider(object):
         :param timeout:
             The int timeout for downloading the CA cert from the channel
 
+        :raises:
+            NoCaCertException: when a suitable CA cert could not be found
+
         :return:
-            The CA cert bundle path on success, or False on error
+            The CA cert bundle path
         """
 
         # Try to use the system CA bundle
@@ -39,7 +43,8 @@ class CertProvider(object):
 
         # If the system bundle did not work, fall back to our CA distribution
         # system. Hopefully this will be going away soon.
-        console_write(u'Unable to find system CA cert bundle, falling back to certs provided by Package Control')
+        if self.settings.get('debug'):
+            console_write(u'Unable to find system CA cert bundle, falling back to certs provided by Package Control')
 
         cert_match = False
 
@@ -49,8 +54,7 @@ class CertProvider(object):
         if not os.path.exists(ca_bundle_path) or os.stat(ca_bundle_path).st_size == 0:
             bundle_contents = read_package_file('Package Control', 'Package Control.ca-bundle', True)
             if not bundle_contents:
-                console_write(u'Unable to copy distributed Package Control.ca-bundle', True)
-                return False
+                raise NoCaCertException(u'Unable to copy distributed Package Control.ca-bundle', domain)
             with open_compat(ca_bundle_path, 'wb') as f:
                 f.write(bundle_contents)
 
@@ -65,7 +69,7 @@ class CertProvider(object):
                 wildcard_info[1], domain, timeout) or cert_match
 
         if not cert_match:
-            raise NoCaCertException(domain)
+            raise NoCaCertException(u'No CA certs available for %s' % domain, domain)
 
         return ca_bundle_path
 
@@ -97,8 +101,7 @@ class CertProvider(object):
         if not os.path.exists(ca_list_path) or os.stat(ca_list_path).st_size == 0:
             list_contents = read_package_file('Package Control', 'Package Control.ca-list')
             if not list_contents:
-                console_write(u'Unable to copy distributed Package Control.ca-list', True)
-                return False
+                raise NoCaCertException(u'Unable to copy distributed Package Control.ca-list', domain)
             with open_compat(ca_list_path, 'w') as f:
                 f.write(list_contents)
 
@@ -142,7 +145,8 @@ class CertProvider(object):
         """
 
         cert_downloader = self.__class__(self.settings)
-        console_write(u"Downloading CA cert for %s from \"%s\"" % (domain, url), True)
+        if self.settings.get('debug'):
+            console_write(u"Downloading CA cert for %s from \"%s\"" % (domain, url), True)
         return cert_downloader.download(url,
             'Error downloading CA certs for %s.' % domain, timeout, 1)
 
@@ -166,11 +170,12 @@ class CertProvider(object):
         """
 
         if os.path.exists(path):
-            console_write(u"Copying CA cert for %s from \"%s\"" % (domain, path), True)
+            if self.settings.get('debug'):
+                console_write(u"Copying CA cert for %s from \"%s\"" % (domain, path), True)
             with open_compat(path, 'rb') as f:
                 return f.read()
         else:
-            console_write(u"Unable to find CA cert for %s at \"%s\"" % (domain, path), True)
+            raise NoCaCertException(u"Unable to find CA cert for %s at \"%s\"" % (domain, path), domain)
 
     def save_cert(self, cert_id, contents):
         """

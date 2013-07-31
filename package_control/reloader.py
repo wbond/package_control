@@ -59,12 +59,14 @@ mods_load_order = [
     '.http.validating_https_handler',
 
     '.clients',
+    '.clients.client_exception',
     '.clients.bitbucket_client',
     '.clients.github_client',
     '.clients.readme_client',
     '.clients.json_api_client',
 
     '.providers',
+    '.providers.provider_exception',
     '.providers.bitbucket_repository_provider',
     '.providers.channel_provider',
     '.providers.github_repository_provider',
@@ -75,6 +77,7 @@ mods_load_order = [
     '.download_manager',
 
     '.downloaders',
+    '.downloaders.downloader_exception',
     '.downloaders.rate_limit_exception',
     '.downloaders.binary_not_found_error',
     '.downloaders.non_clean_exit_error',

@@ -17,8 +17,10 @@ class ReleaseSelector():
             A package info dict with a "releases" key
 
         :return:
-            The package info dict with the "releases" key deleted, and a "download" key
-            added that contains a dict with "version", "url" and "date" keys
+            The package info dict with the "releases" key deleted, and a
+            "download" key added that contains a dict with "version", "url" and
+            "date" keys.
+            None if no compatible relases are available.
         """
 
         releases = version_sort(package_info['releases'])
@@ -43,7 +45,7 @@ class ReleaseSelector():
 
             return package_info
 
-        return False
+        return None
 
     def select_platform(self, package_info):
         """
@@ -53,13 +55,15 @@ class ReleaseSelector():
             A package info dict with a "platforms" key
 
         :return:
-            The package info dict with the "platforms" key deleted, and a "download" key
-            added that contains a dict with "version" and "url" keys
+            The package info dict with the "platforms" key deleted, and a
+            "download" key added that contains a dict with "version" and "url"
+            keys.
+            None if no compatible platforms.
         """
         platforms = list(package_info['platforms'].keys())
         best_platform = self.get_best_platform(platforms)
         if not best_platform:
-            return False
+            return None
 
         package_info['download'] = package_info['platforms'][best_platform][0]
         package_info['download']['date'] = package_info.get('last_modified')

@@ -4,3 +4,6 @@ class HttpError(Exception):
     def __init__(self, message, code):
         self.code = code
         super(HttpError, self).__init__(message)
+
+    def __str__(self):
+        return self.args[0]

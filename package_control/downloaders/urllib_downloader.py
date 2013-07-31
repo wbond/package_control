@@ -29,6 +29,7 @@ from ..unicode import unicode_from_os
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
 from .rate_limit_exception import RateLimitException
+from .downloader_exception import DownloaderException
 from .cert_provider import CertProvider
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
@@ -85,8 +86,13 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
         :param prefer_cached:
             If a cached version should be returned instead of trying a new request
 
+        :raises:
+            NoCaCertException: when no CA certs can be found for the url
+            RateLimitException: when a rate limit is hit
+            DownloaderException: when any other download error occurs
+
         :return:
-            The string contents of the URL, or False on error
+            The string contents of the URL
         """
 
         if prefer_cached:
@@ -96,6 +102,8 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
         self.setup_opener(url, timeout)
 
+        debug = self.settings.get('debug')
+        error_string = None
         while tries > 0:
             tries -= 1
             try:
@@ -136,7 +144,6 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
                 error_string = u'%s HTTP exception %s (%s) downloading %s.' % (
                     error_message, e.__class__.__name__, unicode_from_os(e), url)
-                console_write(error_string, True)
 
             except (HTTPError) as e:
                 # Make sure the response is closed so we can re-use the connection
@@ -152,32 +159,37 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
                 # Bitbucket and Github return 503 a decent amount
                 if unicode_from_os(e.code) == '503' and tries != 0:
-                    error_string = u'Downloading %s was rate limited, trying again' % url
-                    console_write(error_string, True)
+                    error_string = u'Downloading %s was rate limited' % url
+                    if tries:
+                        error_string += ', trying again'
+                        if debug:
+                            console_write(error_string, True)
                     continue
 
                 error_string = u'%s HTTP error %s downloading %s.' % (
                     error_message, unicode_from_os(e.code), url)
-                console_write(error_string, True)
 
             except (URLError) as e:
 
                 # Bitbucket and Github timeout a decent amount
                 if unicode_from_os(e.reason) == 'The read operation timed out' \
                         or unicode_from_os(e.reason) == 'timed out':
-                    error_string = u'Downloading %s timed out, trying again' % url
-                    console_write(error_string, True)
+                    error_string = u'Downloading %s timed out' % url
+                    if tries:
+                        error_string += ', trying again'
+                        if debug:
+                            console_write(error_string, True)
                     continue
 
                 error_string = u'%s URL error %s downloading %s.' % (
                     error_message, unicode_from_os(e.reason), url)
-                console_write(error_string, True)
 
             except (ConnectionError):
                 # Handle broken pipes/reset connections by creating a new opener, and
                 # thus getting new handlers and a new connection
                 error_string = u'Connection went away while trying to download %s, trying again' % url
-                console_write(error_string, True)
+                if debug:
+                    console_write(error_string, True)
 
                 self.opener = None
                 self.setup_opener(url, timeout)
@@ -186,7 +198,8 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
                 continue
 
             break
-        return False
+
+        raise DownloaderException(error_string)
 
     def get_handler(self):
         """

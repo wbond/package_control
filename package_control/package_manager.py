@@ -33,6 +33,9 @@ from .cache import (clear_cache, set_cache, get_cache, merge_cache_under_setting
     merge_cache_over_settings, set_cache_under_settings, set_cache_over_settings)
 from .versions import version_comparable, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
+from .downloaders.downloader_exception import DownloaderException
+from .providers.provider_exception import ProviderException
+from .clients.client_exception import ClientException
 from .download_manager import grab, release
 from .providers.channel_provider import ChannelProvider
 from .upgraders.git_upgrader import GitUpgrader
@@ -164,32 +167,34 @@ class PackageManager():
                         provider = provider_class(channel, self.settings)
                         break
 
-                channel_repositories = provider.get_repositories()
-                if channel_repositories == False:
+                try:
+                    channel_repositories = provider.get_repositories()
+                    set_cache(cache_key, channel_repositories, cache_ttl)
+
+                    for repo in channel_repositories:
+                        repo_packages = provider.get_packages(repo)
+                        packages_cache_key = repo + '.packages'
+                        set_cache(packages_cache_key, repo_packages, cache_ttl)
+
+                    # Have the local name map override the one from the channel
+                    name_map = provider.get_name_map()
+                    set_cache_under_settings(self, 'package_name_map', channel, name_map, cache_ttl)
+
+                    renamed_packages = provider.get_renamed_packages()
+                    set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)
+
+                    unavailable_packages = provider.get_unavailable_packages()
+                    set_cache_under_settings(self, 'unavailable_packages', channel, unavailable_packages, cache_ttl, list_=True)
+
+                    provider_certs = provider.get_certs()
+                    certs = self.settings.get('certs', {}).copy()
+                    certs.update(provider_certs)
+                    # Save the master list of certs, used by downloaders/cert_provider.py
+                    set_cache('*.certs', certs, cache_ttl)
+
+                except (DownloaderException, ClientException, ProviderException) as e:
+                    console_write(e, True)
                     continue
-                set_cache(cache_key, channel_repositories, cache_ttl)
-
-                for repo in channel_repositories:
-                    if provider.get_packages(repo) == False:
-                        continue
-                    packages_cache_key = repo + '.packages'
-                    set_cache(packages_cache_key, provider.get_packages(repo), cache_ttl)
-
-                # Have the local name map override the one from the channel
-                name_map = provider.get_name_map()
-                set_cache_under_settings(self, 'package_name_map', channel, name_map, cache_ttl)
-
-                renamed_packages = provider.get_renamed_packages()
-                set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)
-
-                unavailable_packages = provider.get_unavailable_packages()
-                set_cache_under_settings(self, 'unavailable_packages', channel, unavailable_packages, cache_ttl, list_=True)
-
-                provider_certs = provider.get_certs()
-                certs = self.settings.get('certs', {}).copy()
-                certs.update(provider_certs)
-                # Save the master list of certs, used by downloaders/cert_provider.py
-                set_cache('*.certs', certs, cache_ttl)
 
             repositories.extend(channel_repositories)
         return [repo.strip() for repo in repositories]
@@ -254,16 +259,18 @@ class PackageManager():
             downloader = downloaders[domain]
             provider = downloader.get_provider(repo)
 
-            _repository_packages = provider.get_packages()
-            if _repository_packages == False:
-                continue
-
             # Allow name mapping of packages for schema version < 2.0
             repository_packages = {}
-            for name, info in _repository_packages.items():
+            for name, info in provider.get_packages():
                 name = name_map.get(name, name)
                 info['name'] = name
                 repository_packages[name] = info
+
+            # Display errors we encountered while fetching package info
+            for url, exception in provider.get_failed_sources():
+                console_write(exception, True)
+            for name, exception in provider.get_broken_packages():
+                console_write(exception, True)
 
             cache_key = repo + '.packages'
             set_cache(cache_key, repository_packages, cache_ttl)
@@ -489,12 +496,15 @@ class PackageManager():
             is_upgrade = old_version != None
 
             # Download the sublime-package or zip file
-            download_manager = grab(url, self.settings)
-            package_bytes = download_manager.fetch(url, 'Error downloading package.')
-            release(url, download_manager)
-            if package_bytes == False:
+            try:
+                download_manager = grab(url, self.settings)
+                package_bytes = download_manager.fetch(url, 'Error downloading package.')
+                release(url, download_manager)
+            except (DownloaderException) as e:
+                console_write(e, True)
                 show_error(u'Unable to download %s. Please view the console for more details.' % package_name)
                 return False
+
             with open_compat(tmp_package_path, "wb") as package_file:
                 package_file.write(package_bytes)
 
@@ -997,10 +1007,12 @@ class PackageManager():
 
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
-        download_manager = grab(url, self.settings)
-        result = download_manager.fetch(url, 'Error submitting usage information.')
-        release(url, download_manager)
-        if result == False:
+        try:
+            download_manager = grab(url, self.settings)
+            result = download_manager.fetch(url, 'Error submitting usage information.')
+            release(url, download_manager)
+        except (DownloaderException) as e:
+            console_write(e, True)
             return
 
         try:

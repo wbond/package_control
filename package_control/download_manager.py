@@ -21,6 +21,7 @@ from .downloaders import DOWNLOADERS
 from .downloaders.binary_not_found_error import BinaryNotFoundError
 from .downloaders.rate_limit_exception import RateLimitException
 from .downloaders.no_ca_cert_exception import NoCaCertException
+from .downloaders.downloader_exception import DownloaderException
 from .http_cache import HttpCache
 
 
@@ -133,8 +134,11 @@ class DownloadManager(object):
         :param prefer_cached:
             If cached version of the URL content is preferred over a new request
 
+        :raises:
+            DownloaderException: if there was an error downloading the URL
+
         :return:
-            The string contents of the URL, or False on error
+            The string contents of the URL
         """
 
         is_ssl = re.search('^https://', url) != None
@@ -152,8 +156,9 @@ class DownloadManager(object):
                     pass
 
         if not self.downloader:
-            show_error(u'Unable to download %s due to no ssl module available and no capable program found. Please install curl or wget.' % url)
-            return False
+            error_string = u'Unable to download %s due to no ssl module available and no capable program found. Please install curl or wget.' % url
+            show_error(error_string)
+            raise DownloaderException(error_string)
 
         url = url.replace(' ', '%20')
         hostname = urlparse(url).hostname
@@ -178,14 +183,16 @@ class DownloadManager(object):
             console_write(u"  Timeout: %s" % str(timeout))
 
         if hostname in rate_limited_domains:
+            error_string = u"Skipping due to hitting rate limit for %s" % hostname
             if self.settings.get('debug'):
-                console_write(u"  Skipping due to hitting rate limit for %s" % hostname)
-            return False
+                console_write(u"  %s" % error_string)
+            raise DownloaderException(error_string)
 
         if hostname in no_ca_cert_domains:
+            error_string = u"  Skipping since there are no CA certs for %s" % hostname
             if self.settings.get('debug'):
-                console_write(u"  Skipping since there are no CA certs for %s" % hostname)
-            return False
+                console_write(u"  %s" % error_string)
+            raise DownloaderException(error_string)
 
         try:
             return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
@@ -196,8 +203,9 @@ class DownloadManager(object):
             set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
 
             error_string = (u'Hit rate limit of %s for %s, skipping all futher ' +
-                u'download requests for this domain') % (e.limit, e.host)
+                u'download requests for this domain') % (e.limit, e.domain)
             console_write(error_string, True)
+            raise
 
         except (NoCaCertException) as e:
 
@@ -207,7 +215,6 @@ class DownloadManager(object):
             error_string = (u'No CA certs available for %s, skipping all futher ' +
                 u'download requests for this domain. If you are on a trusted ' +
                 u'network, you can add the CA certs by running the "Grab ' +
-                u'CA Certs" command from the command palette.') % e.host
+                u'CA Certs" command from the command palette.') % e.domain
             console_write(error_string, True)
-
-        return False
+            raise

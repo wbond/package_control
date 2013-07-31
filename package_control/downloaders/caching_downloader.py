@@ -179,7 +179,7 @@ class CachingDownloader(object):
         if not self.settings['cache'].has(key):
             return False
 
-        if self.settings.get('debug', False):
+        if self.settings.get('debug'):
             console_write(u"Using cached content for %s" % url, True)
 
         return self.settings['cache'].get(key)
