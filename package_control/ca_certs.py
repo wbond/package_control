@@ -12,7 +12,7 @@ from .open_compat import open_compat, read_compat
 # Have somewhere to store the CA bundle, even when not running in Sublime Text
 try:
     import sublime
-    ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
+    ca_bundle_dir = None
 except (ImportError):
     ca_bundle_dir = os.path.join(os.path.expanduser('~'), '.package_control')
     if not os.path.exists(ca_bundle_dir):
@@ -70,6 +70,10 @@ def get_system_ca_bundle_path(settings):
         The full filesystem path to the .ca-bundle file, or False on error
     """
 
+    # If the sublime module is available, we bind this value at run time
+    # since the sublime.packages_path() is not available at import time
+    global ca_bundle_dir
+
     platform = sys.platform
     debug = settings.get('debug')
 
@@ -81,6 +85,8 @@ def get_system_ca_bundle_path(settings):
 
     # OS X
     if platform == 'darwin':
+        if not ca_bundle_dir:
+            ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
         ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
 
         exists = os.path.exists(ca_path)
