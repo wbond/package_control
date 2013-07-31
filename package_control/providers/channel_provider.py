@@ -14,7 +14,7 @@ from .release_selector import ReleaseSelector
 from .provider_exception import ProviderException
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
-from ..download_manager import grab, release
+from ..download_manager import downloader
 
 
 class ChannelProvider(ReleaseSelector):
@@ -81,10 +81,9 @@ class ChannelProvider(ReleaseSelector):
             return
 
         if re.match('https?://', self.channel, re.I):
-            download_manager = grab(self.channel, self.settings)
-            channel_json = download_manager.fetch(self.channel,
-                'Error downloading channel.')
-            release(self.channel, download_manager)
+            with downloader(self.channel, self.settings) as manager:
+                channel_json = manager.fetch(self.channel,
+                    'Error downloading channel.')
 
         # All other channels are expected to be filesystem paths
         else:

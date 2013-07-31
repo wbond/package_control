@@ -36,7 +36,7 @@ from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.downloader_exception import DownloaderException
 from .providers.provider_exception import ProviderException
 from .clients.client_exception import ClientException
-from .download_manager import grab, release
+from .download_manager import downloader
 from .providers.channel_provider import ChannelProvider
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
@@ -222,7 +222,7 @@ class PackageManager():
         cache_ttl = self.settings.get('cache_length')
         repositories = self.list_repositories()
         packages = {}
-        downloaders = {}
+        bg_downloaders = {}
         active = []
         repos_to_download = []
         name_map = self.settings.get('package_name_map', {})
@@ -238,26 +238,26 @@ class PackageManager():
 
             else:
                 domain = urlparse(repo).hostname
-                if domain not in downloaders:
-                    downloaders[domain] = BackgroundDownloader(self.settings,
-                        REPOSITORY_PROVIDERS)
-                downloaders[domain].add_url(repo)
+                if domain not in bg_downloaders:
+                    bg_downloaders[domain] = BackgroundDownloader(
+                        self.settings, REPOSITORY_PROVIDERS)
+                bg_downloaders[domain].add_url(repo)
                 repos_to_download.append(repo)
 
-        for downloader in list(downloaders.values()):
-            downloader.start()
-            active.append(downloader)
+        for bg_downloader in list(bg_downloaders.values()):
+            bg_downloader.start()
+            active.append(bg_downloader)
 
         # Wait for all of the downloaders to finish
         while active:
-            downloader = active.pop()
-            downloader.join()
+            bg_downloader = active.pop()
+            bg_downloader.join()
 
         # Grabs the results and stuff it all in the cache
         for repo in repos_to_download:
             domain = urlparse(repo).hostname
-            downloader = downloaders[domain]
-            provider = downloader.get_provider(repo)
+            bg_downloader = bg_downloaders[domain]
+            provider = bg_downloader.get_provider(repo)
 
             # Allow name mapping of packages for schema version < 2.0
             repository_packages = {}
@@ -497,9 +497,8 @@ class PackageManager():
 
             # Download the sublime-package or zip file
             try:
-                download_manager = grab(url, self.settings)
-                package_bytes = download_manager.fetch(url, 'Error downloading package.')
-                release(url, download_manager)
+                with downloader(url, self.settings) as manager:
+                    package_bytes = manager.fetch(url, 'Error downloading package.')
             except (DownloaderException) as e:
                 console_write(e, True)
                 show_error(u'Unable to download %s. Please view the console for more details.' % package_name)
@@ -1008,9 +1007,8 @@ class PackageManager():
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
         try:
-            download_manager = grab(url, self.settings)
-            result = download_manager.fetch(url, 'Error submitting usage information.')
-            release(url, download_manager)
+            with downloader(url, self.settings) as manager:
+                result = manager.fetch(url, 'Error submitting usage information.')
         except (DownloaderException) as e:
             console_write(e, True)
             return

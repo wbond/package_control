@@ -17,7 +17,7 @@ from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
-from ..download_manager import grab, release
+from ..download_manager import downloader
 
 
 class RepositoryProvider(ReleaseSelector):
@@ -149,10 +149,8 @@ class RepositoryProvider(ReleaseSelector):
         """
 
         if re.match('https?://', self.repo, re.I):
-            download_manager = grab(location, self.settings)
-            json_string = download_manager.fetch(location,
-                'Error downloading repository.')
-            release(location, download_manager)
+            with downloader(location, self.settings) as manager:
+                json_string = manager.fetch(location, 'Error downloading repository.')
 
         # Anything that is not a URL is expected to be a filesystem path
         else:

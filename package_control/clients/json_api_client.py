@@ -9,7 +9,7 @@ except (ImportError):
     from urlparse import urlparse
 
 from .client_exception import ClientException
-from ..download_manager import grab, release
+from ..download_manager import downloader
 
 
 class JSONApiClient():
@@ -37,10 +37,9 @@ class JSONApiClient():
             joiner = '?%s' if url.find('?') == -1 else '&%s'
             url += joiner % params
 
-        download_manager = grab(url, self.settings)
-        content = download_manager.fetch(url,
-            'Error downloading repository.', prefer_cached)
-        release(url, download_manager)
+        with downloader(url, self.settings) as manager:
+            content = manager.fetch(url, 'Error downloading repository.',
+                prefer_cached)
         return content
 
     def fetch_json(self, url, prefer_cached=False):

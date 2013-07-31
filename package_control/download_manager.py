@@ -2,6 +2,7 @@ import sys
 import re
 import socket
 from threading import Lock, Timer
+from contextlib import contextmanager
 
 try:
     # Python 3
@@ -38,7 +39,17 @@ _lock = Lock()
 _timer = None
 
 
-def grab(url, settings):
+@contextmanager
+def downloader(url, settings):
+    try:
+        manager = _grab(url, settings)
+        yield manager
+
+    finally:
+        _release(url, manager)
+
+
+def _grab(url, settings):
     global _managers, _lock, _in_use, _timer
 
     _lock.acquire()
@@ -62,7 +73,7 @@ def grab(url, settings):
         _lock.release()
 
 
-def release(url, manager):
+def _release(url, manager):
     global _managers, _lock, _in_use, _timer
 
     _lock.acquire()
