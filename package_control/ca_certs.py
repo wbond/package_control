@@ -2,6 +2,7 @@ import hashlib
 import os
 import re
 import time
+import sys
 
 from .cmd import Cli
 from .console_write import console_write
