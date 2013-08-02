@@ -336,10 +336,10 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
             # a safe operation to perform
             line = line.lstrip()
             if line.find('HTTP/') == 0:
-                match = re.match('HTTP/(\d\.\d)\s+(\d+)\s+(.*)$', line)
+                match = re.match('HTTP/(\d\.\d)\s+(\d+)(?:\s+(.*))?$', line)
                 general['version'] = match.group(1)
                 general['status'] = int(match.group(2))
-                general['message'] = match.group(3)
+                general['message'] = match.group(3) or ''
             else:
                 name, value = line.split(':', 1)
                 headers[name.lower()] = value.strip()
