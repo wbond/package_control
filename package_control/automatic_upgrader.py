@@ -187,7 +187,7 @@ class AutomaticUpgrader(threading.Thread):
             # we don't, the lambda will bind to info at the current scope, and
             # thus use the last value of info from the loop
             def make_on_complete(name):
-                return lambda: self.reenable_package(name)
+                return lambda: self.installer.reenable_package(name)
 
             for info in package_list:
                 if info[0] in disabled_packages:
@@ -210,6 +210,6 @@ class AutomaticUpgrader(threading.Thread):
         # in the main thread. We then create a new background thread so that
         # the upgrade process does not block the UI.
         def disable_packages():
-            disabled_packages = self.installer.disable_packages([info[0] for info in package_list])
+            disabled_packages.extend(self.installer.disable_packages([info[0] for info in package_list]))
             threading.Thread(target=do_upgrades).start()
         sublime.set_timeout(disable_packages, 1)
