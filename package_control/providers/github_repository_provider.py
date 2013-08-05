@@ -116,7 +116,9 @@ class GitHubRepositoryProvider():
         """
 
         if 'get_packages' in self.cache:
-            return self.cache['get_packages'].items()
+            for key, value in self.cache['get_packages'].items():
+                yield (key, value)
+            return
 
         client = GitHubClient(self.settings)
 
