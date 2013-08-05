@@ -125,7 +125,7 @@ class GitHubRepositoryProvider():
             download = client.download_info(self.repo)
 
             name = repo_info['name']
-            deails = {
+            details = {
                 'name': name,
                 'description': repo_info['description'],
                 'homepage': repo_info['homepage'],
