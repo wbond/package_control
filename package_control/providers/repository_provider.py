@@ -222,26 +222,30 @@ class RepositoryProvider(ReleaseSelector):
             exception = ProviderException(message)
             self.failed_sources[self.repo] = exception
             self.cache['get_packages'] = {}
-            return self.cache['get_packages'].items()
+            return
         schema_error = u'Repository %s does not appear to be a valid repository file because ' % self.repo
 
         if 'schema_version' not in self.repo_info:
             error_string = u'%s the "schema_version" JSON key is missing.' % schema_error
-            return fail(error_string)
+            fail(error_string)
+            return
 
         try:
             self.schema_version = float(self.repo_info.get('schema_version'))
         except (ValueError):
             error_string = u'%s the "schema_version" is not a valid number.' % schema_error
-            return fail(error_string)
+            fail(error_string)
+            return
 
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
             error_string = u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error
-            return fail(error_string)
+            fail(error_string)
+            return
 
         if 'packages' not in self.repo_info:
             error_string = u'%s the "packages" JSON key is missing.' % schema_error
-            return fail(error_string)
+            fail(error_string)
+            return
 
         github_client = GitHubClient(self.settings)
         bitbucket_client = BitBucketClient(self.settings)
