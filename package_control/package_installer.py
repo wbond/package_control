@@ -103,18 +103,17 @@ class PackageInstaller():
                         ).incoming()
 
                 if installed:
-                    if not installed_version:
-                        if vcs:
-                            if incoming:
-                                action = 'pull'
-                                extra = ' with ' + vcs
-                            else:
-                                action = 'none'
-                                extra = ''
+                    if vcs:
+                        if incoming:
+                            action = 'pull'
+                            extra = ' with ' + vcs
                         else:
-                            action = 'overwrite'
-                            extra = ' %s with %s' % (installed_version_name,
-                                new_version)
+                            action = 'none'
+                            extra = ''
+                    elif not installed_version:
+                        action = 'overwrite'
+                        extra = ' %s with %s' % (installed_version_name,
+                            new_version)
                     else:
                         installed_version = version_comparable(installed_version)
                         download_version = version_comparable(download['version'])
