@@ -47,6 +47,7 @@ class HgUpgrader(VcsUpgrader):
             return False
         args = [binary]
         args.extend(self.update_command)
+        args.append('default')
         self.execute(args, self.working_copy)
         return True
 
@@ -62,8 +63,7 @@ class HgUpgrader(VcsUpgrader):
         if not binary:
             return False
 
-        args = [binary, 'in', '-q']
-        args.append(self.update_command[-1])
+        args = [binary, 'in', '-q', 'default']
         output = self.execute(args, self.working_copy)
         if output == False:
             return False

@@ -121,8 +121,9 @@
 
 	"hg_binary": "",
 
-	// Be sure to keep the remote name as the last argument
-	"hg_update_command": ["pull", "--update", "default"],
+	// For HG repositories, be sure to use "default" as the remote URL.
+	// This is the default behavior when cloning an HG repo.
+	"hg_update_command": ["pull", "--update"],
 
 	// Full path to the openssl binary, if not found on your machine. This is
 	// only used when running the Grab CA Certs command.
