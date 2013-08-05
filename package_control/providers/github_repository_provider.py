@@ -1,6 +1,9 @@
 import re
 
 from ..clients.github_client import GitHubClient
+from ..downloaders.downloader_exception import DownloaderException
+from ..clients.client_exception import ClientException
+from .provider_exception import ProviderException
 
 
 class GitHubRepositoryProvider():
@@ -143,7 +146,7 @@ class GitHubRepositoryProvider():
             self.cache['get_packages'] = {name: details}
             yield (name, details)
 
-        except (Exception) as e:
+        except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo] = e
             self.cache['get_packages'] = {}
             raise StopIteration()

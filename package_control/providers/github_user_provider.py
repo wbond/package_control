@@ -1,6 +1,9 @@
 import re
 
 from ..clients.github_client import GitHubClient
+from ..downloaders.downloader_exception import DownloaderException
+from ..clients.client_exception import ClientException
+from .provider_exception import ProviderException
 
 
 class GitHubUserProvider():
@@ -115,7 +118,7 @@ class GitHubUserProvider():
 
         try:
             user_repos = client.user_info(self.repo)
-        except (Exception) as e:
+        except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources = [self.repo]
             self.cache['get_packages'] = e
             raise e
@@ -146,7 +149,7 @@ class GitHubUserProvider():
                 output[name] = details
                 yield (name, details)
 
-            except (Exception) as e:
+            except (DownloaderException, ClientException, ProviderException) as e:
                 self.failed_sources[repo_url] = e
 
         self.cache['get_packages'] = output

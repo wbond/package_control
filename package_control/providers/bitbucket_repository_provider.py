@@ -1,6 +1,9 @@
 import re
 
 from ..clients.bitbucket_client import BitBucketClient
+from ..downloaders.downloader_exception import DownloaderException
+from ..clients.client_exception import ClientException
+from .provider_exception import ProviderException
 
 
 class BitBucketRepositoryProvider():
@@ -137,7 +140,7 @@ class BitBucketRepositoryProvider():
             self.cache['get_packages'] = {name: details}
             yield (name, details)
 
-        except (Exception) as e:
+        except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo] = e
             self.cache['get_packages'] = {}
             raise StopIteration()
