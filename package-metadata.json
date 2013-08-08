@@ -1,5 +1,5 @@
 {
-	"version": "2.0.0-alpha12",
-	"url": "http://wbond.net/sublime_packages/package_control",
+	"version": "2.0.0",
+	"url": "https://sublime.wbond.net",
 	"description": "A full-featured package manager"
 }
