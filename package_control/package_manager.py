@@ -453,11 +453,14 @@ class PackageManager():
 
         packages = self.list_available_packages()
 
-        if package_name in self.settings.get('unavailable_packages', []):
+        is_available = package_name in list(packages.keys())
+        is_unavailable = package_name in self.settings.get('unavailable_packages', [])
+
+        if is_unavailable and not is_available:
             console_write(u'The package "%s" is not available on this platform.' % package_name, True)
             return False
 
-        if package_name not in list(packages.keys()):
+        if not is_available:
             show_error(u'The package specified, %s, is not available' % package_name)
             return False
 
