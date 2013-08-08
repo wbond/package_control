@@ -40,7 +40,7 @@
 		"github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
 		"nodeload.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
 		"raw.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"sublime.wbond.net": ["221e907bdfff70d71cea42361ae209d5", "https://sublime.wbond.net/certs/221e907bdfff70d71cea42361ae209d5"],
+		"sublime.wbond.net": ["221e907bdfff70d71cea42361ae209d5", "https://sublime.wbond.net/certs/221e907bdfff70d71cea42361ae209d5"]
 	},
 
 	// Install pre-release versions of packages. If this is false, versions
