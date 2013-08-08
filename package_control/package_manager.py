@@ -405,7 +405,9 @@ class PackageManager():
             files_to_ignore = self.settings.get('files_to_ignore_binary', [])
             files_to_include = self.settings.get('files_to_include_binary', [])
 
-        package_dir_regex = re.compile('^' + re.escape(package_dir))
+        slash = '\\' if os.name == 'nt' else '/'
+        trailing_package_dir = package_dir + slash if package_dir[-1] != slash else package_dir
+        package_dir_regex = re.compile('^' + re.escape(trailing_package_dir))
         for root, dirs, files in os.walk(package_dir):
             [dirs.remove(dir_) for dir_ in dirs if dir_ in dirs_to_ignore]
             paths = dirs
