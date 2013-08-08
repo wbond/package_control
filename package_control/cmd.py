@@ -94,8 +94,7 @@ class Cli(object):
             console_write(u"Trying to execute command %s" % create_cmd(args), True)
 
         try:
-            stdin = subprocess.PIPE if input else None
-            proc = subprocess.Popen(args, stdin=stdin,
+            proc = subprocess.Popen(args, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 startupinfo=startupinfo, cwd=cwd)
 
