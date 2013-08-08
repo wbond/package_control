@@ -1,0 +1,60 @@
+Package Control 2.0.0 Changelog:
+
+
+Today I'd like to announce two big milestones:
+
+ - Package Control 2.0 for ST2 and ST3
+ - A new Package Control website at https://sublime.wbond.net
+
+The full announcement about the PC 2.0 release is available on the news page at
+https://sublime.wbond.net/news.
+
+
+Giving Back
+
+Part of the new Package Control website is in-depth information about each
+package. The new package pages include a link where you can give a tip to the
+developer/maintainer of your favorite packages.
+
+The donate links go to https://www.gittip.com, which is building an excellent,
+and open platform for users to say "thank you" to open source developers. It
+is possible to give a small amount each week, such as $0.25, however these small
+amounts multiplied by the large size of the community can be a big thank you!
+
+One of the less glamorous jobs involved with making Package Control happen is
+reviewing and giving package developers feedback before adding their packages
+to the default channel. The follow contributors deserve a big thank you:
+
+FichteFoll - https://www.gittip.com/FichteFoll/
+joneshf    - https://www.gittip.com/on/github/joneshf/
+sentience  - https://www.gittip.com/on/github/sentience/
+
+Finally, I'm looking to raise some money to obtain a Mac Mini for the purposes
+of supporting ST3 on OS X and a license for a Windows 8 VM. If you are inclined
+to donate to those, or want to just buy me a beer, check out:
+
+https://sublime.wbond.net/say_thanks
+
+
+Notable Features
+
+ - A new Windows downloader that uses WinINet and should provide much better
+   proxy support
+
+ - Using operating system-supplied SSL CA certs on all platforms, with a
+   deprecated fallback to certificates served through the channel
+
+ - Proxy server fixes for OS X
+
+ - A completely revamped channel and repository system with support for more
+   information about packages including labels; readme, issues, donate and buy
+   URLs; tag-based releases; platform targetting without a custom packages.json
+   file; and Sublime Text version targetting
+
+ - Support for installing via .sublime-package files in ST3, which allows users
+   to easily override specific files from the package. Package developers who
+   need a loose folder of files may include a .no-sublime-package file in their
+   repo.
+
+ - In the coming days the new Package Control website will be released as open
+   source on GitHub
