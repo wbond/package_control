@@ -37,7 +37,7 @@ class BitBucketClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match, or a dict with the following keys:
+            None if no match, False if no commit, or a dict with the following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
@@ -116,7 +116,7 @@ class BitBucketClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match, or a dict with the following keys:
+            None if no match, False if no commit, or a dict with the following keys:
               `user_repo` - the user/repo name
               `timestamp` - the ISO-8601 UTC timestamp string
               `commit` - the branch or tag name
@@ -130,6 +130,8 @@ class BitBucketClient(JSONApiClient):
             tags_list = self.fetch_json(tags_url)
             tags = version_filter(tags_list.keys(), self.settings.get('install_prereleases'))
             tags = version_sort(tags, reverse=True)
+            if not tags:
+                return False
             commit = tags[0]
 
         else:

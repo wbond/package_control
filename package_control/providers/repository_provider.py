@@ -331,8 +331,14 @@ class RepositoryProvider(ReleaseSelector):
                             # Overlay the explicit field values over values fetched from the APIs
                             if github_download:
                                 download_info = dict(chain(github_download.items(), download_info.items()))
+                            # No matching tags
+                            elif github_download == False:
+                                download_info = {}
                             elif bitbucket_download:
                                 download_info = dict(chain(bitbucket_download.items(), download_info.items()))
+                            # No matching tags
+                            elif bitbucket_download == False:
+                                download_info = {}
                             else:
                                 raise ProviderException(u'Invalid "details" value "%s" under the "releases" key for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
 
@@ -342,7 +348,8 @@ class RepositoryProvider(ReleaseSelector):
                             self.failed_sources[download_details] = e
                             continue
 
-                    info['releases'].append(download_info)
+                    if download_info:
+                        info['releases'].append(download_info)
 
                 info = self.select_release(info)
 

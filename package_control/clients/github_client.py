@@ -31,7 +31,7 @@ class GitHubClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match, or a dict with the following keys:
+            None if no match, False if no commit, or a dict with the following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
@@ -150,7 +150,7 @@ class GitHubClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match, or a dict with the following keys:
+            None if no match, False is no commit, or a dict with the following keys:
               `user_repo` - the user/repo name
               `timestamp` - the ISO-8601 UTC timestamp string
               `commit` - the branch or tag name
@@ -165,6 +165,8 @@ class GitHubClient(JSONApiClient):
             tags = [tag['name'] for tag in tags_list]
             tags = version_filter(tags, self.settings.get('install_prereleases'))
             tags = version_sort(tags, reverse=True)
+            if not tags:
+                return False
             commit = tags[0]
 
         else:
