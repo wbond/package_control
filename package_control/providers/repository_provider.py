@@ -396,7 +396,7 @@ class RepositoryProvider(ReleaseSelector):
                 # Extract a date from the newest download
                 date = '1970-01-01 00:00:00'
                 for release in info['releases']:
-                    if release['date'] > date:
+                    if 'date' in release and release['date'] > date:
                         date = release['date']
                 info['last_modified'] = date
 
