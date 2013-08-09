@@ -169,11 +169,11 @@ class RepositoryProvider(ReleaseSelector):
         except (ValueError):
             raise ProviderException(u'Error parsing JSON from repository %s.' % location)
 
-    def get_packages(self, valid_sources=None):
+    def get_packages(self, invalid_sources=None):
         """
         Provides access to the packages in this repository
 
-        :param valid_sources:
+        :param invalid_sources:
             A list of URLs that are permissible to fetch data from
 
         :raises:
@@ -213,7 +213,7 @@ class RepositoryProvider(ReleaseSelector):
                 yield (key, value)
             return
 
-        if valid_sources != None and self.repo not in valid_sources:
+        if invalid_sources != None and self.repo in invalid_sources:
             raise StopIteration()
 
         self.fetch()
@@ -280,7 +280,7 @@ class RepositoryProvider(ReleaseSelector):
 
                 # Try to grab package-level details from GitHub or BitBucket
                 if details:
-                    if valid_sources != None and details not in valid_sources:
+                    if invalid_sources != None and details in invalid_sources:
                         continue
 
                     info['sources'].append(details)

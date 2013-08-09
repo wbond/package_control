@@ -71,12 +71,12 @@ class BitBucketRepositoryProvider():
 
         return {}.items()
 
-    def get_packages(self, valid_sources=None):
+    def get_packages(self, invalid_sources=None):
         """
         Uses the BitBucket API to construct necessary info for a package
 
-        :param valid_sources:
-            A list of URLs that are permissible to fetch data from
+        :param invalid_sources:
+            A list of URLs that should be ignored
 
         :raises:
             DownloaderException: when there is an issue download package info
@@ -116,7 +116,7 @@ class BitBucketRepositoryProvider():
 
         client = BitBucketClient(self.settings)
 
-        if valid_sources != None and self.repo not in valid_sources:
+        if invalid_sources != None and self.repo in invalid_sources:
             raise StopIteration()
 
         try:
