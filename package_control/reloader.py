@@ -8,6 +8,7 @@ st_version = 2
 # which results in an empty version number
 if sublime.version() == '' or int(sublime.version()) > 3000:
     st_version = 3
+    from imp import reload
 
 
 # Python allows reloading modules on the fly, which allows us to do live upgrades.
@@ -126,4 +127,4 @@ mods_load_order = [
 for suffix in mods_load_order:
     mod = mod_prefix + suffix
     if mod in reload_mods:
-        del sys.modules[mod]
+        reload(sys.modules[mod])

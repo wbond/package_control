@@ -46,10 +46,15 @@ if installed_dir != 'Package Control':
 else:
     reloader_name = 'package_control.reloader'
 
-    # Make sure all dependencies are reloaded on upgrade - it seems deleting
-    # references to the modules is the best way to reliably do that
+    # ST3 loads each package as a module, so it needs an extra prefix
+    if st_version == 3:
+        reloader_name = 'Package Control.' + reloader_name
+        from imp import reload
+
+    # Make sure all dependencies are reloaded on upgrade
     if reloader_name in sys.modules:
-        del sys.modules[reloader_name]
+        reload(sys.modules[reloader_name])
+
 
     try:
         # Python 3
