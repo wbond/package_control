@@ -9,6 +9,10 @@ Today I'd like to announce two big milestones:
 The full announcement about the PC 2.0 release is available on the news page at
 https://sublime.wbond.net/news.
 
+If you are running the "testing" version of Package Control (1.6.9 - 1.6.11),
+you will likely need to restart Sublime Text before Package Control will work
+properly.
+
 
 Giving Back
 
