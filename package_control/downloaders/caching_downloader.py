@@ -120,8 +120,8 @@ class CachingDownloader(object):
                 if field == 'no-store':
                     return content
 
-        # Don't ever cache zip files for the sake of hard drive space
-        if headers.get('content-type') == 'application/zip':
+        # Don't ever cache zip/binary files for the sake of hard drive space
+        if headers.get('content-type') in ['application/zip', 'application/octet-stream']:
             if debug:
                 console_write(u"Skipping cache since the response is a zip file", True)
             return content
