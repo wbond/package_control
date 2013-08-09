@@ -14,6 +14,9 @@ def semver_compat(v):
             return '0'
         v = v['version']
 
+    # Trim v off of the front
+    v = re.sub('^v', '', v)
+
     # We prepend 0 to all date-based version numbers so that developers
     # may switch to explicit versioning from GitHub/BitBucket
     # versioning based on commit dates.
@@ -57,9 +60,10 @@ def version_exclude_prerelease(versions):
 def version_filter(versions, allow_prerelease=False):
     output = []
     for version in versions:
-        if not SemVer.valid(version):
+        no_v_version = re.sub('^v', '', version)
+        if not SemVer.valid(no_v_version):
             continue
-        if not allow_prerelease and SemVer(version).prerelease != None:
+        if not allow_prerelease and SemVer(no_v_version).prerelease != None:
             continue
         output.append(version)
     return output
