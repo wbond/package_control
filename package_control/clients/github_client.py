@@ -41,15 +41,13 @@ class GitHubClient(JSONApiClient):
         if not commit_info:
             return commit_info
 
-        commit_date = commit_info['timestamp'][0:19].replace('T', ' ')
-
         return {
-            'version': re.sub('[\-: ]', '.', commit_date),
+            'version': commit_info['version'],
             # We specifically use codeload.github.com here because the download
             # URLs all redirect there, and some of the downloaders don't follow
             # HTTP redirect headers
             'url': 'https://codeload.github.com/%s/zip/%s' % (commit_info['user_repo'], quote(commit_info['commit'])),
-            'date': commit_date
+            'date': commit_info['timestamp']
         }
 
     def repo_info(self, url):
@@ -154,9 +152,12 @@ class GitHubClient(JSONApiClient):
               `user_repo` - the user/repo name
               `timestamp` - the ISO-8601 UTC timestamp string
               `commit` - the branch or tag name
+              `version` - the extracted version number
         """
 
         tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
+
+        version = None
 
         if tags_match:
             user_repo = tags_match.group(1)
@@ -168,6 +169,7 @@ class GitHubClient(JSONApiClient):
             if not tags:
                 return False
             commit = tags[0]
+            version = re.sub('^v', '', commit)
 
         else:
             user_repo, commit = self._user_repo_branch(url)
@@ -178,10 +180,16 @@ class GitHubClient(JSONApiClient):
         commit_url = self._make_api_url(user_repo, '/commits?%s' % query_string)
         commit_info = self.fetch_json(commit_url)
 
+        commit_date = commit_info[0]['commit']['committer']['date'][0:19].replace('T', ' ')
+
+        if not version:
+            version = re.sub('[\-: ]', '.', commit_date)
+
         return {
             'user_repo': user_repo,
-            'timestamp': commit_info[0]['commit']['committer']['date'],
-            'commit': commit
+            'timestamp': commit_date,
+            'commit': commit,
+            'version': version
         }
 
     def _extract_repo_info(self, result):

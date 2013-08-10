@@ -47,12 +47,10 @@ class BitBucketClient(JSONApiClient):
         if not commit_info:
             return commit_info
 
-        commit_date = commit_info['timestamp'][0:19]
-
         return {
-            'version': re.sub('[\-: ]', '.', commit_date),
+            'version': commit_info['version'],
             'url': 'https://bitbucket.org/%s/get/%s.zip' % (commit_info['user_repo'], commit_info['commit']),
-            'date': commit_date
+            'date': commit_info['timestamp']
         }
 
     def repo_info(self, url):
@@ -120,9 +118,12 @@ class BitBucketClient(JSONApiClient):
               `user_repo` - the user/repo name
               `timestamp` - the ISO-8601 UTC timestamp string
               `commit` - the branch or tag name
+              `version` - the extracted version number
         """
 
         tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
+
+        version = None
 
         if tags_match:
             user_repo = tags_match.group(1)
@@ -133,6 +134,7 @@ class BitBucketClient(JSONApiClient):
             if not tags:
                 return False
             commit = tags[0]
+            version = re.sub('^v', '', commit)
 
         else:
             user_repo, commit = self._user_repo_branch(url)
@@ -142,10 +144,16 @@ class BitBucketClient(JSONApiClient):
         changeset_url = self._make_api_url(user_repo, '/changesets/%s' % commit)
         commit_info = self.fetch_json(changeset_url)
 
+        commit_date = commit_info['timestamp'][0:19]
+
+        if not version:
+            version = re.sub('[\-: ]', '.', commit_date)
+
         return {
             'user_repo': user_repo,
-            'timestamp': commit_info['timestamp'],
-            'commit': commit
+            'timestamp': commit_date,
+            'commit': commit,
+            'version': version
         }
 
     def _main_branch_name(self, user_repo):
