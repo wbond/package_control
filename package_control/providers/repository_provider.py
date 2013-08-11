@@ -216,7 +216,12 @@ class RepositoryProvider(ReleaseSelector):
         if invalid_sources != None and self.repo in invalid_sources:
             raise StopIteration()
 
-        self.fetch()
+        try:
+            self.fetch()
+        except (DownloaderException, ProviderException) as e:
+            self.failed_sources[self.repo] = e
+            self.cache['get_packages'] = {}
+            return
 
         def fail(message):
             exception = ProviderException(message)
