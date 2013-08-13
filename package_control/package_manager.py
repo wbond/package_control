@@ -45,6 +45,30 @@ from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from . import __version__
 
 
+def _on_error(func, path, exc_info):
+    """
+    Error handler for ``shutil.rmtree``.
+
+    If the error is due to an access error (read only file)
+    it attempts to add write permission and then retries.
+
+    If the error is for another reason it re-raises the error.
+
+    Usage : ``shutil.rmtree(path, onerror=onerror)``
+    """
+    import stat
+    if not os.access(path, os.W_OK):
+        # Is the error an access error ?
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
+
+
+def rmtree(path):
+    shutil.rmtree(path, onerror=_on_error)
+
+
 class PackageManager():
     """
     Allows downloading, creating, installing, upgrading, and deleting packages
@@ -768,7 +792,7 @@ class PackageManager():
             # after we close it.
             def remove_tmp_dir():
                 try:
-                    shutil.rmtree(tmp_dir)
+                    rmtree(tmp_dir)
                 except (PermissionError):
                     # If we can't remove the tmp dir, don't let an uncaught exception
                     # fall through and break the install process
@@ -806,7 +830,7 @@ class PackageManager():
             show_error(u'An error occurred while trying to backup the package directory for %s.\n\n%s' % (
                 package_name, unicode_from_os(e)))
             if os.path.exists(package_backup_dir):
-                shutil.rmtree(package_backup_dir)
+                rmtree(package_backup_dir)
             return False
 
     def print_messages(self, package, package_dir, is_upgrade, old_version):
