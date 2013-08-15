@@ -313,6 +313,14 @@ class RepositoryProvider(ReleaseSelector):
                 if not releases and details:
                     releases = [{'details': details}]
 
+                if not releases:
+                    e = ProviderException(u'No "releases" value for one of the packages in the repository %s.' % self.repo)
+                    if 'name' in info:
+                        self.broken_packages[info['name']] = e
+                    else:
+                        self.failed_sources[self.repo] = e
+                    continue
+
                 # This allows developers to specify a GH or BB location to get releases from,
                 # especially tags URLs (https://github.com/user/repo/tags or
                 # https://bitbucket.org/user/repo#tags)
