@@ -81,7 +81,12 @@ def merge_cache_under_settings(destination, setting, key_prefix, list_=False):
     if value:
         if existing:
             if list_:
-                value.extend(existing)
+                # Prevent duplicate values
+                base = dict(zip(value, [None]*len(value)))
+                for val in existing:
+                    if val in base:
+                        continue
+                    value.append(val)
             else:
                 value.update(existing)
         destination.settings[setting] = value
