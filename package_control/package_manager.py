@@ -143,7 +143,7 @@ class PackageManager():
 
         cache_ttl = self.settings.get('cache_length')
 
-        repositories = self.settings.get('repositories')
+        repositories = self.settings.get('repositories')[:]
         channels = self.settings.get('channels')
         for channel in channels:
             channel = channel.strip()
