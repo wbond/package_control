@@ -158,9 +158,7 @@ class PackageManager():
 
             # If any of the info was not retrieved from the cache, we need to
             # grab the channel to get it
-            if channel_repositories == None or \
-                    self.settings.get('package_name_map') == None or \
-                    self.settings.get('renamed_packages') == None:
+            if channel_repositories == None:
 
                 for provider_class in CHANNEL_PROVIDERS:
                     if provider_class.match_url(channel):
