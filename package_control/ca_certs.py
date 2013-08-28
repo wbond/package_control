@@ -40,6 +40,10 @@ def find_root_ca_cert(settings, domain):
             certs.append(u"\n".join(temp))
             temp = []
 
+    # Grabbing the certs for the domain failed, most likely because it is down
+    if not certs:
+        return [False, False]
+
     # Remove the cert for the domain itself, just leaving the
     # chain cert and the CA cert
     certs.pop(0)
