@@ -309,16 +309,23 @@ class RepositoryProvider(ReleaseSelector):
                         self.failed_sources[details] = e
                         continue
 
+            if 'name' not in info:
+                self.failed_sources[self.repo] = ProviderException(u'No "name" value for one of the packages in the repository %s.' % self.repo)
+                continue
+
+            if self.schema_version >= 2.0:
                 # If no releases info was specified, also grab the download info from GH or BB
                 if not releases and details:
                     releases = [{'details': details}]
 
                 if not releases:
-                    e = ProviderException(u'No "releases" value for one of the packages in the repository %s.' % self.repo)
-                    if 'name' in info:
-                        self.broken_packages[info['name']] = e
-                    else:
-                        self.failed_sources[self.repo] = e
+                    e = ProviderException(u'No "releases" value for the package "%s" in the repository %s.' % (info['name'], self.repo))
+                    self.broken_packages[info['name']] = e
+                    continue
+
+                if not isinstance(releases, list):
+                    e = ProviderException(u'The "releases" value is not an array or the package "%s" in the repository %s.' % (info['name'], self.repo))
+                    self.broken_packages[info['name']] = e
                     continue
 
                 # This allows developers to specify a GH or BB location to get releases from,
@@ -356,13 +363,14 @@ class RepositoryProvider(ReleaseSelector):
                                 raise ProviderException(u'Invalid "details" value "%s" under the "releases" key for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
 
                         except (DownloaderException, ClientException, ProviderException) as e:
-                            if 'name' in info:
-                                self.broken_packages[info['name']] = e
-                            self.failed_sources[download_details] = e
+                            self.broken_packages[info['name']] = e
                             continue
 
                     if download_info:
                         info['releases'].append(download_info)
+                    else:
+                        self.broken_packages[info['name']] = ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
+                        continue
 
                 info = self.select_release(info)
 
@@ -376,6 +384,10 @@ class RepositoryProvider(ReleaseSelector):
                 self.unavailable_packages.append(package['name'])
                 continue
 
+            if 'author' not in info:
+                self.broken_packages[info['name']] = ProviderException(u'No "author" key for the package "%s" in the repository %s.' % (info['name'], self.repo))
+                continue
+
             if 'download' not in info and 'releases' not in info:
                 self.broken_packages[info['name']] = ProviderException(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo))
                 continue
@@ -384,7 +396,7 @@ class RepositoryProvider(ReleaseSelector):
                 if field not in info:
                     info[field] = []
 
-            for field in ['readme', 'issues', 'donate', 'buy']:
+            for field in ['description', 'readme', 'issues', 'donate', 'buy']:
                 if field not in info:
                     info[field] = None
 
