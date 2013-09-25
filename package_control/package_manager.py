@@ -465,7 +465,7 @@ class PackageManager():
         url = packages[package_name]['download']['url']
         package_filename = package_name + '.sublime-package'
 
-        tmp_dir = tempfile.mkdtemp()
+        tmp_dir = tempfile.mkdtemp(u'')
 
         try:
             # This is refers to the zipfile later on, so we define it here so we can
