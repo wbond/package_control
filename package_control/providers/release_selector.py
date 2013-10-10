@@ -36,7 +36,8 @@ class ReleaseSelector():
             if not best_platform:
                 continue
 
-            if not self.is_compatible_version(release.get('sublime_text', '<3000')):
+            # Default to '*' (for legacy reasons), see #604
+            if not self.is_compatible_version(release.get('sublime_text', '*')):
                 continue
 
             package_info['download'] = release
