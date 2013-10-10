@@ -18,11 +18,16 @@
 		//
 		// A release is created from the the tag that is the highest semantic
 		// versioning version number in the list of tags.
+
+		// A release MUST contain a "sublime_text" version selector, use "*"
+		// for all versions. If you do not specify a release, it is defaulted
+		// to "*". See below for more detauls.
 		{
 			"name": "Alignment",
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
+					"sublime_text": "*",
 					"details": "https://github.com/wbond/sublime_alignment/tags"
 				}
 			]
@@ -34,6 +39,7 @@
 			"details": "https://bitbucket.org/wbond/sublime_alignment",
 			"releases": [
 				{
+					"sublime_text": "*",
 					"details": "https://bitbucket.org/wbond/sublime_alignment#tags"
 				}
 			]
@@ -174,6 +180,7 @@
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
+					"sublime_text": "*",
 					"details": "https://github.com/wbond/sublime_alignment/tree/custom_branch"
 				}
 			]
@@ -184,6 +191,7 @@
 			"details": "https://bitbucket.org/wbond/sublime_alignment",
 			"releases": [
 				{
+					"sublime_text": "*",
 					"details": "https://bitbucket.org/wbond/sublime_alignment/src/custom_branch"
 				}
 			]
@@ -196,10 +204,16 @@
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
-					// Could also be >2999 for ST3. Leaving this out indicates
-					// the package works with both ST2 and ST3.
+					// This branch (default: "master") is for Sublime Text 2.
+					// Remember: The sublime_text key is required!
 					"sublime_text": "<3000",
 					"details": "https://github.com/wbond/sublime_alignment"
+				}
+				{
+					// This branch ("st3") is for Sublime Text 3 (and above).
+					// You can specify as many releases as you want.
+					"sublime_text": ">=3000",
+					"details": "https://github.com/wbond/sublime_alignment/tree/st3"
 				}
 			]
 		},
@@ -222,10 +236,12 @@
 				{
 					// Defaults to "*", or all platforms.
 					"platforms": ["osx", "linux"],
+					"sublime_text": "*",
 					"details": "https://github.com/wbond/sublime_alignment/tree/posix"
 				},
 				{
 					"platforms": "windows",
+					"sublime_text": "*",
 					"details": "https://github.com/wbond/sublime_alignment/tree/win32"
 				}
 			]
@@ -249,6 +265,9 @@
 
 					// The date MUST be in the form "YYYY-MM-DD HH:MM:SS" and SHOULD be UTC
 					"date": "2011-09-18 20:12:41"
+
+					// The obligatory version selector
+					"sublime_text": "*"
 				}
 			]
 		}
