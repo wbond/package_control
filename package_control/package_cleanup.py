@@ -9,7 +9,7 @@ from .unicode import unicode_from_os
 from .rmtree import rmtree
 from .clear_directory import clear_directory
 from .automatic_upgrader import AutomaticUpgrader
-from .package_manager import PackageManager
+from .package_manager import PackageManager, rmtree
 from .package_renamer import PackageRenamer
 from .open_compat import open_compat
 from .package_io import package_file_exists
