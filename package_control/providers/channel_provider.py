@@ -147,7 +147,15 @@ class ChannelProvider(ReleaseSelector):
         self.fetch()
 
         if self.schema_version >= 2.0:
-            return {}
+            output = {}
+            for repo in self.channel_info['packages_cache']:
+                for package in self.channel_info['packages_cache'][repo]:
+                    previous_names = package.get('previous_names', [])
+                    if not isinstance(previous_names, list):
+                        previous_names = [previous_names]
+                    for previous_name in previous_names:
+                        output[previous_name] = package['name']
+            return output
 
         return self.channel_info.get('renamed_packages', {})
 
