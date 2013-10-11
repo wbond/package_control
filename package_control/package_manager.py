@@ -292,7 +292,7 @@ class PackageManager():
         """
 
         package_names = os.listdir(sublime.packages_path())
-        package_names = [path for path in package_names if
+        package_names = [path for path in package_names if path[0] != '.' and
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
 
         if int(sublime.version()) > 3000 and unpacked_only == False:
