@@ -1,12 +1,12 @@
 import threading
 import os
-import shutil
 
 import sublime
 
 from .show_error import show_error
 from .console_write import console_write
 from .unicode import unicode_from_os
+from .rmtree import rmtree
 from .clear_directory import clear_directory
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
@@ -36,7 +36,7 @@ class PackageCleanup(threading.Thread, PackageRenamer):
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
                 try:
-                    shutil.rmtree(package_dir)
+                    rmtree(package_dir)
                     console_write(u'Removed old directory for package %s' % package_name, True)
 
                 except (OSError) as e:
