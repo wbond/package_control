@@ -199,9 +199,8 @@
 				{
 					// **required**
 					//
-					// Could also be >2999 for ST3 or a value of * 
-					// indicates the package works with all Sublime 
-					// Text versions.
+					// Could also be >2999 for ST3 or a value of * indicates
+					// the package works with all Sublime Text versions.
 					"sublime_text": "<3000",
 					"details": "https://github.com/wbond/sublime_alignment"
 				}
