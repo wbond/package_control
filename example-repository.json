@@ -23,6 +23,7 @@
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
+					"sublime_text": "*",
 					"details": "https://github.com/wbond/sublime_alignment/tags"
 				}
 			]
@@ -196,8 +197,10 @@
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
-					// Could also be >2999 for ST3. Leaving this out indicates
-					// the package works with both ST2 and ST3.
+					// **required**
+					//
+					// Could also be >2999 for ST3 or a value of * indicates
+					// the package works with all Sublime Text versions.
 					"sublime_text": "<3000",
 					"details": "https://github.com/wbond/sublime_alignment"
 				}
