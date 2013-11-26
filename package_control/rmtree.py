@@ -3,7 +3,6 @@ import shutil
 import stat
 
 
-
 def _on_error(function, path, excinfo):
     """
     Error handler for shutil.rmtree that tries to add write privileges
@@ -21,6 +20,9 @@ def _on_error(function, path, excinfo):
         os.chmod(path, stat.S_IWUSR)
         function(path)
     else:
+        # try to rename file to reduce chance that
+        # file is in use on next start
+        os.rename(path, path + '.old')
         raise
 
 
