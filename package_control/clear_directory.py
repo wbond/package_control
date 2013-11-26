@@ -30,6 +30,8 @@ def clear_directory(directory, ignore_paths=None):
                 if os.path.isdir(path):
                     os.rmdir(path)
                 else:
+                    if not os.access(path, os.W_OK):
+                        os.chmod(path, stat.S_IWUSR)
                     os.remove(path)
             except (OSError, IOError):
                 was_exception = True
