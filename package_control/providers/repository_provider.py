@@ -392,6 +392,21 @@ class RepositoryProvider(ReleaseSelector):
                 self.broken_packages[info['name']] = ProviderException(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo))
                 continue
 
+            # Make sure the single download, or all releases, have the appropriate keys.
+            # We use a function here so that we can break out of multiple loops.
+            def has_broken_release():
+                download = info.get('download')
+                download_list = [download] if download else []
+                for release in info.get('releases', download_list):
+                    for key in ['version', 'date', 'url']:
+                        if key not in release:
+                            self.broken_packages[info['name']] = ProviderException(u'Missing "%s" key for one of the releases of the package "%s" in the repository %s.' % (key, info['name'], self.repo))
+                            return True
+                return False
+
+            if has_broken_release():
+                continue
+
             for field in ['previous_names', 'labels']:
                 if field not in info:
                     info[field] = []
