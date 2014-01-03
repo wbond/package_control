@@ -63,18 +63,41 @@ class PackageManager():
         # code accessing settings from threads
         self.settings = {}
         settings = sublime.load_settings('Package Control.sublime-settings')
-        for setting in ['timeout', 'repositories', 'channels',
-                'package_name_map', 'dirs_to_ignore', 'files_to_ignore',
-                'package_destination', 'cache_length', 'auto_upgrade',
-                'files_to_ignore_binary', 'files_to_keep', 'dirs_to_keep',
-                'git_binary', 'git_update_command', 'hg_binary',
-                'hg_update_command', 'http_proxy', 'https_proxy',
-                'auto_upgrade_ignore', 'auto_upgrade_frequency',
-                'submit_usage', 'submit_url', 'renamed_packages',
-                'files_to_include', 'files_to_include_binary', 'certs',
-                'ignore_vcs_packages', 'proxy_username', 'proxy_password',
-                'debug', 'user_agent', 'http_cache', 'http_cache_length',
-                'install_prereleases', 'openssl_binary']:
+        setting_names = [
+            'auto_upgrade',
+            'auto_upgrade_frequency',
+            'auto_upgrade_ignore',
+            'cache_length',
+            'certs',
+            'channels',
+            'debug',
+            'dirs_to_ignore',
+            'files_to_ignore',
+            'files_to_include',
+            'git_binary',
+            'git_update_command',
+            'hg_binary',
+            'hg_update_command',
+            'http_cache',
+            'http_cache_length',
+            'http_proxy',
+            'https_proxy',
+            'ignore_vcs_packages',
+            'install_prereleases',
+            'openssl_binary',
+            'package_destination',
+            'package_name_map',
+            'package_profiles',
+            'proxy_password',
+            'proxy_username',
+            'renamed_packages',
+            'repositories',
+            'submit_url',
+            'submit_usage',
+            'timeout',
+            'user_agent'
+        ]
+        for setting in setting_names:
             if settings.get(setting) == None:
                 continue
             self.settings[setting] = settings.get(setting)
@@ -347,8 +370,7 @@ class PackageManager():
 
         return self.settings.get('package_name_map', {}).get(package, package)
 
-    def create_package(self, package_name, package_destination,
-            binary_package=False):
+    def create_package(self, package_name, package_destination, profile=None):
         """
         Creates a .sublime-package file from the running Packages directory
 
@@ -359,11 +381,12 @@ class PackageManager():
             The full filesystem path of the directory to save the new
             .sublime-package file in.
 
-        :param binary_package:
-            If the created package should follow the binary package include/
-            exclude patterns from the settings. These normally include a setup
-            to exclude .py files and include .pyc files, but that can be
-            changed via settings.
+        :param profile:
+            If None, the "dirs_to_ignore", "files_to_ignore", "files_to_include"
+            and "package_destination" settings will be used when creating the
+            package. If a string, will look in the "package_profiles" setting
+            and use the profile name to select a sub-dictionary which may
+            contain all of the ignore/include settings.
 
         :return: bool if the package file was successfully created
         """
@@ -396,13 +419,18 @@ class PackageManager():
         if int(sublime.version()) >= 3000:
             compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
 
-        dirs_to_ignore = self.settings.get('dirs_to_ignore', [])
-        if not binary_package:
-            files_to_ignore = self.settings.get('files_to_ignore', [])
-            files_to_include = self.settings.get('files_to_include', [])
-        else:
-            files_to_ignore = self.settings.get('files_to_ignore_binary', [])
-            files_to_include = self.settings.get('files_to_include_binary', [])
+        if profile:
+            profile_settings = self.settings.get('package_profiles').get(profile)
+        def get_profile_setting(setting, default):
+            if profile:
+                profile_value = profile_settings.get(setting)
+                if profile_value is not None:
+                    return profile_value
+            return self.settings.get(setting, default)
+
+        dirs_to_ignore = get_profile_setting('dirs_to_ignore', [])
+        files_to_ignore = get_profile_setting('files_to_ignore', [])
+        files_to_include = get_profile_setting('files_to_include', [])
 
         slash = '\\' if os.name == 'nt' else '/'
         trailing_package_dir = package_dir + slash if package_dir[-1] != slash else package_dir

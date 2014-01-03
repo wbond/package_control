@@ -139,28 +139,44 @@
 
 	// Files to ignore when creating a package
 	"files_to_ignore": [
-		".hgignore", ".gitignore", ".bzrignore", "*.pyc", "*.sublime-project",
-		"*.sublime-workspace", "*.tmTheme.cache"
+		"*.pyc", ".hgignore", ".gitignore", ".bzrignore",
+		"*.sublime-project", "*.sublime-workspace", "*.tmTheme.cache"
 	],
 
 	// Files to include, even if they match a pattern in files_to_ignore
 	"files_to_include": [],
 
-	// Files to ignore when creating a binary package. By default binary
-	// packages ship with .pyc files instead of .py files. If an __init__.py
-	// file exists, it will always be included, even if it matches one of
-	// these patterns.
-	"files_to_ignore_binary": [
-		".hgignore", ".gitignore", ".bzrignore", "*.py", "*.sublime-project",
-		"*.sublime-workspace", "*.tmTheme.cache"
-	],
-
-	// Files to include for a binary package, even if they match a pattern i
-	// files_to_ignore_binary
-	"files_to_include_binary": [
-		"__init__.py"
-	],
-
 	// When a package is created, copy it to this folder - defaults to Desktop
-	"package_destination": ""
+	"package_destination": "",
+
+	// A way to create different packaging profiles for different types of
+	// package releases, such as for different platforms or binary-only
+	// releases.
+	//
+	// The key of the object will be the profile name and a list of them will
+	// be presenting when running the "Create Package File" command. The
+	// profile "Default" will use the top-level version on the following
+	// settings:
+	//
+	// - "dirs_to_ignore"
+	// - "files_to_ignore"
+	// - "files_to_include"
+	// - "package_destination"
+	//
+	// If a profile does not include one of those three setting, it will fall
+	// back to the top-level settings.
+	"package_profiles": {
+		"Binaries Only": {
+			// Exclude all .py files, but consequently include all .pyc files
+			"files_to_ignore": [
+				"*.py", ".hgignore", ".gitignore", ".bzrignore",
+				"*.sublime-project", "*.sublime-workspace", "*.tmTheme.cache"
+			],
+
+			// Include __init__.py so Sublime Text will load the package
+			"files_to_include": [
+				"__init__.py"
+			]
+		}
+	}
 }

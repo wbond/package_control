@@ -107,7 +107,6 @@ mods_load_order = [
     '.commands',
     '.commands.add_channel_command',
     '.commands.add_repository_command',
-    '.commands.create_binary_package_command',
     '.commands.create_package_command',
     '.commands.disable_package_command',
     '.commands.discover_packages_command',
