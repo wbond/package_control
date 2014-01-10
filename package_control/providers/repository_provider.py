@@ -121,14 +121,19 @@ class RepositoryProvider(ReleaseSelector):
             if path[-1] != '/':
                 path = os.path.dirname(path)
             relative_base = domain + path
+            is_http = True
         else:
             relative_base = os.path.dirname(self.repo) + '/'
+            is_http = False
 
         includes = self.repo_info.get('includes', [])
         del self.repo_info['includes']
         for include in includes:
             if re.match('^\./|\.\./', include):
-                include = os.path.normpath(relative_base + include)
+                if is_http:
+                    include = domain + os.path.normpath(path + '/' + include)
+                else:
+                    include = os.path.normpath(relative_base + include)
             include_info = self.fetch_location(include)
             included_packages = include_info.get('packages', [])
             self.repo_info['packages'].extend(included_packages)
