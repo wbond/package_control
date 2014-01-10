@@ -7,6 +7,7 @@ from ..show_error import show_error
 from .existing_packages_command import ExistingPackagesCommand
 from ..preferences_filename import preferences_filename
 from ..thread_progress import ThreadProgress
+from ..package_io import package_file_exists
 
 
 class RemovePackageCommand(sublime_plugin.WindowCommand,
@@ -47,6 +48,17 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
         package = self.package_list[picked][0]
 
         settings = sublime.load_settings(preferences_filename())
+
+        # Change the color scheme before removing the package containing it
+        if settings.get('color_scheme').find('Packages/' + package + '/') != -1:
+            settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
+            sublime.save_settings(preferences_filename())
+
+        # Change the theme before removing the package containing it
+        if package_file_exists(package, settings.get('theme')):
+            settings.set('theme', 'Default.sublime-theme')
+            sublime.save_settings(preferences_filename())
+
         ignored = settings.get('ignored_packages')
         if not ignored:
             ignored = []
