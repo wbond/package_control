@@ -10,6 +10,7 @@ from .package_manager import PackageManager
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .versions import version_comparable
+from .package_io import package_file_exists
 
 
 class PackageInstaller():
@@ -19,6 +20,12 @@ class PackageInstaller():
 
     def __init__(self):
         self.manager = PackageManager()
+        # Track what the color scheme was before upgrade so we can restore it
+        self.old_color_scheme_package = None
+        self.old_color_scheme = None
+        # Track what the theme was before upgrade so we can restore it
+        self.old_theme_package = None
+        self.old_theme = None
 
     def make_package_list(self, ignore_actions=[], override_action=None,
             ignore_packages=[]):
@@ -167,10 +174,24 @@ class PackageInstaller():
         ignored = settings.get('ignored_packages')
         if not ignored:
             ignored = []
+
         for package in packages:
             if not package in ignored:
                 ignored.append(package)
                 disabled.append(package)
+
+            # Change the color scheme before disabling the package containing it
+            if settings.get('color_scheme').find('Packages/' + package + '/') != -1:
+                self.old_color_scheme_package = package
+                self.old_color_scheme = settings.get('color_scheme')
+                settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
+
+            # Change the theme before disabling the package containing it
+            if package_file_exists(package, settings.get('theme')):
+                self.old_theme_package = package
+                self.old_theme = settings.get('theme')
+                settings.set('theme', 'Default.sublime-theme')
+
         settings.set('ignored_packages', ignored)
         sublime.save_settings(preferences_filename())
         return disabled
@@ -186,9 +207,20 @@ class PackageInstaller():
         ignored = settings.get('ignored_packages')
         if not ignored:
             return
+
         if package in ignored:
             settings.set('ignored_packages',
                 list(set(ignored) - set([package])))
+
+            if self.old_theme_package == package:
+                settings.set('theme', self.old_theme)
+                sublime.message_dialog(u"Package Control\n\n" +
+                    u"Your active theme was just upgraded. You may see some " +
+                    u"graphical corruption until you restart Sublime Text.")
+
+            if self.old_color_scheme_package == package:
+                settings.set('color_scheme', self.old_color_scheme)
+
             sublime.save_settings(preferences_filename())
 
     def on_done(self, picked):
