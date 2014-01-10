@@ -42,11 +42,13 @@ _timer = None
 @contextmanager
 def downloader(url, settings):
     try:
+        manager = None
         manager = _grab(url, settings)
         yield manager
 
     finally:
-        _release(url, manager)
+        if manager:
+            _release(url, manager)
 
 
 def _grab(url, settings):
