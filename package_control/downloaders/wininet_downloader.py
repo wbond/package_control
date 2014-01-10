@@ -76,6 +76,83 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
     INTERNET_STATE_IDLE = 0x100
     INTERNET_STATE_BUSY = 0x200
 
+    HTTP_STATUS_MESSAGES = {
+        100: "Continue",
+        101: "Switching Protocols",
+        102: "Processing",
+        200: "OK",
+        201: "Created",
+        202: "Accepted",
+        203: "Non-Authoritative Information",
+        204: "No Content",
+        205: "Reset Content",
+        206: "Partial Content",
+        207: "Multi-Status",
+        208: "Already Reported",
+        226: "IM Used",
+        300: "Multiple Choices",
+        301: "Moved Permanently",
+        302: "Found",
+        303: "See Other",
+        304: "Not Modified",
+        305: "Use Proxy",
+        306: "Switch Proxy",
+        307: "Temporary Redirect",
+        308: "Permanent Redirect",
+        400: "Bad Request",
+        401: "Unauthorized",
+        402: "Payment Required",
+        403: "Forbidden",
+        404: "Not Found",
+        405: "Method Not Allowed",
+        406: "Not Acceptable",
+        407: "Proxy Authentication Required",
+        408: "Request Timeout",
+        409: "Conflict",
+        410: "Gone",
+        411: "Length Required",
+        412: "Precondition Failed",
+        413: "Request Entity Too Large",
+        414: "Request-URI Too Long",
+        415: "Unsupported Media Type",
+        416: "Requested Range Not Satisfiable",
+        417: "Expectation Failed",
+        418: "I'm a teapot",
+        419: "Authentication Timeout",
+        420: "Enhance Your Calm",
+        422: "Unprocessable Entity",
+        423: "Locked",
+        424: "Failed Dependency",
+        424: "Method Failure",
+        425: "Unordered Collection",
+        426: "Upgrade Required",
+        428: "Precondition Required",
+        429: "Too Many Requests",
+        431: "Request Header Fields Too Large",
+        440: "Login Timeout",
+        449: "Retry With",
+        450: "Blocked by Windows Parental Controls",
+        451: "Redirect",
+        500: "Internal Server Error",
+        501: "Not Implemented",
+        502: "Bad Gateway",
+        503: "Service Unavailable",
+        504: "Gateway Timeout",
+        505: "HTTP Version Not Supported",
+        506: "Variant Also Negotiates",
+        507: "Insufficient Storage",
+        508: "Loop Detected",
+        509: "Bandwidth Limit Exceeded",
+        510: "Not Extended",
+        511: "Network Authentication Required",
+        520: "Origin Error",
+        522: "Connection Timed Out",
+        523: "Proxy Declined Request",
+        524: "A Timeout Occurred",
+        598: "Network Read Timeout Error",
+        599: "Network Connect Timeout Error"
+    }
+
 
     def __init__(self, settings):
         self.settings = settings
@@ -590,9 +667,18 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             line = line.lstrip()
             if line.find('HTTP/') == 0:
                 match = re.match('HTTP/(\d\.\d)\s+(\d+)\s+(.*)$', line)
-                general['version'] = match.group(1)
-                general['status'] = int(match.group(2))
-                general['message'] = match.group(3)
+                if match:
+                    general['version'] = match.group(1)
+                    general['status'] = int(match.group(2))
+                    general['message'] = match.group(3)
+                # The user‘s proxy is sending bad HTTP headers :-(
+                else:
+                    match = re.match('HTTP/(\d\.\d)\s+(\d+)$', line)
+                    general['version'] = match.group(1)
+                    general['status'] = int(match.group(2))
+                    # Since the header didn‘t include the message, use our copy
+                    message = self.HTTP_STATUS_MESSAGES[general['status']]
+                    general['message'] = message
             else:
                 name, value = line.split(':', 1)
                 headers[name.lower()] = value.strip()
