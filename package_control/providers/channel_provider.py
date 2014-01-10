@@ -4,10 +4,10 @@ import re
 
 try:
     # Python 3
-    from urllib.parse import urlparse
+    from urllib.parse import urljoin
 except (ImportError):
     # Python 2
-    from urlparse import urlparse
+    from urlparse import urljoin
 
 from ..console_write import console_write
 from .release_selector import ReleaseSelector
@@ -176,21 +176,21 @@ class ChannelProvider(ReleaseSelector):
 
         # Determine a relative root so repositories can be defined
         # relative to the location of the channel file.
-        if re.match('https?://', self.channel, re.I):
-            url_pieces = urlparse(self.channel)
-            domain = url_pieces.scheme + '://' + url_pieces.netloc
-            path = '/' if url_pieces.path == '' else url_pieces.path
-            if path[-1] != '/':
-                path = os.path.dirname(path)
-            relative_base = domain + path
+        if re.match('https?://', self.channel, re.I) is None:
+            relative_base = os.path.dirname(self.channel)
+            is_http = False
         else:
-            relative_base = os.path.dirname(self.channel) + '/'
+            is_http = True
 
         output = []
         repositories = self.channel_info.get('repositories', [])
         for repository in repositories:
             if re.match('^\./|\.\./', repository):
-                repository = os.path.normpath(relative_base + repository)
+                if is_http:
+                    repository = urljoin(self.channel, repository)
+                else:
+                    repository = os.path.join(relative_base, repository)
+                    repository = os.path.normpath(repository)
             output.append(repository)
 
         return output

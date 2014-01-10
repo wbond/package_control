@@ -5,10 +5,10 @@ from itertools import chain
 
 try:
     # Python 3
-    from urllib.parse import urlparse
+    from urllib.parse import urljoin
 except (ImportError):
     # Python 2
-    from urlparse import urlparse
+    from urlparse import urljoin
 
 from ..console_write import console_write
 from .release_selector import ReleaseSelector
@@ -114,26 +114,21 @@ class RepositoryProvider(ReleaseSelector):
             return
 
         # Allow repositories to include other repositories
-        if re.match('https?://', self.repo, re.I):
-            url_pieces = urlparse(self.repo)
-            domain = url_pieces.scheme + '://' + url_pieces.netloc
-            path = '/' if url_pieces.path == '' else url_pieces.path
-            if path[-1] != '/':
-                path = os.path.dirname(path)
-            relative_base = domain + path
-            is_http = True
-        else:
-            relative_base = os.path.dirname(self.repo) + '/'
+        if re.match('https?://', self.repo, re.I) is None:
+            relative_base = os.path.dirname(self.repo)
             is_http = False
+        else:
+            is_http = True
 
         includes = self.repo_info.get('includes', [])
         del self.repo_info['includes']
         for include in includes:
             if re.match('^\./|\.\./', include):
                 if is_http:
-                    include = domain + os.path.normpath(path + '/' + include)
+                    include = urljoin(self.repo, include)
                 else:
-                    include = os.path.normpath(relative_base + include)
+                    include = os.path.join(relative_base, include)
+                    include = os.path.normpath(include)
             include_info = self.fetch_location(include)
             included_packages = include_info.get('packages', [])
             self.repo_info['packages'].extend(included_packages)
