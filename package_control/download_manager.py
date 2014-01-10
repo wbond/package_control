@@ -60,7 +60,10 @@ def _grab(url, settings):
             _timer.cancel()
             _timer = None
 
-        hostname = urlparse(url).hostname.lower()
+        parsed = urlparse(url)
+        if not parsed or not parsed.hostname:
+            raise DownloaderException(u'The URL "%s" is malformed' % url)
+        hostname = parsed.hostname.lower()
         if hostname not in _managers:
             _managers[hostname] = []
 
