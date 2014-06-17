@@ -159,6 +159,11 @@ class DownloadManager(object):
 
         is_ssl = re.search('^https://', url) != None
 
+        # Handle out-dated URLs that we know of, in a centralized place
+        url = url.replace('://raw.github.com/', '://raw.githubusercontent.com/')
+        url = url.replace('://nodeload.github.com/', '://codeload.github.com/')
+        url = re.sub('^(https://codeload.github.com/[^/]+/[^/]+/)zipball(/.*)$', '\\1zip\\2', url)
+
         # Make sure we have a downloader, and it supports SSL if we need it
         if not self.downloader or (is_ssl and not self.downloader.supports_ssl()):
             for downloader_class in DOWNLOADERS:

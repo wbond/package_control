@@ -419,15 +419,6 @@ class RepositoryProvider(ReleaseSelector):
                 info['homepage'] = self.repo
 
             if 'download' in info:
-                # Rewrites the legacy "zipball" URLs to the new "zip" format
-                info['download']['url'] = re.sub(
-                    '^(https://nodeload.github.com/[^/]+/[^/]+/)zipball(/.*)$',
-                    '\\1zip\\2', info['download']['url'])
-
-                # Rewrites the legacy "nodeload" URLs to the new "codeload" subdomain
-                info['download']['url'] = info['download']['url'].replace(
-                    'nodeload.github.com', 'codeload.github.com')
-
                 # Extract the date from the download
                 if 'last_modified' not in info:
                     info['last_modified'] = info['download']['date']
