@@ -1,10 +1,10 @@
 {
 	"schema_version": "2.0",
 
-	// All repositories must be an HTTP or HTTPS URL. HTTPS is vastly superior
-	// since verification of the source server is performed on SSL certificates.
+	// All repositories must be an HTTPS URL. SSL certificates help prevent
+	// unauthorized code being loaded onto users' machines.
 	"repositories": [
-		"http://sublime.wbond.net/packages.json",
+		"https://sublime.wbond.net/packages.json",
 		"https://github.com/buymeasoda/soda-theme",
 		"https://github.com/SublimeText"
 	],
@@ -16,7 +16,7 @@
 	"packages_cache": {
 
 		// The first level keys are the repository URLs
-		"http://sublime.wbond.net/packages.json": [
+		"https://sublime.wbond.net/packages.json": [
 
 			// Each repository has an array of packages with their fully
 			// expanded info. This means that the "details" key must be expanded
