@@ -89,7 +89,7 @@
 		// All others are treated as plaintext.
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
-			"readme": "https://raw.github.com/wbond/sublime_alignment/master/readme.creole"
+			"readme": "https://raw.githubusercontent.com/wbond/sublime_alignment/master/readme.creole"
 		},
 
 		// If a package has a public bug tracker, the URL should be included
