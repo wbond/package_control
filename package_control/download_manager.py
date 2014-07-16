@@ -118,6 +118,32 @@ def close_all_connections():
         _lock.release()
 
 
+def update_url(url, debug):
+    """
+    Takes an old, out-dated URL and updates it. Mostly used with GitHub URLs
+    since they tend to be constantly evolving their infrastructure.
+
+    :param url:
+        The URL to update
+
+    :param debug:
+        If debugging is enabled
+
+    :return:
+        The updated URL
+    """
+
+    original_url = url
+    url = url.replace('://raw.github.com/', '://raw.githubusercontent.com/')
+    url = url.replace('://nodeload.github.com/', '://codeload.github.com/')
+    url = re.sub('^(https://codeload.github.com/[^/]+/[^/]+/)zipball(/.*)$', '\\1zip\\2', url)
+
+    if debug and url != original_url:
+        console_write(u'Fixed URL from %s to %s' % (original_url, url), True)
+
+    return url
+
+
 class DownloadManager(object):
     def __init__(self, settings):
         # Cache the downloader for re-use
@@ -159,10 +185,7 @@ class DownloadManager(object):
 
         is_ssl = re.search('^https://', url) != None
 
-        # Handle out-dated URLs that we know of, in a centralized place
-        url = url.replace('://raw.github.com/', '://raw.githubusercontent.com/')
-        url = url.replace('://nodeload.github.com/', '://codeload.github.com/')
-        url = re.sub('^(https://codeload.github.com/[^/]+/[^/]+/)zipball(/.*)$', '\\1zip\\2', url)
+        url = update_url(url, self.settings.get('debug'))
 
         # Make sure we have a downloader, and it supports SSL if we need it
         if not self.downloader or (is_ssl and not self.downloader.supports_ssl()):

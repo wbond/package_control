@@ -14,7 +14,7 @@ from .release_selector import ReleaseSelector
 from .provider_exception import ProviderException
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
-from ..download_manager import downloader
+from ..download_manager import downloader, update_url
 
 
 class ChannelProvider(ReleaseSelector):
@@ -115,6 +115,15 @@ class ChannelProvider(ReleaseSelector):
         if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
             raise ProviderException(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error)
 
+        # Fix any out-dated repository URLs in the package cache
+        debug =  self.settings.get('debug')
+        packages_key = 'packages_cache' if self.schema_version >= 2.0 else 'packages'
+        original_cache = channel_info[packages_key]
+        new_cache = {}
+        for repo in original_cache:
+            new_cache[update_url(repo, debug)] = original_cache[repo]
+        channel_info[packages_key] = new_cache
+
         self.channel_info = channel_info
 
     def get_name_map(self):
@@ -182,6 +191,7 @@ class ChannelProvider(ReleaseSelector):
         else:
             is_http = True
 
+        debug = self.settings.get('debug')
         output = []
         repositories = self.channel_info.get('repositories', [])
         for repository in repositories:
@@ -191,7 +201,7 @@ class ChannelProvider(ReleaseSelector):
                 else:
                     repository = os.path.join(relative_base, repository)
                     repository = os.path.normpath(repository)
-            output.append(repository)
+            output.append(update_url(repository, debug))
 
         return output
 
@@ -275,6 +285,8 @@ class ChannelProvider(ReleaseSelector):
         """
 
         self.fetch()
+
+        repo = update_url(repo, self.settings.get('debug'))
 
         # The 2.0 channel schema renamed the key cached package info was
         # stored under in order to be more clear to new users.

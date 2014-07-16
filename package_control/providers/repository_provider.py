@@ -17,7 +17,7 @@ from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
-from ..download_manager import downloader
+from ..download_manager import downloader, update_url
 
 
 class RepositoryProvider(ReleaseSelector):
@@ -252,6 +252,8 @@ class RepositoryProvider(ReleaseSelector):
             fail(error_string)
             return
 
+        debug = self.settings.get('debug')
+
         github_client = GitHubClient(self.settings)
         bitbucket_client = BitBucketClient(self.settings)
 
@@ -411,6 +413,9 @@ class RepositoryProvider(ReleaseSelector):
                 if field not in info:
                     info[field] = []
 
+            if 'readme' in info:
+                info['readme'] = update_url(info['readme'], debug)
+
             for field in ['description', 'readme', 'issues', 'donate', 'buy']:
                 if field not in info:
                     info[field] = None
@@ -419,6 +424,8 @@ class RepositoryProvider(ReleaseSelector):
                 info['homepage'] = self.repo
 
             if 'download' in info:
+                info['download']['url'] = update_url(info['download']['url'], debug)
+
                 # Extract the date from the download
                 if 'last_modified' not in info:
                     info['last_modified'] = info['download']['date']

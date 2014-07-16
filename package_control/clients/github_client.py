@@ -89,8 +89,8 @@ class GitHubClient(JSONApiClient):
         if not readme_info:
             return output
 
-        output['readme'] = 'https://raw.github.com/%s/%s/%s' % (user_repo,
-            branch, readme_info['path'])
+        output['readme'] = 'https://raw.githubusercontent.com/%s/%s/%s' % (
+            user_repo, branch, readme_info['path'])
         return output
 
     def user_info(self, url):
