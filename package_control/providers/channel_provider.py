@@ -118,11 +118,12 @@ class ChannelProvider(ReleaseSelector):
         # Fix any out-dated repository URLs in the package cache
         debug =  self.settings.get('debug')
         packages_key = 'packages_cache' if self.schema_version >= 2.0 else 'packages'
-        original_cache = channel_info[packages_key]
-        new_cache = {}
-        for repo in original_cache:
-            new_cache[update_url(repo, debug)] = original_cache[repo]
-        channel_info[packages_key] = new_cache
+        if packages_key in channel_info:
+            original_cache = channel_info[packages_key]
+            new_cache = {}
+            for repo in original_cache:
+                new_cache[update_url(repo, debug)] = original_cache[repo]
+            channel_info[packages_key] = new_cache
 
         self.channel_info = channel_info
 

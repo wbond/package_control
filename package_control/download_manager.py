@@ -133,6 +133,9 @@ def update_url(url, debug):
         The updated URL
     """
 
+    if not url:
+        return url
+
     original_url = url
     url = url.replace('://raw.github.com/', '://raw.githubusercontent.com/')
     url = url.replace('://nodeload.github.com/', '://codeload.github.com/')
