@@ -28,7 +28,7 @@ def semver_compat(v):
     # 0.2012.11+10.31.23.59
     date_match = re.match('(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
     if date_match:
-        v = '0.%s.%s+%s.%s.%s.%s' % date_match.groups()
+        v = '0.0.1+%s.%s.%s.%s.%s.%s' % date_match.groups()
 
     # This handles version that were valid pre-semver with 4+ dotted
     # groups, such as 1.6.9.0
