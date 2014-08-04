@@ -182,6 +182,22 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
 
                     download_error = u'HTTP error ' + code
 
+                elif e.returncode == 7:
+                    # If the user could not connect, check for ipv6 errors and
+                    # if so, force curl to use ipv4. Apparently some users have
+                    # network configuration where curl will try ipv6 and resolve
+                    # it, but their ISP won't actually route it.
+                    ipv6_error = re.search('^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable', e.stderr, re.I | re.M)
+                    if ipv6_error and tries != 0:
+                        if debug:
+                            error_string = u'Downloading %s failed because the ipv6 address %s was not reachable, retrying using ipv4' % (url, ipv6_error.group(1))
+                            console_write(error_string, True)
+                        command.insert(1, '-4')
+                        continue
+
+                    else:
+                        download_error = e.stderr.rstrip()
+
                 elif e.returncode == 6:
                     download_error = u'URL error host not found'
 
