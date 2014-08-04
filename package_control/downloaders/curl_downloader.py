@@ -161,7 +161,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
 
             except (NonCleanExitError) as e:
                 # Stderr is used for both the error message and the debug info
-                # so we need to process it to extra the debug info
+                # so we need to process it to extract the debug info
                 if self.settings.get('debug'):
                     if hasattr(e.stderr, 'decode'):
                         e.stderr = e.stderr.decode('utf-8')
