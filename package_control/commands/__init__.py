@@ -9,6 +9,7 @@ from .enable_package_command import EnablePackageCommand
 from .grab_certs_command import GrabCertsCommand
 from .install_package_command import InstallPackageCommand
 from .list_packages_command import ListPackagesCommand
+from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
 from .remove_package_command import RemovePackageCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
@@ -24,6 +25,7 @@ __all__ = [
     'EnablePackageCommand',
     'InstallPackageCommand',
     'ListPackagesCommand',
+    'ListUnmanagedPackagesCommand',
     'RemovePackageCommand',
     'UpgradeAllPackagesCommand',
     'UpgradePackageCommand',

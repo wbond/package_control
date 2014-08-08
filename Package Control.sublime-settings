@@ -132,6 +132,9 @@
 	// only used when running the Grab CA Certs command.
 	"openssl_binary": "",
 
+	// Additional packages to ignore when listing unmanaged packages.
+	"unmanaged_packages_ignore": ["Package Control"],
+
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
 		".hg", ".git", ".svn", "_darcs", "CVS"
