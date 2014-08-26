@@ -449,6 +449,9 @@ class RepositoryProvider(ReleaseSelector):
     def get_renamed_packages(self):
         """:return: A dict of the packages that have been renamed"""
 
+        if not self.repo_info:
+            return {}
+
         if self.schema_version < 2.0:
             return self.repo_info.get('renamed_packages', {})
 

@@ -49,7 +49,7 @@ class BackgroundDownloader(threading.Thread):
             The provider object for the URL
         """
 
-        return self.used_providers[url]
+        return self.used_providers.get(url)
 
     def run(self):
         for url in self.urls:

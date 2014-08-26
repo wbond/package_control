@@ -280,6 +280,8 @@ class PackageManager():
             domain = urlparse(repo).hostname
             bg_downloader = bg_downloaders[domain]
             provider = bg_downloader.get_provider(repo)
+            if not provider:
+                continue
 
             # Allow name mapping of packages for schema version < 2.0
             repository_packages = {}
