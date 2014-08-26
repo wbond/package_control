@@ -94,8 +94,8 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
             command.extend(['--cacert', bundle_path])
 
         debug = self.settings.get('debug')
-        if debug:
-            command.append('-v')
+        # We always trigger debug output so that we can detect certain errors
+        command.append('-v')
 
         http_proxy = self.settings.get('http_proxy')
         https_proxy = self.settings.get('https_proxy')
@@ -145,8 +145,9 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
                     name, value = header.split(':', 1)
                     headers[name.lower()] = value.strip()
 
+                error, debug_sections = self.split_debug(self.stderr.decode('utf-8'))
                 if debug:
-                    self.print_debug(self.stderr.decode('utf-8'))
+                    self.print_debug(debug_sections)
 
                 self.handle_rate_limit(headers, url)
 
@@ -165,8 +166,10 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
 
                 # Stderr is used for both the error message and the debug info
                 # so we need to process it to extract the debug info
-                if self.settings.get('debug'):
-                    e.stderr = self.print_debug(e.stderr)
+                e.stderr, debug_sections = self.split_debug(e.stderr)
+
+                if debug:
+                    self.print_debug(debug_sections)
 
                 self.clean_tmp_file()
 
@@ -188,7 +191,8 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
                     # if so, force curl to use ipv4. Apparently some users have
                     # network configuration where curl will try ipv6 and resolve
                     # it, but their ISP won't actually route it.
-                    ipv6_error = re.search('^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable', e.stderr, re.I | re.M)
+                    full_debug = u"\n".join([section['contents'] for section in debug_sections])
+                    ipv6_error = re.search('^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable', full_debug, re.I | re.M)
                     if ipv6_error and tries != 0:
                         if debug:
                             error_string = u'Downloading %s failed because the ipv6 address %s was not reachable, retrying using ipv4' % (url, ipv6_error.group(1))
@@ -220,6 +224,20 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
 
         raise DownloaderException(error_string)
 
+    def print_debug(self, sections):
+        """
+        Prints out the debug output from split_debug()
+
+        :param sections:
+            The second element in the tuple that is returned from split_debug()
+        """
+
+        for section in sections:
+            type = section['type']
+            contents = section['contents'].replace(u"\n", u"\n  ")
+            console_write(u"Curl HTTP Debug %s" % type, True)
+            console_write(u"  %s" % contents)
+
     def supports_ssl(self):
         """
         Indicates if the object can handle HTTPS requests
@@ -230,55 +248,69 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
 
         return True
 
-    def print_debug(self, string):
+    def split_debug(self, string):
         """
-        Takes debug output from curl and groups and prints it
+        Takes debug output from curl and splits it into stderr and
+        structured debug info
 
         :param string:
             The complete debug output from curl
 
         :return:
-            A string containing any stderr output
+            A tuple with [0] stderr output and [1] a list of dict
+            objects containing the keys "type" and "contents"
         """
 
         section = 'General'
         last_section = None
 
-        output = ''
+        stderr = u''
+        debug_sections = []
+        debug_section = u''
 
         for line in string.splitlines():
             # Placeholder for body of request
-            if line and line[0:2] == '{ ':
+            if line and line[0:2] == u'{ ':
                 continue
-            if line and line[0:18] == '} [data not shown]':
+            if line and line[0:18] == u'} [data not shown]':
                 continue
 
             if len(line) > 1:
                 subtract = 0
-                if line[0:2] == '* ':
-                    section = 'General'
+                if line[0:2] == u'* ':
+                    section = u'General'
                     subtract = 2
-                elif line[0:2] == '> ':
-                    section = 'Write'
+                elif line[0:2] == u'> ':
+                    section = u'Write'
                     subtract = 2
-                elif line[0:2] == '< ':
-                    section = 'Read'
+                elif line[0:2] == u'< ':
+                    section = u'Read'
                     subtract = 2
                 line = line[subtract:]
 
                 # If the line does not start with "* ", "< ", "> " or "  "
                 # then it is a real stderr message
-                if subtract == 0 and line[0:2] != '  ':
-                    output += line.rstrip() + ' '
+                if subtract == 0 and line[0:2] != u'  ':
+                    stderr += line.rstrip() + u' '
                     continue
 
             if line.strip() == '':
                 continue
 
-            if section != last_section:
-                console_write(u"Curl HTTP Debug %s" % section, True)
+            if section != last_section and len(debug_section.rstrip()) > 0:
+                debug_sections.append({
+                    'type': section,
+                    'contents': debug_section.rstrip()
+                })
+                debug_section = u''
 
-            console_write(u'  ' + line)
+            debug_section += u"%s\n" % line
             last_section = section
 
-        return output.rstrip()
+        if len(debug_section.rstrip()) > 0:
+            debug_sections.append({
+                'type': section,
+                'contents': debug_section.rstrip()
+            })
+
+        return (stderr.rstrip(), debug_sections)
