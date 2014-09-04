@@ -116,7 +116,7 @@ def get_system_ca_bundle_path(settings):
             '/etc/ssl/ca-bundle.pem'
         ]
         for path in paths:
-            if os.path.exists(path):
+            if os.path.exists(path) and os.path.getsize(path) > 0:
                 ca_path = path
                 break
 
