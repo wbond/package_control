@@ -18,7 +18,7 @@ class InvalidCertificateException(HTTPException, URLError):
         HTTPException.__init__(self)
         self.host = host
         self.cert = cert
-        self.reason = reason
+        self.reason = reason.rstrip()
 
     def __str__(self):
         return ('Host %s returned an invalid certificate (%s) %s\n' %
