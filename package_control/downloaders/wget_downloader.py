@@ -132,7 +132,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
             try:
                 result = self.execute(command)
 
-                general, headers = self.parse_output()
+                general, headers = self.parse_output(True)
                 encoding = headers.get('content-encoding')
                 if encoding:
                     result = self.decode_response(encoding, result)
@@ -145,7 +145,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
             except (NonCleanExitError) as e:
 
                 try:
-                    general, headers = self.parse_output()
+                    general, headers = self.parse_output(False)
                     self.handle_rate_limit(headers, url)
 
                     if general['status'] == 304:
@@ -192,9 +192,15 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
 
         return True
 
-    def parse_output(self):
+    def parse_output(self, clean_run):
         """
         Parses the wget output file, prints debug information and returns headers
+
+        :param clean_run:
+            If wget executed with a successful exit code
+
+        :raises:
+            NonHttpError - when clean_run is false and an error is detected
 
         :return:
             A tuple of (general, headers) where general is a dict with the keys:
@@ -271,7 +277,7 @@ class WgetDownloader(CliDownloader, CertProvider, DecodingDownloader, LimitingDo
                 if line[0:2] == '  ':
                     header_lines.append(line.lstrip())
 
-        if error:
+        if not clean_run and error:
             raise NonHttpError(error)
 
         return self.parse_headers(header_lines)
