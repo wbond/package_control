@@ -113,7 +113,9 @@ def get_system_ca_bundle_path(settings):
             '/usr/lib/ssl/certs/ca-certificates.crt',
             '/etc/ssl/certs/ca-certificates.crt',
             '/etc/pki/tls/certs/ca-bundle.crt',
-            '/etc/ssl/ca-bundle.pem'
+            '/etc/ssl/ca-bundle.pem',
+            '/etc/ssl/cert.pem',
+            '/usr/local/share/certs/ca-root-nss.crt'
         ]
         for path in paths:
             if os.path.exists(path) and os.path.getsize(path) > 0:
