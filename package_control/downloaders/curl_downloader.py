@@ -79,6 +79,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
             # OpenSSL which supports compression on the SSL layer, and Apache
             # will use that instead of HTTP-level encoding.
             '--compressed',
+            '--tlsv1',
             # We have to capture the headers to check for rate limit info
             '--dump-header', self.tmp_file]
 

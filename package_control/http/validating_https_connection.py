@@ -291,11 +291,14 @@ try:
 
             self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                 certfile=self.cert_file, cert_reqs=self.cert_reqs,
-                ca_certs=self.ca_certs)
+                ca_certs=self.ca_certs, ssl_version=ssl.PROTOCOL_TLSv1)
 
             if self.debuglevel == -1:
+                cipher_info = self.sock.cipher()
                 console_write(u"  Successfully upgraded connection to %s:%s with SSL" % (
                     self.host, self.port))
+                console_write(u"  Using %s with cipher %s" % (
+                    cipher_info[1], cipher_info[0]))
 
             # This debugs and validates the SSL certificate
             if self.cert_reqs & ssl.CERT_REQUIRED:
