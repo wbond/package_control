@@ -1005,9 +1005,12 @@ class PackageManager():
             installed_packages = settings.get('installed_packages', [])
             if not installed_packages:
                 installed_packages = []
-            installed_packages.remove(package_name)
-            settings.set('installed_packages', installed_packages)
-            sublime.save_settings('Package Control.sublime-settings')
+            try:
+                installed_packages.remove(package_name)
+                settings.set('installed_packages', installed_packages)
+                sublime.save_settings('Package Control.sublime-settings')
+            except (ValueError):
+                pass # Package was not in installed_packages
         sublime.set_timeout(clear_package, 1)
 
         if can_delete_dir and os.path.exists(package_dir):
