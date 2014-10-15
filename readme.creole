@@ -1,4 +1,4 @@
-= Sublime Package Control
+= Package Control
 
 A Sublime Text 2/3 (http://www.sublimetext.com) package manager for easily
 discovering, installing, upgrading and removing packages. Also includes an
@@ -9,17 +9,17 @@ The plugin uses a channel and repository system to allow users to find new
 packages over time without any work. It also supports working with packages that
 were manually installed.
 
-Please see http://wbond.net/sublime_packages/package_control for install
-instructions, screenshots and documentation.
+Please see https://sublime.wbond.net for installation instructions, a
+searchable list of available packages and detailed documentation.
 
 == License
 
-Sublime Package Control is licensed under the MIT license.
+Package Control is licensed under the MIT license.
 
 All of the source code (except for package_control/semver.py), is under the
 license:
 
-  Copyright (c) 2011-2013 Will Bond <will@wbond.net>
+  Copyright (c) 2011-2014 Will Bond <will@wbond.net>
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
