@@ -834,8 +834,11 @@ class PackageManager():
         except (OSError, IOError) as e:
             show_error(u'An error occurred while trying to backup the package directory for %s.\n\n%s' % (
                 package_name, unicode_from_os(e)))
-            if os.path.exists(package_backup_dir):
-                rmtree(package_backup_dir)
+            try:
+                if os.path.exists(package_backup_dir):
+                    rmtree(package_backup_dir)
+            except (UnboundLocalError):
+                pass # Exeption occurred before package_backup_dir defined
             return False
 
     def print_messages(self, package, package_dir, is_upgrade, old_version):
