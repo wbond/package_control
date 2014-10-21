@@ -92,7 +92,7 @@ class BitBucketClient(JSONApiClient):
             'description': info['description'] or 'No description provided',
             'homepage': info['website'] or url,
             'author': info['owner'],
-            'donate': u'https://www.gittip.com/on/bitbucket/%s/' % info['owner'],
+            'donate': u'https://gratipay.com/on/bitbucket/%s/' % info['owner'],
             'readme': self._readme_url(user_repo, branch),
             'issues': issues_url if info['has_issues'] else None
         }

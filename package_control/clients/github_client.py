@@ -217,7 +217,7 @@ class GitHubClient(JSONApiClient):
             'homepage': result['homepage'] or result['html_url'],
             'author': result['owner']['login'],
             'issues': issues_url if result['has_issues'] else None,
-            'donate': u'https://www.gittip.com/on/github/%s/' % result['owner']['login']
+            'donate': u'https://gratipay.com/on/github/%s/' % result['owner']['login']
         }
 
     def _make_api_url(self, user_repo, suffix=''):

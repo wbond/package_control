@@ -101,9 +101,13 @@
 		},
 
 		// The URL to donate to support the development of a package.
-		// GitHub and BitBucket repositories will default to:
+		// GitHub repositories will default to:
 		//
-		// https://www.gittip.com/{username}/
+		// https://gratipay.com/on/github/{username}/
+		//
+		// BitBucket repositories will default to:
+		//
+		// https://gratipay.com/on/bitbucket/{username}/
 		//
 		// Other URLs with special integration include:
 		//
@@ -115,7 +119,7 @@
 		// package.
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
-			"donate": "https://www.gittip.com/wbond/"
+			"donate": "https://gratipay.com/wbond/"
 		},
 
 		// The URL to purchase a license to the package
