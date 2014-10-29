@@ -671,12 +671,12 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     general['version'] = match.group(1)
                     general['status'] = int(match.group(2))
                     general['message'] = match.group(3)
-                # The user‘s proxy is sending bad HTTP headers :-(
+                # The user's proxy is sending bad HTTP headers :-(
                 else:
                     match = re.match('HTTP/(\d\.\d)\s+(\d+)$', line)
                     general['version'] = match.group(1)
                     general['status'] = int(match.group(2))
-                    # Since the header didn‘t include the message, use our copy
+                    # Since the header didn't include the message, use our copy
                     message = self.HTTP_STATUS_MESSAGES[general['status']]
                     general['message'] = message
             else:
