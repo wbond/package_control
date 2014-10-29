@@ -153,6 +153,16 @@ class GitHubRepositoryProvider():
             self.cache['get_packages'] = {}
             raise StopIteration()
 
+    def get_sources(self):
+        """
+        Return a list of current URLs that are directly referenced by the repo
+
+        :return:
+            A list of URLs
+        """
+
+        return [self.repo]
+
     def get_renamed_packages(self):
         """For API-compatibility with RepositoryProvider"""
 

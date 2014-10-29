@@ -133,6 +133,58 @@ class RepositoryProvider(ReleaseSelector):
             included_packages = include_info.get('packages', [])
             self.repo_info['packages'].extend(included_packages)
 
+    def fetch_and_validate(self):
+        """
+        Fetch the repository and validates that it is parse-able
+
+        :return:
+            Boolean if the repo was fetched and validated
+        """
+
+        if self.repo in self.failed_sources:
+            return False
+
+        if self.repo_info is not None:
+            return True
+
+        try:
+            self.fetch()
+        except (DownloaderException, ProviderException) as e:
+            self.failed_sources[self.repo] = e
+            self.cache['get_packages'] = {}
+            return False
+
+        def fail(message):
+            exception = ProviderException(message)
+            self.failed_sources[self.repo] = exception
+            self.cache['get_packages'] = {}
+            return
+        schema_error = u'Repository %s does not appear to be a valid repository file because ' % self.repo
+
+        if 'schema_version' not in self.repo_info:
+            error_string = u'%s the "schema_version" JSON key is missing.' % schema_error
+            fail(error_string)
+            return False
+
+        try:
+            self.schema_version = float(self.repo_info.get('schema_version'))
+        except (ValueError):
+            error_string = u'%s the "schema_version" is not a valid number.' % schema_error
+            fail(error_string)
+            return False
+
+        if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
+            error_string = u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error
+            fail(error_string)
+            return False
+
+        if 'packages' not in self.repo_info:
+            error_string = u'%s the "packages" JSON key is missing.' % schema_error
+            fail(error_string)
+            return False
+
+        return True
+
     def fetch_location(self, location):
         """
         Fetches the contents of a URL of file path
@@ -216,40 +268,7 @@ class RepositoryProvider(ReleaseSelector):
         if invalid_sources != None and self.repo in invalid_sources:
             raise StopIteration()
 
-        try:
-            self.fetch()
-        except (DownloaderException, ProviderException) as e:
-            self.failed_sources[self.repo] = e
-            self.cache['get_packages'] = {}
-            return
-
-        def fail(message):
-            exception = ProviderException(message)
-            self.failed_sources[self.repo] = exception
-            self.cache['get_packages'] = {}
-            return
-        schema_error = u'Repository %s does not appear to be a valid repository file because ' % self.repo
-
-        if 'schema_version' not in self.repo_info:
-            error_string = u'%s the "schema_version" JSON key is missing.' % schema_error
-            fail(error_string)
-            return
-
-        try:
-            self.schema_version = float(self.repo_info.get('schema_version'))
-        except (ValueError):
-            error_string = u'%s the "schema_version" is not a valid number.' % schema_error
-            fail(error_string)
-            return
-
-        if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
-            error_string = u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error
-            fail(error_string)
-            return
-
-        if 'packages' not in self.repo_info:
-            error_string = u'%s the "packages" JSON key is missing.' % schema_error
-            fail(error_string)
+        if not self.fetch_and_validate():
             return
 
         debug = self.settings.get('debug')
@@ -446,10 +465,29 @@ class RepositoryProvider(ReleaseSelector):
 
         self.cache['get_packages'] = output
 
+    def get_sources(self):
+        """
+        Return a list of current URLs that are directly referenced by the repo
+
+        :return:
+            A list of URLs and/or file paths
+        """
+
+        if not self.fetch_and_validate():
+            return []
+
+        output = [self.repo]
+        if self.schema_version >= 2.0:
+            for package in self.repo_info['packages']:
+                details = package.get('details')
+                if details:
+                    output.append(details)
+        return output
+
     def get_renamed_packages(self):
         """:return: A dict of the packages that have been renamed"""
 
-        if not self.repo_info:
+        if not self.fetch_and_validate():
             return {}
 
         if self.schema_version < 2.0:

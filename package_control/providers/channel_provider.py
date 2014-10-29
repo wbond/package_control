@@ -206,6 +206,17 @@ class ChannelProvider(ReleaseSelector):
 
         return output
 
+    def get_sources(self):
+        """
+        Return a list of current URLs that are directly referenced by the
+        channel
+
+        :return:
+            A list of URLs and/or file paths
+        """
+
+        return self.get_repositories()
+
     def get_certs(self):
         """
         Provides a secure way for distribution of SSL CA certificates
