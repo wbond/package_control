@@ -15,8 +15,6 @@ try:
     ca_bundle_dir = None
 except (ImportError):
     ca_bundle_dir = os.path.join(os.path.expanduser('~'), '.package_control')
-    if not os.path.exists(ca_bundle_dir):
-        os.mkdir(ca_bundle_dir)
 
 
 def find_root_ca_cert(settings, domain):
@@ -89,6 +87,8 @@ def get_system_ca_bundle_path(settings):
 
     # OS X
     if platform == 'darwin':
+        if not os.path.exists(ca_bundle_dir):
+            os.mkdir(ca_bundle_dir)
         if not ca_bundle_dir:
             ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
         ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
