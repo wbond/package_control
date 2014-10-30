@@ -193,7 +193,6 @@ class UrlLibDownloader(CertProvider, DecodingDownloader, LimitingDownloader, Cac
 
                 self.opener = None
                 self.setup_opener(url, timeout)
-                tries += 1
 
                 continue
 
