@@ -133,7 +133,7 @@ class Cli(object):
         # Try the path first
         for dir_ in os.environ['PATH'].split(os.pathsep):
             path = os.path.join(dir_, name)
-            if os.path.exists(path):
+            if os.path.exists(path) and not os.path.isdir(path) and os.access(path, os.X_OK):
                 if self.debug:
                     console_write(u"Found %s at \"%s\"" % (self.cli_name, path), True)
                 return path
