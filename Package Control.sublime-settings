@@ -3,7 +3,7 @@
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
 	"channels": [
-		"https://sublime.wbond.net/channel.json"
+		"https://packagecontrol.io/channel.json"
 	],
 
 	// A list of URLs that contain a packages JSON file. These repositories
@@ -32,15 +32,16 @@
 	// merged the cert file with the ca-bundle.crt file in the certs/ directory
 	// since that is what is passed to the downloaders.
 	"certs": {
-		"api.bitbucket.org": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"api.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"bitbucket.org": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"codeload.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"downloads.sourceforge.net": ["221e907bdfff70d71cea42361ae209d5", "https://sublime.wbond.net/certs/221e907bdfff70d71cea42361ae209d5"],
-		"github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"nodeload.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"raw.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://sublime.wbond.net/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"sublime.wbond.net": ["221e907bdfff70d71cea42361ae209d5", "https://sublime.wbond.net/certs/221e907bdfff70d71cea42361ae209d5"]
+		"api.bitbucket.org": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
+		"api.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
+		"bitbucket.org": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
+		"codeload.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
+		"downloads.sourceforge.net": ["221e907bdfff70d71cea42361ae209d5", "https://packagecontrol.io/certs/221e907bdfff70d71cea42361ae209d5"],
+		"github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
+		"nodeload.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
+		"packagecontrol.io": ["d616352d4213985e717c93c8c387575d", "https://packagecontrol.io/certs/d616352d4213985e717c93c8c387575d"],
+		"raw.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
+		"sublime.wbond.net": ["221e907bdfff70d71cea42361ae209d5", "https://packagecontrol.io/certs/221e907bdfff70d71cea42361ae209d5"]
 	},
 
 	// Install pre-release versions of packages. If this is false, versions
@@ -63,7 +64,7 @@
 	"submit_usage": true,
 
 	// The URL to post install, upgrade and removal notices to
-	"submit_url": "https://sublime.wbond.net/submit",
+	"submit_url": "https://packagecontrol.io/submit",
 
 	// If packages should be automatically upgraded when ST2 starts
 	"auto_upgrade": true,
