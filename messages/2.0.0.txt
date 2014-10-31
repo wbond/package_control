@@ -4,10 +4,10 @@ Package Control 2.0.0 Changelog:
 Today I'd like to announce two big milestones:
 
  - Package Control 2.0 for ST2 and ST3
- - A new Package Control website at https://sublime.wbond.net
+ - A new Package Control website at https://packagecontrol.io
 
 The full announcement about the PC 2.0 release is available on the news page at
-https://sublime.wbond.net/news.
+https://packagecontrol.io/news.
 
 If you are running the "testing" version of Package Control (1.6.9 - 1.6.11),
 you will likely need to restart Sublime Text before Package Control will work
@@ -37,7 +37,7 @@ Finally, I'm looking to raise some money to obtain a Mac Mini for the purposes
 of supporting ST3 on OS X and a license for a Windows 8 VM. If you are inclined
 to donate to those, or want to just buy me a beer, check out:
 
-https://sublime.wbond.net/say_thanks
+https://packagecontrol.io/about
 
 
 Notable Features

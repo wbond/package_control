@@ -1026,7 +1026,7 @@ class PackageManager():
         Submits install, upgrade and delete actions to a usage server
 
         The usage information is currently displayed on the Package Control
-        community package list at http://wbond.net/sublime_packages/community
+        website at https://packagecontrol.io
 
         :param params:
             A dict of the information to submit
