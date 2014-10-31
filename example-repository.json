@@ -288,14 +288,14 @@
 
 		// Here is an example of how relative paths work for URLs. If this
 		// file was loaded from:
-		//   "https://sublime.wbond.net/example-repository.json"
+		//   "https://packagecontrol.io/example-repository.json"
 		// then the following files would be loaded from:
-		//   "https://sublime.wbond.net/repository/0-9.json"
-		//   "https://sublime.wbond.net/repository/a.json"
+		//   "https://packagecontrol.io/repository/0-9.json"
+		//   "https://packagecontrol.io/repository/a.json"
 		"./repository/0-9.json",
 		"./repository/a.json",
 
 		// An example of an absolute URL
-		"https://sublime.wbond.net/repository/b.json"
+		"https://packagecontrol.io/repository/b.json"
 	]
 }

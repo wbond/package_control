@@ -4,7 +4,7 @@
 	// All repositories must be an HTTPS URL. SSL certificates help prevent
 	// unauthorized code being loaded onto users' machines.
 	"repositories": [
-		"https://sublime.wbond.net/packages.json",
+		"https://packagecontrol.io/packages.json",
 		"https://github.com/buymeasoda/soda-theme",
 		"https://github.com/SublimeText"
 	],
@@ -16,7 +16,7 @@
 	"packages_cache": {
 
 		// The first level keys are the repository URLs
-		"https://sublime.wbond.net/packages.json": [
+		"https://packagecontrol.io/packages.json": [
 
 			// Each repository has an array of packages with their fully
 			// expanded info. This means that the "details" key must be expanded
@@ -29,7 +29,7 @@
 				"releases": [
 					{
 						"version": "2.0.0",
-						"url": "https://sublime.wbond.net/Alignment.sublime-package",
+						"url": "https://packagecontrol.io/Alignment.sublime-package",
 						"date": "2011-09-18 20:12:41"
 					}
 				]
@@ -38,10 +38,10 @@
 	},
 
 	// Package Control ships with the SSL Certificate Authority (CA) cert for the
-	// SSL certificate that secures and identifies sublime.wbond.net. After this
+	// SSL certificate that secures and identifies packagecontrol.io. After this
 	// initial connection is made, the channel server provides a list of CA certs
 	// for the various URLs that Package Control need to connect to. This way the
-	// default channel (https://sublime.wbond.net/channel.json) can provide
+	// default channel (https://packagecontrol.io/channel.json) can provide
 	// real-time updates to CA certs in the case that a CA is compromised. The
 	// CA certs are extracted from openssl, and the server runs on an LTS version
 	// of Ubuntu, which automatically applies security patches from the official
@@ -51,14 +51,14 @@
 	"certs": {
 
 		// All certs have the domain they apply to as the key
-		"sublime.wbond.net": [
+		"packagecontrol.io": [
 			// The value is an array of two elements, the first being an md5
 			// hash of the contents of the certificate. This helps in detecting
 			// CA cert changes. The second element is the URL where the cert
 			// can be downloaded, if it is not already installed on the user’s
 			// copy of Sublime Text.
 			"7f4f8622b4fd001c7f648e09aae7edaa",
-			"https://sublime.wbond.net/certs/7f4f8622b4fd001c7f648e09aae7edaa"
+			"https://packagecontrol.io/certs/7f4f8622b4fd001c7f648e09aae7edaa"
 		]
 	}
 }

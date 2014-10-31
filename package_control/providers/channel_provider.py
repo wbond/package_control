@@ -238,7 +238,7 @@ class ChannelProvider(ReleaseSelector):
         does not have the appropriate hash for a domain, it may retrieve it
         from the channel server. To ensure that Package Control is talking to
         a trusted authority to get the CA certs from, the CA cert for
-        sublime.wbond.net is bundled with Package Control. Then when downloading
+        packagecontrol.io is bundled with Package Control. Then when downloading
         the channel file, Package Control can ensure that the channel file's
         SSL certificate is valid, thus ensuring the resulting CA certs are
         legitimate.

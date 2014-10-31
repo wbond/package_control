@@ -9,7 +9,7 @@ The plugin uses a channel and repository system to allow users to find new
 packages over time without any work. It also supports working with packages that
 were manually installed.
 
-Please see https://sublime.wbond.net for installation instructions, a
+Please see https://packagecontrol.io for installation instructions, a
 searchable list of available packages and detailed documentation.
 
 == License
