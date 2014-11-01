@@ -87,10 +87,10 @@ def get_system_ca_bundle_path(settings):
 
     # OS X
     if platform == 'darwin':
-        if not os.path.exists(ca_bundle_dir):
-            os.mkdir(ca_bundle_dir)
         if not ca_bundle_dir:
             ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
+        if not os.path.exists(ca_bundle_dir):
+            os.mkdir(ca_bundle_dir)
         ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
 
         exists = os.path.exists(ca_path)
