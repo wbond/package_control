@@ -1,16 +1,19 @@
 import zipfile
 import os
 import hashlib
-import io
 import sys
 import threading
 from textwrap import dedent
 try:
     import urllib2
     str_cls = unicode
+    from cStringIO import StringIO as BytesIO
+    package_control_dir = os.getcwd()
 except (ImportError):
     import urllib.request as urllib2
     str_cls = str
+    from io import BytesIO
+    package_control_dir = os.path.dirname(__file__)
 # Prevents an unknown encoding error that occurs when first using
 # urllib(2) in a thread.
 import encodings.idna
@@ -19,7 +22,7 @@ import sublime
 
 
 def get_sublime_text_dir(name):
-    cur_package_dir = os.path.dirname(os.path.dirname(__file__))
+    cur_package_dir = os.path.dirname(package_control_dir)
 
     try:
         if not isinstance(cur_package_dir, str_cls):
@@ -53,7 +56,7 @@ def install_ssl():
     f.close()
     print(u'Package Control: Successfully downloaded _ssl modules for Linux')
 
-    data_io = io.BytesIO(data)
+    data_io = BytesIO(data)
 
     data_hash = hashlib.sha256(data).hexdigest()
     if data_hash != correct_hash:
@@ -102,15 +105,17 @@ def install_ssl():
             # Python 2
             str_cls = unicode
             st_version = 2
+            package_dir = os.getcwd()
         except (NameError):
             str_cls = str
             st_version = 3
+            package_dir = os.path.dirname(__file__)
 
 
         if sublime.platform() == 'linux':
             # We use this construct because in ST2 the package will be in Packages/, but
             # in ST3 it will be in Installed Packages/.
-            cur_package_dir = os.path.dirname(os.path.dirname(__file__))
+            cur_package_dir = os.path.dirname(package_dir)
             try:
                 if not isinstance(cur_package_dir, str_cls):
                     cur_package_dir = cur_package_dir.decode('utf-8', 'strict')
