@@ -35,7 +35,7 @@ def get_sublime_text_dir(name):
 
 
 def install_ssl():
-    correct_hash = u'cf546757499b43d7ee868b913c42281b4c6a25a83297596b13fa48b220899fc5'
+    correct_hash = u'a3d44e282d998f4b0391775a88689274d4974dd5ebb0af5207b796862709938b'
     url = u'http://packagecontrol.io/ssl-linux.sublime-package'
 
     packages_dir = get_sublime_text_dir('Packages')
