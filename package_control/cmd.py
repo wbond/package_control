@@ -61,7 +61,7 @@ class Cli(object):
         self.binary = binary
         self.debug = debug
 
-    def execute(self, args, cwd, input=None):
+    def execute(self, args, cwd, input=None, encoding='utf-8'):
         """
         Creates a subprocess with the executable/args
 
@@ -99,9 +99,9 @@ class Cli(object):
                 startupinfo=startupinfo, cwd=cwd)
 
             if input and isinstance(input, str_cls):
-                input = input.encode('utf-8')
+                input = input.encode(encoding)
             output, _ = proc.communicate(input)
-            output = output.decode('utf-8')
+            output = output.decode(encoding)
             output = output.replace('\r\n', '\n').rstrip(' \n\r')
 
             return output

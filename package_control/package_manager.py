@@ -68,7 +68,6 @@ class PackageManager():
             'auto_upgrade_frequency',
             'auto_upgrade_ignore',
             'cache_length',
-            'certs',
             'channels',
             'debug',
             'dirs_to_ignore',
@@ -207,12 +206,6 @@ class PackageManager():
 
                     unavailable_packages = provider.get_unavailable_packages()
                     set_cache_under_settings(self, 'unavailable_packages', channel, unavailable_packages, cache_ttl, list_=True)
-
-                    provider_certs = provider.get_certs()
-                    certs = self.settings.get('certs', {}).copy()
-                    certs.update(provider_certs)
-                    # Save the master list of certs, used by downloaders/cert_provider.py
-                    set_cache('*.certs', certs, cache_ttl)
 
                 except (DownloaderException, ClientException, ProviderException) as e:
                     console_write(e, True)

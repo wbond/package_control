@@ -3,6 +3,9 @@ import os
 import re
 import time
 import sys
+import locale
+import datetime
+import platform
 
 from .cmd import Cli
 from .console_write import console_write
@@ -17,44 +20,70 @@ except (ImportError):
     ca_bundle_dir = os.path.join(os.path.expanduser('~'), '.package_control')
 
 
-def find_root_ca_cert(settings, domain):
-    runner = OpensslCli(settings.get('openssl_binary'), settings.get('debug'))
-    binary = runner.retrieve_binary()
+def get_ca_bundle_path(settings):
+    """
+    Return the path to the merged system and user ca bundles
 
-    args = [binary, 's_client', '-showcerts', '-connect', domain + ':443']
-    result = runner.execute(args, os.path.dirname(binary))
+    :param settings:
+        A dict to look in for `debug` and `openssl_binary` keys
 
-    certs = []
-    temp = []
+    :return:
+        The filesystem path to the merged ca bundle path
+    """
 
-    in_block = False
-    for line in result.splitlines():
-        if line.find('BEGIN CERTIFICATE') != -1:
-            in_block = True
-        if in_block:
-            temp.append(line)
-        if line.find('END CERTIFICATE') != -1:
-            in_block = False
-            certs.append(u"\n".join(temp))
-            temp = []
+    ensure_ca_bundle_dir()
 
-    # Grabbing the certs for the domain failed, most likely because it is down
-    if not certs:
-        return [False, False]
+    system_ca_bundle_path = get_system_ca_bundle_path(settings)
+    user_ca_bundle_path = get_user_ca_bundle_path(settings)
+    merged_ca_bundle_path = os.path.join(ca_bundle_dir, 'Package Control.merged-ca-bundle')
 
-    # Remove the cert for the domain itself, just leaving the
-    # chain cert and the CA cert
-    certs.pop(0)
+    merged_missing = not os.path.exists(merged_ca_bundle_path)
 
-    # Look for the "parent" root CA cert
-    subject = openssl_get_cert_subject(settings, certs[-1])
-    issuer = openssl_get_cert_issuer(settings, certs[-1])
+    regenerate = merged_missing
+    if system_ca_bundle_path and not merged_missing:
+        regenerate = regenerate or os.path.getmtime(system_ca_bundle_path) > os.path.getmtime(merged_ca_bundle_path)
+    if os.path.exists(user_ca_bundle_path) and not merged_missing:
+        regenerate = regenerate or os.path.getmtime(user_ca_bundle_path) > os.path.getmtime(merged_ca_bundle_path)
 
-    cert = get_ca_cert_by_subject(settings, issuer)
-    cert_hash = hashlib.md5(cert.encode('utf-8')).hexdigest()
+    if regenerate:
+        with open(merged_ca_bundle_path, 'wb') as merged:
+            if system_ca_bundle_path:
+                with open_compat(system_ca_bundle_path, 'r') as system:
+                    system_certs = read_compat(system).strip()
+                    merged.write(system_certs.encode('utf-8'))
+                    if len(system_certs) > 0:
+                        merged.write(b'\n')
+            with open_compat(user_ca_bundle_path, 'r') as user:
+                user_certs = read_compat(user).strip()
+                merged.write(user_certs.encode('utf-8'))
+                if len(user_certs) > 0:
+                    merged.write(b'\n')
+        if settings.get('debug'):
+            console_write(u"Regnerated the merged CA bundle from the system and user CA bundles", True)
 
-    return [cert, cert_hash]
+    return merged_ca_bundle_path
 
+
+def get_user_ca_bundle_path(settings):
+    """
+    Return the path to the user CA bundle, ensuring the file exists
+
+    :param settings:
+        A dict to look in for `debug`
+
+    :return:
+        The filesystem path to the user ca bundle
+    """
+
+    ensure_ca_bundle_dir()
+
+    user_ca_bundle_path = os.path.join(ca_bundle_dir, 'Package Control.user-ca-bundle')
+    if not os.path.exists(user_ca_bundle_path):
+        if settings.get('debug'):
+            console_write(u"Created blank user CA bundle", True)
+        open(user_ca_bundle_path, 'a').close()
+
+    return user_ca_bundle_path
 
 
 def get_system_ca_bundle_path(settings):
@@ -72,25 +101,13 @@ def get_system_ca_bundle_path(settings):
         The full filesystem path to the .ca-bundle file, or False on error
     """
 
-    # If the sublime module is available, we bind this value at run time
-    # since the sublime.packages_path() is not available at import time
-    global ca_bundle_dir
-
     platform = sys.platform
     debug = settings.get('debug')
 
     ca_path = False
 
-    if platform == 'win32':
-        console_write(u"Unable to get system CA cert path since Windows does not ship with them", True)
-        return False
-
-    # OS X
-    if platform == 'darwin':
-        if not ca_bundle_dir:
-            ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
-        if not os.path.exists(ca_bundle_dir):
-            os.mkdir(ca_bundle_dir)
+    if platform == 'win32' or platform == 'darwin':
+        ensure_ca_bundle_dir()
         ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
 
         exists = os.path.exists(ca_path)
@@ -98,11 +115,18 @@ def get_system_ca_bundle_path(settings):
         is_old = exists and os.stat(ca_path).st_mtime < time.time() - 604800
 
         if not exists or is_old:
-            if debug:
-                console_write(u"Generating new CA bundle from system keychain", True)
-            _osx_create_ca_bundle(settings, ca_path)
+            if platform == 'darwin':
+                if debug:
+                    console_write(u"Generating new CA bundle from system keychain", True)
+                _osx_create_ca_bundle(settings, ca_path)
+            elif platform == 'win32':
+                if debug:
+                    console_write(u"Generating new CA bundle from system certificate store", True)
+                _win_create_ca_bundle(settings, ca_path)
+
             if debug:
                 console_write(u"Finished generating new CA bundle at %s" % ca_path, True)
+
         elif debug:
             console_write(u"Found previously exported CA bundle at %s" % ca_path, True)
 
@@ -128,54 +152,19 @@ def get_system_ca_bundle_path(settings):
     return ca_path
 
 
-def get_ca_cert_by_subject(settings, subject):
-    bundle_path = get_system_ca_bundle_path(settings)
-
-    with open_compat(bundle_path, 'r') as f:
-        contents = read_compat(f)
-
-    temp = []
-
-    in_block = False
-    for line in contents.splitlines():
-        if line.find('BEGIN CERTIFICATE') != -1:
-            in_block = True
-
-        if in_block:
-            temp.append(line)
-
-        if line.find('END CERTIFICATE') != -1:
-            in_block = False
-            cert = u"\n".join(temp)
-            temp = []
-
-            if openssl_get_cert_subject(settings, cert) == subject:
-                return cert
-
-    return False
-
-
-def openssl_get_cert_issuer(settings, cert):
+def ensure_ca_bundle_dir():
     """
-    Uses the openssl command line client to extract the issuer of an x509
-    certificate.
-
-    :param settings:
-        A dict to look in for `debug` and `openssl_binary` keys
-
-    :param cert:
-        A string containing the PEM-encoded x509 certificate to extract the
-        issuer from
-
-    :return:
-        The cert issuer
+    Make sure we have a placed to save the merged-ca-bundle and system-ca-bundle
     """
 
-    runner = OpensslCli(settings.get('openssl_binary'), settings.get('debug'))
-    binary = runner.retrieve_binary()
-    args = [binary, 'x509', '-noout', '-issuer']
-    output = runner.execute(args, os.path.dirname(binary), cert)
-    return re.sub('^issuer=\s*', '', output)
+    # If the sublime module is available, we bind this value at run time
+    # since the sublime.packages_path() is not available at import time
+    global ca_bundle_dir
+
+    if not ca_bundle_dir:
+        ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
+    if not os.path.exists(ca_bundle_dir):
+        os.mkdir(ca_bundle_dir)
 
 
 def openssl_get_cert_name(settings, cert):
@@ -223,29 +212,6 @@ def openssl_get_cert_name(settings, cert):
 
     # This is the name of the cert that would be used in the trust prefs
     return cn or first_ou
-
-
-def openssl_get_cert_subject(settings, cert):
-    """
-    Uses the openssl command line client to extract the subject of an x509
-    certificate.
-
-    :param settings:
-        A dict to look in for `debug` and `openssl_binary` keys
-
-    :param cert:
-        A string containing the PEM-encoded x509 certificate to extract the
-        subject from
-
-    :return:
-        The cert subject
-    """
-
-    runner = OpensslCli(settings.get('openssl_binary'), settings.get('debug'))
-    binary = runner.retrieve_binary()
-    args = [binary, 'x509', '-noout', '-subject']
-    output = runner.execute(args, os.path.dirname(binary), cert)
-    return re.sub('^subject=\s*', '', output)
 
 
 def _osx_create_ca_bundle(settings, destination):
@@ -350,6 +316,128 @@ def _osx_get_distrusted_certs(settings):
             distrusted_certs.append(cert_name)
 
     return distrusted_certs
+
+
+def _win_create_ca_bundle(settings, destination):
+    # Windows XP doesn't include certutil, but then again, Windows XP is
+    # EOL and has WinINet anyway.
+    if platform.release() == 'XP':
+        return
+
+    encoding = locale.getpreferredencoding()
+    cli = Cli(None, settings.get('debug'))
+    cwd = os.environ['SystemRoot']
+
+    certs = []
+
+    stores = ['root', 'authroot']
+    for store in stores:
+        args = ['certutil.exe', '-store', store]
+        result = cli.execute(args, cwd, encoding=encoding)
+
+        entry = None
+        serial_number = None
+        issuer = None
+        subject = None
+        not_before = None
+        not_after = None
+        expired = False
+        cert_hash = None
+
+        cert_hashes = []
+
+        for line in result.splitlines():
+            match = re.match('^(={16}) ([^=]*) (={16})$', line)
+            if match:
+                entry = match.group(2)
+                serial_number = None
+                issuer = None
+                subject = None
+                not_before = None
+                not_after = None
+                expired = False
+                cert_hash = None
+                continue
+
+            if expired:
+                continue
+
+            # Skip trailing program output
+            if re.match('^CertUtil: -\w+ command completed successfully\.$', line):
+                continue
+
+            # Skip leading program output
+            if entry is None:
+                continue
+
+            match = re.match('^Serial Number: (.*)$', line)
+            if match:
+                serial_number = match.group(1)
+                continue
+
+            match = re.match('^Issuer: (.*)$', line)
+            if match:
+                parts = re.split(', (?=[A-Z]+=)', match.group(1))
+                for part in parts:
+                    if part[0:3] == 'CN=':
+                        issuer = part[3:]
+                continue
+
+            match = re.match('^ NotBefore: (.*)$', line)
+            if match:
+                not_before = datetime.datetime.strptime(match.group(1), '%m/%d/%Y %I:%M %p')
+                continue
+
+            match = re.match('^ NotAfter: (.*)$', line)
+            if match:
+                not_after = datetime.datetime.strptime(match.group(1), '%m/%d/%Y %I:%M %p')
+                if not_after < datetime.datetime.now():
+                    expired = True
+                continue
+
+            match = re.match('^Subject: (.*)$', line)
+            if match:
+                parts = re.split(', (?=[A-Z]+=)', match.group(1))
+                for part in parts:
+                    if part[0:3] == 'CN=':
+                        subject = part[3:]
+                        break
+                if not subject:
+                    for part in parts:
+                        if part[0:3] == 'OU=':
+                            subject = part[3:]
+                            break
+                continue
+
+            match = re.match('^Cert Hash\(\w+\): (.*?)$', line)
+            if match:
+                cert_hash = match.group(1).replace(' ', '')
+                cert_hashes.append(cert_hash)
+                continue
+
+        pfx_file = os.path.join(os.environ['TMP'], 'export.pfx')
+        pem_file = os.path.join(os.environ['TMP'], 'export.pem')
+        for cert_hash in cert_hashes:
+            args = ['certutil.exe', '-exportpfx', store, cert_hash, pfx_file]
+            cli.execute(args, cwd, input=u"\r\n\r\n", encoding=encoding)
+
+            # If the cert was not marked for export, then the output file won't exist
+            if not os.path.exists(pfx_file):
+                continue
+
+            args = ['certutil.exe', '-encode', pfx_file, pem_file]
+            cli.execute(args, cwd, encoding=encoding)
+
+            with open(pem_file, 'rb') as f:
+                pem = f.read().decode('ascii')
+
+            os.unlink(pfx_file)
+            os.unlink(pem_file)
+
+            certs.append(pem.strip())
+
+    with open_compat(destination, 'w') as f:
+        f.write(u"\n".join(certs))
 
 
 class OpensslCli(Cli):

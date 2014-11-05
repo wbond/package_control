@@ -11,39 +11,6 @@
 	// setting
 	"repositories": [],
 
-	// A list of CA certs needed for domains. The default channel provides a
-	// list of domains and an identifier (the md5 hash) for the CA cert(s)
-	// necessary for each. Not used on Windows since the system CA cert list
-	// is automatically used via WinINet.
-	//
-	// If a custom cert is required for a proxy or for an alternate channel
-	// or repository domain name, it should be added in one of the two forms:
-	//
-	// "*": ["my_identifier", "https://example.com/url/of/cert_file"]
-	// "*": ["my_identifier_2", "/absolute/filesystem/path/to/cert_file"]
-	//
-	// In both cases the literal "*" means the cert will be checked to ensure
-	// it is present for accessing any URL. This is necessary for proxy
-	// connections, but also useful if you want to provide you own
-	// Pckage Control.ca-bundle file.
-	//
-	// The "my_identifier" and "my_identifier_2" can be any unique string
-	// that Package Control can use as a filename, and ensures that it has
-	// merged the cert file with the ca-bundle.crt file in the certs/ directory
-	// since that is what is passed to the downloaders.
-	"certs": {
-		"api.bitbucket.org": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"api.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"bitbucket.org": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"codeload.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"downloads.sourceforge.net": ["221e907bdfff70d71cea42361ae209d5", "https://packagecontrol.io/certs/221e907bdfff70d71cea42361ae209d5"],
-		"github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"nodeload.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"packagecontrol.io": ["d616352d4213985e717c93c8c387575d", "https://packagecontrol.io/certs/d616352d4213985e717c93c8c387575d"],
-		"raw.github.com": ["7d0986b90061d60c8c02aa3b1cf23850", "https://packagecontrol.io/certs/7d0986b90061d60c8c02aa3b1cf23850"],
-		"sublime.wbond.net": ["221e907bdfff70d71cea42361ae209d5", "https://packagecontrol.io/certs/221e907bdfff70d71cea42361ae209d5"]
-	},
-
 	// Install pre-release versions of packages. If this is false, versions
 	// under 1.0.0 will still be installed. Only packages using the SemVer
 	// -prerelease suffixes will be ignored.

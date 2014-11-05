@@ -217,49 +217,6 @@ class ChannelProvider(ReleaseSelector):
 
         return self.get_repositories()
 
-    def get_certs(self):
-        """
-        Provides a secure way for distribution of SSL CA certificates
-
-        Unfortunately Python does not include a bundle of CA certs with urllib
-        to perform SSL certificate validation. To circumvent this issue,
-        Package Control acts as a distributor of the CA certs for all HTTPS
-        URLs of package downloads.
-
-        The default channel scrapes and caches info about all packages
-        periodically, and in the process it checks the CA certs for all of
-        the HTTPS URLs listed in the repositories. The contents of the CA cert
-        files are then hashed, and the CA cert is stored in a filename with
-        that hash. This is a fingerprint to ensure that Package Control has
-        the appropriate CA cert for a domain name.
-
-        Next, the default channel file serves up a JSON object of the domain
-        names and the hashes of their current CA cert files. If Package Control
-        does not have the appropriate hash for a domain, it may retrieve it
-        from the channel server. To ensure that Package Control is talking to
-        a trusted authority to get the CA certs from, the CA cert for
-        packagecontrol.io is bundled with Package Control. Then when downloading
-        the channel file, Package Control can ensure that the channel file's
-        SSL certificate is valid, thus ensuring the resulting CA certs are
-        legitimate.
-
-        As a matter of optimization, the distribution of Package Control also
-        includes the current CA certs for all known HTTPS domains that are
-        included in the channel, as of the time when Package Control was
-        last released.
-
-        :raises:
-            ProviderException: when an error occurs with the channel contents
-            DownloaderException: when an error occurs trying to open a URL
-
-        :return:
-            A dict of {'Domain Name': ['cert_file_hash', 'cert_file_download_url']}
-        """
-
-        self.fetch()
-
-        return self.channel_info.get('certs', {})
-
     def get_packages(self, repo):
         """
         Provides access to the repository info that is cached in a channel

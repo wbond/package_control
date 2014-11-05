@@ -8,12 +8,12 @@ from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
 from .rate_limit_exception import RateLimitException
 from .downloader_exception import DownloaderException
-from .cert_provider import CertProvider
+from ..ca_certs import get_ca_bundle_path
 from .limiting_downloader import LimitingDownloader
 from .caching_downloader import CachingDownloader
 
 
-class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDownloader):
+class CurlDownloader(CliDownloader, LimitingDownloader, CachingDownloader):
     """
     A downloader that uses the command line program curl
 
@@ -58,7 +58,6 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
             If a cached version should be returned instead of trying a new request
 
         :raises:
-            NoCaCertException: when no CA certs can be found for the url
             RateLimitException: when a rate limit is hit
             DownloaderException: when any other download error occurs
 
@@ -91,7 +90,7 @@ class CurlDownloader(CliDownloader, CertProvider, LimitingDownloader, CachingDow
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match != None:
             secure_domain = secure_url_match.group(1)
-            bundle_path = self.check_certs(secure_domain, timeout)
+            bundle_path = get_ca_bundle_path(self.settings)
             command.extend(['--cacert', bundle_path])
 
         debug = self.settings.get('debug')
