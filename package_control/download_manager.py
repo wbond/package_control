@@ -218,6 +218,18 @@ class DownloadManager(object):
 
         if self.settings.get('debug'):
             try:
+                port = 443 if is_ssl else 80
+                ipv6_info = socket.getaddrinfo(hostname, port, socket.AF_INET6)
+                if ipv6_info:
+                    ipv6 = ipv6_info[0][4][0]
+                else:
+                    ipv6 = None
+            except (socket.gaierror) as e:
+                ipv6 = None
+            except (TypeError) as e:
+                ipv6 = None
+
+            try:
                 ip = socket.gethostbyname(hostname)
             except (socket.gaierror) as e:
                 ip = unicode_from_os(e)
@@ -226,6 +238,8 @@ class DownloadManager(object):
 
             console_write(u"Download Debug", True)
             console_write(u"  URL: %s" % url)
+            if ipv6:
+                console_write(u"  Resolved IPv6: %s" % ipv6)
             console_write(u"  Resolved IP: %s" % ip)
             console_write(u"  Timeout: %s" % str(timeout))
 
