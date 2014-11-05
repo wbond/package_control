@@ -322,7 +322,9 @@ try:
                         'serialNumber': 'serialNumber',
                         'commonName': 'CN',
                         'localityName': 'L',
-                        'stateOrProvinceName': 'S'
+                        'stateOrProvinceName': 'S',
+                        '1.3.6.1.4.1.311.60.2.1.2': 'incorporationState',
+                        '1.3.6.1.4.1.311.60.2.1.3': 'incorporationCountry'
                     }
                     subject_list = list(cert['subject'])
                     subject_list.reverse()
