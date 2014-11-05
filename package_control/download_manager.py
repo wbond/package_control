@@ -19,9 +19,11 @@ from .cache import set_cache, get_cache
 from .unicode import unicode_from_os
 
 from .downloaders import DOWNLOADERS
+from .downloaders.urllib_downloader import UrlLibDownloader
 from .downloaders.binary_not_found_error import BinaryNotFoundError
 from .downloaders.rate_limit_exception import RateLimitException
 from .downloaders.downloader_exception import DownloaderException
+from .downloaders.win_downloader_exception import WinDownloaderException
 from .http_cache import HttpCache
 
 
@@ -260,3 +262,36 @@ class DownloadManager(object):
             console_write(error_string, True)
             raise
 
+        except (WinDownloaderException) as e:
+
+            error_string = (u'Attempting to use Urllib downloader due to WinINet error: %s') % e
+            console_write(error_string, True)
+
+            # Here we grab the proxy info extracted from WinInet to fill in
+            # the Package Control settings if those are not present. This should
+            # hopefully make a seamless fallback for users who run into weird
+            # windows errors related to network communication.
+            wininet_proxy          = self.downloader.proxy or ''
+            wininet_proxy_username = self.downloader.proxy_username or ''
+            wininet_proxy_password = self.downloader.proxy_password or ''
+
+            http_proxy     = self.settings.get('http_proxy', '')
+            https_proxy    = self.settings.get('https_proxy', '')
+            proxy_username = self.settings.get('proxy_username', '')
+            proxy_password = self.settings.get('proxy_password', '')
+
+            settings = self.settings.copy()
+            if not http_proxy and wininet_proxy:
+                settings['http_proxy'] = wininet_proxy
+            if not https_proxy and wininet_proxy:
+                settings['https_proxy'] = wininet_proxy
+
+            has_proxy = settings.get('http_proxy') or settings.get('https_proxy')
+            if has_proxy and not proxy_username and wininet_proxy_username:
+                settings['proxy_username'] = wininet_proxy_username
+            if has_proxy and not proxy_password and wininet_proxy_password:
+                settings['proxy_password'] = wininet_proxy_password
+
+            self.downloader = UrlLibDownloader(settings)
+            # Try again with the new downloader!
+            self.fetch(url, error_message, prefer_cached)

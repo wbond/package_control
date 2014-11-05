@@ -21,6 +21,7 @@ from .non_http_error import NonHttpError
 from .http_error import HttpError
 from .rate_limit_exception import RateLimitException
 from .downloader_exception import DownloaderException
+from .win_downloader_exception import WinDownloaderException
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
 from .caching_downloader import CachingDownloader
@@ -165,6 +166,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         self.scheme = None
         self.was_offline = None
 
+        self.proxy = ''
+        self.proxy_bypass = ''
+        self.proxy_username = None
+        self.proxy_password = None
+
     def close(self):
         """
         Closes any persistent/open connections
@@ -229,6 +235,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         :raises:
             RateLimitException: when a rate limit is hit
             DownloaderException: when any other download error occurs
+            WinDownloaderException: when an internal Windows error occurs
 
         :return:
             The string contents of the URL
@@ -293,7 +300,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
             if not self.network_connection:
                 error_string = u'%s %s during network phase of downloading %s.' % (error_message, self.extract_error(), url)
-                raise DownloaderException(error_string)
+                raise WinDownloaderException(error_string)
 
             win_timeout = wintypes.DWORD(int(timeout) * 1000)
             # Apparently INTERNET_OPTION_CONNECT_TIMEOUT just doesn't work, leaving it in hoping they may fix in the future
@@ -313,7 +320,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
             if not self.tcp_connection:
                 error_string = u'%s %s during connection phase of downloading %s.' % (error_message, self.extract_error(), url)
-                raise DownloaderException(error_string)
+                raise WinDownloaderException(error_string)
 
             # Normally the proxy info would come from IE, but this allows storing it in
             # the Package Control settings file.
@@ -356,7 +363,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 http_connection = wininet.HttpOpenRequestW(self.tcp_connection, u'GET', path, u'HTTP/1.1', None, None, http_flags, 0)
                 if not http_connection:
                     error_string = u'%s %s during HTTP connection phase of downloading %s.' % (error_message, self.extract_error(), url)
-                    raise DownloaderException(error_string)
+                    raise WinDownloaderException(error_string)
 
                 request_header_lines = []
                 for header, value in request_headers.items():
@@ -367,26 +374,16 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 if not success:
                     error_string = u'%s %s during HTTP write phase of downloading %s.' % (error_message, self.extract_error(), url)
-                    raise DownloaderException(error_string)
+                    raise WinDownloaderException(error_string)
 
                 # If we try to query before here, the proxy info will not be available to the first request
+                self.cache_proxy_info()
                 if self.debug:
-                    proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
-                    proxy = ''
-                    if proxy_struct.lpszProxy:
-                        proxy = proxy_struct.lpszProxy.decode('cp1252')
-                    proxy_bypass = ''
-                    if proxy_struct.lpszProxyBypass:
-                        proxy_bypass = proxy_struct.lpszProxyBypass.decode('cp1252')
-
-                    proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
-                    proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
-
                     console_write(u"WinINet Debug Proxy", True)
-                    console_write(u"  proxy: %s" % proxy)
-                    console_write(u"  proxy bypass: %s" % proxy_bypass)
-                    console_write(u"  proxy username: %s" % proxy_username)
-                    console_write(u"  proxy password: %s" % proxy_password)
+                    console_write(u"  proxy: %s" % self.proxy)
+                    console_write(u"  proxy bypass: %s" % self.proxy_bypass)
+                    console_write(u"  proxy username: %s" % self.proxy_username)
+                    console_write(u"  proxy password: %s" % self.proxy_password)
 
                 self.use_count += 1
 
@@ -458,7 +455,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     if not success:
                         if ctypes.GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
                             error_string = u'%s %s during header read phase of downloading %s.' % (error_message, self.extract_error(), url)
-                            raise DownloaderException(error_string)
+                            raise WinDownloaderException(error_string)
                         # The error was a buffer that was too small, so try again
                         header_buffer_size = to_read_was_read.value
                         try_again = True
@@ -591,6 +588,16 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         """
 
         return True
+
+    def cache_proxy_info(self):
+        proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
+        if proxy_struct.lpszProxy:
+            self.proxy = proxy_struct.lpszProxy.decode('cp1252')
+        if proxy_struct.lpszProxyBypass:
+            self.proxy_bypass = proxy_struct.lpszProxyBypass.decode('cp1252')
+
+        self.proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
+        self.proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
 
     def read_option(self, handle, option):
         """
