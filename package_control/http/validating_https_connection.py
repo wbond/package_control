@@ -339,7 +339,9 @@ try:
                     console_write(u"  Server SSL certificate:")
                     console_write(u"    subject: " + ','.join(subject_parts))
                     if 'subjectAltName' in cert:
-                        console_write(u"    common name: " + cert['subjectAltName'][0][1])
+                        alt_names = [c[1] for c in cert['subjectAltName']]
+                        alt_names = ', '.join(alt_names)
+                        console_write(u"    subject alt name: %s" % alt_names)
                     if 'notAfter' in cert:
                         console_write(u"    expire date: " + cert['notAfter'])
 
