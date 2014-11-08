@@ -3,13 +3,21 @@ import os
 import re
 import time
 import sys
+import struct
 import locale
 import datetime
 import platform
 
+if os.name == 'nt':
+    import ctypes
+    from ctypes import windll, wintypes, POINTER, Structure, GetLastError, FormatError
+    crypt32 = windll.crypt32
+
 from .cmd import Cli
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
+from .unicode import unicode_from_os
+from .http.x509 import parse_subject
 
 
 # Have somewhere to store the CA bundle, even when not running in Sublime Text
@@ -319,122 +327,91 @@ def _osx_get_distrusted_certs(settings):
 
 
 def _win_create_ca_bundle(settings, destination):
-    # Windows XP doesn't include certutil, but then again, Windows XP is
-    # EOL and has WinINet anyway.
-    if platform.release() == 'XP':
-        return
-
-    encoding = locale.getpreferredencoding()
-    cli = Cli(None, settings.get('debug'))
-    cwd = os.environ['SystemRoot']
+    debug = settings.get('debug')
 
     certs = []
 
-    stores = ['root', 'authroot']
-    for store in stores:
-        args = ['certutil.exe', '-store', store]
-        result = cli.execute(args, cwd, encoding=encoding)
+    now = datetime.datetime.utcnow()
 
-        entry = None
-        serial_number = None
-        issuer = None
-        subject = None
-        not_before = None
-        not_after = None
-        expired = False
-        cert_hash = None
+    for store in [u"ROOT", u"CA"]:
+        store_handle = crypt32.CertOpenSystemStoreW(None, store)
+        if not store_handle:
+            console_write(u"Error opening system certificate store %s: %s" % (store, extract_error()), True)
+            continue
 
-        cert_hashes = []
+        crypt32.CertEnumCertificatesInStore.restype = PCertContext
+        cert_pointer = crypt32.CertEnumCertificatesInStore(store_handle, None)
+        while bool(cert_pointer):
+            skip = False
 
-        for line in result.splitlines():
-            match = re.match('^(={16}) ([^=]*) (={16})$', line)
-            if match:
-                entry = match.group(2)
-                serial_number = None
-                issuer = None
-                subject = None
-                not_before = None
-                not_after = None
-                expired = False
-                cert_hash = None
-                continue
+            context = cert_pointer.contents
+            if context.dwCertEncodingType != X509_ASN_ENCODING:
+                skip = True
+                if debug:
+                    console_write(u'Skipping certificate since it is not x509 encoded', True)
 
-            if expired:
-                continue
+            if not skip:
+                cert_info = context.pCertInfo.contents
 
-            # Skip trailing program output
-            if re.match('^CertUtil: -\w+ command completed successfully\.$', line):
-                continue
+                subject_struct = cert_info.Subject
+                subject_bytes = ctypes.string_at(subject_struct.pbData, subject_struct.cbData)
+                subject = parse_subject(subject_bytes)
 
-            # Skip leading program output
-            if entry is None:
-                continue
+                name = None
+                if 'commonName' in subject:
+                    name = subject['commonName']
+                if not name and 'organizationalUnitName' in subject:
+                    name = subject['organizationalUnitName']
 
-            match = re.match('^Serial Number: (.*)$', line)
-            if match:
-                serial_number = match.group(1)
-                continue
+                # On Windows, only the last of a key is used
+                if isinstance(name, list):
+                    name = name[-1]
 
-            match = re.match('^Issuer: (.*)$', line)
-            if match:
-                parts = re.split(', (?=[A-Z]+=)', match.group(1))
-                for part in parts:
-                    if part[0:3] == 'CN=':
-                        issuer = part[3:]
-                continue
+                not_before = convert_filetime_to_datetime(cert_info.NotBefore)
+                not_after  = convert_filetime_to_datetime(cert_info.NotAfter)
 
-            match = re.match('^ NotBefore: (.*)$', line)
-            if match:
-                not_before = datetime.datetime.strptime(match.group(1), '%m/%d/%Y %I:%M %p')
-                continue
+                if not_before > now:
+                    if debug:
+                        console_write(u'Skipping certificate "%s" since it is not valid yet' % name, True)
+                    skip = True
 
-            match = re.match('^ NotAfter: (.*)$', line)
-            if match:
-                not_after = datetime.datetime.strptime(match.group(1), '%m/%d/%Y %I:%M %p')
-                if not_after < datetime.datetime.now():
-                    expired = True
-                continue
+            if not skip:
+                if not_after < now:
+                    if debug:
+                        console_write(u'Skipping certificate "%s" since it is no longer valid' % name, True)
+                    skip = True
 
-            match = re.match('^Subject: (.*)$', line)
-            if match:
-                parts = re.split(', (?=[A-Z]+=)', match.group(1))
-                for part in parts:
-                    if part[0:3] == 'CN=':
-                        subject = part[3:]
-                        break
-                if not subject:
-                    for part in parts:
-                        if part[0:3] == 'OU=':
-                            subject = part[3:]
-                            break
-                continue
+            if not skip:
+                data = ctypes.string_at(ctypes.addressof(context.pbCertEncoded.contents), context.cbCertEncoded)
 
-            match = re.match('^Cert Hash\(\w+\): (.*?)$', line)
-            if match:
-                cert_hash = match.group(1).replace(' ', '')
-                cert_hashes.append(cert_hash)
-                continue
+                output_size = wintypes.DWORD()
 
-        pfx_file = os.path.join(os.environ['TMP'], 'export.pfx')
-        pem_file = os.path.join(os.environ['TMP'], 'export.pem')
-        for cert_hash in cert_hashes:
-            args = ['certutil.exe', '-exportpfx', store, cert_hash, pfx_file]
-            cli.execute(args, cwd, input=u"\r\n\r\n", encoding=encoding)
+                result = crypt32.CryptBinaryToStringW(data,
+                    context.cbCertEncoded, CRYPT_STRING_BASE64HEADER | CRYPT_STRING_NOCR,
+                    None, ctypes.byref(output_size))
+                length = output_size.value
 
-            # If the cert was not marked for export, then the output file won't exist
-            if not os.path.exists(pfx_file):
-                continue
+                if not result:
+                    console_write(u'Error determining certificate size for "%s"' % name, True)
+                    skip = True
 
-            args = ['certutil.exe', '-encode', pfx_file, pem_file]
-            cli.execute(args, cwd, encoding=encoding)
+            if not skip:
+                buffer = ctypes.create_unicode_buffer(length)
+                output_size = wintypes.DWORD(length)
 
-            with open(pem_file, 'rb') as f:
-                pem = f.read().decode('ascii')
+                result = crypt32.CryptBinaryToStringW(data,
+                    context.cbCertEncoded, CRYPT_STRING_BASE64HEADER | CRYPT_STRING_NOCR,
+                    buffer, ctypes.byref(output_size))
+                output = buffer.value
 
-            os.unlink(pfx_file)
-            os.unlink(pem_file)
+                if debug:
+                    console_write(u'Exported certificate "%s"' % name, True)
 
-            certs.append(pem.strip())
+                certs.append(output.strip())
+
+            cert_pointer = crypt32.CertEnumCertificatesInStore(store_handle, cert_pointer)
+
+        crypt32.CertCloseStore(store_handle, 0)
 
     with open_compat(destination, 'w') as f:
         f.write(u"\n".join(certs))
@@ -470,3 +447,106 @@ class OpensslCli(Cli):
             return False
 
         return binary
+
+
+if os.name == 'nt':
+    # Constants from wincrypt.h
+    X509_ASN_ENCODING = 1
+    CRYPT_STRING_BASE64HEADER = 0
+    CRYPT_STRING_NOCR = 0x80000000
+
+
+    def extract_error():
+        error_num = GetLastError()
+        error_string = FormatError(error_num)
+        return unicode_from_os(error_string)
+
+
+    PByte = POINTER(wintypes.BYTE)
+    class CryptBlob(Structure):
+        _fields_ = [
+            ("cbData", wintypes.DWORD),
+            ("pbData", PByte)
+        ]
+
+
+    class CryptAlgorithmIdentifier(Structure):
+        _fields_ = [
+            ("pszObjId", wintypes.LPSTR),
+            ("Parameters", CryptBlob)
+        ]
+
+
+    class FileTime(Structure):
+        _fields_ = [
+            ("dwLowDateTime", wintypes.DWORD),
+            ("dwHighDateTime", wintypes.DWORD)
+        ]
+
+
+    class CertPublicKeyInfo(Structure):
+        _fields_ = [
+            ("Algorithm", CryptAlgorithmIdentifier),
+            ("PublicKey", CryptBlob)
+        ]
+
+
+    class CertExtension(Structure):
+        _fields_ = [
+            ("pszObjId", wintypes.LPSTR),
+            ("fCritical", wintypes.BOOL),
+            ("Value", CryptBlob)
+        ]
+    PCertExtension = POINTER(CertExtension)
+
+
+    class CertInfo(Structure):
+        _fields_ = [
+            ("dwVersion", wintypes.DWORD),
+            ("SerialNumber", CryptBlob),
+            ("SignatureAlgorithm", CryptAlgorithmIdentifier),
+            ("Issuer", CryptBlob),
+            ("NotBefore", FileTime),
+            ("NotAfter", FileTime),
+            ("Subject", CryptBlob),
+            ("SubjectPublicKeyInfo", CertPublicKeyInfo),
+            ("IssuerUniqueId", CryptBlob),
+            ("SubjectUniqueId", CryptBlob),
+            ("cExtension", wintypes.DWORD),
+            ("rgExtension", POINTER(PCertExtension))
+        ]
+    PCertInfo = POINTER(CertInfo)
+
+
+    class CertContext(Structure):
+        _fields_ = [
+            ("dwCertEncodingType", wintypes.DWORD),
+            ("pbCertEncoded", PByte),
+            ("cbCertEncoded", wintypes.DWORD),
+            ("pCertInfo", PCertInfo),
+            ("hCertStore", wintypes.HANDLE)
+        ]
+    PCertContext = POINTER(CertContext)
+
+
+    class NextCert(Exception):
+        pass
+
+
+    def convert_filetime_to_datetime(filetime):
+        """
+        Windows returns times as 64-bit unsigned longs that are the number
+        of hundreds of nanoseconds since Jan 1 1601. This converts it to
+        a datetime object.
+
+        :param filetime:
+            A FileTime struct object
+
+        :return:
+            A (UTC) datetime object
+        """
+
+        hundreds_nano_seconds = struct.unpack('>Q', struct.pack('>LL', filetime.dwHighDateTime, filetime.dwLowDateTime))[0]
+        seconds_since_1601 = hundreds_nano_seconds / 10000000
+        epoch_seconds = seconds_since_1601 - 11644473600 # Seconds from Jan 1 1601 to Jan 1 1970
+        return datetime.datetime.fromtimestamp(epoch_seconds)
