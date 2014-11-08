@@ -265,7 +265,7 @@ def _osx_create_ca_bundle(settings, destination):
                 cert_name = openssl_get_cert_name(settings, cert)
                 if cert_name in distrusted_certs:
                     if settings.get('debug'):
-                        console_write(u'Skipping root certficate %s because it is distrusted' % cert_name, True)
+                        console_write(u'Skipping root certificate %s because it is distrusted' % cert_name, True)
                     continue
 
             certs.append(cert)
