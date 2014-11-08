@@ -418,6 +418,76 @@ def loads_subject_alt_name(data):
     dec.start(data)
     return parse(dec)
 
+
+def parse_subject(data):
+    """
+    Takes the byte string of an x509 subject and returns a dict
+
+    :param data:
+        The byte string
+
+    :return:
+        A dict contaning one or more of the following keys:
+         - commonName
+         - serialNumber
+         - countryName
+         - localityName
+         - stateOrProvinceName
+         - streetAddress
+         - organizationName
+         - organizationalUnitName
+         - emailAddress
+         - domainComponent
+    """
+
+    structure = loads(data)
+    if structure[0][0] != Sequence:
+        return None
+
+    output = {}
+
+    oid_map = {
+        '2.5.4.3': 'commonName',
+        '2.5.4.5': 'serialNumber',
+        '2.5.4.6': 'countryName',
+        '2.5.4.7': 'localityName',
+        '2.5.4.8': 'stateOrProvinceName',
+        '2.5.4.9': 'streetAddress',
+        '2.5.4.10': 'organizationName',
+        '2.5.4.11': 'organizationalUnitName',
+        '1.2.840.113549.1.9.1': 'emailAddress',
+        '0.9.2342.19200300.100.1.25': 'domainComponent'
+    }
+
+    body = structure[0][1]
+    for part in body:
+        if part[0] == Sequence:
+            part = [Set, [part]]
+
+        for subpart in part[1]:
+            object_identifier = None
+            value = None
+            for element in subpart[1]:
+                if element[0] == ObjectIdentifier:
+                    object_identifier = element[1]
+                elif element[0] in [OctetString, IA5String, T61String, PrintableString]:
+                    value = element[1]
+
+            if object_identifier in oid_map:
+                key = oid_map[object_identifier]
+            else:
+                key = object_identifier
+
+            if key in output:
+                if not isinstance(output[key], list):
+                    output[key] = [output[key]]
+                output[key].append(value)
+            else:
+                output[key] = value
+
+    return output
+
+
 def parse_subject_alt_name(data):
     """
     Takes the byte string of an x509 certificate and returns a list
