@@ -1,3 +1,16 @@
+import re
+import sys
+
+if sys.version_info >= (3,):
+    long = int
+    str_cls = str
+    bytes_cls = bytes
+else:
+    str_cls = unicode
+    bytes_cls = str
+
+
+
 Boolean = 0x01
 Integer = 0x02
 BitString = 0x03
@@ -20,12 +33,9 @@ ClassApplication = 0x40
 ClassContext = 0x80
 ClassPrivate = 0xc0
 
-import re
-
 
 class Error(Exception):
     """ASN1 error"""
-
 
 
 class Decoder(object):
@@ -38,8 +48,8 @@ class Decoder(object):
 
     def start(self, data):
         """Start processing `data'."""
-        if not isinstance(data, str):
-            raise Error, 'Expecting string instance.'
+        if not isinstance(data, bytes_cls):
+            raise Error('Expecting string instance.')
         self.m_stack = [[0, data]]
         self.m_tag = None
 
@@ -47,7 +57,7 @@ class Decoder(object):
         """Return the value of the next tag without moving to the next
         TLV record."""
         if self.m_stack is None:
-            raise Error, 'No input selected. Call start() first.'
+            raise Error('No input selected. Call start() first.')
         if self._end_of_input():
             return None
         if self.m_tag is None:
@@ -57,7 +67,7 @@ class Decoder(object):
     def read(self):
         """Read a simple value and move to the next TLV record."""
         if self.m_stack is None:
-            raise Error, 'No input selected. Call start() first.'
+            raise Error('No input selected. Call start() first.')
         if self._end_of_input():
             return None
         tag = self.peek()
@@ -73,10 +83,10 @@ class Decoder(object):
     def enter(self):
         """Enter a constructed tag."""
         if self.m_stack is None:
-            raise Error, 'No input selected. Call start() first.'
+            raise Error('No input selected. Call start() first.')
         nr, typ, cls = self.peek()
         if typ != TypeConstructed:
-            raise Error, 'Cannot enter a non-constructed tag.'
+            raise Error('Cannot enter a non-constructed tag.')
         length = self._read_length()
         bytes = self._read_bytes(length)
         self.m_stack.append([0, bytes])
@@ -85,16 +95,16 @@ class Decoder(object):
     def leave(self):
         """Leave the last entered constructed tag."""
         if self.m_stack is None:
-            raise Error, 'No input selected. Call start() first.'
+            raise Error('No input selected. Call start() first.')
         if len(self.m_stack) == 1:
-            raise Error, 'Tag stack is empty.'
+            raise Error('Tag stack is empty.')
         del self.m_stack[-1]
         self.m_tag = None
 
     def _decode_boolean(self, bytes):
         """Decode a boolean value."""
         if len(bytes) != 1:
-            raise Error, 'ASN1 syntax error'
+            raise Error('ASN1 syntax error')
         if bytes[0] == '\x00':
             return False
         return True
@@ -120,10 +130,11 @@ class Decoder(object):
         if byte & 0x80:
             count = byte & 0x7f
             if count == 0x7f:
-                raise Error, 'ASN1 syntax error'
+                raise Error('ASN1 syntax error')
             bytes = self._read_bytes(count)
-            bytes = [ ord(b) for b in bytes ]
-            length = 0L
+            if sys.version_info < (3,):
+                bytes = [ ord(b) for b in bytes ]
+            length = long(0)
             for byte in bytes:
                 length = (length << 8) | byte
             try:
@@ -161,9 +172,12 @@ class Decoder(object):
         """Return the next input byte, or raise an error on end-of-input."""
         index, input = self.m_stack[-1]
         try:
-            byte = ord(input[index])
-        except IndexError:
-            raise Error, 'Premature end of input.'
+            if sys.version_info >= (3,):
+                byte = input[index]
+            else:
+                byte = ord(input[index])
+        except (IndexError) as e:
+            raise Error('Premature end of input.')
         self.m_stack[-1][0] += 1
         return byte
 
@@ -173,7 +187,7 @@ class Decoder(object):
         index, input = self.m_stack[-1]
         bytes = input[index:index+count]
         if len(bytes) != count:
-            raise Error, 'Premature end of input.'
+            raise Error('Premature end of input.')
         self.m_stack[-1][0] += count
         return bytes
 
@@ -185,12 +199,15 @@ class Decoder(object):
 
     def _decode_integer(self, bytes):
         """Decode an integer value."""
-        values = [ ord(b) for b in bytes ]
+        if sys.version_info >= (3,):
+            values = bytes
+        else:
+            values = [ ord(b) for b in bytes ]
         # check if the integer is normalized
         if len(values) > 1 and \
                 (values[0] == 0xff and values[1] & 0x80 or
                  values[0] == 0x00 and not (values[1] & 0x80)):
-            raise Error, 'ASN1 syntax error'
+            raise Error('ASN1 syntax error')
         negative = values[0] & 0x80
         if negative:
             # make positive by taking two's complement
@@ -202,7 +219,7 @@ class Decoder(object):
                     break
                 assert i > 0
                 values[i] = 0x00
-        value = 0L
+        value = long(0)
         for val in values:
             value = (value << 8) |  val
         if negative:
@@ -220,7 +237,7 @@ class Decoder(object):
     def _decode_null(self, bytes):
         """Decode a Null value."""
         if len(bytes) != 0:
-            raise Error, 'ASN1 syntax error'
+            raise Error('ASN1 syntax error')
         return None
 
     def _decode_object_identifier(self, bytes):
@@ -228,24 +245,27 @@ class Decoder(object):
         result = []
         value = 0
         for i in range(len(bytes)):
-            byte = ord(bytes[i])
+            if sys.version_info >= (3,):
+                byte = bytes[i]
+            else:
+                byte = ord(bytes[i])
             if value == 0 and byte == 0x80:
-                raise Error, 'ASN1 syntax error'
+                raise Error('ASN1 syntax error')
             value = (value << 7) | (byte & 0x7f)
             if not byte & 0x80:
                 result.append(value)
                 value = 0
         if len(result) == 0 or result[0] > 1599:
-            raise Error, 'ASN1 syntax error'
+            raise Error('ASN1 syntax error')
         result = [result[0] // 40, result[0] % 40] + result[1:]
         result = map(str, result)
         return '.'.join(result)
 
     def _decode_printable_string(self, bytes):
-        return unicode(bytes, 'latin1')
+        return str_cls(bytes, 'latin1')
 
     def _decode_ia5_string(self, bytes):
-        return unicode(bytes, 'ascii')
+        return str_cls(bytes, 'ascii')
 
     def _decode_t61_string(self, bytes):
         char_map = {
@@ -279,7 +299,7 @@ class Decoder(object):
             108: u"\u006C", 109: u"\u006D", 110: u"\u006E", 111: u"\u006F",
             112: u"\u0070", 113: u"\u0071", 114: u"\u0072", 115: u"\u0073",
             116: u"\u0074", 117: u"\u0075", 118: u"\u0076", 119: u"\u0077",
-            120: u"\u0078", 121: u"\u0079", 122: u"\u007A", 123: u"",      
+            120: u"\u0078", 121: u"\u0079", 122: u"\u007A", 123: u"",
             124: u"\u007C", 125: u"",       126: u"",       127: u"\u007F",
             128: u"\u0080", 129: u"\u0081", 130: u"\u0082", 131: u"\u0083",
             132: u"\u0084", 133: u"\u0085", 134: u"\u0086", 135: u"\u0087",
@@ -292,7 +312,7 @@ class Decoder(object):
             160: u"\u00A0", 161: u"\u00A1", 162: u"\u00A2", 163: u"\u00A3",
             164: u"\u0024", 165: u"\u00A5", 166: u"\u0023", 167: u"\u00A7",
             168: u"\u00A4", 169: u"",       170: u"",       171: u"\u00AB",
-            172: u"",       173: u"",       174: u"",       175: u"",      
+            172: u"",       173: u"",       174: u"",       175: u"",
             176: u"\u00B0", 177: u"\u00B1", 178: u"\u00B2", 179: u"\u00B3",
             180: u"\u00D7", 181: u"\u00B5", 182: u"\u00B6", 183: u"\u00B7",
             184: u"\u00F7", 185: u"",       186: u"",       187: u"\u00BB",
@@ -301,10 +321,10 @@ class Decoder(object):
             196: u"\u0303", 197: u"\u0304", 198: u"\u0306", 199: u"\u0307",
             200: u"\u0308", 201: u"",       202: u"\u030A", 203: u"\u0327",
             204: u"\u0332", 205: u"\u030B", 206: u"\u0328", 207: u"\u030C",
-            208: u"",       209: u"",       210: u"",       211: u"",      
+            208: u"",       209: u"",       210: u"",       211: u"",
             212: u"",       213: u"",       214: u"",       215: u"",
-            216: u"",       217: u"",       218: u"",       219: u"",      
-            220: u"",       221: u"",       222: u"",       223: u"",      
+            216: u"",       217: u"",       218: u"",       219: u"",
+            220: u"",       221: u"",       222: u"",       223: u"",
             224: u"\u2126", 225: u"\u00C6", 226: u"\u00D0", 227: u"\u00AA",
             228: u"\u0126", 229: u"",       230: u"\u0132", 231: u"\u013F",
             232: u"\u0141", 233: u"\u00D8", 234: u"\u0152", 235: u"\u00BA",
@@ -316,7 +336,9 @@ class Decoder(object):
         }
         output = u""
         for char in bytes:
-            output += char_map[ord(char)]
+            if sys.version_info < (3,):
+                char = ord(char)
+            output += char_map[char]
         return output
 
 class SubjectAltNameDecoder(Decoder):
@@ -331,60 +353,17 @@ class SubjectAltNameDecoder(Decoder):
             value = bytes
         return value
 
-def strid(id):
-    """Return a string representation of a ASN.1 id."""
-    if id == Boolean:
-        s = 'BOOLEAN'
-    elif id == BitString:
-        s = 'BIT STRING'
-    elif id == Integer:
-        s = 'INTEGER'
-    elif id == OctetString:
-        s = 'OCTET STRING'
-    elif id == Null:
-        s = 'NULL'
-    elif id == ObjectIdentifier:
-        s = 'OBJECT IDENTIFIER'
-    elif id == Enumerated:
-        s = 'ENUMERATED'
-    elif id == Sequence:
-        s = 'SEQUENCE'
-    elif id == Set:
-        s = 'SET'
-    elif id == PrintableString:
-        s = 'PRINTABLE STRING'
-    elif id == T61String:
-        s = 'T.61 STRING'
-    elif id == IA5String:
-        s = 'IA5 STRING'
-    elif id == UTCTime:
-        s = 'UTC TIME'
-    elif id == Null:
-        s = 'NULL'
-    else:
-        s = '%#02x' % id
-    return s
- 
-def strclass(id):
-    """Return a string representation of an ASN.1 class."""
-    if id == ClassUniversal:
-        s = 'UNIVERSAL'
-    elif id == ClassApplication:
-        s = 'APPLICATION'
-    elif id == ClassContext:
-        s = 'CONTEXT'
-    elif id == san1.ClassPrivate:
-        s = 'PRIVATE'
-    else:
-        raise ValueError, 'Illegal class: %#02x' % id
-    return s
-
-def strtag(tag):
-    """Return a string represenation of an ASN.1 tag."""
-    return '[%s] %s' % (strid(tag[0]), strclass(tag[2]))
 
 def parse(input):
-    """Pretty print ASN.1 data."""
+    """
+    Parses an ASN1 stream into an AST
+
+    :param input:
+        An instance of Decoder
+
+    :return:
+        An AST made up of a list of lists
+    """
 
     output = []
 
@@ -402,17 +381,55 @@ def parse(input):
 
     return output
 
+
 def loads(data):
+    """
+    Takes a byte string of an x509 certificate and returns an AST
+
+    :param data:
+        The byte string of an x509 certificate
+
+    :return:
+        An AST made up of a list of list containing two elements:
+        [0] An integer representing the type of value
+        [1] The value - a list or primitive value
+    """
+
     dec = Decoder()
     dec.start(data)
     return parse(dec)
-    
+
+
 def loads_subject_alt_name(data):
+    """
+    Takes the byte string of an x509 certificate subject alt name
+    and returns an AST
+
+    :param data:
+        The byte string of an x509 certificate subject alt name
+
+    :return:
+        An AST made up of a list of list containing two elements:
+        [0] An integer representing the type of value
+        [1] The value - a list or primitive value
+    """
+
     dec = SubjectAltNameDecoder()
     dec.start(data)
     return parse(dec)
 
 def parse_subject_alt_name(data):
+    """
+    Takes the byte string of an x509 certificate and returns a list
+    of subject alt names
+
+    :param data:
+        The certificate byte string
+
+    :return:
+        A tuple of unicode strings
+    """
+
     structure = loads(data)
     if structure[0][0] != Sequence:
         return None
@@ -460,4 +477,5 @@ def parse_subject_alt_name(data):
     for value in values:
         if value[0] == 2:
             domains.append(('DNS', value[1]))
+
     return tuple(domains)
