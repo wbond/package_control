@@ -294,4 +294,4 @@ class DownloadManager(object):
 
             self.downloader = UrlLibDownloader(settings)
             # Try again with the new downloader!
-            self.fetch(url, error_message, prefer_cached)
+            return self.fetch(url, error_message, prefer_cached)
