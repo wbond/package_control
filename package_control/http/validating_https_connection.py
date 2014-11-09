@@ -309,9 +309,9 @@ try:
                 # we parse the raw DER certificate and grab the info ourself
                 if x509:
                     der_cert = self.sock.getpeercert(True)
-                    subject_alt_name = x509.parse_subject_alt_name(der_cert)
-                    if subject_alt_name:
-                        cert['subjectAltName'] = subject_alt_name
+                    parsed_cert = x509.parse(der_cert)
+                    if 'subjectAltName' in parsed_cert:
+                        cert['subjectAltName'] = parsed_cert['subjectAltName']
 
                 if self.debuglevel == -1:
                     subjectMap = {

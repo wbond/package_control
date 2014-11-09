@@ -1,5 +1,6 @@
 import re
 import sys
+import datetime
 
 if sys.version_info >= (3,):
     long = int
@@ -160,6 +161,8 @@ class Decoder(object):
             value = self._decode_t61_string(bytes)
         elif nr == IA5String:
             value = self._decode_ia5_string(bytes)
+        elif nr == UTCTime:
+            value = self._decode_utc_time(bytes)
         elif nr == Null:
             value = self._decode_null(bytes)
         elif nr == ObjectIdentifier:
@@ -267,6 +270,9 @@ class Decoder(object):
     def _decode_ia5_string(self, bytes):
         return str_cls(bytes, 'ascii')
 
+    def _decode_utc_time(self, bytes):
+        return datetime.datetime.strptime(bytes.decode('ascii'), '%y%m%d%H%M%SZ')
+
     def _decode_t61_string(self, bytes):
         char_map = {
             0:   u"\u0000", 1:   u"\u0001", 2:   u"\u0002", 3:   u"\u0003",
@@ -341,6 +347,7 @@ class Decoder(object):
             output += char_map[char]
         return output
 
+
 class SubjectAltNameDecoder(Decoder):
     def _read_value(self, nr, length):
         """Read a value from the input."""
@@ -354,77 +361,131 @@ class SubjectAltNameDecoder(Decoder):
         return value
 
 
-def parse(input):
+def load(data, decoder_cls=Decoder):
     """
     Parses an ASN1 stream into an AST
 
     :param input:
-        An instance of Decoder
+        A byte string or an instance of Decoder
 
     :return:
         An AST made up of a list of lists
     """
 
+    if isinstance(data, bytes_cls):
+        decoder = decoder_cls()
+        decoder.start(data)
+    else:
+        decoder = data
+
     output = []
 
-    while not input.eof():
-        tag = input.peek()
+    while not decoder.eof():
+        tag = decoder.peek()
         if tag[1] == TypePrimitive:
-            tag, value = input.read()
+            tag, value = decoder.read()
             output.append([tag[0], value])
 
         elif tag[1] == TypeConstructed:
-            input.enter()
-            value = parse(input)
+            decoder.enter()
+            value = load(decoder)
             output.append([tag[0], value])
-            input.leave()
+            decoder.leave()
 
     return output
 
 
-def loads(data):
+def parse(data):
     """
-    Takes a byte string of an x509 certificate and returns an AST
+    Takes the byte string of an x509 certificate and returns a dict
+    containing the info in the cert
 
     :param data:
-        The byte string of an x509 certificate
+        The certificate byte string
 
     :return:
-        An AST made up of a list of list containing two elements:
-        [0] An integer representing the type of value
-        [1] The value - a list or primitive value
+        A dict with the following keys:
+         - version
     """
 
-    dec = Decoder()
-    dec.start(data)
-    return parse(dec)
+    structure = load(data)
+    if structure[0][0] != Sequence:
+        return None
 
+    body = structure[0][1]
+    if len(body) != 3:
+        return None
 
-def loads_subject_alt_name(data):
-    """
-    Takes the byte string of an x509 certificate subject alt name
-    and returns an AST
+    algo_oid_map = {
+        '1.2.840.113549.1.1.1':  'rsaEncryption',
+        '1.2.840.113549.1.1.2':  'md2WithRSAEncryption',
+        '1.2.840.113549.1.1.4':  'md5WithRSAEncryption',
+        '1.2.840.113549.1.1.5':  'sha1WithRSAEncryption',
+        '1.2.840.113549.1.1.11': 'sha256WithRSAEncryption',
+        '1.2.840.113549.1.1.12': 'sha384WithRSAEncryption',
+        '1.2.840.113549.1.1.13': 'sha512WithRSAEncryption'
+    }
 
-    :param data:
-        The byte string of an x509 certificate subject alt name
+    cert_struct = body[0][1]
 
-    :return:
-        An AST made up of a list of list containing two elements:
-        [0] An integer representing the type of value
-        [1] The value - a list or primitive value
-    """
+    output = {}
 
-    dec = SubjectAltNameDecoder()
-    dec.start(data)
-    return parse(dec)
+    output['algorithm'] = body[1][1][0][1]
+    if output['algorithm'] in algo_oid_map:
+        output['algorithm'] = algo_oid_map[output['algorithm']]
+
+    output['signature'] = body[2][1]
+
+    i = 0
+
+    # At least one CA cert on Windows was missing the version
+    if cert_struct[i][0] == 0x00:
+        output['version'] = cert_struct[i][1][0][1] + 1
+        i += 1
+    else:
+        output['version'] = 3
+
+    output['serialNumber'] = cert_struct[i][1]
+    i += 1
+
+    # The algorithm is repeated at cert_struct[i][1][0][1]
+    i += 1
+
+    output['issuer']    = parse_subject(cert_struct[i])
+    i += 1
+
+    output['notBefore'] = cert_struct[i][1][0][1]
+    output['notAfter']  = cert_struct[i][1][1][1]
+    i += 1
+
+    output['subject']   = parse_subject(cert_struct[i])
+    i += 1
+
+    output['publicKeyAlgorithm'] = cert_struct[i][1][0][1][0][1]
+    if output['publicKeyAlgorithm'] in algo_oid_map:
+        output['publicKeyAlgorithm'] = algo_oid_map[output['publicKeyAlgorithm']]
+    output['subjectPublicKey']   = cert_struct[i][1][1][1]
+    i += 1
+
+    for j in range(i, len(cert_struct)):
+        if cert_struct[j][0] == 0x01:
+            # Issuer unique identifier
+            pass
+        elif cert_struct[j][0] == 0x02:
+            # Subject unique identifier
+            pass
+        elif cert_struct[j][0] == 0x03:
+            output['subjectAltName'] = parse_subject_alt_name(cert_struct[j])
+
+    return output
 
 
 def parse_subject(data):
     """
-    Takes the byte string of an x509 subject and returns a dict
+    Takes the byte string or AST of an x509 subject and returns a dict
 
     :param data:
-        The byte string
+        The byte string or sub-section AST from load()
 
     :return:
         A dict contaning one or more of the following keys:
@@ -440,7 +501,11 @@ def parse_subject(data):
          - domainComponent
     """
 
-    structure = loads(data)
+    if isinstance(data, bytes_cls):
+        structure = load(data)
+    else:
+        structure = [data]
+
     if structure[0][0] != Sequence:
         return None
 
@@ -488,56 +553,32 @@ def parse_subject(data):
     return output
 
 
-def parse_subject_alt_name(data):
+def parse_subject_alt_name(ast):
     """
     Takes the byte string of an x509 certificate and returns a list
     of subject alt names
 
-    :param data:
-        The certificate byte string
+    :param ast:
+        The AST of the x509 extensions part of the certificate structure
 
     :return:
         A tuple of unicode strings
     """
 
-    structure = loads(data)
-    if structure[0][0] != Sequence:
-        return None
-
-    body = structure[0][1]
-    if len(body) != 3:
-        return None
-
-    cert_struct    = body[0][1]
-    cert_algo      = body[1]
-    cert_signature = body[2]
-
-    version            = cert_struct[0]
-    serial             = cert_struct[1]
-    algo               = cert_struct[2]
-    issuer             = cert_struct[3]
-    validity           = cert_struct[4]
-    subject            = cert_struct[5]
-    subject_public_key = cert_struct[6]
-
-    extensions = None
-    if len(cert_struct) > 7:
-        last_element = cert_struct[-1]
-        if last_element[0] == 0x03:
-            extensions = {}
-            for extension in last_element[1][0][1]:
-                object_identifier = None
-                octet_string = None
-                for part in extension[1]:
-                    if part[0] == OctetString:
-                        octet_string = part[1]
-                    elif part[0] == ObjectIdentifier:
-                        object_identifier = part[1]
-                if object_identifier == '2.5.29.17':
-                    value = loads_subject_alt_name(octet_string)
-                else:
-                    value = octet_string
-                extensions[object_identifier] = value
+    extensions = {}
+    for extension in ast[1][0][1]:
+        object_identifier = None
+        octet_string = None
+        for part in extension[1]:
+            if part[0] == OctetString:
+                octet_string = part[1]
+            elif part[0] == ObjectIdentifier:
+                object_identifier = part[1]
+        if object_identifier == '2.5.29.17':
+            value = load(octet_string, SubjectAltNameDecoder)
+        else:
+            value = octet_string
+        extensions[object_identifier] = value
 
     if not extensions or '2.5.29.17' not in extensions:
         return []

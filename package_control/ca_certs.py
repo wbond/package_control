@@ -10,14 +10,19 @@ import platform
 
 if os.name == 'nt':
     import ctypes
-    from ctypes import windll, wintypes, POINTER, Structure, GetLastError, FormatError
+    from ctypes import windll, wintypes, POINTER, Structure, GetLastError, FormatError, sizeof
     crypt32 = windll.crypt32
 
 from .cmd import Cli
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .unicode import unicode_from_os
-from .http.x509 import parse_subject
+from .http.x509 import parse_subject, parse
+
+try:
+    str_cls = unicode
+except (NameError):
+    str_cls = str
 
 
 # Have somewhere to store the CA bundle, even when not running in Sublime Text
@@ -335,16 +340,17 @@ def _win_create_ca_bundle(settings, destination):
 
     for store in [u"ROOT", u"CA"]:
         store_handle = crypt32.CertOpenSystemStoreW(None, store)
+
         if not store_handle:
             console_write(u"Error opening system certificate store %s: %s" % (store, extract_error()), True)
             continue
 
-        crypt32.CertEnumCertificatesInStore.restype = PCertContext
         cert_pointer = crypt32.CertEnumCertificatesInStore(store_handle, None)
         while bool(cert_pointer):
+            context = cert_pointer.contents
+
             skip = False
 
-            context = cert_pointer.contents
             if context.dwCertEncodingType != X509_ASN_ENCODING:
                 skip = True
                 if debug:
@@ -354,8 +360,12 @@ def _win_create_ca_bundle(settings, destination):
                 cert_info = context.pCertInfo.contents
 
                 subject_struct = cert_info.Subject
-                subject_bytes = ctypes.string_at(subject_struct.pbData, subject_struct.cbData)
-                subject = parse_subject(subject_bytes)
+
+                subject_length = subject_struct.cbData
+                subject_bytes = ctypes.create_string_buffer(subject_length)
+                ctypes.memmove(ctypes.addressof(subject_bytes), subject_struct.pbData, subject_length)
+
+                subject = parse_subject(subject_bytes.raw[:subject_length])
 
                 name = None
                 if 'commonName' in subject:
@@ -382,13 +392,22 @@ def _win_create_ca_bundle(settings, destination):
                     skip = True
 
             if not skip:
-                data = ctypes.string_at(ctypes.addressof(context.pbCertEncoded.contents), context.cbCertEncoded)
+                cert_length = context.cbCertEncoded
+                data = ctypes.create_string_buffer(cert_length)
+                ctypes.memmove(ctypes.addressof(data), context.pbCertEncoded, cert_length)
 
+                details = parse(data.raw[:cert_length])
+                if details['algorithm'] in ['md5WithRSAEncryption', 'md2WithRSAEncryption']:
+                    if debug:
+                        console_write(u'Skipping certificate "%s" since it uses the signature algorithm %s' % (name, details['algorithm']), True)
+                    skip = True
+
+            if not skip:
                 output_size = wintypes.DWORD()
 
-                result = crypt32.CryptBinaryToStringW(data,
-                    context.cbCertEncoded, CRYPT_STRING_BASE64HEADER | CRYPT_STRING_NOCR,
-                    None, ctypes.byref(output_size))
+                result = crypt32.CryptBinaryToStringW(ctypes.cast(data, PByte), cert_length,
+                    CRYPT_STRING_BASE64HEADER | CRYPT_STRING_NOCR, None,
+                    ctypes.byref(output_size))
                 length = output_size.value
 
                 if not result:
@@ -399,9 +418,9 @@ def _win_create_ca_bundle(settings, destination):
                 buffer = ctypes.create_unicode_buffer(length)
                 output_size = wintypes.DWORD(length)
 
-                result = crypt32.CryptBinaryToStringW(data,
-                    context.cbCertEncoded, CRYPT_STRING_BASE64HEADER | CRYPT_STRING_NOCR,
-                    buffer, ctypes.byref(output_size))
+                result = crypt32.CryptBinaryToStringW(ctypes.cast(data, PByte), cert_length,
+                    CRYPT_STRING_BASE64HEADER | CRYPT_STRING_NOCR, buffer,
+                    ctypes.byref(output_size))
                 output = buffer.value
 
                 if debug:
@@ -411,7 +430,10 @@ def _win_create_ca_bundle(settings, destination):
 
             cert_pointer = crypt32.CertEnumCertificatesInStore(store_handle, cert_pointer)
 
-        crypt32.CertCloseStore(store_handle, 0)
+        result = crypt32.CertCloseStore(store_handle, 0)
+        store_handle = None
+        if not result:
+            console_write(u'Error closing certificate store "%s"' % store, True)
 
     with open_compat(destination, 'w') as f:
         f.write(u"\n".join(certs))
@@ -529,8 +551,14 @@ if os.name == 'nt':
     PCertContext = POINTER(CertContext)
 
 
-    class NextCert(Exception):
-        pass
+    crypt32.CertOpenSystemStoreW.argtypes = [wintypes.HANDLE, wintypes.LPCWSTR]
+    crypt32.CertOpenSystemStoreW.restype = wintypes.HANDLE
+    crypt32.CertEnumCertificatesInStore.argtypes = [wintypes.HANDLE, PCertContext]
+    crypt32.CertEnumCertificatesInStore.restype = PCertContext
+    crypt32.CertCloseStore.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    crypt32.CertCloseStore.restype = wintypes.BOOL
+    crypt32.CryptBinaryToStringW.argtypes = [PByte, wintypes.DWORD, wintypes.DWORD, wintypes.LPWSTR, POINTER(wintypes.DWORD)]
+    crypt32.CryptBinaryToStringW.restype = wintypes.BOOL
 
 
     def convert_filetime_to_datetime(filetime):
