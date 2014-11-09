@@ -28,7 +28,7 @@ def unicode_from_os(e):
 
     try:
         if isinstance(e, Exception):
-            e = e.message
+            e = e.args[0]
 
         if isinstance(e, unicode):
             return e
