@@ -78,8 +78,9 @@ class CachingDownloader(object):
         """
 
         debug = self.settings.get('debug', False)
+        cache = self.settings.get('cache')
 
-        if not self.settings.get('cache'):
+        if not cache:
             if debug:
                 console_write(u"Skipping cache since there is no cache object", True)
             return content
@@ -100,10 +101,10 @@ class CachingDownloader(object):
         key = self.generate_key(url)
 
         if status == 304:
-            cached_content = self.settings['cache'].get(key)
+            cached_content = cache.get(key)
             if cached_content:
                 if debug:
-                    console_write(u"Using cached content for %s" % url, True)
+                    console_write(u"Using cached content for %s from %s" % (url, cache.path(key)), True)
                 return cached_content
 
             # If we got a 304, but did not have the cached content
@@ -137,10 +138,10 @@ class CachingDownloader(object):
 
         info_key = self.generate_key(url, '.info')
         if debug:
-            console_write(u"Caching %s in %s" % (url, key), True)
+            console_write(u"Caching %s in %s" % (url, cache.path(key)), True)
 
-        self.settings['cache'].set(info_key, struct_json.encode('utf-8'))
-        self.settings['cache'].set(key, content)
+        cache.set(info_key, struct_json.encode('utf-8'))
+        cache.set(key, content)
 
         return content
 
@@ -176,10 +177,12 @@ class CachingDownloader(object):
         """
 
         key = self.generate_key(url)
-        if not self.settings['cache'].has(key):
+        cache = self.settings['cache']
+
+        if not cache.has(key):
             return False
 
         if self.settings.get('debug'):
-            console_write(u"Using cached content for %s" % url, True)
+            console_write(u"Using cached content for %s from %s" % (url, cache.path(key)), True)
 
-        return self.settings['cache'].get(key)
+        return cache.get(key)
