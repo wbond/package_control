@@ -7,6 +7,7 @@ import struct
 import locale
 import datetime
 import platform
+import base64
 
 if os.name == 'nt':
     import ctypes
@@ -38,7 +39,7 @@ def get_ca_bundle_path(settings):
     Return the path to the merged system and user ca bundles
 
     :param settings:
-        A dict to look in for `debug` and `openssl_binary` keys
+        A dict to look in for the `debug` key
 
     :return:
         The filesystem path to the merged ca bundle path
@@ -108,7 +109,7 @@ def get_system_ca_bundle_path(settings):
     worry about CA certs.
 
     :param settings:
-        A dict to look in for `debug` and `openssl_binary` keys
+        A dict to look in for the `debug` key
 
     :return:
         The full filesystem path to the .ca-bundle file, or False on error
@@ -180,53 +181,6 @@ def ensure_ca_bundle_dir():
         os.mkdir(ca_bundle_dir)
 
 
-def openssl_get_cert_name(settings, cert):
-    """
-    Uses the openssl command line client to extract the name of an x509
-    certificate. If the commonName is set, that is used, otherwise the first
-    organizationalUnitName is used. This mirrors what OS X uses for storing
-    trust preferences.
-
-    :param settings:
-        A dict to look in for `debug` and `openssl_binary` keys
-
-    :param cert:
-        A string containing the PEM-encoded x509 certificate to extract the
-        name from
-
-    :return:
-        The cert subject name, which is the commonName (if available), or the
-        first organizationalUnitName
-    """
-
-    runner = OpensslCli(settings.get('openssl_binary'), settings.get('debug'))
-
-    binary = runner.retrieve_binary()
-
-    args = [binary, 'x509', '-noout', '-subject', '-nameopt',
-        'sep_multiline,lname,utf8']
-    result = runner.execute(args, os.path.dirname(binary), cert)
-
-    # First look for the common name
-    cn = None
-    # If there is no common name for the cert, the trust prefs use the first
-    # orginizational unit name
-    first_ou = None
-
-    for line in result.splitlines():
-        match = re.match('^\s+commonName=(.*)$', line)
-        if match:
-            cn = match.group(1)
-            break
-        match = re.match('^\s+organizationalUnitName=(.*)$', line)
-        if first_ou is None and match:
-            first_ou = match.group(1)
-            continue
-
-    # This is the name of the cert that would be used in the trust prefs
-    return cn or first_ou
-
-
 def _osx_create_ca_bundle(settings, destination):
     """
     Uses the OS X `security` command line tool to export the system's list of
@@ -235,7 +189,7 @@ def _osx_create_ca_bundle(settings, destination):
     distrusted certs are not exported.
 
     :param settings:
-        A dict to look in for `debug` and `openssl_binary` keys
+        A dict to look in for the `debug` key
 
     :param destination:
         The full filesystem path to the destination .ca-bundle file
@@ -252,6 +206,9 @@ def _osx_create_ca_bundle(settings, destination):
     certs = []
     temp = []
 
+    debug = settings.get('debug')
+    now = datetime.datetime.utcnow()
+
     in_block = False
     for line in result.splitlines():
         if line.find('BEGIN CERTIFICATE') != -1:
@@ -265,13 +222,47 @@ def _osx_create_ca_bundle(settings, destination):
             cert = u"\n".join(temp)
             temp = []
 
+            base64_cert = u''.join(cert.splitlines()[1:-1])
+            der_cert = base64.b64decode(base64_cert.encode('utf-8'))
+            cert_info = parse(der_cert)
+            subject = cert_info['subject']
+
+            name = None
+            if 'commonName' in subject:
+                name = subject['commonName']
+            elif 'organizationalUnitName' in subject:
+                name = subject['organizationalUnitName']
+            else:
+                name = subject['organizationName']
+
+            # OS X uses the first element for a repeated entry
+            if isinstance(name, list):
+                name = name[0]
+
+            if cert_info['notBefore'] > now:
+                if debug:
+                    console_write(u'Skipping certificate "%s" since it is not valid yet' % name, True)
+                continue
+
+            if cert_info['notAfter'] < now:
+                if debug:
+                    console_write(u'Skipping certificate "%s" since it is no longer valid' % name, True)
+                continue
+
+            if cert_info['algorithm'] in ['md5WithRSAEncryption', 'md2WithRSAEncryption']:
+                if debug:
+                    console_write(u'Skipping certificate "%s" since it uses the signature algorithm %s' % (name, cert_info['algorithm']), True)
+                continue
+
             if distrusted_certs:
                 # If it is a distrusted cert, we move on to the next
-                cert_name = openssl_get_cert_name(settings, cert)
-                if cert_name in distrusted_certs:
+                if name in distrusted_certs:
                     if settings.get('debug'):
-                        console_write(u'Skipping root certificate %s because it is distrusted' % cert_name, True)
+                        console_write(u'Skipping certificate "%s" because it is distrusted' % name, True)
                     continue
+
+            if debug:
+                console_write(u'Exported certificate "%s"' % name, True)
 
             certs.append(cert)
 
@@ -325,7 +316,7 @@ def _osx_get_distrusted_certs(settings):
         distrusted = re.match('^\s+Result\s+Type\s+:\s+kSecTrustSettingsResultDeny', line)
         if ssl_policy and distrusted and cert_name not in distrusted_certs:
             if settings.get('debug'):
-                console_write(u'Found SSL distrust setting for root certificate %s' % cert_name, True)
+                console_write(u'Found SSL distrust setting for certificate "%s"' % cert_name, True)
             distrusted_certs.append(cert_name)
 
     return distrusted_certs
@@ -437,38 +428,6 @@ def _win_create_ca_bundle(settings, destination):
 
     with open_compat(destination, 'w') as f:
         f.write(u"\n".join(certs))
-
-
-class OpensslCli(Cli):
-
-    cli_name = 'openssl'
-
-    def retrieve_binary(self):
-        """
-        Returns the path to the openssl executable
-
-        :return: The string path to the executable or False on error
-        """
-
-        name = 'openssl'
-        if os.name == 'nt':
-            name += '.exe'
-
-        binary = self.find_binary(name)
-        if binary and os.path.isdir(binary):
-            full_path = os.path.join(binary, name)
-            if os.path.exists(full_path):
-                binary = full_path
-
-        if not binary:
-            show_error((u'Unable to find %s. Please set the openssl_binary ' +
-                u'setting by accessing the Preferences > Package Settings > ' +
-                u'Package Control > Settings \u2013 User menu entry. The ' +
-                u'Settings \u2013 Default entry can be used for reference, ' +
-                u'but changes to that will be overwritten upon next upgrade.') % name)
-            return False
-
-        return binary
 
 
 if os.name == 'nt':

@@ -19,12 +19,18 @@ OctetString = 0x04
 Null = 0x05
 ObjectIdentifier = 0x06
 Enumerated = 0x0a
+UTF8String = 0x0c
 Sequence = 0x10
 Set = 0x11
+NumericString = 0x12
 PrintableString = 0x13
 T61String = 0x14
 IA5String = 0x16
 UTCTime = 0x17
+GeneralizedTime = 0x18
+VisibleString = 0x1a
+UniversalString = 0x1c
+BMPString = 0x1e
 
 TypeConstructed = 0x20
 TypePrimitive = 0x00
@@ -33,6 +39,19 @@ ClassUniversal = 0x00
 ClassApplication = 0x40
 ClassContext = 0x80
 ClassPrivate = 0xc0
+
+
+STRING_TYPES = [
+    OctetString,
+    IA5String,
+    T61String,
+    PrintableString,
+    UTF8String,
+    NumericString,
+    VisibleString,
+    UniversalString,
+    BMPString
+]
 
 
 class Error(Exception):
@@ -155,14 +174,22 @@ class Decoder(object):
             value = self._decode_integer(bytes)
         elif nr == OctetString:
             value = self._decode_octet_string(bytes)
-        elif nr == PrintableString:
+        elif nr == UTF8String:
+            value = self._decode_utf8_string(bytes)
+        elif nr == PrintableString or nr == VisibleString or nr == NumericString:
             value = self._decode_printable_string(bytes)
+        elif nr == UniversalString:
+            value = self._decode_universal_string(bytes)
+        elif nr == BMPString:
+            value = self._decode_bmp_string(bytes)
         elif nr == T61String:
             value = self._decode_t61_string(bytes)
         elif nr == IA5String:
             value = self._decode_ia5_string(bytes)
         elif nr == UTCTime:
             value = self._decode_utc_time(bytes)
+        elif nr == GeneralizedTime:
+            value = self._decode_generalized_time(bytes)
         elif nr == Null:
             value = self._decode_null(bytes)
         elif nr == ObjectIdentifier:
@@ -268,10 +295,44 @@ class Decoder(object):
         return str_cls(bytes, 'latin1')
 
     def _decode_ia5_string(self, bytes):
-        return str_cls(bytes, 'ascii')
+        return str_cls(bytes, 'latin1')
+
+    def _decode_utf8_string(self, bytes):
+        return str_cls(bytes, 'utf-8')
+
+    def _decode_bmp_string(self, bytes):
+        return str_cls(bytes, 'utf-16be')
+
+    def _decode_universal_string(self, bytes):
+        return str_cls(bytes, 'utf-32be')
 
     def _decode_utc_time(self, bytes):
-        return datetime.datetime.strptime(bytes.decode('ascii'), '%y%m%d%H%M%SZ')
+        date_time = bytes.decode('ascii')
+        if len(date_time) == 13:
+            format = '%y%m%d%H%M%SZ'
+        elif len(date_time) == 12:
+            format = '%y%m%d%H%M%S'
+        elif len(date_time) == 11:
+            format = '%y%m%d%H%MZ'
+        elif len(date_time) == 10:
+            format = '%y%m%d%H%M'
+        return datetime.datetime.strptime(date_time, format)
+
+    def _decode_generalized_time(self, bytes):
+        date_time = bytes.decode('ascii')
+        if len(date_time) == 23:
+            format = '%Y%m%d%H%M%S.%f%z'
+        elif len(date_time) == 19 and date_time[-1] == 'Z':
+            format = '%Y%m%d%H%M%S.%fZ'
+        elif len(date_time) == 19:
+            format = '%Y%m%d%H%M%S%z'
+        elif len(date_time) == 18:
+            format = '%Y%m%d%H%M%S.%f'
+        elif len(date_time) == 15:
+            format = '%Y%m%d%H%M%SZ'
+        elif len(date_time) == 14:
+            format = '%Y%m%d%H%M%S'
+        return datetime.datetime.strptime(date_time, format)
 
     def _decode_t61_string(self, bytes):
         char_map = {
@@ -535,7 +596,7 @@ def parse_subject(data):
             for element in subpart[1]:
                 if element[0] == ObjectIdentifier:
                     object_identifier = element[1]
-                elif element[0] in [OctetString, IA5String, T61String, PrintableString]:
+                elif element[0] in STRING_TYPES:
                     value = element[1]
 
             if object_identifier in oid_map:
