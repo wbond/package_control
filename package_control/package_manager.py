@@ -83,7 +83,6 @@ class PackageManager():
             'https_proxy',
             'ignore_vcs_packages',
             'install_prereleases',
-            'openssl_binary',
             'package_destination',
             'package_name_map',
             'package_profiles',
