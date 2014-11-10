@@ -1,5 +1,5 @@
 {
-	"schema_version": "2.0",
+	"schema_version": "3.0.0",
 
 	// All repositories must be an HTTPS URL. SSL certificates help prevent
 	// unauthorized code being loaded onto users' machines.
@@ -34,31 +34,6 @@
 					}
 				]
 			}
-		]
-	},
-
-	// Package Control ships with the SSL Certificate Authority (CA) cert for the
-	// SSL certificate that secures and identifies packagecontrol.io. After this
-	// initial connection is made, the channel server provides a list of CA certs
-	// for the various URLs that Package Control need to connect to. This way the
-	// default channel (https://packagecontrol.io/channel.json) can provide
-	// real-time updates to CA certs in the case that a CA is compromised. The
-	// CA certs are extracted from openssl, and the server runs on an LTS version
-	// of Ubuntu, which automatically applies security patches from the official
-	// Ubuntu repositories. This architecture helps to ensure that the packages
-	// being downloaded are from the source listed and that users are very
-	// unlikely to be the subject of the man-in-the-middle attack.
-	"certs": {
-
-		// All certs have the domain they apply to as the key
-		"packagecontrol.io": [
-			// The value is an array of two elements, the first being an md5
-			// hash of the contents of the certificate. This helps in detecting
-			// CA cert changes. The second element is the URL where the cert
-			// can be downloaded, if it is not already installed on the user’s
-			// copy of Sublime Text.
-			"7f4f8622b4fd001c7f648e09aae7edaa",
-			"https://packagecontrol.io/certs/7f4f8622b4fd001c7f648e09aae7edaa"
 		]
 	}
 }
