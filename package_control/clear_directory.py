@@ -30,7 +30,13 @@ def clear_directory(directory, ignore_paths=None):
                 if os.path.isdir(path):
                     os.rmdir(path)
                 else:
-                    os.remove(path)
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        # try to rename file to reduce chance that
+                        # file is in use on next start
+                        os.rename(path, path + '.old')
+                        raise
             except (OSError, IOError):
                 was_exception = True
 
