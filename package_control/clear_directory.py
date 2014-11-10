@@ -1,4 +1,5 @@
 import os
+import stat
 
 
 def clear_directory(directory, ignore_paths=None):
@@ -31,6 +32,11 @@ def clear_directory(directory, ignore_paths=None):
                     os.rmdir(path)
                 else:
                     try:
+                        if os.name == 'nt' and not os.access(path, os.W_OK):
+                            try:
+                                os.chmod(path, stat.S_IWUSR)
+                            except (PermissionError):
+                                pass
                         os.remove(path)
                     except OSError:
                         # try to rename file to reduce chance that
