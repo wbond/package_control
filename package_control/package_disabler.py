@@ -11,6 +11,8 @@ class PackageDisabler():
     old_theme_package = None
     old_theme = None
 
+    old_syntaxes = None
+
     def disable_packages(self, packages):
         """
         Disables one or more packages before installing or upgrading to prevent
@@ -34,10 +36,22 @@ class PackageDisabler():
         if not ignored:
             ignored = []
 
+        self.old_syntaxes = {}
+
         for package in packages:
             if not package in ignored:
                 ignored.append(package)
                 disabled.append(package)
+
+            for window in sublime.windows():
+                for view in window.views():
+                    view_settings = view.settings()
+                    syntax = view_settings.get('syntax')
+                    if syntax.find('Packages/' + package + '/') != -1:
+                        if package not in self.old_syntaxes:
+                            self.old_syntaxes[package] = []
+                        self.old_syntaxes[package].append([view, syntax])
+                        view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
 
             # Change the color scheme before disabling the package containing it
             if settings.get('color_scheme').find('Packages/' + package + '/') != -1:
@@ -78,6 +92,11 @@ class PackageDisabler():
         if package in ignored:
             settings.set('ignored_packages',
                 list(set(ignored) - set([package])))
+
+            if type == 'upgrade' and package in self.old_syntaxes:
+                for view_syntax in self.old_syntaxes[package]:
+                    view, syntax = view_syntax
+                    view.settings().set('syntax', syntax)
 
             if type == 'upgrade' and self.old_theme_package == package:
                 settings.set('theme', self.old_theme)
