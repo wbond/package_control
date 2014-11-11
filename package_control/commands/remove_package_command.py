@@ -49,23 +49,21 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
 
         self.disable_packages(package)
 
-        thread = RemovePackageThread(self.manager, package,
-            ignored)
+        thread = RemovePackageThread(self.manager, package)
         thread.start()
         ThreadProgress(thread, 'Removing package %s' % package,
             'Package %s successfully removed' % package)
 
 
-class RemovePackageThread(threading.Thread):
+class RemovePackageThread(threading.Thread, PackageDisabler):
     """
     A thread to run the remove package operation in so that the Sublime Text
     UI does not become frozen
     """
 
-    def __init__(self, manager, package, ignored):
+    def __init__(self, manager, package):
         self.manager = manager
         self.package = package
-        self.ignored = ignored
         threading.Thread.__init__(self)
 
     def run(self):
