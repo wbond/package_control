@@ -129,7 +129,7 @@ class GitHubUserProvider():
         for repo_info in user_repos:
             try:
                 name = repo_info['name']
-                repo_url = 'https://github.com/' + repo_info['user_repo']
+                repo_url = 'https://github.com/%s/%s' % (repo_info['author'], name)
 
                 download = client.download_info(repo_url)
 

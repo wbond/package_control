@@ -122,13 +122,24 @@ class GitHubClient(JSONApiClient):
             return None
 
         user = user_match.group(1)
-        api_url = self._make_api_url(user)
+        api_url = 'https://api.github.com/users/%s/repos' % user
 
         repos_info = self.fetch_json(api_url)
 
         output = []
         for info in repos_info:
-            output.append(self._extract_repo_info(info))
+            user_repo = '%s/%s' % (user, info['name'])
+            branch = 'master'
+
+            repo_output = self._extract_repo_info(info)
+            repo_output['readme'] = None
+
+            readme_info = self._readme_info(user_repo, branch)
+            if readme_info:
+                repo_output['readme'] = 'https://raw.githubusercontent.com/%s/%s/%s' % (
+                    user_repo, branch, readme_info['path'])
+
+            output.append(repo_output)
         return output
 
     def _commit_info(self, url):
