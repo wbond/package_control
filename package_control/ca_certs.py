@@ -146,24 +146,23 @@ def get_system_ca_bundle_path(settings):
 
     # Linux
     else:
-        # Check for SSL_CERT_FILE variable
+        # Common CA cert paths
+        paths = [
+            '/usr/lib/ssl/certs/ca-certificates.crt',
+            '/etc/ssl/certs/ca-certificates.crt',
+            '/etc/ssl/certs/ca-bundle.crt',
+            '/etc/pki/tls/certs/ca-bundle.crt',
+            '/etc/ssl/ca-bundle.pem',
+            '/usr/local/share/certs/ca-root-nss.crt',
+            '/etc/ssl/cert.pem'
+        ]
+        # First try SSL_CERT_FILE
         if 'SSL_CERT_FILE' in os.environ:
-            ca_path = os.environ['SSL_CERT_FILE']
-        else:
-            # Common CA cert paths
-            paths = [
-                '/usr/lib/ssl/certs/ca-certificates.crt',
-                '/etc/ssl/certs/ca-certificates.crt',
-                '/etc/ssl/certs/ca-bundle.crt',
-                '/etc/pki/tls/certs/ca-bundle.crt',
-                '/etc/ssl/ca-bundle.pem',
-                '/usr/local/share/certs/ca-root-nss.crt',
-                '/etc/ssl/cert.pem'
-            ]
-            for path in paths:
-                if os.path.exists(path) and os.path.getsize(path) > 0:
-                    ca_path = path
-                    break
+            paths.insert(0, os.environ['SSL_CERT_FILE'])
+        for path in paths:
+            if os.path.exists(path) and os.path.getsize(path) > 0:
+                ca_path = path
+                break
 
         if debug and ca_path:
             console_write(u"Found system CA bundle at %s" % ca_path, True)
