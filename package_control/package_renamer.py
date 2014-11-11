@@ -1,11 +1,13 @@
 import os
+import time
 
 import sublime
 
 from .console_write import console_write
+from .package_disabler import PackageDisabler
 
 
-class PackageRenamer():
+class PackageRenamer(PackageDisabler):
     """
     Class to handle renaming packages via the renamed_packages setting
     gathered from channels and repositories.
@@ -81,6 +83,10 @@ class PackageRenamer():
             else:
                 continue
 
+            sublime.set_timeout(lambda: self.disable_packages(package_name), 10)
+
+            time.sleep(1)
+
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
                 # Windows will not allow you to rename to the same name with
                 # a different case, so we work around that with a temporary name
@@ -100,6 +106,8 @@ class PackageRenamer():
                 message_string = u'Removed %s since package with new name (%s) already exists' % (
                     package_name, new_package_name)
                 console_write(message_string, True)
+
+            sublime.set_timeout(lambda: self.reenable_package(package_name, 'removal'), 10)
 
             try:
                 installed_pkgs.remove(package_name)

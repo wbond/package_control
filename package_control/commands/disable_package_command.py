@@ -4,9 +4,10 @@ import sublime_plugin
 from ..show_error import show_error
 from ..package_manager import PackageManager
 from ..preferences_filename import preferences_filename
+from ..package_disabler import PackageDisabler
 
 
-class DisablePackageCommand(sublime_plugin.WindowCommand):
+class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
     """
     A command that adds a package to Sublime Text's ignored packages list
     """
@@ -37,12 +38,9 @@ class DisablePackageCommand(sublime_plugin.WindowCommand):
         if picked == -1:
             return
         package = self.package_list[picked]
-        ignored = self.settings.get('ignored_packages')
-        if not ignored:
-            ignored = []
-        ignored.append(package)
-        self.settings.set('ignored_packages', ignored)
-        sublime.save_settings(preferences_filename())
+
+        self.disable_packages(package)
+
         sublime.status_message(('Package %s successfully added to list of ' +
             'disabled packages - restarting Sublime Text may be required') %
             package)

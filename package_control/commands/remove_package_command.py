@@ -6,13 +6,12 @@ import sublime_plugin
 
 from ..show_error import show_error
 from .existing_packages_command import ExistingPackagesCommand
-from ..preferences_filename import preferences_filename
 from ..thread_progress import ThreadProgress
-from ..package_io import package_file_exists
+from ..package_disabler import PackageDisabler
 
 
 class RemovePackageCommand(sublime_plugin.WindowCommand,
-        ExistingPackagesCommand):
+        ExistingPackagesCommand, PackageDisabler):
     """
     A command that presents a list of installed packages, allowing the user to
     select one to remove
@@ -48,29 +47,7 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
             return
         package = self.package_list[picked][0]
 
-        settings = sublime.load_settings(preferences_filename())
-
-        # Change the color scheme before removing the package containing it
-        if settings.get('color_scheme').find('Packages/' + package + '/') != -1:
-            settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
-            sublime.save_settings(preferences_filename())
-
-        # Change the theme before removing the package containing it
-        if package_file_exists(package, settings.get('theme')):
-            settings.set('theme', 'Default.sublime-theme')
-            sublime.save_settings(preferences_filename())
-
-        ignored = settings.get('ignored_packages')
-        if not ignored:
-            ignored = []
-
-        # Don't disable Package Control so it does not get stuck disabled
-        if package != 'Package Control':
-            if not package in ignored:
-                ignored.append(package)
-                settings.set('ignored_packages', ignored)
-                sublime.save_settings(preferences_filename())
-            ignored.remove(package)
+        self.disable_packages(package)
 
         thread = RemovePackageThread(self.manager, package,
             ignored)
@@ -97,7 +74,5 @@ class RemovePackageThread(threading.Thread):
         self.result = self.manager.remove_package(self.package)
 
         def unignore_package():
-            settings = sublime.load_settings(preferences_filename())
-            settings.set('ignored_packages', self.ignored)
-            sublime.save_settings(preferences_filename())
+            self.reenable_package(self.package, 'removal')
         sublime.set_timeout(unignore_package, 10)

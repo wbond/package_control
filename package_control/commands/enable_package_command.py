@@ -3,9 +3,10 @@ import sublime_plugin
 
 from ..show_error import show_error
 from ..preferences_filename import preferences_filename
+from ..package_disabler import PackageDisabler
 
 
-class EnablePackageCommand(sublime_plugin.WindowCommand):
+class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
     """
     A command that removes a package from Sublime Text's ignored packages list
     """
@@ -31,10 +32,9 @@ class EnablePackageCommand(sublime_plugin.WindowCommand):
         if picked == -1:
             return
         package = self.disabled_packages[picked]
-        ignored = self.settings.get('ignored_packages')
-        self.settings.set('ignored_packages',
-            list(set(ignored) - set([package])))
-        sublime.save_settings(preferences_filename())
+
+        self.reenable_package(package, 'enable')
+
         sublime.status_message(('Package %s successfully removed from list ' +
             'of disabled packages - restarting Sublime Text may be required') %
             package)
