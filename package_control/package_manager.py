@@ -949,9 +949,6 @@ class PackageManager():
 
         os.chdir(sublime.packages_path())
 
-        # Give Sublime Text some time to ignore the package
-        time.sleep(1)
-
         package_filename = package_name + '.sublime-package'
         installed_package_path = os.path.join(sublime.installed_packages_path(),
             package_filename)

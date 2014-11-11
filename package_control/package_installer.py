@@ -1,6 +1,7 @@
 import os
 import re
 import threading
+import time
 
 import sublime
 
@@ -254,7 +255,7 @@ class PackageInstallerThread(threading.Thread):
     Sublime Text thread does not get blocked and freeze the UI
     """
 
-    def __init__(self, manager, package, on_complete):
+    def __init__(self, manager, package, on_complete, pause=False):
         """
         :param manager:
             An instance of :class:`PackageManager`
@@ -264,14 +265,21 @@ class PackageInstallerThread(threading.Thread):
 
         :param on_complete:
             A callback to run after installing/upgrading the package
+
+        :param pause:
+            If we should pause before upgrading to allow a package to be
+            fully disabled.
         """
 
         self.package = package
         self.manager = manager
         self.on_complete = on_complete
+        self.pause = pause
         threading.Thread.__init__(self)
 
     def run(self):
+        if self.pause:
+            time.sleep(1)
         try:
             self.result = self.manager.install_package(self.package)
         finally:

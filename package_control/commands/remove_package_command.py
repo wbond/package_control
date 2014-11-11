@@ -1,4 +1,5 @@
 import threading
+import time
 
 import sublime
 import sublime_plugin
@@ -91,6 +92,8 @@ class RemovePackageThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
+        # Let the package disabling take place
+        time.sleep(1)
         self.result = self.manager.remove_package(self.package)
 
         def unignore_package():

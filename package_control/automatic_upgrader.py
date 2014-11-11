@@ -181,7 +181,7 @@ class AutomaticUpgrader(threading.Thread):
 
         def do_upgrades():
             # Wait so that the ignored packages can be "unloaded"
-            time.sleep(0.5)
+            time.sleep(1)
 
             # We use a function to generate the on-complete lambda because if
             # we don't, the lambda will bind to info at the current scope, and

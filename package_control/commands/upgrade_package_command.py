@@ -75,7 +75,8 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         else:
             on_complete = None
 
-        thread = PackageInstallerThread(self.manager, name, on_complete)
+        thread = PackageInstallerThread(self.manager, name, on_complete,
+            pause=True)
         thread.start()
         ThreadProgress(thread, 'Upgrading package %s' % name,
             'Package %s successfully %s' % (name, self.completion_type))

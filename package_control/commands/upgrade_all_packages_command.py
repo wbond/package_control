@@ -44,7 +44,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
 
         def do_upgrades():
             # Pause so packages can be disabled
-            time.sleep(0.5)
+            time.sleep(1)
 
             # We use a function to generate the on-complete lambda because if
             # we don't, the lambda will bind to info at the current scope, and
