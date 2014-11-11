@@ -63,6 +63,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
                 ThreadProgress(thread, 'Upgrading package %s' % info[0],
                     'Package %s successfully %s' % (info[0],
                     self.completion_type))
+                thread.join()
 
         # Disabling a package means changing settings, which can only be done
         # in the main thread. We then create a new background thread so that
