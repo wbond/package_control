@@ -150,6 +150,7 @@ def get_system_ca_bundle_path(settings):
         paths = [
             '/usr/lib/ssl/certs/ca-certificates.crt',
             '/etc/ssl/certs/ca-certificates.crt',
+            '/etc/ssl/certs/ca-bundle.crt',
             '/etc/pki/tls/certs/ca-bundle.crt',
             '/etc/ssl/ca-bundle.pem',
             '/usr/local/share/certs/ca-root-nss.crt',
