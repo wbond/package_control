@@ -84,7 +84,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             # one of these since the server runs a relatively new version of
             # OpenSSL which supports compression on the SSL layer, and Apache
             # will use that instead of HTTP-level encoding.
-            'Accept-Encoding': 'gzip,deflate'
+            'Accept-Encoding': self.supported_encodings()
         }
         request_headers = self.add_conditional_headers(url, request_headers)
 
@@ -134,8 +134,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                 general, headers = self.parse_output(True)
                 encoding = headers.get('content-encoding')
-                if encoding:
-                    result = self.decode_response(encoding, result)
+                result = self.decode_response(encoding, result)
 
                 result = self.cache_result('get', url, general['status'],
                     headers, result)

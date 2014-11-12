@@ -113,7 +113,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     # version of OpenSSL which supports compression on the SSL
                     # layer, and Apache will use that instead of HTTP-level
                     # encoding.
-                    "Accept-Encoding": "gzip,deflate"
+                    "Accept-Encoding": self.supported_encodings()
                 }
                 request_headers = self.add_conditional_headers(url, request_headers)
                 request = Request(url, headers=request_headers)

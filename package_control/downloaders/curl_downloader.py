@@ -11,9 +11,10 @@ from .downloader_exception import DownloaderException
 from ..ca_certs import get_ca_bundle_path
 from .limiting_downloader import LimitingDownloader
 from .caching_downloader import CachingDownloader
+from .decoding_downloader import DecodingDownloader
 
 
-class CurlDownloader(CliDownloader, LimitingDownloader, CachingDownloader):
+class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader):
     """
     A downloader that uses the command line program curl
 
@@ -83,6 +84,7 @@ class CurlDownloader(CliDownloader, LimitingDownloader, CachingDownloader):
             '--dump-header', self.tmp_file]
 
         request_headers = self.add_conditional_headers(url, {})
+        request_headers['Accept-Encoding'] = self.supported_encodings()
 
         for name, value in request_headers.items():
             command.extend(['--header', "%s: %s" % (name, value)])
@@ -155,6 +157,9 @@ class CurlDownloader(CliDownloader, LimitingDownloader, CachingDownloader):
                     e = NonCleanExitError(22)
                     e.stderr = "%s %s" % (status, message)
                     raise e
+
+                encoding = headers.get('content-encoding')
+                output = self.decode_response(encoding, output)
 
                 output = self.cache_result('get', url, status, headers, output)
 

@@ -262,7 +262,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             path += '?' + url_info.query
 
         request_headers = {
-            'Accept-Encoding': 'gzip,deflate'
+            'Accept-Encoding': self.supported_encodings()
         }
         request_headers = self.add_conditional_headers(url, request_headers)
 
@@ -497,8 +497,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     continue
 
                 encoding = headers.get('content-encoding')
-                if encoding:
-                    result = self.decode_response(encoding, result)
+                result = self.decode_response(encoding, result)
 
                 result = self.cache_result('get', url, general['status'],
                     headers, result)
