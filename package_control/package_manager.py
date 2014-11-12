@@ -698,11 +698,13 @@ class PackageManager():
             # upgrade, it should be cleaned out successfully then.
             clear_directory(package_dir, extracted_paths)
 
-            self.print_messages(package_name, package_dir, is_upgrade, old_version)
+            new_version = packages[package_name]['download']['version']
+
+            self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 
             with open_compat(package_metadata_file, 'w') as f:
                 metadata = {
-                    "version": packages[package_name]['download']['version'],
+                    "version": new_version,
                     "url": packages[package_name]['homepage'],
                     "description": packages[package_name]['description']
                 }
@@ -713,14 +715,14 @@ class PackageManager():
                 params = {
                     'package': package_name,
                     'operation': 'upgrade',
-                    'version': packages[package_name]['download']['version'],
+                    'version': new_version,
                     'old_version': old_version
                 }
             else:
                 params = {
                     'package': package_name,
                     'operation': 'install',
-                    'version': packages[package_name]['download']['version']
+                    'version': new_version
                 }
             self.record_usage(params)
 
@@ -833,7 +835,7 @@ class PackageManager():
                 pass # Exeption occurred before package_backup_dir defined
             return False
 
-    def print_messages(self, package, package_dir, is_upgrade, old_version):
+    def print_messages(self, package, package_dir, is_upgrade, old_version, new_version):
         """
         Prints out package install and upgrade messages
 
@@ -852,6 +854,9 @@ class PackageManager():
 
         :param old_version:
             The string version of the package before the upgrade occurred
+
+        :param new_version:
+            The new (string) version of the package
         """
 
         messages_file = os.path.join(package_dir, 'messages.json')
@@ -881,10 +886,16 @@ class PackageManager():
                 set(['install']))
             upgrade_messages = version_sort(upgrade_messages, reverse=True)
             old_version_cmp = version_comparable(old_version)
+            new_version_cmp = version_comparable(new_version)
 
             for version in upgrade_messages:
-                if version_comparable(version) <= old_version_cmp:
+                version_cmp = version_comparable(version)
+                if version_cmp <= old_version_cmp:
                     break
+                # If the package developer sets up release notes for future
+                # versions, we don't want to show them for every release
+                if version_cmp > new_version_cmp:
+                    continue
                 if not output:
                     message = '\n\n%s:\n%s\n' % (package,
                         ('-' * len(package)))
