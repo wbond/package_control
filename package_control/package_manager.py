@@ -479,7 +479,7 @@ class PackageManager():
         is_unavailable = package_name in self.settings.get('unavailable_packages', [])
 
         if is_unavailable and not is_available:
-            console_write(u'The package "%s" is not available on this platform.' % package_name, True)
+            console_write(u'The package "%s" is either not available on this platform or for this version of Sublime Text' % package_name, True)
             return False
 
         if not is_available:
