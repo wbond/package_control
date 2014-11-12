@@ -176,7 +176,7 @@ def install_ssl():
     inject_code = dedent(inject_code)
 
     if sys.version_info < (3,):
-        package_dir = os.path.join(packages_dir, '0ssl-linux')
+        package_dir = os.path.join(packages_dir, '000-ssl-linux')
 
         if not os.path.exists(package_dir):
             os.mkdir(package_dir, 0o755)
@@ -190,7 +190,7 @@ def install_ssl():
         if not installed_packages_dir:
             return
 
-        filename = os.path.join(installed_packages_dir, '0ssl-linux.sublime-package')
+        filename = os.path.join(installed_packages_dir, '000-ssl-linux.sublime-package')
 
         with zipfile.ZipFile(filename, 'w') as z:
             z.writestr('inject.py', inject_code.encode('utf-8'))
