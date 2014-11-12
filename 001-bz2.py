@@ -35,7 +35,7 @@ def get_sublime_text_dir(name):
 
 
 def install_bz2():
-    correct_hash = u'226558bc121d4865c729539ad060c282379c39a42ab7aad59ab9f74aac0013a8'
+    correct_hash = u'42b641b64ffa5dd52c0c2bbdc935532b92a34bf2d89f1077ef4fccd35928734b'
     url = u'http://packagecontrol.io/bz2.sublime-package'
 
     packages_dir = get_sublime_text_dir('Packages')
