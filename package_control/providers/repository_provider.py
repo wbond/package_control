@@ -183,6 +183,11 @@ class RepositoryProvider(ReleaseSelector):
             fail(error_string)
             return False
 
+        if isinstance(self.repo_info['packages'], dict):
+            error_string = u'%s the "packages" key is an object, not an array. This indicates it is a channel not a repository.' % schema_error
+            fail(error_string)
+            return False
+
         return True
 
     def fetch_location(self, location):
