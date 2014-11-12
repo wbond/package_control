@@ -923,6 +923,9 @@ class PackageManager():
                     '========================')
 
             write(output)
+            if window.active_view() != view:
+                window.focus_view(view)
+
         sublime.set_timeout(print_to_panel, 1)
 
     def remove_package(self, package_name):
