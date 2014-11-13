@@ -125,7 +125,26 @@ class AutomaticUpgrader(threading.Thread):
             return
 
         console_write(u'Installing %s missing packages' % len(self.missing_packages), True)
+
+        # Fetching the list of packages also grabs the renamed packages
+        self.manager.list_available_packages()
+        renamed_packages = self.manager.settings.get('renamed_packages', {})
+
         for package in self.missing_packages:
+
+            # If the package has been renamed, detect the rename and update
+            # the settings file with the new name as we install it
+            if package in renamed_packages:
+                old_name = package
+                new_name = renamed_packages[old_name]
+                def update_installed_packages():
+                    self.installed_packages.remove(old_name)
+                    self.installed_packages.append(new_name)
+                    self.settings.set('installed_packages', self.installed_packages)
+                    sublime.save_settings(self.settings_file)
+                package = new_name
+            sublime.set_timeout(update_installed_packages, 10)
+
             if self.installer.manager.install_package(package):
                 console_write(u'Installed missing package %s' % package, True)
 
