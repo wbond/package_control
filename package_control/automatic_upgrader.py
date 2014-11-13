@@ -10,6 +10,7 @@ from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
 from .open_compat import open_compat, read_compat
+from .preferences_filename import pc_preferences_filename
 
 
 class AutomaticUpgrader(threading.Thread):
@@ -94,12 +95,10 @@ class AutomaticUpgrader(threading.Thread):
 
     def load_settings(self):
         """
-        Loads the list of installed packages from the
-        Package Control.sublime-settings file
+        Loads the list of installed packages
         """
 
-        self.settings_file = 'Package Control.sublime-settings'
-        self.settings = sublime.load_settings(self.settings_file)
+        self.settings = sublime.load_settings(pc_preferences_filename())
         self.installed_packages = self.settings.get('installed_packages', [])
         self.should_install_missing = self.settings.get('install_missing')
         if not isinstance(self.installed_packages, list):
@@ -141,7 +140,7 @@ class AutomaticUpgrader(threading.Thread):
                     self.installed_packages.remove(old_name)
                     self.installed_packages.append(new_name)
                     self.settings.set('installed_packages', self.installed_packages)
-                    sublime.save_settings(self.settings_file)
+                    sublime.save_settings(pc_preferences_filename())
                 package = new_name
             sublime.set_timeout(update_installed_packages, 10)
 

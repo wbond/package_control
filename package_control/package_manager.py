@@ -44,6 +44,7 @@ from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
+from .preferences_filename import pc_preferences_filename
 from . import __version__
 
 
@@ -63,7 +64,7 @@ class PackageManager():
         # Here we manually copy the settings since sublime doesn't like
         # code accessing settings from threads
         self.settings = {}
-        settings = sublime.load_settings('Package Control.sublime-settings')
+        settings = sublime.load_settings(pc_preferences_filename())
         setting_names = [
             'auto_upgrade',
             'auto_upgrade_frequency',
@@ -730,7 +731,7 @@ class PackageManager():
             # Record the install in the settings file so that you can move
             # settings across computers and have the same packages installed
             def save_package():
-                settings = sublime.load_settings('Package Control.sublime-settings')
+                settings = sublime.load_settings(pc_preferences_filename())
                 installed_packages = settings.get('installed_packages', [])
                 if not installed_packages:
                     installed_packages = []
@@ -739,7 +740,7 @@ class PackageManager():
                 installed_packages = sorted(installed_packages,
                     key=lambda s: s.lower())
                 settings.set('installed_packages', installed_packages)
-                sublime.save_settings('Package Control.sublime-settings')
+                sublime.save_settings(pc_preferences_filename())
             sublime.set_timeout(save_package, 1)
 
             # If we didn't extract directly into the Packages/{package_name}/
@@ -1015,14 +1016,14 @@ class PackageManager():
 
         # Remove the package from the installed packages list
         def clear_package():
-            settings = sublime.load_settings('Package Control.sublime-settings')
+            settings = sublime.load_settings(pc_preferences_filename())
             installed_packages = settings.get('installed_packages', [])
             if not installed_packages:
                 installed_packages = []
             try:
                 installed_packages.remove(package_name)
                 settings.set('installed_packages', installed_packages)
-                sublime.save_settings('Package Control.sublime-settings')
+                sublime.save_settings(pc_preferences_filename())
             except (ValueError):
                 pass # Package was not in installed_packages
         sublime.set_timeout(clear_package, 1)
