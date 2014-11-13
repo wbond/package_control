@@ -5,7 +5,7 @@ import sublime
 
 from .console_write import console_write
 from .package_disabler import PackageDisabler
-from .preferences_filename import pc_preferences_filename
+from .settings import pc_settings_filename
 
 
 class PackageRenamer(PackageDisabler):
@@ -19,7 +19,7 @@ class PackageRenamer(PackageDisabler):
         Loads the list of installed packages
         """
 
-        self.settings = sublime.load_settings(pc_preferences_filename())
+        self.settings = sublime.load_settings(pc_settings_filename())
         self.installed_packages = self.settings.get('installed_packages', [])
         if not isinstance(self.installed_packages, list):
             self.installed_packages = []
@@ -130,4 +130,4 @@ class PackageRenamer(PackageDisabler):
 
         if installed_packages != self.installed_packages:
             self.settings.set('installed_packages', installed_packages)
-            sublime.save_settings(pc_preferences_filename())
+            sublime.save_settings(pc_settings_filename())

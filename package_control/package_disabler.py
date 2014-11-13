@@ -1,6 +1,6 @@
 import sublime
 
-from .preferences_filename import preferences_filename
+from .settings import preferences_filename
 from .package_io import package_file_exists
 
 

@@ -11,7 +11,7 @@ def preferences_filename():
     return 'Global.sublime-settings'
 
 
-def pc_preferences_filename():
+def pc_settings_filename():
     """
     :return: The settings file for Package Control
     """

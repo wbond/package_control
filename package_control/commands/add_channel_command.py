@@ -4,7 +4,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
-from ..preferences_filename import pc_preferences_filename
+from ..settings import pc_settings_filename
 
 
 class AddChannelCommand(sublime_plugin.WindowCommand):
@@ -30,13 +30,13 @@ class AddChannelCommand(sublime_plugin.WindowCommand):
             show_error(u"Unable to add the channel \"%s\" since it does not appear to be served via HTTP (http:// or https://)." % input)
             return
 
-        settings = sublime.load_settings(pc_preferences_filename()
+        settings = sublime.load_settings(pc_settings_filename())
         channels = settings.get('channels', [])
         if not channels:
             channels = []
         channels.append(input)
         settings.set('channels', channels)
-        sublime.save_settings(pc_preferences_filename()
+        sublime.save_settings(pc_settings_filename())
         sublime.status_message(('Channel %s successfully ' +
             'added') % input)
 

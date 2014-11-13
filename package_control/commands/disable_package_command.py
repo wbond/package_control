@@ -3,7 +3,7 @@ import sublime_plugin
 
 from ..show_error import show_error
 from ..package_manager import PackageManager
-from ..preferences_filename import preferences_filename
+from ..settings import preferences_filename
 from ..package_disabler import PackageDisabler
 
 

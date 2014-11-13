@@ -2,7 +2,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
-from ..preferences_filename import preferences_filename
+from ..settings import preferences_filename
 from ..package_disabler import PackageDisabler
 
 

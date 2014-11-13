@@ -4,7 +4,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
-from ..preferences_filename import pc_preferences_filename
+from ..settings import pc_settings_filename
 
 
 class AddRepositoryCommand(sublime_plugin.WindowCommand):
@@ -31,13 +31,13 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
             show_error(u"Unable to add the repository \"%s\" since it does not appear to be served via HTTP (http:// or https://)." % input)
             return
 
-        settings = sublime.load_settings(pc_preferences_filename())
+        settings = sublime.load_settings(pc_settings_filename())
         repositories = settings.get('repositories', [])
         if not repositories:
             repositories = []
         repositories.append(input)
         settings.set('repositories', repositories)
-        sublime.save_settings(pc_preferences_filename())
+        sublime.save_settings(pc_settings_filename())
         sublime.status_message('Repository %s successfully added' % input)
 
     def on_change(self, input):
