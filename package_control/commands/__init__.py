@@ -2,6 +2,7 @@ import os
 
 from .add_channel_command import AddChannelCommand
 from .add_repository_command import AddRepositoryCommand
+from .advanced_install_package_command import AdvancedInstallPackageCommand
 from .create_package_command import CreatePackageCommand
 from .disable_package_command import DisablePackageCommand
 from .discover_packages_command import DiscoverPackagesCommand
@@ -17,6 +18,7 @@ from .package_message_command import PackageMessageCommand
 __all__ = [
     'AddChannelCommand',
     'AddRepositoryCommand',
+    'AdvancedInstallPackageCommand',
     'CreatePackageCommand',
     'DisablePackageCommand',
     'DiscoverPackagesCommand',
