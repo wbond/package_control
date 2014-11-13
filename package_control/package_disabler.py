@@ -1,6 +1,6 @@
 import sublime
 
-from .settings import preferences_filename
+from .settings import preferences_filename, pc_settings_filename, load_list_setting
 from .package_io import package_file_exists
 
 
@@ -32,14 +32,16 @@ class PackageDisabler():
         disabled = []
 
         settings = sublime.load_settings(preferences_filename())
-        ignored = settings.get('ignored_packages')
-        if not ignored:
-            ignored = []
+        ignored = load_list_setting(settings, 'ignored_packages')
+
+        pc_settings = sublime.load_settings(pc_settings_filename())
+        in_process = load_list_setting(pc_settings, 'in_process_packages')
 
         self.old_syntaxes = {}
 
         for package in packages:
             if not package in ignored:
+                in_process.append(package)
                 ignored.append(package)
                 disabled.append(package)
 
@@ -65,8 +67,12 @@ class PackageDisabler():
                 self.old_theme = settings.get('theme')
                 settings.set('theme', 'Default.sublime-theme')
 
+        pc_settings.set('in_process_packages', in_process)
+        sublime.save_settings(pc_settings_filename())
+
         settings.set('ignored_packages', ignored)
         sublime.save_settings(preferences_filename())
+
         return disabled
 
     def reenable_package(self, package, type='upgrade'):
@@ -85,9 +91,7 @@ class PackageDisabler():
         """
 
         settings = sublime.load_settings(preferences_filename())
-        ignored = settings.get('ignored_packages')
-        if not ignored:
-            return
+        ignored = load_list_setting(settings, 'ignored_packages')
 
         if package in ignored:
             settings.set('ignored_packages',
@@ -114,3 +118,11 @@ class PackageDisabler():
                     u"graphical corruption until you restart Sublime Text.")
 
             sublime.save_settings(preferences_filename())
+
+        pc_settings = sublime.load_settings(pc_settings_filename())
+        in_process = load_list_setting(pc_settings, 'in_process_packages')
+
+        if package in in_process:
+            in_process.remove(package)
+            pc_settings.set('in_process_packages', in_process)
+            sublime.save_settings(pc_settings_filename())

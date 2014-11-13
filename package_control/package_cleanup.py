@@ -13,6 +13,7 @@ from .package_manager import PackageManager
 from .package_renamer import PackageRenamer
 from .open_compat import open_compat
 from .package_io import package_file_exists
+from .settings import preferences_filename, pc_settings_filename, load_list_setting
 
 
 class PackageCleanup(threading.Thread, PackageRenamer):
@@ -102,6 +103,25 @@ class PackageCleanup(threading.Thread, PackageRenamer):
             A list of the string package names of all packages that are
             currently installed on the filesystem.
         """
+
+        # Make sure we didn't accidentally ignore packages because something
+        # was interrupted before it completed.
+        pc_settings = sublime.load_settings(pc_settings_filename())
+        in_process = load_list_setting(pc_settings, 'in_process_packages')
+        if in_process:
+            settings = sublime.load_settings(preferences_filename())
+            ignored = load_list_setting(settings, 'ignored_packages')
+            new_ignored = list(ignored)
+            for package in in_process:
+                if package in new_ignored:
+                    console_write(u'The package %s is being re-enabled after a Package Control operation was interrupted' % package, True)
+                    new_ignored.remove(package)
+            if ignored != new_ignored:
+                settings.set('ignored_packages', new_ignored)
+                sublime.save_settings(preferences_filename())
+            in_process = []
+            pc_settings.set('in_process_packages', in_process)
+            sublime.save_settings(pc_settings_filename())
 
         self.save_packages(installed_pkgs)
         AutomaticUpgrader(found_pkgs).start()

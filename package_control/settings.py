@@ -1,5 +1,10 @@
 import sublime
 
+try:
+    str_cls = unicode
+except (NameError):
+    str_cls = str
+
 
 def preferences_filename():
     """
@@ -17,3 +22,26 @@ def pc_settings_filename():
     """
 
     return 'Package Control.sublime-settings'
+
+
+def load_list_setting(settings, name):
+    """
+    Sometimes users accidentally change settings that should be lists to
+    just individual strings. This helps fix that.
+
+    :param settings:
+        A sublime.Settings object
+
+    :param name:
+        The name of the setting
+
+    :return:
+        The current value of the setting, always a list
+    """
+
+    value = settings.get(name)
+    if not value:
+        value = []
+    if isinstance(value, str_cls):
+        value = [value]
+    return value
