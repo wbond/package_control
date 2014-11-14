@@ -107,7 +107,6 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             tries -= 1
             try:
                 request_headers = {
-                    "User-Agent": self.settings.get('user_agent'),
                     # Don't be alarmed if the response from the server does not
                     # select one of these since the server runs a relatively new
                     # version of OpenSSL which supports compression on the SSL
@@ -115,6 +114,10 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     # encoding.
                     "Accept-Encoding": self.supported_encodings()
                 }
+                user_agent = self.settings.get('user_agent')
+                if user_agent:
+                    request_headers["User-Agent"] = user_agent
+
                 request_headers = self.add_conditional_headers(url, request_headers)
                 request = Request(url, headers=request_headers)
                 http_file = self.opener.open(request, timeout=timeout)

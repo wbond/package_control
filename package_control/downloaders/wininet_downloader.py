@@ -295,7 +295,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     self.INTERNET_OPTION_CONNECTED_STATE, ctypes.byref(connected_info), ctypes.sizeof(connected_info))
                 changed_to_online = True
 
-            self.network_connection = wininet.InternetOpenW(self.settings.get('user_agent'),
+            self.network_connection = wininet.InternetOpenW(self.settings.get('user_agent', ''),
                 self.INTERNET_OPEN_TYPE_PRECONFIG, None, None, 0)
 
             if not self.network_connection:

@@ -76,8 +76,11 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
-            self.tmp_file, '-O', '-', '-U', self.settings.get('user_agent'),
-            '--secure-protocol=TLSv1']
+            self.tmp_file, '-O', '-', '--secure-protocol=TLSv1']
+
+        user_agent = self.settings.get('user_agent')
+        if user_agent:
+            command.extend(['-U', user_agent])
 
         request_headers = {
             # Don't be alarmed if the response from the server does not select
