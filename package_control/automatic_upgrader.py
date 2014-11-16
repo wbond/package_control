@@ -199,7 +199,7 @@ class AutomaticUpgrader(threading.Thread):
 
         def do_upgrades():
             # Wait so that the ignored packages can be "unloaded"
-            time.sleep(1)
+            time.sleep(0.7)
 
             # We use a function to generate the on-complete lambda because if
             # we don't, the lambda will bind to info at the current scope, and
@@ -222,7 +222,7 @@ class AutomaticUpgrader(threading.Thread):
                 message_string = u'Upgraded %s to %s' % (info[0], version)
                 console_write(message_string, True)
                 if on_complete:
-                    sublime.set_timeout(on_complete, 1)
+                    sublime.set_timeout(on_complete, 700)
 
         # Disabling a package means changing settings, which can only be done
         # in the main thread. We then create a new background thread so that

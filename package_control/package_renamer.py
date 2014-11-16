@@ -84,7 +84,7 @@ class PackageRenamer(PackageDisabler):
 
             sublime.set_timeout(lambda: self.disable_packages(package_name), 10)
 
-            time.sleep(1)
+            time.sleep(0.7)
 
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
                 # Windows will not allow you to rename to the same name with
@@ -106,7 +106,7 @@ class PackageRenamer(PackageDisabler):
                     package_name, new_package_name)
                 console_write(message_string, True)
 
-            sublime.set_timeout(lambda: self.reenable_package(package_name, 'removal'), 10)
+            sublime.set_timeout(lambda: self.reenable_package(package_name, 'removal'), 700)
 
             try:
                 installed_pkgs.remove(package_name)

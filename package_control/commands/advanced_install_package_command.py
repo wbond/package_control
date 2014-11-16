@@ -89,7 +89,7 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
 
     def run(self):
         # Allow packages to properly disable
-        time.sleep(1)
+        time.sleep(0.7)
 
         for package in self.packages:
             self.manager.install_package(package)
@@ -102,4 +102,4 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
                     type_ = 'install' if package_name not in self.installed else 'upgrade'
                     self.reenable_package(package_name, type_)
                 return do_reenable_package
-            sublime.set_timeout(reenable_package(package), 10)
+            sublime.set_timeout(reenable_package(package), 700)

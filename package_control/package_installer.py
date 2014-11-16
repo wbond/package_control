@@ -207,9 +207,9 @@ class PackageInstallerThread(threading.Thread):
 
     def run(self):
         if self.pause:
-            time.sleep(1)
+            time.sleep(0.7)
         try:
             self.result = self.manager.install_package(self.package)
         finally:
             if self.on_complete:
-                sublime.set_timeout(self.on_complete, 1)
+                sublime.set_timeout(self.on_complete, 700)
