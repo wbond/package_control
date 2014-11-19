@@ -2,19 +2,20 @@ import zipfile
 import os
 import hashlib
 import sys
+from os import path
 from textwrap import dedent
 try:
     import urllib2
     from urlparse import urlparse
     str_cls = unicode
     from cStringIO import StringIO as BytesIO
-    package_control_dir = os.getcwd()
+    package_control_subdir = os.getcwd()
 except (ImportError) as e:
     import urllib.request as urllib2
     from urllib.parse import urlparse
     str_cls = str
     from io import BytesIO
-    package_control_dir = os.path.dirname(__file__)
+    package_control_subdir = path.dirname(__file__)
 # Prevents an unknown encoding error that occurs when first using
 # urllib(2) in a thread.
 import encodings.idna
@@ -23,12 +24,12 @@ import sublime
 
 
 def get_sublime_text_dir(name):
-    cur_package_dir = os.path.dirname(package_control_dir)
+    cur_packages_dir = path.dirname(path.dirname(package_control_subdir))
 
     try:
-        if not isinstance(cur_package_dir, str_cls):
-            cur_package_dir = cur_package_dir.decode('utf-8', 'strict')
-        return os.path.normpath(os.path.join(cur_package_dir, '..', name))
+        if not isinstance(cur_packages_dir, str_cls):
+            cur_packages_dir = cur_packages_dir.decode('utf-8', 'strict')
+        return path.normpath(path.join(cur_packages_dir, '..', name))
 
     except (UnicodeDecodeError):
         print(u'Package Control: An error occurred decoding the Package Control path as UTF-8')
@@ -60,16 +61,16 @@ def bootstrap_early_package(name, url, hash_, priority, inject_code, on_complete
         A callback to be run in the main Sublime thread, so it can use the API
     """
 
-    package_filename = os.path.basename(urlparse(url).path)
-    package_basename, _ = os.path.splitext(package_filename)
+    package_filename = path.basename(urlparse(url).path)
+    package_basename, _ = path.splitext(package_filename)
 
     packages_dir = get_sublime_text_dir('Packages')
     if not packages_dir:
         return
-    package_dir = os.path.join(packages_dir, package_basename)
+    package_dir = path.join(packages_dir, package_basename)
 
     # The package has already been installed
-    if os.path.exists(package_dir):
+    if path.exists(package_dir):
         return
 
     opener = urllib2.build_opener(urllib2.ProxyHandler())
@@ -94,41 +95,41 @@ def bootstrap_early_package(name, url, hash_, priority, inject_code, on_complete
         print(u'Package Control: Error unzipping %s' % package_filename)
         return
 
-    if not os.path.exists(package_dir):
+    if not path.exists(package_dir):
         os.mkdir(package_dir, 0o755)
 
-    for path in data_zip.namelist():
-        dest = path
+    for zip_path in data_zip.namelist():
+        dest = zip_path
 
         if not isinstance(dest, str_cls):
             dest = dest.decode('utf-8', 'strict')
 
         dest = dest.replace('\\', '/')
 
-        dest = os.path.join(package_dir, dest)
+        dest = path.join(package_dir, dest)
 
         if dest[-1] == '/':
-            if not os.path.exists(dest):
+            if not path.exists(dest):
                 os.mkdir(dest, 0o755)
         else:
-            dest_dir = os.path.dirname(dest)
-            if not os.path.exists(dest_dir):
+            dest_dir = path.dirname(dest)
+            if not path.exists(dest_dir):
                 os.mkdir(dest_dir, 0o755)
 
             with open(dest, 'wb') as f:
-                f.write(data_zip.read(path))
+                f.write(data_zip.read(zip_path))
 
     data_zip.close()
 
     inject_code = dedent(inject_code).strip() + '\n'
 
     if sys.version_info < (3,):
-        package_dir = os.path.join(packages_dir, '%s-%s' % (priority, package_basename))
+        package_dir = path.join(packages_dir, '%s-%s' % (priority, package_basename))
 
-        if not os.path.exists(package_dir):
+        if not path.exists(package_dir):
             os.mkdir(package_dir, 0o755)
 
-        filename = os.path.join(package_dir, 'inject.py')
+        filename = path.join(package_dir, 'inject.py')
         with open(filename, 'wb') as f:
             f.write(inject_code.encode('utf-8'))
 
@@ -137,7 +138,7 @@ def bootstrap_early_package(name, url, hash_, priority, inject_code, on_complete
         if not installed_packages_dir:
             return
 
-        filename = os.path.join(installed_packages_dir, '%s-%s.sublime-package' % (priority, package_basename))
+        filename = path.join(installed_packages_dir, '%s-%s.sublime-package' % (priority, package_basename))
 
         with zipfile.ZipFile(filename, 'w') as z:
             z.writestr('inject.py', inject_code.encode('utf-8'))
