@@ -59,24 +59,6 @@ mods_load_order = [
     '.http.validating_https_connection',
     '.http.validating_https_handler',
 
-    '.clients',
-    '.clients.client_exception',
-    '.clients.bitbucket_client',
-    '.clients.github_client',
-    '.clients.readme_client',
-    '.clients.json_api_client',
-
-    '.providers',
-    '.providers.provider_exception',
-    '.providers.bitbucket_repository_provider',
-    '.providers.channel_provider',
-    '.providers.github_repository_provider',
-    '.providers.github_user_provider',
-    '.providers.repository_provider',
-    '.providers.release_selector',
-
-    '.download_manager',
-
     '.downloaders',
     '.downloaders.downloader_exception',
     '.downloaders.rate_limit_exception',
@@ -93,6 +75,24 @@ mods_load_order = [
     '.downloaders.wget_downloader',
     '.downloaders.wininet_downloader',
     '.downloaders.background_downloader',
+
+    '.download_manager',
+
+    '.clients',
+    '.clients.client_exception',
+    '.clients.bitbucket_client',
+    '.clients.github_client',
+    '.clients.readme_client',
+    '.clients.json_api_client',
+
+    '.providers',
+    '.providers.provider_exception',
+    '.providers.bitbucket_repository_provider',
+    '.providers.github_repository_provider',
+    '.providers.github_user_provider',
+    '.providers.release_selector',
+    '.providers.channel_provider',
+    '.providers.repository_provider',
 
     '.upgraders',
     '.upgraders.vcs_upgrader',
