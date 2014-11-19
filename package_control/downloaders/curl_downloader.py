@@ -73,11 +73,6 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [self.curl, '--connect-timeout', str(int(timeout)), '-sSL',
-            # Don't be alarmed if the response from the server does not select
-            # one of these since the server runs a relatively new version of
-            # OpenSSL which supports compression on the SSL layer, and Apache
-            # will use that instead of HTTP-level encoding.
-            '--compressed',
             '--tlsv1',
             # We have to capture the headers to check for rate limit info
             '--dump-header', self.tmp_file]
@@ -87,6 +82,10 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             command.extend(['--user-agent', user_agent])
 
         request_headers = self.add_conditional_headers(url, {})
+        # Don't be alarmed if the response from the server does not select
+        # one of these since the server runs a relatively new version of
+        # OpenSSL which supports compression on the SSL layer, and Apache
+        # will use that instead of HTTP-level encoding.
         request_headers['Accept-Encoding'] = self.supported_encodings()
 
         for name, value in request_headers.items():
