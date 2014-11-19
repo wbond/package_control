@@ -9,13 +9,13 @@ try:
     from urlparse import urlparse
     str_cls = unicode
     from cStringIO import StringIO as BytesIO
-    package_control_subdir = os.getcwd()
+    package_control_dir = os.getcwd()
 except (ImportError) as e:
     import urllib.request as urllib2
     from urllib.parse import urlparse
     str_cls = str
     from io import BytesIO
-    package_control_subdir = path.dirname(__file__)
+    package_control_dir = path.dirname(path.dirname(__file__))
 # Prevents an unknown encoding error that occurs when first using
 # urllib(2) in a thread.
 import encodings.idna
@@ -24,7 +24,7 @@ import sublime
 
 
 def get_sublime_text_dir(name):
-    cur_packages_dir = path.dirname(path.dirname(package_control_subdir))
+    cur_packages_dir = path.dirname(package_control_dir)
 
     try:
         if not isinstance(cur_packages_dir, str_cls):
