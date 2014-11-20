@@ -5,6 +5,17 @@ from .console_write import console_write
 
 
 def semver_compat(v):
+    """
+    Converts a string version number into SemVer. If the version is based on
+    a date, converts to 0.0.1+yyyy.mm.dd.hh.mm.ss.
+
+    :param v:
+        A string, dict with 'version' key, or a SemVer object
+
+    :return:
+        A string that is a valid semantic version number
+    """
+
     if isinstance(v, SemVer):
         return str(v)
 
@@ -49,6 +60,16 @@ def version_comparable(string):
 
 
 def version_exclude_prerelease(versions):
+    """
+    Remove prerelease versions for a list of SemVer versions
+
+    :param versions:
+        The list of versions to filter
+
+    :return:
+        The list of versions with pre-releases removed
+    """
+
     output = []
     for version in versions:
         if SemVer(semver_compat(version)).prerelease != None:
@@ -58,6 +79,19 @@ def version_exclude_prerelease(versions):
 
 
 def version_filter(versions, allow_prerelease=False):
+    """
+    Filter a list of versions to ones that are valid SemVers
+
+    :param versions:
+        The list of versions to filter
+
+    :param allow_prerelease:
+        If pre-release SemVer versions should be included
+
+    :return:
+        A copy of versions with all non-SemVer values removed
+    """
+
     output = []
     for version in versions:
         no_v_version = re.sub('^v', '', version)
@@ -70,6 +104,24 @@ def version_filter(versions, allow_prerelease=False):
 
 
 def version_sort(sortable, *fields, **kwargs):
+    """
+    Sorts a list that is a list of versions, or dicts with a 'version' key.
+    Can also secondly sort by another field.
+
+    :param sortable:
+        The list to sort
+
+    :param *fields:
+        If sortable is a list of dicts, perform secondary sort via these fields,
+        in order
+
+    :param **kwargs:
+        Keyword args to pass on to sorted()
+
+    :return:
+        A copy of sortable that is sorted according to SemVer rules
+    """
+
     def _version_sort_key(item):
         result = SemVer(semver_compat(item))
         if fields:
