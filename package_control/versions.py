@@ -69,11 +69,16 @@ def version_filter(versions, allow_prerelease=False):
     return output
 
 
-def _version_sort_key(item):
-    return SemVer(semver_compat(item))
+def version_sort(sortable, *fields, **kwargs):
+    def _version_sort_key(item):
+        result = SemVer(semver_compat(item))
+        if fields:
+            values = [result]
+            for field in fields:
+                values.append(item[field])
+            result = tuple(values)
+        return result
 
-
-def version_sort(sortable, **kwargs):
     try:
         return sorted(sortable, key=_version_sort_key, **kwargs)
     except (ValueError) as e:
