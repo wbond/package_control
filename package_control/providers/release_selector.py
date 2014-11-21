@@ -4,27 +4,6 @@ import sublime
 from ..versions import version_sort, version_exclude_prerelease
 
 
-def select_release(settings, releases):
-    """
-    Returns the first release in the list of releases that is compatible with
-    the current platform and version of Sublime Text
-
-    :param settings:
-        A dict optionally containing the `install_prereleases` key
-
-    :param releases:
-        A list of release dicts
-
-    :return:
-        A release dict, or None if no compatible relases are available.
-    """
-
-    compatible_releases = filter_releases(settings, releases)
-    if not compatible_releases:
-        return None
-
-    return compatible_releases[0]
-
 
 def filter_releases(settings, releases):
     """

@@ -11,7 +11,6 @@ except (ImportError):
     from urlparse import urljoin
 
 from ..console_write import console_write
-from .release_selector import select_release
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
 from ..downloaders.downloader_exception import DownloaderException
