@@ -13,6 +13,8 @@ from .remove_package_command import RemovePackageCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
 from .package_message_command import PackageMessageCommand
+from .package_control_insert_command import PackageControlInsertCommand
+from .package_control_tests_command import PackageControlTestsCommand
 
 
 __all__ = [
@@ -28,5 +30,7 @@ __all__ = [
     'RemovePackageCommand',
     'UpgradeAllPackagesCommand',
     'UpgradePackageCommand',
-    'PackageMessageCommand'
+    'PackageMessageCommand',
+    'PackageControlInsertCommand',
+    'PackageControlTestsCommand'
 ]

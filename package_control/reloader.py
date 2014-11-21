@@ -90,6 +90,7 @@ mods_load_order = [
     '.providers.bitbucket_repository_provider',
     '.providers.github_repository_provider',
     '.providers.github_user_provider',
+    '.providers.schema_compat',
     '.providers.release_selector',
     '.providers.channel_provider',
     '.providers.repository_provider',
@@ -103,6 +104,10 @@ mods_load_order = [
     '.package_creator',
     '.package_installer',
     '.package_renamer',
+
+    '.tests',
+    '.tests.clients',
+    '.tests.providers',
 
     '.commands',
     '.commands.add_channel_command',
@@ -119,6 +124,8 @@ mods_load_order = [
     '.commands.remove_package_command',
     '.commands.upgrade_all_packages_command',
     '.commands.upgrade_package_command',
+    '.commands.package_control_insert_command',
+    '.commands.package_control_tests_command',
 
     '.package_cleanup',
     '.automatic_upgrader'

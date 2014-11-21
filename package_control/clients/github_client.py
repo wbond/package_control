@@ -31,24 +31,60 @@ class GitHubClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match, False if no commit, or a dict with the following keys:
+            None if no match, False if no commits, or a list of dicts with the
+            following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        commit_info = self._commit_info(url)
-        if not commit_info:
-            return commit_info
+        tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
 
-        return {
-            'version': commit_info['version'],
-            # We specifically use codeload.github.com here because the download
-            # URLs all redirect there, and some of the downloaders don't follow
-            # HTTP redirect headers
-            'url': 'https://codeload.github.com/%s/zip/%s' % (commit_info['user_repo'], quote(commit_info['commit'])),
-            'date': commit_info['timestamp']
-        }
+        version = None
+        url_pattern = 'https://codeload.github.com/%s/zip/%s'
+
+        output = []
+        if tags_match:
+            user_repo = tags_match.group(1)
+            tags_url = self._make_api_url(user_repo, '/tags')
+            tags_list = self.fetch_json(tags_url)
+            tags = [tag['name'] for tag in tags_list]
+            tags = version_filter(tags, True)
+            tags = version_sort(tags, reverse=True)
+            if not tags:
+                return False
+
+            for tag in tags:
+                output.append({
+                    'url': url_pattern % (user_repo, tag),
+                    'commit': tag,
+                    'version': re.sub('^v', '', tag)
+                })
+
+        else:
+            user_repo, commit = self._user_repo_branch(url)
+            if not user_repo:
+                return user_repo
+
+            output.append({
+                'url': url_pattern % (user_repo, commit),
+                'commit': commit
+            })
+
+        for release in output:
+            query_string = urlencode({'sha': release['commit'], 'per_page': 1})
+            commit_url = self._make_api_url(user_repo, '/commits?%s' % query_string)
+            commit_info = self.fetch_json(commit_url)
+
+            timestamp = commit_info[0]['commit']['committer']['date'][0:19].replace('T', ' ')
+
+            if 'version' not in release:
+                release['version'] = re.sub('[\-: ]', '.', timestamp)
+            release['date'] = timestamp
+
+            del release['commit']
+
+        return output
 
     def repo_info(self, url):
         """
@@ -141,67 +177,6 @@ class GitHubClient(JSONApiClient):
 
             output.append(repo_output)
         return output
-
-    def _commit_info(self, url):
-        """
-        Fetches info about the latest commit to a repository
-
-        :param url:
-            The URL to the repository, in one of the forms:
-              https://github.com/{user}/{repo}
-              https://github.com/{user}/{repo}/tree/{branch}
-              https://github.com/{user}/{repo}/tags
-            If the last option, grabs the info from the newest
-            tag that is a valid semver version.
-
-        :raises:
-            DownloaderException: when there is an error downloading
-            ClientException: when there is an error parsing the response
-
-        :return:
-            None if no match, False is no commit, or a dict with the following keys:
-              `user_repo` - the user/repo name
-              `timestamp` - the ISO-8601 UTC timestamp string
-              `commit` - the branch or tag name
-              `version` - the extracted version number
-        """
-
-        tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
-
-        version = None
-
-        if tags_match:
-            user_repo = tags_match.group(1)
-            tags_url = self._make_api_url(user_repo, '/tags')
-            tags_list = self.fetch_json(tags_url)
-            tags = [tag['name'] for tag in tags_list]
-            tags = version_filter(tags, self.settings.get('install_prereleases'))
-            tags = version_sort(tags, reverse=True)
-            if not tags:
-                return False
-            commit = tags[0]
-            version = re.sub('^v', '', commit)
-
-        else:
-            user_repo, commit = self._user_repo_branch(url)
-            if not user_repo:
-                return user_repo
-
-        query_string = urlencode({'sha': commit, 'per_page': 1})
-        commit_url = self._make_api_url(user_repo, '/commits?%s' % query_string)
-        commit_info = self.fetch_json(commit_url)
-
-        commit_date = commit_info[0]['commit']['committer']['date'][0:19].replace('T', ' ')
-
-        if not version:
-            version = re.sub('[\-: ]', '.', commit_date)
-
-        return {
-            'user_repo': user_repo,
-            'timestamp': commit_date,
-            'commit': commit,
-            'version': version
-        }
 
     def _extract_repo_info(self, result):
         """

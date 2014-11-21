@@ -4,123 +4,102 @@ import sublime
 from ..versions import version_sort, version_exclude_prerelease
 
 
-class ReleaseSelector():
+def select_release(settings, releases):
     """
-    A base class for finding the best version of a package for the current machine
+    Returns the first release in the list of releases that is compatible with
+    the current platform and version of Sublime Text
+
+    :param settings:
+        A dict optionally containing the `install_prereleases` key
+
+    :param releases:
+        A list of release dicts
+
+    :return:
+        A release dict, or None if no compatible relases are available.
     """
 
-    def select_release(self, package_info):
-        """
-        Returns a modified package info dict for package from package schema version 2.0
-
-        :param package_info:
-            A package info dict with a "releases" key
-
-        :return:
-            The package info dict with the "releases" key deleted, and a
-            "download" key added that contains a dict with "version", "url" and
-            "date" keys.
-            None if no compatible relases are available.
-        """
-
-        releases = version_sort(package_info['releases'])
-        if not self.settings.get('install_prereleases'):
-            releases = version_exclude_prerelease(releases)
-
-        for release in releases:
-            platforms = release.get('platforms', '*')
-            if not isinstance(platforms, list):
-                platforms = [platforms]
-
-            best_platform = self.get_best_platform(platforms)
-            if not best_platform:
-                continue
-
-            # Default to '*' (for legacy reasons), see #604
-            if not self.is_compatible_version(release.get('sublime_text', '*')):
-                continue
-
-            package_info['download'] = release
-            package_info['last_modified'] = release.get('date')
-            del package_info['releases']
-
-            return package_info
-
+    compatible_releases = filter_releases(settings, releases)
+    if not compatible_releases:
         return None
 
-    def select_platform(self, package_info):
-        """
-        Returns a modified package info dict for package from package schema version <= 1.2
+    return compatible_releases[0]
 
-        :param package_info:
-            A package info dict with a "platforms" key
 
-        :return:
-            The package info dict with the "platforms" key deleted, and a
-            "download" key added that contains a dict with "version" and "url"
-            keys.
-            None if no compatible platforms.
-        """
-        platforms = list(package_info['platforms'].keys())
-        best_platform = self.get_best_platform(platforms)
-        if not best_platform:
-            return None
+def filter_releases(settings, releases):
+    """
+    Returns all releases in the list of releases that are compatible with
+    the current platform and version of Sublime Text
 
-        package_info['download'] = package_info['platforms'][best_platform][0]
-        package_info['download']['date'] = package_info.get('last_modified')
-        del package_info['platforms']
+    :param settings:
+        A dict optionally containing the `install_prereleases` key
 
-        return package_info
+    :param releases:
+        A list of release dicts
 
-    def get_best_platform(self, platforms):
-        """
-        Returns the most specific platform that matches the current machine
+    :return:
+        A list of release dicts
+    """
 
-        :param platforms:
-            An array of platform names for a package. E.g. ['*', 'windows', 'linux-x64']
+    platform_selectors = [sublime.platform() + '-' + sublime.arch(),
+        sublime.platform(), '*']
 
-        :return: A string reprenting the most specific matching platform
-        """
+    if not settings.get('install_prereleases'):
+        releases = version_exclude_prerelease(releases)
 
-        ids = [sublime.platform() + '-' + sublime.arch(), sublime.platform(),
-            '*']
+    output = []
+    for release in releases:
+        platforms = release.get('platforms', '*')
+        if not isinstance(platforms, list):
+            platforms = [platforms]
 
-        for id in ids:
-            if id in platforms:
-                return id
+        matched = False
+        for selector in platform_selectors:
+            if selector in platforms:
+                matched = True
+                break
+        if not matched:
+            continue
 
-        return None
+        # Default to '*' (for legacy reasons), see #604
+        if not is_compatible_version(release.get('sublime_text', '*')):
+            continue
 
-    def is_compatible_version(self, version_range):
-        min_version = float("-inf")
-        max_version = float("inf")
+        output.append(release)
 
-        if version_range == '*':
-            return True
+    return output
 
-        gt_match = re.match('>(\d+)$', version_range)
-        ge_match = re.match('>=(\d+)$', version_range)
-        lt_match = re.match('<(\d+)$', version_range)
-        le_match = re.match('<=(\d+)$', version_range)
-        range_match = re.match('(\d+) - (\d+)$', version_range)
 
-        if gt_match:
-            min_version = int(gt_match.group(1)) + 1
-        elif ge_match:
-            min_version = int(ge_match.group(1))
-        elif lt_match:
-            max_version = int(lt_match.group(1)) - 1
-        elif le_match:
-            max_version = int(le_match.group(1))
-        elif range_match:
-            min_version = int(range_match.group(1))
-            max_version = int(range_match.group(2))
-        else:
-            return None
+def is_compatible_version(version_range):
+    min_version = float("-inf")
+    max_version = float("inf")
 
-        if min_version > int(sublime.version()):
-            return False
-        if max_version < int(sublime.version()):
-            return False
-
+    if version_range == '*':
         return True
+
+    gt_match = re.match('>(\d+)$', version_range)
+    ge_match = re.match('>=(\d+)$', version_range)
+    lt_match = re.match('<(\d+)$', version_range)
+    le_match = re.match('<=(\d+)$', version_range)
+    range_match = re.match('(\d+) - (\d+)$', version_range)
+
+    if gt_match:
+        min_version = int(gt_match.group(1)) + 1
+    elif ge_match:
+        min_version = int(ge_match.group(1))
+    elif lt_match:
+        max_version = int(lt_match.group(1)) - 1
+    elif le_match:
+        max_version = int(le_match.group(1))
+    elif range_match:
+        min_version = int(range_match.group(1))
+        max_version = int(range_match.group(2))
+    else:
+        return None
+
+    if min_version > int(sublime.version()):
+        return False
+    if max_version < int(sublime.version()):
+        return False
+
+    return True

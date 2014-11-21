@@ -10,14 +10,16 @@ except (ImportError):
     from urlparse import urljoin
 
 from ..console_write import console_write
-from .release_selector import ReleaseSelector
+from .release_selector import select_release
 from .provider_exception import ProviderException
+from .schema_compat import platforms_to_releases
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from ..download_manager import downloader, update_url
+from ..versions import version_sort
 
 
-class ChannelProvider(ReleaseSelector):
+class ChannelProvider():
     """
     Retrieves a channel and provides an API into the information
 
@@ -41,7 +43,6 @@ class ChannelProvider(ReleaseSelector):
           `proxy_username`,
           `proxy_password`,
           `query_string_params`
-          `install_prereleases`
     """
 
     def __init__(self, channel, settings):
@@ -49,7 +50,6 @@ class ChannelProvider(ReleaseSelector):
         self.schema_version = 0.0
         self.channel = channel
         self.settings = settings
-        self.unavailable_packages = []
 
     @classmethod
     def match_url(cls, channel):
@@ -237,11 +237,15 @@ class ChannelProvider(ReleaseSelector):
                     'author': author,
                     'homepage': homepage,
                     'last_modified': last modified date,
-                    'download': {
-                        'url': url,
-                        'date': date,
-                        'version': version
-                    },
+                    'releases': [
+                        {
+                            'sublime_text': '*',
+                            'platforms': ['*'],
+                            'url': url,
+                            'date': date,
+                            'version': version
+                        }, ...
+                    ],
                     'previous_names': [old_name, ...],
                     'labels': [label, ...],
                     'readme': url,
@@ -275,27 +279,31 @@ class ChannelProvider(ReleaseSelector):
             # about all available releases. These include "version" and
             # "platforms" keys that are used to pick the download for the
             # current machine.
-            if self.schema_version >= 2.0:
-                copy = self.select_release(copy)
+            if self.schema_version < 2.0:
+                copy['releases'] = platforms_to_releases(copy, self.settings.get('debug'))
+                del copy['platforms']
             else:
-                copy = self.select_platform(copy)
+                last_modified = None
+                for release in copy.get('releases', []):
+                    date = release.get('date')
+                    if not last_modified or (date and date > last_modified):
+                        last_modified = date
+                copy['last_modified'] = last_modified
 
-            if not copy:
-                self.unavailable_packages.append(package['name'])
-                continue
+            defaults = {
+                'buy': None,
+                'issues': None,
+                'labels': [],
+                'previous_names': [],
+                'readme': None,
+                'donate': None
+            }
+            for field in defaults:
+                if field not in copy:
+                    copy[field] = defaults[field]
+
+            copy['releases'] = version_sort(copy['releases'], 'platforms', reverse=True)
 
             output[copy['name']] = copy
 
         return output
-
-    def get_unavailable_packages(self):
-        """
-        Provides a list of packages that are unavailable for the current
-        platform/architecture that Sublime Text is running on.
-
-        This list will be empty unless get_packages() is called first.
-
-        :return: A list of package names
-        """
-
-        return self.unavailable_packages

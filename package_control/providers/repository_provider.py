@@ -11,16 +11,18 @@ except (ImportError):
     from urlparse import urljoin
 
 from ..console_write import console_write
-from .release_selector import ReleaseSelector
+from .release_selector import select_release
 from .provider_exception import ProviderException
+from .schema_compat import platforms_to_releases
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..download_manager import downloader, update_url
+from ..versions import version_sort
 
 
-class RepositoryProvider(ReleaseSelector):
+class RepositoryProvider():
     """
     Generic repository downloader that fetches package info
 
@@ -46,7 +48,6 @@ class RepositoryProvider(ReleaseSelector):
           `proxy_username`,
           `proxy_password`,
           `query_string_params`
-          `install_prereleases`
     """
 
     def __init__(self, repo, settings):
@@ -55,7 +56,6 @@ class RepositoryProvider(ReleaseSelector):
         self.schema_version = 0.0
         self.repo = repo
         self.settings = settings
-        self.unavailable_packages = []
         self.failed_sources = {}
         self.broken_packages = {}
 
@@ -248,11 +248,15 @@ class RepositoryProvider(ReleaseSelector):
                     'author': author,
                     'homepage': homepage,
                     'last_modified': last modified date,
-                    'download': {
-                        'url': url,
-                        'date': date,
-                        'version': version
-                    },
+                    'releases': [
+                        {
+                            'sublime_text': compatible version,
+                            'platforms': [platform name, ...],
+                            'url': url,
+                            'date': date,
+                            'version': version
+                        }, ...
+                    ]
                     'previous_names': [old_name, ...],
                     'labels': [label, ...],
                     'sources': [url, ...],
@@ -339,6 +343,7 @@ class RepositoryProvider(ReleaseSelector):
                 self.failed_sources[self.repo] = ProviderException(u'No "name" value for one of the packages in the repository %s.' % self.repo)
                 continue
 
+            info['releases'] = []
             if self.schema_version >= 2.0:
                 # If no releases info was specified, also grab the download info from GH or BB
                 if not releases and details:
@@ -357,7 +362,6 @@ class RepositoryProvider(ReleaseSelector):
                 # This allows developers to specify a GH or BB location to get releases from,
                 # especially tags URLs (https://github.com/user/repo/tags or
                 # https://bitbucket.org/user/repo#tags)
-                info['releases'] = []
                 for release in releases:
                     download_details = None
                     download_info = {}
@@ -365,65 +369,66 @@ class RepositoryProvider(ReleaseSelector):
                     # Make sure that explicit fields are copied over
                     for field in ['platforms', 'sublime_text', 'version', 'url', 'date']:
                         if field in release:
-                            download_info[field] = release[field]
+                            value = release[field]
+                            if field == 'url':
+                                value = update_url(value, debug)
+                            if field == 'platforms' and not isinstance(release['platforms'], list):
+                                value = [value]
+                            download_info[field] = value
+
+                    if 'sublime_text' not in download_info:
+                        download_info['sublime_text'] = '<3000'
+
+                    if 'platforms' not in download_info:
+                        download_info['platforms'] = ['*']
 
                     if 'details' in release:
                         download_details = release['details']
 
                         try:
-                            github_download = github_client.download_info(download_details)
-                            bitbucket_download = bitbucket_client.download_info(download_details)
+                            github_downloads = github_client.download_info(download_details)
+                            bitbucket_downloads = bitbucket_client.download_info(download_details)
 
-                            # Overlay the explicit field values over values fetched from the APIs
-                            if github_download:
-                                download_info = dict(chain(github_download.items(), download_info.items()))
-                            # No matching tags
-                            elif github_download == False:
-                                download_info = {}
-                            elif bitbucket_download:
-                                download_info = dict(chain(bitbucket_download.items(), download_info.items()))
-                            # No matching tags
-                            elif bitbucket_download == False:
-                                download_info = {}
+                            if github_downloads == False or bitbucket_downloads == False:
+                                raise ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
+
+                            if github_downloads:
+                                downloads = github_downloads
+                            elif bitbucket_downloads:
+                                downloads = bitbucket_downloads
                             else:
                                 raise ProviderException(u'Invalid "details" value "%s" under the "releases" key for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
 
+                            for download in downloads:
+                                new_download = download_info.copy()
+                                new_download.update(download)
+                                info['releases'].append(new_download)
+
                         except (DownloaderException, ClientException, ProviderException) as e:
                             self.broken_packages[info['name']] = e
-                            continue
 
-                    if download_info:
+                    elif download_info:
                         info['releases'].append(download_info)
-                    else:
-                        self.broken_packages[info['name']] = ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
-                        continue
-
-                info = self.select_release(info)
 
             # Schema version 1.0, 1.1 and 1.2 just require that all values be
             # explicitly specified in the package JSON
             else:
-                info['platforms'] = package.get('platforms')
-                info = self.select_platform(info)
+                info['releases'] = platforms_to_releases(package, debug)
 
-            if not info:
-                self.unavailable_packages.append(package['name'])
-                continue
+            info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
 
             if 'author' not in info:
                 self.broken_packages[info['name']] = ProviderException(u'No "author" key for the package "%s" in the repository %s.' % (info['name'], self.repo))
                 continue
 
-            if 'download' not in info and 'releases' not in info:
+            if 'releases' not in info:
                 self.broken_packages[info['name']] = ProviderException(u'No "releases" key for the package "%s" in the repository %s.' % (info['name'], self.repo))
                 continue
 
-            # Make sure the single download, or all releases, have the appropriate keys.
-            # We use a function here so that we can break out of multiple loops.
+            # Make sure all releases have the appropriate keys. We use a
+            # function here so that we can break out of multiple loops.
             def has_broken_release():
-                download = info.get('download')
-                download_list = [download] if download else []
-                for release in info.get('releases', download_list):
+                for release in info.get('releases', []):
                     for key in ['version', 'date', 'url']:
                         if key not in release:
                             self.broken_packages[info['name']] = ProviderException(u'Missing "%s" key for one of the releases of the package "%s" in the repository %s.' % (key, info['name'], self.repo))
@@ -447,15 +452,8 @@ class RepositoryProvider(ReleaseSelector):
             if 'homepage' not in info:
                 info['homepage'] = self.repo
 
-            if 'download' in info:
-                info['download']['url'] = update_url(info['download']['url'], debug)
-
-                # Extract the date from the download
-                if 'last_modified' not in info:
-                    info['last_modified'] = info['download']['date']
-
-            elif 'releases' in info and 'last_modified' not in info:
-                # Extract a date from the newest download
+            if 'releases' in info and 'last_modified' not in info:
+                # Extract a date from the newest release
                 date = '1970-01-01 00:00:00'
                 for release in info['releases']:
                     if 'date' in release and release['date'] > date:
@@ -511,15 +509,3 @@ class RepositoryProvider(ReleaseSelector):
                 output[previous_name] = package['name']
 
         return output
-
-    def get_unavailable_packages(self):
-        """
-        Provides a list of packages that are unavailable for the current
-        platform/architecture that Sublime Text is running on.
-
-        This list will be empty unless get_packages() is called first.
-
-        :return: A list of package names
-        """
-
-        return self.unavailable_packages

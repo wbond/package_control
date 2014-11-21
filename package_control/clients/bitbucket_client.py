@@ -37,21 +37,58 @@ class BitBucketClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match, False if no commit, or a dict with the following keys:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        commit_info = self._commit_info(url)
-        if not commit_info:
-            return commit_info
+        tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
 
-        return {
-            'version': commit_info['version'],
-            'url': 'https://bitbucket.org/%s/get/%s.zip' % (commit_info['user_repo'], commit_info['commit']),
-            'date': commit_info['timestamp']
-        }
+        version = None
+        url_pattern = 'https://bitbucket.org/%s/get/%s.zip'
+
+        output = []
+        if tags_match:
+            user_repo = tags_match.group(1)
+            tags_url = self._make_api_url(user_repo, '/tags')
+            tags_list = self.fetch_json(tags_url)
+            tags = version_filter(tags_list.keys(), True)
+            tags = version_sort(tags, reverse=True)
+            if not tags:
+                return False
+
+            for tag in tags:
+                output.append({
+                    'url': url_pattern % (user_repo, tag),
+                    'commit': tag,
+                    'version': re.sub('^v', '', tag)
+                })
+
+        else:
+            user_repo, commit = self._user_repo_branch(url)
+            if not user_repo:
+                return user_repo
+
+            output.append({
+                'url': url_pattern % (user_repo, commit),
+                'commit': commit
+            })
+
+        for release in output:
+            changeset_url = self._make_api_url(user_repo, '/changesets/%s' % release['commit'])
+            commit_info = self.fetch_json(changeset_url)
+
+            timestamp = commit_info['utctimestamp'][0:19]
+
+            if 'version' not in release:
+                release['version'] = re.sub('[\-: ]', '.', timestamp)
+            release['date'] = timestamp
+
+            del release['commit']
+
+        return output
 
     def repo_info(self, url):
         """
@@ -95,65 +132,6 @@ class BitBucketClient(JSONApiClient):
             'donate': u'https://gratipay.com/on/bitbucket/%s/' % info['owner'],
             'readme': self._readme_url(user_repo, branch),
             'issues': issues_url if info['has_issues'] else None
-        }
-
-    def _commit_info(self, url):
-        """
-        Fetches info about the latest commit to a repository
-
-        :param url:
-            The URL to the repository, in one of the forms:
-              https://bitbucket.org/{user}/{repo}
-              https://bitbucket.org/{user}/{repo}/src/{branch}
-              https://bitbucket.org/{user}/{repo}/#tags
-            If the last option, grabs the info from the newest
-            tag that is a valid semver version.
-
-        :raises:
-            DownloaderException: when there is an error downloading
-            ClientException: when there is an error parsing the response
-
-        :return:
-            None if no match, False if no commit, or a dict with the following keys:
-              `user_repo` - the user/repo name
-              `timestamp` - the ISO-8601 UTC timestamp string
-              `commit` - the branch or tag name
-              `version` - the extracted version number
-        """
-
-        tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
-
-        version = None
-
-        if tags_match:
-            user_repo = tags_match.group(1)
-            tags_url = self._make_api_url(user_repo, '/tags')
-            tags_list = self.fetch_json(tags_url)
-            tags = version_filter(tags_list.keys(), self.settings.get('install_prereleases'))
-            tags = version_sort(tags, reverse=True)
-            if not tags:
-                return False
-            commit = tags[0]
-            version = re.sub('^v', '', commit)
-
-        else:
-            user_repo, commit = self._user_repo_branch(url)
-            if not user_repo:
-                return user_repo
-
-        changeset_url = self._make_api_url(user_repo, '/changesets/%s' % commit)
-        commit_info = self.fetch_json(changeset_url)
-
-        commit_date = commit_info['timestamp'][0:19]
-
-        if not version:
-            version = re.sub('[\-: ]', '.', commit_date)
-
-        return {
-            'user_repo': user_repo,
-            'timestamp': commit_date,
-            'commit': commit,
-            'version': version
         }
 
     def _main_branch_name(self, user_repo):

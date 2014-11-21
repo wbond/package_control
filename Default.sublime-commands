@@ -64,5 +64,9 @@
         {
             "file": "${packages}/User/Package Control.sublime-settings"
         }
+    },
+    {
+        "caption": "Package Control: Tests",
+        "command": "package_control_tests"
     }
 ]

@@ -27,7 +27,6 @@ class GitHubUserProvider():
           `proxy_username`,
           `proxy_password`,
           `query_string_params`
-          `install_prereleases`
     """
 
     def __init__(self, repo, settings):
@@ -91,11 +90,15 @@ class GitHubUserProvider():
                     'author': author,
                     'homepage': homepage,
                     'last_modified': last modified date,
-                    'download': {
-                        'url': url,
-                        'date': date,
-                        'version': version
-                    },
+                    'releases': [
+                        {
+                            'sublime_text': '*',
+                            'platforms': ['*'],
+                            'url': url,
+                            'date': date,
+                            'version': version
+                        }, ...
+                    ],
                     'previous_names': [],
                     'labels': [],
                     'sources': [the user URL],
@@ -131,15 +134,19 @@ class GitHubUserProvider():
                 name = repo_info['name']
                 repo_url = 'https://github.com/%s/%s' % (repo_info['author'], name)
 
-                download = client.download_info(repo_url)
+                releases = []
+                for download in client.download_info(repo_url):
+                    download['sublime_text'] = '*'
+                    download['platforms'] = ['*']
+                    releases.append(download)
 
                 details = {
                     'name': name,
                     'description': repo_info['description'],
                     'homepage': repo_info['homepage'],
                     'author': repo_info['author'],
-                    'last_modified': download.get('date'),
-                    'download': download,
+                    'last_modified': releases[0].get('date'),
+                    'releases': releases,
                     'previous_names': [],
                     'labels': [],
                     'sources': [self.repo],
@@ -170,13 +177,3 @@ class GitHubUserProvider():
         """For API-compatibility with RepositoryProvider"""
 
         return {}
-
-    def get_unavailable_packages(self):
-        """
-        Method for compatibility with RepositoryProvider class. These providers
-        are based on API calls, and thus do not support different platform
-        downloads, making it impossible for there to be unavailable packages.
-
-        :return: An empty list
-        """
-        return []

@@ -40,6 +40,7 @@ from .providers.provider_exception import ProviderException
 from .clients.client_exception import ClientException
 from .download_manager import downloader
 from .providers.channel_provider import ChannelProvider
+from .providers.release_selector import filter_releases
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file
@@ -193,10 +194,20 @@ class PackageManager():
                     channel_repositories = provider.get_repositories()
                     set_cache(cache_key, channel_repositories, cache_ttl)
 
+                    unavailable_packages = []
+
                     for repo in channel_repositories:
-                        repo_packages = provider.get_packages(repo)
+                        original_packages = provider.get_packages(repo)
+                        filtered_packages = {}
+                        for package in original_packages:
+                            info = original_packages[package]
+                            info['releases'] = filter_releases(self.settings, info['releases'])
+                            if info['releases']:
+                                filtered_packages[package] = info
+                            else:
+                                unavailable_packages.append(package)
                         packages_cache_key = repo + '.packages'
-                        set_cache(packages_cache_key, repo_packages, cache_ttl)
+                        set_cache(packages_cache_key, filtered_packages, cache_ttl)
 
                     # Have the local name map override the one from the channel
                     name_map = provider.get_name_map()
@@ -205,7 +216,6 @@ class PackageManager():
                     renamed_packages = provider.get_renamed_packages()
                     set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)
 
-                    unavailable_packages = provider.get_unavailable_packages()
                     set_cache_under_settings(self, 'unavailable_packages', channel, unavailable_packages, cache_ttl, list_=True)
 
                 except (DownloaderException, ClientException, ProviderException) as e:
@@ -277,12 +287,18 @@ class PackageManager():
             if not provider:
                 continue
 
+            unavailable_packages = []
+
             # Allow name mapping of packages for schema version < 2.0
             repository_packages = {}
             for name, info in provider.get_packages():
                 name = name_map.get(name, name)
                 info['name'] = name
-                repository_packages[name] = info
+                info['releases'] = filter_releases(self.settings, info['releases'])
+                if info['releases']:
+                    repository_packages[name] = info
+                else:
+                    unavailable_packages.append(name)
 
             # Display errors we encountered while fetching package info
             for url, exception in provider.get_failed_sources():
@@ -297,7 +313,6 @@ class PackageManager():
             renamed_packages = provider.get_renamed_packages()
             set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
 
-            unavailable_packages = provider.get_unavailable_packages()
             set_cache_under_settings(self, 'unavailable_packages', repo, unavailable_packages, cache_ttl, list_=True)
 
         return packages
@@ -487,7 +502,7 @@ class PackageManager():
             show_error(u'The package specified, %s, is not available' % package_name)
             return False
 
-        url = packages[package_name]['download']['url']
+        url = packages[package_name]['releases'][0]['url']
         package_filename = package_name + '.sublime-package'
 
         tmp_dir = tempfile.mkdtemp(u'')
@@ -700,7 +715,7 @@ class PackageManager():
             # upgrade, it should be cleaned out successfully then.
             clear_directory(package_dir, extracted_paths)
 
-            new_version = packages[package_name]['download']['version']
+            new_version = packages[package_name]['releases'][0]['version']
 
             self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 

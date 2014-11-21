@@ -67,7 +67,7 @@ class PackageInstaller(PackageDisabler):
                 continue
             package_entry = [package]
             info = packages[package]
-            download = info['download']
+            release = info['releases'][0]
 
             if package in installed_packages:
                 installed = True
@@ -81,7 +81,7 @@ class PackageInstaller(PackageDisabler):
 
             installed_version_name = 'v' + installed_version if \
                 installed and installed_version else 'unknown version'
-            new_version = 'v' + download['version']
+            new_version = 'v' + release['version']
 
             vcs = None
             package_dir = self.manager.get_package_dir(package)
@@ -123,12 +123,12 @@ class PackageInstaller(PackageDisabler):
                             new_version)
                     else:
                         installed_version = version_comparable(installed_version)
-                        download_version = version_comparable(download['version'])
-                        if download_version > installed_version:
+                        new_version_cmp = version_comparable(release['version'])
+                        if new_version_cmp > installed_version:
                             action = 'upgrade'
                             extra = ' to %s from %s' % (new_version,
                                 installed_version_name)
-                        elif download_version < installed_version:
+                        elif new_version_cmp < installed_version:
                             action = 'downgrade'
                             extra = ' to %s from %s' % (new_version,
                                 installed_version_name)
