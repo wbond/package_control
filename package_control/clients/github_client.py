@@ -54,12 +54,17 @@ class GitHubClient(JSONApiClient):
             if not tags:
                 return False
 
+            used_versions = {}
             for tag in tags:
+                version = re.sub('^v', '', tag)
+                if version in used_versions:
+                    continue
                 output.append({
                     'url': url_pattern % (user_repo, tag),
                     'commit': tag,
-                    'version': re.sub('^v', '', tag)
+                    'version': version
                 })
+                used_versions[version] = True
 
         else:
             user_repo, commit = self._user_repo_branch(url)
