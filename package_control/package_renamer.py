@@ -5,7 +5,7 @@ import sublime
 
 from .console_write import console_write
 from .package_disabler import PackageDisabler
-from .settings import pc_settings_filename
+from .settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
 class PackageRenamer(PackageDisabler):
@@ -19,10 +19,8 @@ class PackageRenamer(PackageDisabler):
         Loads the list of installed packages
         """
 
-        self.settings = sublime.load_settings(pc_settings_filename())
-        self.installed_packages = self.settings.get('installed_packages', [])
-        if not isinstance(self.installed_packages, list):
-            self.installed_packages = []
+        settings = sublime.load_settings(pc_settings_filename())
+        self.original_installed_packages = load_list_setting(settings, 'installed_packages')
 
     def rename_packages(self, installer):
         """
@@ -40,7 +38,7 @@ class PackageRenamer(PackageDisabler):
             renamed_packages = {}
 
         # These are packages that have been tracked as installed
-        installed_pkgs = self.installed_packages
+        installed_packages = list(self.original_installed_packages)
         # There are the packages actually present on the filesystem
         present_packages = installer.manager.list_packages()
 
@@ -97,7 +95,7 @@ class PackageRenamer(PackageDisabler):
                     package_path = temp_package_path
 
                 os.rename(package_path, new_package_path)
-                installed_pkgs.append(new_package_name)
+                installed_packages.append(new_package_name)
 
                 console_write(u'Renamed %s to %s' % (package_name, new_package_name), True)
             else:
@@ -109,11 +107,11 @@ class PackageRenamer(PackageDisabler):
             sublime.set_timeout(lambda: self.reenable_package(package_name, 'removal'), 700)
 
             try:
-                installed_pkgs.remove(package_name)
+                installed_packages.remove(package_name)
             except (ValueError):
                 pass
 
-        sublime.set_timeout(lambda: self.save_packages(installed_pkgs), 10)
+        sublime.set_timeout(lambda: self.save_packages(installed_packages), 10)
 
     def save_packages(self, installed_packages):
         """
@@ -124,10 +122,7 @@ class PackageRenamer(PackageDisabler):
             The new list of installed packages
         """
 
-        installed_packages = list(set(installed_packages))
-        installed_packages = sorted(installed_packages,
-            key=lambda s: s.lower())
-
-        if installed_packages != self.installed_packages:
-            self.settings.set('installed_packages', installed_packages)
-            sublime.save_settings(pc_settings_filename())
+        filename = pc_settings_filename()
+        settings = sublime.load_settings(filename)
+        save_list_setting(settings, filename, 'installed_packages',
+            installed_packages, self.original_installed_packages)

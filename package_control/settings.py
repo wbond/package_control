@@ -45,3 +45,36 @@ def load_list_setting(settings, name):
     if isinstance(value, str_cls):
         value = [value]
     return value
+
+
+def save_list_setting(settings, filename, name, new_value, old_value=None):
+    """
+    Updates a list-valued setting
+
+    :param settings:
+        The sublime.Settings object
+
+    :param filename:
+        The settings filename to save in
+
+    :param name:
+        The setting name
+
+    :param new_value:
+        The new value for the setting
+
+    :param old_value:
+        If not None, then this and the new_value will be compared. If they
+        are the same, the settings will not be flushed to disk.
+    """
+
+    # Clean up the list to only include unique values, sorted
+    new_value = list(set(new_value))
+    new_value = sorted(new_value, key=lambda s: s.lower())
+
+    if old_value is not None:
+        if old_value == new_value:
+            return
+
+    settings.set(name, new_value)
+    sublime.save_settings(filename)
