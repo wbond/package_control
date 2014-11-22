@@ -26,6 +26,7 @@ class PackageCleanup(threading.Thread):
 
         settings = sublime.load_settings(pc_settings_filename())
         self.original_installed_packages = load_list_setting(settings, 'installed_packages')
+        self.remove_orphaned = settings.get('remove_orphaned', True)
 
         threading.Thread.__init__(self)
 
@@ -89,11 +90,52 @@ class PackageCleanup(threading.Thread):
                     }
                     self.manager.record_usage(params)
 
+                # Cleanup packages that were installed via Package Control, but
+                # we removed from the "installed_packages" list - usually by
+                # removing them from another computer and the settings file
+                # being synced.
+                elif self.remove_orphaned and package_name not in self.original_installed_packages:
+                    try:
+                        self.manager.backup_package_dir(package_name)
+                        rmtree(package_dir)
+                        console_write(u'Removed directory for orphaned package %s' % package_name, True)
+                        found = False
+
+                    except (OSError) as e:
+                        if not os.path.exists(cleanup_file):
+                            open_compat(cleanup_file, 'w').close()
+
+                        error_string = (u'Unable to remove directory for orphaned package ' +
+                            u'%s - deferring until next start: %s') % (
+                            package_name, unicode_from_os(e))
+                        console_write(error_string, True)
+
             if found:
                 found_packages.append(package_name)
 
         if int(sublime.version()) >= 3000:
-            found_packages += [file.replace('.sublime-package', '') for file in package_files]
+            installed_path = sublime.installed_packages_path()
+
+            for file in os.listdir(installed_path):
+                package_name = file.replace('.sublime-package', '')
+
+                # Cleanup packages that were installed via Package Control, but
+                # we removed from the "installed_packages" list - usually by
+                # removing them from another computer and the settings file
+                # being synced.
+                if self.remove_orphaned and package_name not in self.original_installed_packages and package_file_exists(package_name, 'package-metadata.json'):
+                    try:
+                        os.remove(os.path.join(installed_path, file))
+                        console_write(u'Removed orphaned package %s' % package_name, True)
+
+                    except (OSError):
+                        error_string = (u'Unable to remove orphaned package ' +
+                            u'%s - deferring until next start: %s') % (
+                            package_name, unicode_from_os(e))
+                        console_write(error_string, True)
+
+                else:
+                    found_packages.append(package_name)
 
         sublime.set_timeout(lambda: self.finish(installed_packages, found_packages), 10)
 

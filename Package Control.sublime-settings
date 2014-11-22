@@ -39,6 +39,12 @@
 	// If missing packages should be automatically installed when ST starts
 	"install_missing": true,
 
+	// If a package was installed by Package Control (has a
+	// package-metadata.json file) but is not in installed_packages, remove it
+	// based upon the assumption that it was removed on another machine and
+	// the Package Control.sublime-settings file was synced to this machine.
+	"remove_orphaned": true,
+
 	// The minimum frequency in hours in which to check for automatic upgrades,
 	// setting this to 0 will always check for automatic upgrades
 	"auto_upgrade_frequency": 1,
