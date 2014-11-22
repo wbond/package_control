@@ -34,6 +34,8 @@ class PackageCleanup(threading.Thread):
         installed_packages = list(self.original_installed_packages)
 
         for package_name in os.listdir(sublime.packages_path()):
+            found = True
+
             package_dir = os.path.join(sublime.packages_path(), package_name)
 
             # Cleanup packages that could not be removed due to in-use files
@@ -42,6 +44,7 @@ class PackageCleanup(threading.Thread):
                 try:
                     rmtree(package_dir)
                     console_write(u'Removed old directory for package %s' % package_name, True)
+                    found = False
 
                 except (OSError) as e:
                     if not os.path.exists(cleanup_file):
@@ -86,7 +89,8 @@ class PackageCleanup(threading.Thread):
                     }
                     self.manager.record_usage(params)
 
-            found_packages.append(package_name)
+            if found:
+                found_packages.append(package_name)
 
         if int(sublime.version()) >= 3000:
             found_packages += [file.replace('.sublime-package', '') for file in package_files]
