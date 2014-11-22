@@ -33,10 +33,10 @@
 	// The URL to post install, upgrade and removal notices to
 	"submit_url": "https://packagecontrol.io/submit",
 
-	// If packages should be automatically upgraded when ST2 starts
+	// If packages should be automatically upgraded when ST starts
 	"auto_upgrade": true,
 
-	// If missing packages should be automatically installed when ST2 starts
+	// If missing packages should be automatically installed when ST starts
 	"install_missing": true,
 
 	// The minimum frequency in hours in which to check for automatic upgrades,
