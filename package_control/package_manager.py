@@ -606,12 +606,23 @@ class PackageManager():
                 pass
 
             # If we already have a package-metadata.json file in
-            # Packages/{package_name}/, the only way to successfully upgrade
-            # will be to unpack
+            # Packages/{package_name}/, but the package no longer contains
+            # a .no-sublime-package file, then we want to clear the unpacked
+            # dir and install as a .sublime-package file. Since we are only
+            # clearing if a package-metadata.json file exists, we should never
+            # accidentally delete a user's customizations. However, we still
+            # create a backup just in case.
             unpacked_metadata_file = os.path.join(unpacked_package_dir,
                 'package-metadata.json')
-            if os.path.exists(unpacked_metadata_file):
-                unpack = True
+            if os.path.exists(unpacked_metadata_file) and not unpack:
+                self.backup_package_dir(package_name)
+                if not clear_directory(unpacked_package_dir):
+                    # If there is an error deleting now, we will mark it for
+                    # cleanup the next time Sublime Text starts
+                    open_compat(os.path.join(unpacked_package_dir,
+                        'package-control.cleanup'), 'w').close()
+                else:
+                    os.rmdir(unpacked_package_dir)
 
             # If we determined it should be unpacked, we extract directly
             # into the Packages/{package_name}/ folder
