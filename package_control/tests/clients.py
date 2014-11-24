@@ -5,17 +5,20 @@ from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..http_cache import HttpCache
 
+from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET
 
 
 class GitHubClientTests(unittest.TestCase):
+    maxDiff = None
+
     def github_settings(self):
         return {
             'debug': True,
             'cache': HttpCache(604800),
             'query_string_params': {
                 'api.github.com': {
-                    'client_id': '',
-                    'client_secret': ''
+                    'client_id': CLIENT_ID,
+                    'client_secret': CLIENT_SECRET
                 }
             }
         }
@@ -67,8 +70,8 @@ class GitHubClientTests(unittest.TestCase):
         self.assertEqual(
             [
                 {
-                    'date': '2014-11-20 22:12:22',
-                    'version': '2014.11.20.22.12.22',
+                    'date': LAST_COMMIT_TIMESTAMP,
+                    'version': LAST_COMMIT_VERSION,
                     'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/master'
                 }
             ],
@@ -105,6 +108,8 @@ class GitHubClientTests(unittest.TestCase):
 
 
 class BitBucketClientTests(unittest.TestCase):
+    maxDiff = None
+
     def bitbucket_settings(self):
         return {
             'debug': True,
@@ -142,8 +147,8 @@ class BitBucketClientTests(unittest.TestCase):
         self.assertEqual(
             [
                 {
-                    'date': '2014-11-20 22:12:22',
-                    'version': '2014.11.20.22.12.22',
+                    'date': LAST_COMMIT_TIMESTAMP,
+                    'version': LAST_COMMIT_VERSION,
                     'url': 'https://bitbucket.org/wbond/package_control-tester/get/master.zip'
                 }
             ],

@@ -1,8 +1,17 @@
 import time
 import threading
 import unittest
+import re
 
 import sublime
+
+
+
+LAST_COMMIT_TIMESTAMP = '2014-11-24 22:46:35'
+LAST_COMMIT_VERSION = re.sub('[ :\-]', '.', LAST_COMMIT_TIMESTAMP)
+
+CLIENT_ID = ''
+CLIENT_SECRET = ''
 
 
 class StringQueue():

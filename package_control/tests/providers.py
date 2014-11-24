@@ -7,17 +7,20 @@ from ..providers.github_user_provider import GitHubUserProvider
 from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
 from ..http_cache import HttpCache
 
+from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET
 
 
 class GitHubRepositoryProviderTests(unittest.TestCase):
+    maxDiff = None
+
     def github_settings(self):
         return {
             'debug': True,
             'cache': HttpCache(604800),
             'query_string_params': {
                 'api.github.com': {
-                    'client_id': '',
-                    'client_secret': ''
+                    'client_id': CLIENT_ID,
+                    'client_secret': CLIENT_SECRET
                 }
             }
         }
@@ -47,14 +50,14 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
                     'previous_names': [],
                     'releases': [
                         {
-                            'date': '2014-11-20 22:12:22',
-                            'version': '2014.11.20.22.12.22',
+                            'date': LAST_COMMIT_TIMESTAMP,
+                            'version': LAST_COMMIT_VERSION,
                             'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/master',
                             'sublime_text': '*',
                             'platforms': ['*']
                         }
                     ],
-                    'last_modified': '2014-11-20 22:12:22'
+                    'last_modified': LAST_COMMIT_TIMESTAMP
                 }
             )],
             packages
@@ -74,14 +77,16 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
 
 
 class GitHubUserProviderTests(unittest.TestCase):
+    maxDiff = None
+
     def github_settings(self):
         return {
             'debug': True,
             'cache': HttpCache(604800),
             'query_string_params': {
                 'api.github.com': {
-                    'client_id': '',
-                    'client_secret': ''
+                    'client_id': CLIENT_ID,
+                    'client_secret': CLIENT_SECRET
                 }
             }
         }
@@ -111,14 +116,14 @@ class GitHubUserProviderTests(unittest.TestCase):
                     'previous_names': [],
                     'releases': [
                         {
-                            'date': '2014-11-20 22:12:22',
-                            'version': '2014.11.20.22.12.22',
+                            'date': LAST_COMMIT_TIMESTAMP,
+                            'version': LAST_COMMIT_VERSION,
                             'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/master',
                             'sublime_text': '*',
                             'platforms': ['*']
                         }
                     ],
-                    'last_modified': '2014-11-20 22:12:22'
+                    'last_modified': LAST_COMMIT_TIMESTAMP
                 }
             )],
             packages
@@ -138,6 +143,8 @@ class GitHubUserProviderTests(unittest.TestCase):
 
 
 class BitBucketRepositoryProviderTests(unittest.TestCase):
+    maxDiff = None
+
     def bitbucket_settings(self):
         return {
             'debug': True,
@@ -169,14 +176,14 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
                     'previous_names': [],
                     'releases': [
                         {
-                            'date': '2014-11-20 22:12:22',
-                            'version': '2014.11.20.22.12.22',
+                            'date': LAST_COMMIT_TIMESTAMP,
+                            'version': LAST_COMMIT_VERSION,
                             'url': 'https://bitbucket.org/wbond/package_control-tester/get/master.zip',
                             'sublime_text': '*',
                             'platforms': ['*']
                         }
                     ],
-                    'last_modified': '2014-11-20 22:12:22'
+                    'last_modified': LAST_COMMIT_TIMESTAMP
                 }
             )],
             packages
@@ -196,6 +203,8 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
 
 
 class RepositoryProviderTests(unittest.TestCase):
+    maxDiff = None
+
     def settings(self):
         return {
             'debug': True,
@@ -460,6 +469,8 @@ class RepositoryProviderTests(unittest.TestCase):
 
 
 class ChannelProviderTests(unittest.TestCase):
+    maxDiff = None
+
     def settings(self):
         return {
             'debug': True,
@@ -501,7 +512,6 @@ class ChannelProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_12(self):
-        self.maxDiff = None
         provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-1.2.json', self.settings())
         self.assertEqual(
             {
