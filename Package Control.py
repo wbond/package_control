@@ -60,6 +60,10 @@ else:
         # Python 3
         from .package_control import reloader
 
+        # Provide compatiblity between ST2 and ST3 for importing "package_control"
+        from . import package_control
+        sys.modules['package_control'] = package_control
+
         from .package_control.commands import *
         from .package_control.package_cleanup import PackageCleanup
 
