@@ -166,7 +166,7 @@ class PackageInstaller(PackageDisabler):
             return
         name = self.package_list[picked][0]
 
-        if name in self.disable_packages(name):
+        if name in self.disable_packages(name, 'install'):
             on_complete = lambda: self.reenable_package(name, 'install')
         else:
             on_complete = None

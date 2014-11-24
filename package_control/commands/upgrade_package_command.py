@@ -70,7 +70,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
             return
         name = self.package_list[picked][0]
 
-        if name in self.disable_packages(name):
+        if name in self.disable_packages(name, 'upgrade'):
             on_complete = lambda: self.reenable_package(name)
         else:
             on_complete = None

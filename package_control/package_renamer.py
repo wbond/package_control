@@ -80,11 +80,12 @@ class PackageRenamer(PackageDisabler):
             else:
                 continue
 
-            sublime.set_timeout(lambda: self.disable_packages(package_name), 10)
-
-            time.sleep(0.7)
+            sublime.set_timeout(lambda: self.disable_packages(package_name, 'remove'), 10)
 
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
+                sublime.set_timeout(lambda: self.disable_packages(new_package_name, 'install'), 10)
+                time.sleep(0.7)
+
                 # Windows will not allow you to rename to the same name with
                 # a different case, so we work around that with a temporary name
                 if os.name == 'nt' and changing_case:
@@ -98,13 +99,16 @@ class PackageRenamer(PackageDisabler):
                 installed_packages.append(new_package_name)
 
                 console_write(u'Renamed %s to %s' % (package_name, new_package_name), True)
+                sublime.set_timeout(lambda: self.reenable_package(new_package_name, 'install'), 700)
+
             else:
+                time.sleep(0.7)
                 installer.manager.remove_package(package_name)
                 message_string = u'Removed %s since package with new name (%s) already exists' % (
                     package_name, new_package_name)
                 console_write(message_string, True)
 
-            sublime.set_timeout(lambda: self.reenable_package(package_name, 'removal'), 700)
+            sublime.set_timeout(lambda: self.reenable_package(package_name, 'remove'), 700)
 
             try:
                 installed_packages.remove(package_name)

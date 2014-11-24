@@ -1,7 +1,11 @@
+import sys
+import json
+
 import sublime
 
 from .settings import preferences_filename, pc_settings_filename, load_list_setting
-from .package_io import package_file_exists
+from .package_io import package_file_exists, read_package_file
+from . import events
 
 
 class PackageDisabler():
@@ -13,13 +17,39 @@ class PackageDisabler():
 
     old_syntaxes = None
 
-    def disable_packages(self, packages):
+    def get_version(self, package):
+        """
+        Gets the current version of a package
+
+        :param package:
+            The name of the package
+
+        :return:
+            The string version
+        """
+
+        metadata_json = read_package_file(package, 'package-metadata.json')
+        if metadata_json:
+            metadata = json.loads(metadata_json)
+            return metadata.get('version', 'unknown')
+
+        return 'unknown'
+
+    def disable_packages(self, packages, type='upgrade'):
         """
         Disables one or more packages before installing or upgrading to prevent
         errors where Sublime Text tries to read files that no longer exist, or
         read a half-written file.
 
-        :param packages: The string package name, or an array of strings
+        :param packages:
+            The string package name, or an array of strings
+
+        :param type:
+            The type of operation that caused the package to be disabled:
+             - "upgrade"
+             - "remove"
+             - "install"
+             - "disable"
         """
 
         if not isinstance(packages, list):
@@ -44,6 +74,11 @@ class PackageDisabler():
                 in_process.append(package)
                 ignored.append(package)
                 disabled.append(package)
+
+                if type in ['upgrade', 'remove']:
+                    version = self.get_version(package)
+                    tracker_type = 'pre_upgrade' if type == 'upgrade' else type
+                    events.add(tracker_type, package, version)
 
             for window in sublime.windows():
                 for view in window.views():
@@ -85,7 +120,7 @@ class PackageDisabler():
         :param type:
             The type of operation that caused the package to be re-enabled:
              - "upgrade"
-             - "removal"
+             - "remove"
              - "install"
              - "enable"
         """
@@ -94,6 +129,18 @@ class PackageDisabler():
         ignored = load_list_setting(settings, 'ignored_packages')
 
         if package in ignored:
+
+            if type in ['install', 'upgrade']:
+                version = self.get_version(package)
+                tracker_type = 'post_upgrade' if type == 'upgrade' else type
+                events.add(tracker_type, package, version)
+                events.clear(tracker_type, package, future=True)
+                if type == 'upgrade':
+                    events.clear('pre_upgrade', package)
+
+            elif type == 'remove':
+                events.clear('remove', package)
+
             settings.set('ignored_packages',
                 list(set(ignored) - set([package])))
 
@@ -111,7 +158,7 @@ class PackageDisabler():
             if type == 'upgrade' and self.old_color_scheme_package == package:
                 settings.set('color_scheme', self.old_color_scheme)
 
-            if type == 'removal' and self.old_theme_package == package:
+            if type == 'remove' and self.old_theme_package == package:
                 sublime.message_dialog(u"Package Control\n\n" +
                     u"Your active theme was just removed and the Default " +
                     u"theme was enabled in its place. You may see some " +

@@ -228,6 +228,7 @@ class AutomaticUpgrader(threading.Thread):
         # in the main thread. We then create a new background thread so that
         # the upgrade process does not block the UI.
         def disable_packages():
-            disabled_packages.extend(self.installer.disable_packages([info[0] for info in package_list]))
+            packages = [info[0] for info in package_list]
+            disabled_packages.extend(self.installer.disable_packages(packages, 'upgrade'))
             threading.Thread(target=do_upgrades).start()
         sublime.set_timeout(disable_packages, 1)

@@ -82,7 +82,7 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
         self.manager = PackageManager()
         self.packages = packages
 
-        self.disabled = self.disable_packages(packages)
+        self.disabled = self.disable_packages(packages, 'install')
         self.installed = self.manager.list_packages()
 
         threading.Thread.__init__(self)

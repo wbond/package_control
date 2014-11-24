@@ -47,7 +47,7 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
             return
         package = self.package_list[picked][0]
 
-        self.disable_packages(package)
+        self.disable_packages(package, 'remove')
 
         thread = RemovePackageThread(self.manager, package)
         thread.start()
@@ -72,5 +72,5 @@ class RemovePackageThread(threading.Thread, PackageDisabler):
         self.result = self.manager.remove_package(self.package)
 
         def unignore_package():
-            self.reenable_package(self.package, 'removal')
+            self.reenable_package(self.package, 'remove')
         sublime.set_timeout(unignore_package, 200)

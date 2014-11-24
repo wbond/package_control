@@ -72,7 +72,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
             package_names = []
             for info in package_list:
                 package_names.append(info[0])
-            disabled_packages.extend(self.disable_packages(package_names))
+            disabled_packages.extend(self.disable_packages(package_names, 'upgrade'))
             threading.Thread(target=do_upgrades).start()
 
         sublime.set_timeout(disable_packages, 1)
