@@ -2,6 +2,7 @@ import os
 
 from ..cache import set_cache, get_cache
 from ..show_error import show_error
+from ..processes import list_process_names
 from .vcs_upgrader import VcsUpgrader
 
 
@@ -33,7 +34,7 @@ class GitUpgrader(VcsUpgrader):
 
         if os.name == 'nt':
             tortoise_plink = self.find_binary('TortoisePlink.exe')
-            if tortoise_plink:
+            if tortoise_plink and u'pageant.exe' in list_process_names():
                 os.environ.setdefault('GIT_SSH', tortoise_plink)
 
         return binary

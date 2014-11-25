@@ -40,6 +40,7 @@ mods_load_order = [
     '.clear_directory',
     '.cmd',
     '.console_write',
+    '.processes',
     '.rmtree',
     '.settings',
     '.show_error',
