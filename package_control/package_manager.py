@@ -726,13 +726,16 @@ class PackageManager():
             # upgrade, it should be cleaned out successfully then.
             clear_directory(package_dir, extracted_paths)
 
-            new_version = packages[package_name]['releases'][0]['version']
+            release = packages[package_name]['releases'][0]
+            new_version = release['version']
 
             self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 
             with open_compat(package_metadata_file, 'w') as f:
                 metadata = {
                     "version": new_version,
+                    "sublime_text": release['sublime_text'],
+                    "platforms": release['platforms'],
                     "url": packages[package_name]['homepage'],
                     "description": packages[package_name]['description']
                 }
