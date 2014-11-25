@@ -19,7 +19,7 @@ def plugin_loaded():
     if sublime.platform() == 'linux':
         linux_ssl_name = u'_ssl modules for Linux'
         linux_ssl_url = u'http://packagecontrol.io/ssl-linux.sublime-package'
-        linux_ssl_hash = u'010723d051cdad7f00b3c9a523d9ea10a443d75c74d308f8654df5168a2cedf8'
+        linux_ssl_hash = u'd12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4'
         linux_ssl_priority = u'000'
         linux_ssl_inject_code = u"""
             import sublime
@@ -115,7 +115,7 @@ def plugin_loaded():
     if sublime.platform() == 'windows' and sys.version_info < (3,):
         win_ssl_name = u'_ssl modules for ST2 on Windows'
         win_ssl_url = u'http://packagecontrol.io/ssl-windows.sublime-package'
-        win_ssl_hash = u'34c9841e7484aaaf1ea6d6c65a83c6f7db6581894fcf580bf9c0495c63da5092'
+        win_ssl_hash = u'1d1a129fe0655d765e839fe4b81a0fb9eeb0ba0fbb78489154e65b5ffb4cad9d'
         win_ssl_priority = u'000'
         win_ssl_inject_code = u"""
             import sublime
@@ -151,7 +151,7 @@ def plugin_loaded():
     # bzip2 modules for better compression
     bz2_name = u'bz2 modules'
     bz2_url = u'http://packagecontrol.io/bz2.sublime-package'
-    bz2_hash = u'1cdeec1c557d62bc97d8c7bfb443ceccf4068724e4327f658ca898835c05e913'
+    bz2_hash = u'd403c7e7c177287047dfba7730c4cb42e06f770b3014e1a43d2d1a72392e9a7b'
     bz2_priority = u'001'
     bz2_inject_code = u"""
         import sublime
