@@ -78,7 +78,7 @@ if os.name == 'nt':
 
 else:
 
-    def list_process_name():
+    def list_process_names():
         """
         Stub for posix machines, unimplemented since it is not needed
         """
