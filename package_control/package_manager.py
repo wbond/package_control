@@ -201,7 +201,7 @@ class PackageManager():
                         filtered_packages = {}
                         for package in original_packages:
                             info = original_packages[package]
-                            info['releases'] = filter_releases(self.settings, info['releases'])
+                            info['releases'] = filter_releases(package, self.settings, info['releases'])
                             if info['releases']:
                                 filtered_packages[package] = info
                             else:
@@ -294,7 +294,7 @@ class PackageManager():
             for name, info in provider.get_packages():
                 name = name_map.get(name, name)
                 info['name'] = name
-                info['releases'] = filter_releases(self.settings, info['releases'])
+                info['releases'] = filter_releases(name, self.settings, info['releases'])
                 if info['releases']:
                     repository_packages[name] = info
                 else:

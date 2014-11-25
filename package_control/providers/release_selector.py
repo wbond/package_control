@@ -5,10 +5,13 @@ from ..versions import version_sort, version_exclude_prerelease
 
 
 
-def filter_releases(settings, releases):
+def filter_releases(package, settings, releases):
     """
     Returns all releases in the list of releases that are compatible with
     the current platform and version of Sublime Text
+
+    :param package:
+        The name of the package
 
     :param settings:
         A dict optionally containing the `install_prereleases` key
@@ -23,7 +26,12 @@ def filter_releases(settings, releases):
     platform_selectors = [sublime.platform() + '-' + sublime.arch(),
         sublime.platform(), '*']
 
-    if not settings.get('install_prereleases'):
+    install_prereleases = settings.get('install_prereleases')
+    allow_prereleases = install_prereleases is True
+    if not allow_prereleases and isinstance(install_prereleases, list) and package in install_prereleases:
+        allow_prereleases = True
+
+    if not allow_prereleases:
         releases = version_exclude_prerelease(releases)
 
     output = []

@@ -11,10 +11,11 @@
 	// setting
 	"repositories": [],
 
-	// Install pre-release versions of packages. If this is false, versions
-	// under 1.0.0 will still be installed. Only packages using the SemVer
-	// -prerelease suffixes will be ignored.
-	"install_prereleases": false,
+	// A list of packages to install pre-release versions for. Versions
+	// under 1.0.0 are no considered pre-release, only those using the SemVer
+	// -prerelease suffixes will be ignored if the package is not in this
+	// list.
+	"install_prereleases": [],
 
 	// If debugging information for HTTP/HTTPS connections should be printed
 	// to the Sublime Text console
