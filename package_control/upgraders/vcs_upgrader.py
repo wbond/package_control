@@ -5,7 +5,7 @@ class VcsUpgrader(Cli):
     """
     Base class for updating packages that are a version control repository on local disk
 
-    :param vcs_binary:
+    :param vcs_binary_paths:
         The full filesystem path to the executable for the version control
         system. May be set to None to allow the code to try and find it.
 
@@ -20,8 +20,8 @@ class VcsUpgrader(Cli):
         The lenth of time to cache if incoming changesets are available
     """
 
-    def __init__(self, vcs_binary, update_command, working_copy, cache_length, debug):
+    def __init__(self, vcs_binary_paths, update_command, working_copy, cache_length, debug):
         self.update_command = update_command
         self.working_copy = working_copy
         self.cache_length = cache_length
-        super(VcsUpgrader, self).__init__(vcs_binary, debug)
+        super(VcsUpgrader, self).__init__(vcs_binary_paths, debug)

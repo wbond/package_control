@@ -50,15 +50,20 @@ class Cli(object):
     """
     Base class for running command line apps
 
-    :param binary:
+    :param binary_locations:
         The full filesystem path to the executable for the version control
-        system. May be set to None to allow the code to try and find it.
+        system. May be set to None to allow the code to try and find it. May
+        also be a list of locations to attempt. This allows settings to be
+        shared across operating systems.
     """
+
+    # Prevent duplicate lookups
+    binary_paths = {}
 
     cli_name = None
 
-    def __init__(self, binary, debug):
-        self.binary = binary
+    def __init__(self, binary_locations, debug):
+        self.binary_locations = binary_locations
         self.debug = debug
 
     def execute(self, args, cwd, input=None, encoding='utf-8'):
@@ -120,27 +125,27 @@ class Cli(object):
         :param name:
             The string filename of the executable
 
-        :return: The filesystem path to the executable, or None if not found
+        :return:
+            The filesystem path to the executable, or None if not found
         """
 
-        if self.binary:
-            if self.debug:
-                error_string = u"Using \"%s_binary\" from settings \"%s\"" % (
-                    self.cli_name, self.binary)
-                console_write(error_string, True)
-            return self.binary
+        # Use the cached path
+        if self.cli_name in Cli.binary_paths:
+            return Cli.binary_paths[self.cli_name]
 
-        # Try the path first
+        check_binaries = []
+
+        # Use the settings first
+        if self.binary_locations:
+            if not isinstance(self.binary_locations, list):
+                self.binary_locations = [self.binary_locations]
+            check_binaries.extend(self.binary_locations)
+
+        # Next check the PATH
         for dir_ in os.environ['PATH'].split(os.pathsep):
-            path = os.path.join(dir_, name)
-            if os.path.exists(path) and not os.path.isdir(path) and os.access(path, os.X_OK):
-                if self.debug:
-                    console_write(u"Found %s at \"%s\"" % (self.cli_name, path), True)
-                return path
+            check_binaries.append(os.path.join(dir_, name))
 
-        # This is left in for backwards compatibility and for windows
-        # users who may have the binary, albeit in a common dir that may
-        # not be part of the PATH
+        # Finally look in common locations that may not be in the PATH
         if os.name == 'nt':
             dirs = ['C:\\Program Files\\Git\\bin',
                 'C:\\Program Files (x86)\\Git\\bin',
@@ -156,10 +161,16 @@ class Cli(object):
             dirs = ['/usr/local/git/bin', '/usr/local/bin']
 
         for dir_ in dirs:
-            path = os.path.join(dir_, name)
-            if os.path.exists(path):
+            check_binaries.append(os.path.join(dir_, name))
+
+        if self.debug:
+            console_write(u'Looking for %s at: "%s"' % (self.cli_name, '", "'.join(check_binaries)), True)
+
+        for path in check_binaries:
+            if os.path.exists(path) and not os.path.isdir(path) and os.access(path, os.X_OK):
                 if self.debug:
                     console_write(u"Found %s at \"%s\"" % (self.cli_name, path), True)
+                Cli.binary_paths[self.cli_name] = path
                 return path
 
         if self.debug:

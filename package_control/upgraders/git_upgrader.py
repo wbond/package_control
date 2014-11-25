@@ -23,10 +23,7 @@ class GitUpgrader(VcsUpgrader):
         if os.name == 'nt':
             name += '.exe'
         binary = self.find_binary(name)
-        if binary and os.path.isdir(binary):
-            full_path = os.path.join(binary, name)
-            if os.path.exists(full_path):
-                binary = full_path
+
         if not binary:
             show_error((u'Unable to find %s. Please set the git_binary setting by accessing the ' +
                 u'Preferences > Package Settings > Package Control > Settings \u2013 User menu entry. ' +
@@ -38,6 +35,7 @@ class GitUpgrader(VcsUpgrader):
             tortoise_plink = self.find_binary('TortoisePlink.exe')
             if tortoise_plink:
                 os.environ.setdefault('GIT_SSH', tortoise_plink)
+
         return binary
 
     def get_working_copy_info(self):

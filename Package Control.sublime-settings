@@ -89,15 +89,21 @@
 	// hangs
 	"ignore_vcs_packages": false,
 
-	// Custom paths to VCS binaries for when they can't be automatically
-	// found on the system and a package includes a VCS metadata directory
-	"git_binary": "",
+	// Custom path(s) to "git" binary for when it can't be automatically
+	// found on the system and a package includes a .git metadata directory.
+	// Supports more than one path to allow users to sync settings across
+	// operating systems.
+	"git_binary": [],
 
 	// This should NOT contain the name of the remote or branch - that will
 	// be automatically determined.
 	"git_update_command": ["pull", "--ff", "--commit"],
 
-	"hg_binary": "",
+	// Custom path(s) to "hg" binary for when it can't be automatically
+	// found on the system and a package includes a .hg metadata directory.
+	// Supports more than one path to allow users to sync settings across
+	// operating systems.
+	"hg_binary": [],
 
 	// For HG repositories, be sure to use "default" as the remote URL.
 	// This is the default behavior when cloning an HG repo.
