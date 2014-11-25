@@ -9,7 +9,7 @@ from ..settings import pc_settings_filename
 
 class AddRepositoryCommand(sublime_plugin.WindowCommand):
     """
-    A command to add a new repository to the user's machine
+    A command to add a new repository to the user's Package Control settings
     """
 
     def run(self):

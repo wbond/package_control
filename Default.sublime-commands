@@ -40,8 +40,16 @@
         "command": "list_packages"
     },
     {
+        "caption": "Package Control: Remove Channel",
+        "command": "remove_channel"
+    },
+    {
         "caption": "Package Control: Remove Package",
         "command": "remove_package"
+    },
+    {
+        "caption": "Package Control: Remove Repository",
+        "command": "remove_repository"
     },
     {
         "caption": "Package Control: Upgrade Package",
