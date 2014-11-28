@@ -106,6 +106,19 @@ class GitHubClientTests(unittest.TestCase):
             client.download_info('https://github.com/packagecontrol/package_control-tester/tags')
         )
 
+    def test_github_client_tags_prefix_downloads(self):
+        client = GitHubClient(self.github_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-28 20:54:15',
+                    'version': '1.0.2',
+                    'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/win-1.0.2'
+                }
+            ],
+            client.download_info('https://github.com/packagecontrol/package_control-tester/tags', 'win-')
+        )
+
 
 class BitBucketClientTests(unittest.TestCase):
     maxDiff = None
@@ -181,4 +194,17 @@ class BitBucketClientTests(unittest.TestCase):
                 }
             ],
             client.download_info('https://bitbucket.org/wbond/package_control-tester#tags')
+        )
+
+    def test_bitbucket_client_tags_prefix_downloads(self):
+        client = BitBucketClient(self.bitbucket_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-28 20:54:15',
+                    'version': '1.0.2',
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/win-1.0.2.zip'
+                }
+            ],
+            client.download_info('https://bitbucket.org/wbond/package_control-tester#tags', 'win-')
         )

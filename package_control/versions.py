@@ -78,28 +78,41 @@ def version_exclude_prerelease(versions):
     return output
 
 
-def version_filter(versions, allow_prerelease=False):
+def version_process(versions, filter_prefix):
     """
-    Filter a list of versions to ones that are valid SemVers
+    Filter a list of versions to ones that are valid SemVers, if a prefix
+    is provided, only match versions starting with the prefix and split
 
     :param versions:
         The list of versions to filter
 
-    :param allow_prerelease:
-        If pre-release SemVer versions should be included
+    :param filter_prefix:
+        Remove this prefix from the version before checking if it is a valid
+        SemVer. If this prefix is not present, skip the version.
 
     :return:
-        A copy of versions with all non-SemVer values removed
+        A list of dicts, each of which has the keys "version" and "prefix"
     """
 
     output = []
     for version in versions:
-        no_v_version = re.sub('^v', '', version)
-        if not SemVer.valid(no_v_version):
+        prefix = ''
+
+        if filter_prefix:
+            if version[0:len(filter_prefix)] != filter_prefix:
+                continue
+            check_version = version[len(filter_prefix):]
+            prefix = filter_prefix
+
+        else:
+            check_version = re.sub('^v', '', version)
+            if check_version != version:
+                prefix = 'v'
+
+        if not SemVer.valid(check_version):
             continue
-        if not allow_prerelease and SemVer(no_v_version).prerelease != None:
-            continue
-        output.append(version)
+
+        output.append({'version': check_version, 'prefix': prefix})
     return output
 
 

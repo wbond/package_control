@@ -212,7 +212,7 @@ class RepositoryProviderTests(unittest.TestCase):
         }
 
     def test_get_packages_10(self):
-        provider = RepositoryProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json', self.settings())
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json', self.settings())
         packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
@@ -228,7 +228,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     "readme": None,
                     "previous_names": [],
                     "labels": [],
-                    "sources": ['https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json'],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json'],
                     "last_modified": "2011-08-01 00:00:00",
                     "releases": [
                         {
@@ -259,7 +259,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_12(self):
-        provider = RepositoryProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json', self.settings())
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json', self.settings())
         packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
@@ -275,7 +275,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     "readme": None,
                     "previous_names": [],
                     "labels": [],
-                    "sources": ['https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json'],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json'],
                     "last_modified": "2014-11-12 15:52:35",
                     "releases": [
                         {
@@ -306,7 +306,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_20_explicit(self):
-        provider = RepositoryProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-explicit.json', self.settings())
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json', self.settings())
         packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
@@ -322,7 +322,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     "readme": None,
                     "previous_names": [],
                     "labels": [],
-                    "sources": ['https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-explicit.json'],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json'],
                     "last_modified": "2014-11-12 15:52:35",
                     "releases": [
                         {
@@ -360,7 +360,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_20_github(self):
-        provider = RepositoryProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-github_details.json', self.settings())
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json', self.settings())
         packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
@@ -376,7 +376,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
                     "previous_names": [],
                     "labels": [],
-                    "sources": ['https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-github_details.json', "https://github.com/packagecontrol/package_control-tester"],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json', "https://github.com/packagecontrol/package_control-tester"],
                     "last_modified": "2014-11-12 15:52:35",
                     "releases": [
                         {
@@ -414,7 +414,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_20_bitbucket(self):
-        provider = RepositoryProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-bitbucket_details.json', self.settings())
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-bitbucket_details.json', self.settings())
         packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
@@ -430,7 +430,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
                     "previous_names": [],
                     "labels": [],
-                    "sources": ['https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-bitbucket_details.json', "https://bitbucket.org/wbond/package_control-tester"],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-bitbucket_details.json', "https://bitbucket.org/wbond/package_control-tester"],
                     "last_modified": "2014-11-12 15:52:35",
                     "releases": [
                         {
@@ -467,6 +467,319 @@ class RepositoryProviderTests(unittest.TestCase):
             packages
         )
 
+    def test_get_packages_300_explicit(self):
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json', self.settings())
+        packages = [package for package in provider.get_packages()]
+        self.assertEqual(
+            [(
+                'package_control-tester-3.0.0',
+                {
+                    "name": "package_control-tester-3.0.0",
+                    "author": ["packagecontrol", "wbond"],
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": None,
+                    "donate": None,
+                    "buy": "https://example.com",
+                    "readme": None,
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json'],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
+                            "sublime_text": "*",
+                            "platforms": ["windows"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1-beta",
+                            "sublime_text": "*",
+                            "platforms": ["windows"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.0",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/0.9.0",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            )],
+            packages
+        )
+
+    def test_get_packages_300_github(self):
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json', self.settings())
+        packages = [package for package in provider.get_packages()]
+        self.assertEqual(
+            [(
+                'package_control-tester-3.0.0-gh-tags',
+                {
+                    "name": "package_control-tester-3.0.0-gh-tags",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": "https://github.com/packagecontrol/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/github/packagecontrol/",
+                    "buy": None,
+                    "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json', "https://github.com/packagecontrol/package_control-tester"],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1-beta",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.0",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/0.9.0",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            ),
+            (
+                'package_control-tester-3.0.0-gh-tags_base',
+                {
+                    "name": "package_control-tester-3.0.0-gh-tags_base",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": None,
+                    "donate": None,
+                    "buy": None,
+                    "readme": None,
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json'],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1-beta",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.0",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/0.9.0",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            ),
+            (
+                'package_control-tester-3.0.0-gh-tags_prefix',
+                {
+                    "name": "package_control-tester-3.0.0-gh-tags_prefix",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": "https://github.com/packagecontrol/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/github/packagecontrol/",
+                    "buy": None,
+                    "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json', "https://github.com/packagecontrol/package_control-tester"],
+                    "last_modified": "2014-11-28 20:54:15",
+                    "releases": [
+                        {
+                            "version": "1.0.2",
+                            "date": "2014-11-28 20:54:15",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/win-1.0.2",
+                            "sublime_text": "<3000",
+                            "platforms": ["windows"]
+                        }
+                    ]
+                }
+            ),
+            (
+                'package_control-tester-3.0.0-gh-branch',
+                {
+                    "name": "package_control-tester-3.0.0-gh-branch",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": "https://github.com/packagecontrol/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/github/packagecontrol/",
+                    "buy": None,
+                    "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json', "https://github.com/packagecontrol/package_control-tester"],
+                    "last_modified": LAST_COMMIT_TIMESTAMP,
+                    "releases": [
+                        {
+                            "version": LAST_COMMIT_VERSION,
+                            "date": LAST_COMMIT_TIMESTAMP,
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/master",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            )],
+            packages
+        )
+
+    def test_get_packages_300_bitbucket(self):
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json', self.settings())
+        packages = [package for package in provider.get_packages()]
+        self.assertEqual(
+            [(
+                'package_control-tester-3.0.0-bb-tags',
+                {
+                    "name": "package_control-tester-3.0.0-bb-tags",
+                    "author": "wbond",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                    "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/bitbucket/wbond/",
+                    "buy": None,
+                    "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json', "https://bitbucket.org/wbond/package_control-tester"],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.1.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.1-beta.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.0.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/0.9.0.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            ),
+            (
+                'package_control-tester-3.0.0-bb-tags_prefix',
+                {
+                    "name": "package_control-tester-3.0.0-bb-tags_prefix",
+                    "author": "wbond",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                    "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/bitbucket/wbond/",
+                    "buy": None,
+                    "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json', "https://bitbucket.org/wbond/package_control-tester"],
+                    "last_modified": "2014-11-28 20:54:15",
+                    "releases": [
+                        {
+                            "version": "1.0.2",
+                            "date": "2014-11-28 20:54:15",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/win-1.0.2.zip",
+                            "sublime_text": "<3000",
+                            "platforms": ["windows"]
+                        }
+                    ]
+                }
+            ),
+            (
+                'package_control-tester-3.0.0-bb-branch',
+                {
+                    "name": "package_control-tester-3.0.0-bb-branch",
+                    "author": "wbond",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                    "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/bitbucket/wbond/",
+                    "buy": None,
+                    "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json', "https://bitbucket.org/wbond/package_control-tester"],
+                    "last_modified": LAST_COMMIT_TIMESTAMP,
+                    "releases": [
+                        {
+                            "version": LAST_COMMIT_VERSION,
+                            "date": LAST_COMMIT_TIMESTAMP,
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/master.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            )],
+            packages
+        )
+
 
 class ChannelProviderTests(unittest.TestCase):
     maxDiff = None
@@ -478,41 +791,41 @@ class ChannelProviderTests(unittest.TestCase):
         }
 
     def test_get_name_map_12(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-1.2.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json', self.settings())
         self.assertEqual(
             {},
             provider.get_name_map()
         )
 
     def test_get_renamed_packages_12(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-1.2.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json', self.settings())
         self.assertEqual(
             {},
             provider.get_renamed_packages()
         )
 
     def test_get_repositories_12(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-1.2.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json', self.settings())
         self.assertEqual(
             [
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json"
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json"
             ],
             provider.get_repositories()
         )
 
     def test_get_sources_12(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-1.2.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json', self.settings())
         self.assertEqual(
             [
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json"
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json"
             ],
             provider.get_sources()
         )
 
     def test_get_packages_12(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-1.2.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json', self.settings())
         self.assertEqual(
             {
                 "package_control-tester-1.0": {
@@ -552,7 +865,7 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_packages("https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json")
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json")
         )
         self.assertEqual(
             {
@@ -593,52 +906,52 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_packages("https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json")
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json")
         )
 
     def test_get_name_map_20(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-2.0.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json', self.settings())
         self.assertEqual(
             {},
             provider.get_name_map()
         )
 
     def test_get_renamed_packages_20(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-2.0.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json', self.settings())
         self.assertEqual(
             {},
             provider.get_renamed_packages()
         )
 
     def test_get_repositories_20(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-2.0.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json', self.settings())
         self.assertEqual(
             [
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-explicit.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-github_details.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-bitbucket_details.json"
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-bitbucket_details.json"
             ],
             provider.get_repositories()
         )
 
     def test_get_sources_20(self):
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-2.0.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json', self.settings())
         self.assertEqual(
             [
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-explicit.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-github_details.json",
-                "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-bitbucket_details.json"
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-bitbucket_details.json"
             ],
             provider.get_sources()
         )
 
     def test_get_packages_20(self):
         self.maxDiff = None
-        provider = ChannelProvider('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/channel-2.0.json', self.settings())
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json', self.settings())
         self.assertEqual(
             {
                 "package_control-tester-1.0": {
@@ -678,7 +991,7 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_packages("https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.0.json")
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json")
         )
         self.assertEqual(
             {
@@ -719,7 +1032,7 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_packages("https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-1.2.json")
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json")
         )
         self.assertEqual(
             {
@@ -767,7 +1080,7 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_packages("https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-explicit.json")
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json")
         )
         self.assertEqual(
             {
@@ -815,7 +1128,7 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_packages("https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-github_details.json")
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json")
         )
         self.assertEqual(
             {
@@ -863,5 +1176,320 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_packages("https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/repository-2.0-bitbucket_details.json")
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-bitbucket_details.json")
+        )
+
+    def test_get_name_map_300(self):
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json', self.settings())
+        self.assertEqual(
+            {},
+            provider.get_name_map()
+        )
+
+    def test_get_renamed_packages_300(self):
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json', self.settings())
+        self.assertEqual(
+            {},
+            provider.get_renamed_packages()
+        )
+
+    def test_get_repositories_300(self):
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json', self.settings())
+        self.assertEqual(
+            [
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json"
+            ],
+            provider.get_repositories()
+        )
+
+    def test_get_sources_300(self):
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json', self.settings())
+        self.assertEqual(
+            [
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json"
+            ],
+            provider.get_sources()
+        )
+
+    def test_get_packages_300(self):
+        self.maxDiff = None
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json', self.settings())
+        self.assertEqual(
+            {
+                "package_control-tester-3.0.0": {
+                    "name": "package_control-tester-3.0.0",
+                    "author": ["packagecontrol", "wbond"],
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": None,
+                    "donate": None,
+                    "buy": "https://example.com",
+                    "readme": None,
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
+                            "sublime_text": "*",
+                            "platforms": ["windows"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1-beta",
+                            "sublime_text": "*",
+                            "platforms": ["windows"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.0",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/0.9.0",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            },
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json")
+        )
+        self.assertEqual(
+            {
+                "package_control-tester-3.0.0-gh-tags": {
+                    "name": "package_control-tester-3.0.0-gh-tags",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": "https://github.com/packagecontrol/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/github/packagecontrol/",
+                    "buy": None,
+                    "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1-beta",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.0",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/0.9.0",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        }
+                    ]
+                },
+                "package_control-tester-3.0.0-gh-tags_base": {
+                    "name": "package_control-tester-3.0.0-gh-tags_base",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": "https://github.com/packagecontrol/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/github/packagecontrol/",
+                    "buy": None,
+                    "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1-beta",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.0",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/0.9.0",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        }
+                    ]
+                },
+                "package_control-tester-3.0.0-gh-tags_prefix": {
+                    "name": "package_control-tester-3.0.0-gh-tags_prefix",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": "https://github.com/packagecontrol/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/github/packagecontrol/",
+                    "buy": None,
+                    "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-28 20:54:15",
+                    "releases": [
+                        {
+                            "version": "1.0.2",
+                            "date": "2014-11-28 20:54:15",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/win-1.0.2",
+                            "sublime_text": "<3000",
+                            "platforms": ["windows"]
+                        }
+                    ]
+                },
+                "package_control-tester-3.0.0-gh-branch": {
+                    "name": "package_control-tester-3.0.0-gh-branch",
+                    "author": "packagecontrol",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol/package_control-tester",
+                    "issues": "https://github.com/packagecontrol/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/github/packagecontrol/",
+                    "buy": None,
+                    "readme": "https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-28 20:54:15",
+                    "releases": [
+                        {
+                            "version": "2014.11.28.20.54.15",
+                            "date": "2014-11-28 20:54:15",
+                            "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/master",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            },
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-github_releases.json")
+        )
+        self.assertEqual(
+            {
+                "package_control-tester-3.0.0-bb-tags": {
+                    "name": "package_control-tester-3.0.0-bb-tags",
+                    "author": "wbond",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                    "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/bitbucket/wbond/",
+                    "buy": None,
+                    "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.1.zip",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.1-beta.zip",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.0.zip",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/0.9.0.zip",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        }
+                    ]
+                },
+                "package_control-tester-3.0.0-bb-tags_prefix": {
+                    "name": "package_control-tester-3.0.0-bb-tags_prefix",
+                    "author": "wbond",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                    "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/bitbucket/wbond/",
+                    "buy": None,
+                    "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-28 20:54:15",
+                    "releases": [
+                        {
+                            "version": "1.0.2",
+                            "date": "2014-11-28 20:54:15",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/win-1.0.2.zip",
+                            "sublime_text": "<3000",
+                            "platforms": ["windows"]
+                        }
+                    ]
+                },
+                "package_control-tester-3.0.0-bb-branch": {
+                    "name": "package_control-tester-3.0.0-bb-branch",
+                    "author": "wbond",
+                    "description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+                    "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                    "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                    "donate": "https://gratipay.com/on/bitbucket/wbond/",
+                    "buy": None,
+                    "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                    "previous_names": [],
+                    "labels": [],
+                    "last_modified": "2014-11-28 20:54:15",
+                    "releases": [
+                        {
+                            "version": "2014.11.28.20.54.15",
+                            "date": "2014-11-28 20:54:15",
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/master.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            },
+            provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json")
         )

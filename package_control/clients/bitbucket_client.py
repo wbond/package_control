@@ -1,7 +1,13 @@
 import re
 
-from ..versions import version_sort, version_filter
+from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
+
+try:
+    from urllib import quote
+except (ImportError):
+    from urllib.parse import quote
+
 
 
 # A predefined list of readme filenames to look for
@@ -20,7 +26,46 @@ _readme_filenames = [
 
 class BitBucketClient(JSONApiClient):
 
-    def download_info(self, url):
+    def make_tags_url(self, repo):
+        """
+        Generate the tags URL for a BitBucket repo if the value passed is a BitBucket
+        repository URL
+
+        :param repo:
+            The repository URL
+
+        :return:
+            The tags URL if repo was a BitBucket repo, otherwise False
+        """
+
+        match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
+        if not match:
+            return False
+
+        return 'https://bitbucket.org/%s#tags' % match.group(1)
+
+    def make_branch_url(self, repo, branch):
+        """
+        Generate the branch URL for a BitBucket repo if the value passed is a BitBucket
+        repository URL
+
+        :param repo:
+            The repository URL
+
+        :param branch:
+            The branch name
+
+        :return:
+            The branch URL if repo was a BitBucket repo, otherwise False
+        """
+
+        match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
+        if not match:
+            return False
+
+        return 'https://bitbucket.org/%s/src/%s' % (match.group(1), quote(branch))
+
+    def download_info(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package
 
@@ -31,6 +76,9 @@ class BitBucketClient(JSONApiClient):
               https://bitbucket.org/{user}/{repo}/#tags
             If the last option, grabs the info from the newest
             tag that is a valid semver version.
+
+        :param tag_prefix:
+            If the URL is a tags URL, only match tags that have this prefix
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -54,16 +102,17 @@ class BitBucketClient(JSONApiClient):
             user_repo = tags_match.group(1)
             tags_url = self._make_api_url(user_repo, '/tags')
             tags_list = self.fetch_json(tags_url)
-            tags = version_filter(tags_list.keys(), True)
-            tags = version_sort(tags, reverse=True)
-            if not tags:
+            tag_info = version_process(tags_list.keys(), tag_prefix)
+            tag_info = version_sort(tag_info, reverse=True)
+            if not tag_info:
                 return False
 
             used_versions = {}
-            for tag in tags:
-                version = re.sub('^v', '', tag)
+            for info in tag_info:
+                version = info['version']
                 if version in used_versions:
                     continue
+                tag = info['prefix'] + version
                 output.append({
                     'url': url_pattern % (user_repo, tag),
                     'commit': tag,

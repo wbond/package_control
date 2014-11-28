@@ -7,14 +7,53 @@ except (ImportError):
     # Python 2
     from urllib import urlencode, quote
 
-from ..versions import version_sort, version_filter
+from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
 from ..downloaders.downloader_exception import DownloaderException
 
 
 class GitHubClient(JSONApiClient):
 
-    def download_info(self, url):
+    def make_tags_url(self, repo):
+        """
+        Generate the tags URL for a GitHub repo if the value passed is a GitHub
+        repository URL
+
+        :param repo:
+            The repository URL
+
+        :return:
+            The tags URL if repo was a GitHub repo, otherwise False
+        """
+
+        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo)
+        if not match:
+            return False
+
+        return 'https://github.com/%s/tags' % match.group(1)
+
+    def make_branch_url(self, repo, branch):
+        """
+        Generate the branch URL for a GitHub repo if the value passed is a GitHub
+        repository URL
+
+        :param repo:
+            The repository URL
+
+        :param branch:
+            The branch name
+
+        :return:
+            The branch URL if repo was a GitHub repo, otherwise False
+        """
+
+        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo)
+        if not match:
+            return False
+
+        return 'https://github.com/%s/tree/%s' % (match.group(1), quote(branch))
+
+    def download_info(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package
 
@@ -25,6 +64,9 @@ class GitHubClient(JSONApiClient):
               https://github.com/{user}/{repo}/tags
             If the last option, grabs the info from the newest
             tag that is a valid semver version.
+
+        :param tag_prefix:
+            If the URL is a tags URL, only match tags that have this prefix
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -49,16 +91,17 @@ class GitHubClient(JSONApiClient):
             tags_url = self._make_api_url(user_repo, '/tags')
             tags_list = self.fetch_json(tags_url)
             tags = [tag['name'] for tag in tags_list]
-            tags = version_filter(tags, True)
-            tags = version_sort(tags, reverse=True)
-            if not tags:
+            tag_info = version_process(tags, tag_prefix)
+            tag_info = version_sort(tag_info, reverse=True)
+            if not tag_info:
                 return False
 
             used_versions = {}
-            for tag in tags:
-                version = re.sub('^v', '', tag)
+            for info in tag_info:
+                version = info['version']
                 if version in used_versions:
                     continue
+                tag = info['prefix'] + version
                 output.append({
                     'url': url_pattern % (user_repo, tag),
                     'commit': tag,

@@ -52,7 +52,8 @@ class RepositoryProvider():
     def __init__(self, repo, settings):
         self.cache = {}
         self.repo_info = None
-        self.schema_version = 0.0
+        self.schema_version = '0.0'
+        self.schema_major_version = 0
         self.repo = repo
         self.settings = settings
         self.failed_sources = {}
@@ -166,16 +167,23 @@ class RepositoryProvider():
             return False
 
         try:
-            self.schema_version = float(self.repo_info.get('schema_version'))
+            self.schema_version = self.repo_info.get('schema_version')
+            if isinstance(self.schema_version, int):
+                self.schema_version = float(self.schema_version)
+            if isinstance(self.schema_version, float):
+                self.schema_version = str(self.schema_version)
         except (ValueError):
             error_string = u'%s the "schema_version" is not a valid number.' % schema_error
             fail(error_string)
             return False
 
-        if self.schema_version not in [1.0, 1.1, 1.2, 2.0]:
-            error_string = u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2 or 2.0.' % schema_error
+        if self.schema_version not in ['1.0', '1.1', '1.2', '2.0', '3.0.0']:
+            error_string = u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2, 2.0 or 3.0.0.' % schema_error
             fail(error_string)
             return False
+
+        version_parts = self.schema_version.split('.')
+        self.schema_major_version = int(version_parts[0])
 
         if 'packages' not in self.repo_info:
             error_string = u'%s the "packages" JSON key is missing.' % schema_error
@@ -286,7 +294,7 @@ class RepositoryProvider():
 
         # Backfill the "previous_names" keys for old schemas
         previous_names = {}
-        if self.schema_version < 2.0:
+        if self.schema_major_version < 2:
             renamed = self.get_renamed_packages()
             for old_name in renamed:
                 new_name = renamed[old_name]
@@ -305,10 +313,10 @@ class RepositoryProvider():
                 if package.get(field):
                     info[field] = package.get(field)
 
-            # Schema version 2.0 allows for grabbing details about a pacakge, or its
+            # Schema version 2.0 allows for grabbing details about a package, or its
             # download from "details" urls. See the GitHubClient and BitBucketClient
             # classes for valid URLs.
-            if self.schema_version >= 2.0:
+            if self.schema_major_version >= 2:
                 details = package.get('details')
                 releases = package.get('releases')
 
@@ -343,11 +351,12 @@ class RepositoryProvider():
                 continue
 
             info['releases'] = []
-            if self.schema_version >= 2.0:
+            if self.schema_major_version == 2:
                 # If no releases info was specified, also grab the download info from GH or BB
                 if not releases and details:
                     releases = [{'details': details}]
 
+            if self.schema_major_version >= 2:
                 if not releases:
                     e = ProviderException(u'No "releases" value for the package "%s" in the repository %s.' % (info['name'], self.repo))
                     self.broken_packages[info['name']] = e
@@ -375,39 +384,92 @@ class RepositoryProvider():
                                 value = [value]
                             download_info[field] = value
 
-                    if 'sublime_text' not in download_info:
-                        download_info['sublime_text'] = '<3000'
-
                     if 'platforms' not in download_info:
                         download_info['platforms'] = ['*']
 
-                    if 'details' in release:
-                        download_details = release['details']
+                    if self.schema_major_version == 2:
+                        if 'sublime_text' not in download_info:
+                            download_info['sublime_text'] = '<3000'
 
-                        try:
-                            github_downloads = github_client.download_info(download_details)
-                            bitbucket_downloads = bitbucket_client.download_info(download_details)
+                        if 'details' in release:
+                            download_details = release['details']
 
-                            if github_downloads == False or bitbucket_downloads == False:
-                                raise ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
+                            try:
+                                github_downloads = github_client.download_info(download_details)
+                                bitbucket_downloads = bitbucket_client.download_info(download_details)
 
-                            if github_downloads:
-                                downloads = github_downloads
-                            elif bitbucket_downloads:
-                                downloads = bitbucket_downloads
-                            else:
-                                raise ProviderException(u'Invalid "details" value "%s" under the "releases" key for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
+                                if github_downloads == False or bitbucket_downloads == False:
+                                    raise ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
 
-                            for download in downloads:
-                                new_download = download_info.copy()
-                                new_download.update(download)
-                                info['releases'].append(new_download)
+                                if github_downloads:
+                                    downloads = github_downloads
+                                elif bitbucket_downloads:
+                                    downloads = bitbucket_downloads
+                                else:
+                                    raise ProviderException(u'Invalid "details" value "%s" under the "releases" key for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
 
-                        except (DownloaderException, ClientException, ProviderException) as e:
-                            self.broken_packages[info['name']] = e
+                                for download in downloads:
+                                    new_download = download_info.copy()
+                                    new_download.update(download)
+                                    info['releases'].append(new_download)
 
-                    elif download_info:
-                        info['releases'].append(download_info)
+                            except (DownloaderException, ClientException, ProviderException) as e:
+                                self.broken_packages[info['name']] = e
+
+                        elif download_info:
+                            info['releases'].append(download_info)
+
+                    elif self.schema_major_version == 3:
+                        tags = release.get('tags')
+                        branch = release.get('branch')
+
+                        if tags or branch:
+                            try:
+                                base = None
+                                if 'base' in release:
+                                    base = release['base']
+                                elif details:
+                                    base = details
+
+                                if not base:
+                                    raise ProviderException(u'Missing root-level "details" key, or release-level "base" key for one of the releases of the package "%s" in the repository %s.' % (info['name'], self.repo))
+
+                                github_url = False
+                                bitbucket_url = False
+                                extra = None
+
+                                if tags:
+                                    github_url = github_client.make_tags_url(base)
+                                    bitbucket_url = bitbucket_client.make_tags_url(base)
+                                    if tags != True:
+                                        extra = tags
+
+                                if branch:
+                                    github_url = github_client.make_branch_url(base, branch)
+                                    bitbucket_url = bitbucket_client.make_branch_url(base, branch)
+
+                                if github_url:
+                                    downloads = github_client.download_info(github_url, extra)
+                                    url = github_url
+                                elif bitbucket_url:
+                                    downloads = bitbucket_client.download_info(bitbucket_url, extra)
+                                    url = bitbucket_url
+                                else:
+                                    raise ProviderException(u'Invalid "base" value "%s" for one of the releases of the package "%s" in the repository %s.' % (base, info['name'], self.repo))
+
+                                if downloads == False:
+                                    raise ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (url, info['name'], self.repo))
+
+                                for download in downloads:
+                                    new_download = download_info.copy()
+                                    new_download.update(download)
+                                    info['releases'].append(new_download)
+
+                            except (DownloaderException, ClientException, ProviderException) as e:
+                                self.broken_packages[info['name']] = e
+                                continue
+                        elif download_info:
+                            info['releases'].append(download_info)
 
             # Schema version 1.0, 1.1 and 1.2 just require that all values be
             # explicitly specified in the package JSON
@@ -415,6 +477,9 @@ class RepositoryProvider():
                 info['releases'] = platforms_to_releases(package, debug)
 
             info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
+
+            if info['name'] in self.broken_packages:
+                continue
 
             if 'author' not in info:
                 self.broken_packages[info['name']] = ProviderException(u'No "author" key for the package "%s" in the repository %s.' % (info['name'], self.repo))
@@ -428,7 +493,7 @@ class RepositoryProvider():
             # function here so that we can break out of multiple loops.
             def has_broken_release():
                 for release in info.get('releases', []):
-                    for key in ['version', 'date', 'url']:
+                    for key in ['version', 'date', 'url', 'sublime_text', 'platforms']:
                         if key not in release:
                             self.broken_packages[info['name']] = ProviderException(u'Missing "%s" key for one of the releases of the package "%s" in the repository %s.' % (key, info['name'], self.repo))
                             return True
@@ -479,7 +544,7 @@ class RepositoryProvider():
             return []
 
         output = [self.repo]
-        if self.schema_version >= 2.0:
+        if self.schema_major_version >= 2:
             for package in self.repo_info['packages']:
                 details = package.get('details')
                 if details:
@@ -492,7 +557,7 @@ class RepositoryProvider():
         if not self.fetch_and_validate():
             return {}
 
-        if self.schema_version < 2.0:
+        if self.schema_major_version < 2:
             return self.repo_info.get('renamed_packages', {})
 
         output = {}
