@@ -115,7 +115,7 @@ def plugin_loaded():
     if sublime.platform() == 'windows' and sys.version_info < (3,):
         win_ssl_name = u'_ssl modules for ST2 on Windows'
         win_ssl_url = u'http://packagecontrol.io/ssl-windows.sublime-package'
-        win_ssl_hash = u'1d1a129fe0655d765e839fe4b81a0fb9eeb0ba0fbb78489154e65b5ffb4cad9d'
+        win_ssl_hash = u'efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea'
         win_ssl_priority = u'000'
         win_ssl_inject_code = u"""
             import sublime
