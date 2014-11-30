@@ -1,5 +1,6 @@
 import os
 import stat
+import shutil
 from fnmatch import fnmatch
 
 from .console_write import console_write
