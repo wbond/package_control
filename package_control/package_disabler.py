@@ -68,6 +68,7 @@ class PackageDisabler():
         in_process = load_list_setting(pc_settings, 'in_process_packages')
 
         self.old_syntaxes = {}
+        self.old_color_schemes = {}
 
         for package in packages:
             if not package in ignored:
@@ -89,6 +90,12 @@ class PackageDisabler():
                             self.old_syntaxes[package] = []
                         self.old_syntaxes[package].append([view, syntax])
                         view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
+                    scheme = view_settings.get('color_scheme')
+                    if scheme.find('Packages/' + package + '/') != -1:
+                        if package not in self.old_color_schemes:
+                            self.old_color_schemes[package] = []
+                        self.old_color_schemes[package].append([view, scheme])
+                        view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
             # Change the color scheme before disabling the package containing it
             if settings.get('color_scheme').find('Packages/' + package + '/') != -1:
@@ -143,20 +150,7 @@ class PackageDisabler():
 
             settings.set('ignored_packages',
                 list(set(ignored) - set([package])))
-
-            if type == 'upgrade' and package in self.old_syntaxes:
-                for view_syntax in self.old_syntaxes[package]:
-                    view, syntax = view_syntax
-                    view.settings().set('syntax', syntax)
-
-            if type == 'upgrade' and self.old_theme_package == package:
-                settings.set('theme', self.old_theme)
-                sublime.message_dialog(u"Package Control\n\n" +
-                    u"Your active theme was just upgraded. You may see some " +
-                    u"graphical corruption until you restart Sublime Text.")
-
-            if type == 'upgrade' and self.old_color_scheme_package == package:
-                settings.set('color_scheme', self.old_color_scheme)
+            sublime.save_settings(preferences_filename())
 
             if type == 'remove' and self.old_theme_package == package:
                 sublime.message_dialog(u"Package Control\n\n" +
@@ -164,7 +158,31 @@ class PackageDisabler():
                     u"theme was enabled in its place. You may see some " +
                     u"graphical corruption until you restart Sublime Text.")
 
-            sublime.save_settings(preferences_filename())
+            # By delaying the restore, we give Sublime Text some time to
+            # re-enable the package, making errors less likely
+            def delayed_settings_restore():
+                if type == 'upgrade' and package in self.old_syntaxes:
+                    for view_syntax in self.old_syntaxes[package]:
+                        view, syntax = view_syntax
+                        view.settings().set('syntax', syntax)
+
+                if type == 'upgrade' and package in self.old_color_schemes:
+                    for view_scheme in self.old_color_schemes[package]:
+                        view, scheme = view_scheme
+                        view.settings().set('color_scheme', scheme)
+
+                if type == 'upgrade' and self.old_theme_package == package:
+                    settings.set('theme', self.old_theme)
+                    sublime.message_dialog(u"Package Control\n\n" +
+                        u"Your active theme was just upgraded. You may see some " +
+                        u"graphical corruption until you restart Sublime Text.")
+
+                if type == 'upgrade' and self.old_color_scheme_package == package:
+                    settings.set('color_scheme', self.old_color_scheme)
+
+                sublime.save_settings(preferences_filename())
+
+            sublime.set_timeout(delayed_settings_restore, 1000)
 
         pc_settings = sublime.load_settings(pc_settings_filename())
         in_process = load_list_setting(pc_settings, 'in_process_packages')
