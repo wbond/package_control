@@ -7,15 +7,16 @@ if os.name == 'nt':
     psapi = windll.psapi
     kernel32 = windll.kernel32
 
-
+    if not hasattr(wintypes, 'PDWORD'):
+        wintypes.PDWORD = POINTER(wintypes.DWORD)
+        wintypes.LPDWORD = wintypes.PDWORD
 
     PHModule = POINTER(wintypes.HANDLE)
-    PDword = POINTER(wintypes.DWORD)
 
     PROCESS_QUERY_INFORMATION = 0x0400
     PROCESS_VM_READ = 0x0010
 
-    psapi.EnumProcesses.argtypes = [PDword, wintypes.DWORD, PDword]
+    psapi.EnumProcesses.argtypes = [wintypes.PDWORD, wintypes.DWORD, wintypes.PDWORD]
     psapi.EnumProcesses.restype = wintypes.BOOL
 
     kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
@@ -48,7 +49,7 @@ if os.name == 'nt':
             process_ids = dword_array()
             bytes_used = wintypes.DWORD(0)
 
-            res = psapi.EnumProcesses(cast(process_ids, PDword), sizeof(process_ids), byref(bytes_used))
+            res = psapi.EnumProcesses(cast(process_ids, wintypes.PDWORD), sizeof(process_ids), byref(bytes_used))
             if not res:
                 return []
 
