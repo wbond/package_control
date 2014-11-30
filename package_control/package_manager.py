@@ -29,8 +29,7 @@ from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .file_not_found_error import FileNotFoundError
 from .unicode import unicode_from_os
-from .rmtree import rmtree
-from .clear_directory import clear_directory
+from .clear_directory import clear_directory, delete_directory
 from .cache import (clear_cache, set_cache, get_cache, merge_cache_under_settings,
     merge_cache_over_settings, set_cache_under_settings, set_cache_over_settings)
 from .versions import version_comparable, version_sort
@@ -820,14 +819,7 @@ class PackageManager():
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            def remove_tmp_dir():
-                try:
-                    rmtree(tmp_dir)
-                except (PermissionError):
-                    # If we can't remove the tmp dir, don't let an uncaught exception
-                    # fall through and break the install process
-                    pass
-            sublime.set_timeout(remove_tmp_dir, 1000)
+            sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
 
     def backup_package_dir(self, package_name):
         """
@@ -861,7 +853,7 @@ class PackageManager():
                 package_name, unicode_from_os(e)))
             try:
                 if os.path.exists(package_backup_dir):
-                    rmtree(package_backup_dir)
+                    delete_directory(package_backup_dir)
             except (UnboundLocalError):
                 pass # Exeption occurred before package_backup_dir defined
             return False

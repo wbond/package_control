@@ -41,7 +41,6 @@ mods_load_order = [
     '.cmd',
     '.console_write',
     '.processes',
-    '.rmtree',
     '.settings',
     '.show_error',
     '.unicode',

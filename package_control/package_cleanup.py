@@ -6,8 +6,7 @@ import sublime
 from .show_error import show_error
 from .console_write import console_write
 from .unicode import unicode_from_os
-from .rmtree import rmtree
-from .clear_directory import clear_directory
+from .clear_directory import clear_directory, delete_directory, clean_old_files
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
 from .open_compat import open_compat
@@ -39,21 +38,19 @@ class PackageCleanup(threading.Thread):
 
             package_dir = os.path.join(sublime.packages_path(), package_name)
 
+            clean_old_files(package_dir)
+
             # Cleanup packages that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
-                try:
-                    rmtree(package_dir)
+                if delete_directory(package_dir):
                     console_write(u'Removed old directory for package %s' % package_name, True)
                     found = False
-
-                except (OSError) as e:
+                else:
                     if not os.path.exists(cleanup_file):
                         open_compat(cleanup_file, 'w').close()
-
                     error_string = (u'Unable to remove old directory for package ' +
-                        u'%s - deferring until next start: %s') % (
-                        package_name, unicode_from_os(e))
+                        u'%s - deferring until next start') % package_name
                     console_write(error_string, True)
 
             # Finish reinstalling packages that could not be upgraded due to
@@ -95,19 +92,15 @@ class PackageCleanup(threading.Thread):
                 # removing them from another computer and the settings file
                 # being synced.
                 elif self.remove_orphaned and package_name not in self.original_installed_packages:
-                    try:
-                        self.manager.backup_package_dir(package_name)
-                        rmtree(package_dir)
+                    self.manager.backup_package_dir(package_name)
+                    if delete_directory(package_dir):
                         console_write(u'Removed directory for orphaned package %s' % package_name, True)
                         found = False
-
-                    except (OSError) as e:
+                    else:
                         if not os.path.exists(cleanup_file):
                             open_compat(cleanup_file, 'w').close()
-
                         error_string = (u'Unable to remove directory for orphaned package ' +
-                            u'%s - deferring until next start: %s') % (
-                            package_name, unicode_from_os(e))
+                            u'%s - deferring until next start') % package_name
                         console_write(error_string, True)
 
             if found:
