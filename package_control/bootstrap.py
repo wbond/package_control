@@ -21,31 +21,19 @@ import sublime
 from .download_manager import downloader
 from .downloaders.downloader_exception import DownloaderException
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
+from .console_write import console_write
+from . import loader
+from .sys_path import st_dir
 
 
-def get_sublime_text_dir(name):
-    cur_packages_dir = path.dirname(package_control_dir)
 
-    try:
-        if not isinstance(cur_packages_dir, str_cls):
-            cur_packages_dir = cur_packages_dir.decode('utf-8', 'strict')
-        return path.normpath(path.join(cur_packages_dir, '..', name))
-
-    except (UnicodeDecodeError):
-        print(u'Package Control: An error occurred decoding the Package Control path as UTF-8')
-        return
-
-
-def bootstrap_early_package(settings, name, url, hash_, priority, inject_code, on_complete):
+def bootstrap_dependency(settings, url, hash_, priority, on_complete):
     """
-    Downloads packages that need to be injected early in the Sublime Text
-    load process so that other packages can use them.
+    Downloads a dependency from a hard-coded URL - only used for bootstrapping _ssl
+    on Linux and ST2/Windows
 
     :param settings:
         Package Control settings
-
-    :param name:
-        The user-friendly name for status messages
 
     :param url:
         The non-secure URL to download from
@@ -57,9 +45,6 @@ def bootstrap_early_package(settings, name, url, hash_, priority, inject_code, o
         A three-digit number that controls what order packages are
         injected in
 
-    :param inject_code:
-        The python code to inject the package into sys.path
-
     :param on_complete:
         A callback to be run in the main Sublime thread, so it can use the API
     """
@@ -67,7 +52,7 @@ def bootstrap_early_package(settings, name, url, hash_, priority, inject_code, o
     package_filename = path.basename(urlparse(url).path)
     package_basename, _ = path.splitext(package_filename)
 
-    packages_dir = get_sublime_text_dir('Packages')
+    packages_dir = path.join(st_dir, u'Packages')
     if not packages_dir:
         return
     package_dir = path.join(packages_dir, package_basename)
@@ -78,29 +63,30 @@ def bootstrap_early_package(settings, name, url, hash_, priority, inject_code, o
 
     with downloader(url, settings) as manager:
         try:
-            print(u'Package Control: Downloading %s' % name)
-            data = manager.fetch(url, 'Error downloading %s.' % name)
-            print(u'Package Control: Successfully downloaded %s' % name)
+            console_write(u'Downloading bootstrapped dependency %s' % package_basename, True)
+            data = manager.fetch(url, 'Error downloading bootstrapped dependency %s.' % package_basename)
+            console_write(u'Successfully downloaded bootstraped dependency %s' % package_basename, True)
             data_io = BytesIO(data)
 
         except (DownloaderException) as e:
-            print(u'Package Control: %s' % str(e))
+            console_write(u'%s' % str(e), True)
             return
 
     data_hash = hashlib.sha256(data).hexdigest()
     if data_hash != hash_:
-        print(u'Package Control: Error validating %s (got %s instead of %s)' % (name, data_hash, hash_))
+        console_write(u'Error validating bootstrapped dependency %s (got %s instead of %s)' % (package_basename, data_hash, hash_), True)
         return
 
     try:
         data_zip = zipfile.ZipFile(data_io, 'r')
     except (zipfile.BadZipfile):
-        print(u'Package Control: Error unzipping %s' % package_filename)
+        console_write(u'Error unzipping bootstrapped dependency %s' % package_filename, True)
         return
 
     if not path.exists(package_dir):
         os.mkdir(package_dir, 0o755)
 
+    code = None
     for zip_path in data_zip.namelist():
         dest = zip_path
 
@@ -110,6 +96,10 @@ def bootstrap_early_package(settings, name, url, hash_, priority, inject_code, o
         dest = dest.replace('\\', '/')
 
         dest = path.join(package_dir, dest)
+
+        if dest == u'loader.py':
+            code = data_zip.read(zip_path).decode('utf-8')
+            continue
 
         if dest[-1] == '/':
             if not path.exists(dest):
@@ -124,57 +114,22 @@ def bootstrap_early_package(settings, name, url, hash_, priority, inject_code, o
 
     data_zip.close()
 
-    inject_code = dedent(inject_code).strip() + '\n'
-    filename = '%s-%s-inject.py' % (priority, package_basename)
+    loader.add(priority, package_basename, code)
 
-    loader_name = '0-package_control_loader'
+    console_write(u'Successfully installed bootstrapped dependency %s' % package_basename, True)
 
-    if sys.version_info < (3,):
-        package_dir = path.join(packages_dir, loader_name)
-
-        if not path.exists(package_dir):
-            os.mkdir(package_dir, 0o755)
-
-        file_path = path.join(package_dir, filename)
-        with open(file_path, 'wb') as f:
-            f.write(inject_code.encode('utf-8'))
-
-    else:
-        installed_packages_dir = get_sublime_text_dir('Installed Packages')
-        if not installed_packages_dir:
-            return
-
-        file_path = path.join(installed_packages_dir, '%s.sublime-package' % loader_name)
-
-        mode = 'a' if os.path.exists(file_path) else 'w'
-        with zipfile.ZipFile(file_path, mode) as z:
-            if mode == 'w':
-                metadata = {
-                    "version": "1.0.0",
-                    "sublime_text": "*",
-                    # Tie the loader to the platform so we can detect
-                    # people syncing packages incorrectly.
-                    "platforms": [sublime.platform()],
-                    "url": "https://packagecontrol.io",
-                    "description": "Package Control loader for supplemental Python packages"
-                }
-                z.writestr('package-metadata.json', json.dumps(metadata).encode('utf-8'))
-            z.writestr(filename, inject_code.encode('utf-8'))
-
-    print(u'Package Control: Successfully installed %s' % name)
-
-    def add_to_installed_packages():
+    def add_to_installed_dependencies():
         filename = pc_settings_filename()
         settings = sublime.load_settings(filename)
-        installed_packages = load_list_setting(settings, 'installed_packages')
-        new_installed_packages = list(installed_packages)
-        if loader_name not in new_installed_packages:
-            new_installed_packages.append(loader_name)
-        if package_basename not in new_installed_packages:
-            new_installed_packages.append(package_basename)
-        save_list_setting(settings, filename, 'installed_packages', new_installed_packages, installed_packages)
-    sublime.set_timeout(add_to_installed_packages, 10)
+        old = load_list_setting(settings, 'installed_dependencies')
+        new = list(old)
+        if loader_name not in new:
+            new.append(loader_name)
+        if package_basename not in new:
+            new.append(package_basename)
+        save_list_setting(settings, filename, 'installed_dependencies', new, old)
+    sublime.set_timeout(add_to_installed_dependencies, 10)
 
     if on_complete:
-        # Give add_to_installed_packages() time to run
+        # Give add_to_installed_dependencies() time to run
         sublime.set_timeout(on_complete, 200)

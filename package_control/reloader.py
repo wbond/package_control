@@ -105,6 +105,9 @@ mods_load_order = [
     '.package_installer',
     '.package_renamer',
 
+    '.loader',
+    '.bootstrap',
+
     '.tests',
     '.tests.clients',
     '.tests.providers',
