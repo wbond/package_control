@@ -88,14 +88,16 @@ def _on_error(function, path, excinfo):
     :param excinfo:
         The exception information
     """
-    if not os.access(path, os.W_OK):
+
+    try:
+        if os.access(path, os.W_OK):
+            raise OSError()
         os.chmod(path, stat.S_IWUSR)
         function(path)
-    else:
+    except (OSError):
         # try to rename file to reduce chance that
         # file is in use on next start
         os.rename(path, path + '.package-control-old')
-        raise
 
 
 def delete_directory(path):

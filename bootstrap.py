@@ -91,29 +91,30 @@ def plugin_loaded():
         base_loader_code = dedent(base_loader_code)
         loader.add('00', 'package_control', base_loader_code)
 
-        pc_settings = sublime.load_settings(pc_settings_filename())
+    pc_settings = sublime.load_settings(pc_settings_filename())
 
-        # Make sure we are track Package Control itself
-        installed_packages = load_list_setting(pc_settings, 'installed_packages')
-        if 'Package Control' not in installed_packages:
-            installed_packages.append('Package Control')
-            save_list_setting(pc_settings, pc_settings_filename(), 'installed_packages', installed_packages)
+    # Make sure we are track Package Control itself
+    installed_packages = load_list_setting(pc_settings, 'installed_packages')
+    if 'Package Control' not in installed_packages:
+        installed_packages.append('Package Control')
+        save_list_setting(pc_settings, pc_settings_filename(), 'installed_packages', installed_packages)
 
-        installed_dependencies = load_list_setting(pc_settings, 'installed_dependencies')
+    orig_installed_dependencies = load_list_setting(pc_settings, 'installed_dependencies')
+    installed_dependencies = list(orig_installed_dependencies)
 
-        # Record that the loader itself is installed
-        if loader.loader_package_name not in installed_dependencies:
-            installed_dependencies.append(loader.loader_package_name)
+    # Record that the loader itself is installed
+    if loader.loader_package_name not in installed_dependencies:
+        installed_dependencies.append(loader.loader_package_name)
 
-        # Queue up installation of bz2
-        if 'bz2' not in installed_dependencies:
-            installed_dependencies.append('bz2')
+    # Queue up installation of bz2
+    if 'bz2' not in installed_dependencies:
+        installed_dependencies.append('bz2')
 
-        # Queue up installation of select module for ST2/Windows
-        if sublime.platform() == 'windows' and sys.version_info < (3,) and 'select-windows' not in installed_dependencies:
-            installed_dependencies.append('select-windows')
+    # Queue up installation of select module for ST2/Windows
+    if sublime.platform() == 'windows' and sys.version_info < (3,) and 'select-windows' not in installed_dependencies:
+        installed_dependencies.append('select-windows')
 
-        save_list_setting(pc_settings, pc_settings_filename(), 'installed_dependencies', installed_dependencies)
+    save_list_setting(pc_settings, pc_settings_filename(), 'installed_dependencies', installed_dependencies, orig_installed_dependencies)
 
 
     # SSL support fo Linux
