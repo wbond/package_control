@@ -641,7 +641,11 @@ class PackageManager():
             return False
 
         if not is_available:
-            show_error(u'The %s specified, %s, is not available' % (package_type, package_name))
+            message = u'The %s specified, %s, is not available' % (package_type, package_name)
+            if is_dependency:
+                console_write(message, True)
+            else:
+                show_error(message)
             return False
 
         release = packages[package_name]['releases'][0]
