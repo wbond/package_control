@@ -59,10 +59,23 @@ def add(priority, name, code=None):
 
     just_created_loader = False
 
+    loader_metadata = metadata = {
+        "version": "1.0.0",
+        "sublime_text": "*",
+        # Tie the loader to the platform so we can detect
+        # people syncing packages incorrectly.
+        "platforms": [sublime.platform()],
+        "url": "https://github.com/wbond/package_control/issues",
+        "description": "Package Control dependency loader"
+    }
+    loader_metadata_enc = json.dumps(loader_metadata).encode('utf-8')
+
     if sys.version_info < (3,):
         if not path.exists(loader_package_path):
             just_created_loader = True
             os.mkdir(loader_package_path, 0o755)
+            with open(path.join(loader_package_path, 'dependency-metadata.json'), 'wb') as f:
+                f.write(loader_metadata_enc)
 
         loader_path = path.join(loader_package_path, loader_filename)
         with open(loader_path, 'wb') as f:
@@ -73,16 +86,7 @@ def add(priority, name, code=None):
         with zipfile.ZipFile(loader_package_path, mode) as z:
             if mode == 'w':
                 just_created_loader = True
-                metadata = {
-                    "version": "1.0.0",
-                    "sublime_text": "*",
-                    # Tie the loader to the platform so we can detect
-                    # people syncing packages incorrectly.
-                    "platforms": [sublime.platform()],
-                    "url": "https://github.com/wbond/package_control/issues",
-                    "description": "Package Control dependency loader"
-                }
-                z.writestr('dependency-metadata.json', json.dumps(metadata).encode('utf-8'))
+                z.writestr('dependency-metadata.json', loader_metadata_enc)
             z.writestr(loader_filename, code.encode('utf-8'))
 
     # Clean things up for people who were tracking the master branch
