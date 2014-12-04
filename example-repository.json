@@ -374,19 +374,20 @@
 	// that are supplementary, or missing from Sublime Text.
 	"dependencies": [
 		{
-			// Each dependency should have a name, description, author, issues
-			// URL and a list of releases. Each release needs a version, url
-			// sublime_text and platforms keys. If the URL is not over SSL,
-			// there needs to be a sha256 key containing the sha256 hash of the
-			// package file.
+			// Each dependency should have a name, load_order, description,
+			// author, issues URL and a list of releases. Each release needs a
+			// version and url or base and tags plus sublime_text and platforms
+			// keys. If the URL is not over SSL, there needs to be a sha256 key
+			// containing the sha256 hash of the package file.
 			"name": "bz2",
+			"load_order": "02",
 			"description": "Python bz2 module",
 			"author": "wbond",
-			"issues": "https://github.com/wbond/package_control/issues",
+			"issues": "https://github.com/codexns/sublime-bz2/issues",
 			"releases": [
 				{
-					"version": "1.0.0",
-					"url": "https://packagecontrol.io/bz2.sublime-package",
+					"base": "https://github.com/codexns/sublime-bz2",
+					"tags": true,
 					"sublime_text": "*",
 					"platforms": ["*"]
 				}
@@ -394,9 +395,10 @@
 		},
 		{
 			"name": "ssl-linux",
+			"load_order": "01",
 			"description": "Python _ssl module for Linux",
 			"author": "wbond",
-			"issues": "https://github.com/wbond/package_control/issues",
+			"issues": "https://github.com/codexns/sublime-ssl-linux/issues",
 			"releases": [
 				{
 					"version": "1.0.0",
@@ -409,9 +411,10 @@
 		},
 		{
 			"name": "ssl-windows",
+			"load_order": "02",
 			"description": "Python _ssl module for Sublime Text 2 on Windows",
 			"author": "wbond",
-			"issues": "https://github.com/wbond/package_control/issues",
+			"issues": "https://github.com/codexns/sublime-ssl-windows/issues",
 			"releases": [
 				{
 					"version": "1.0.0",

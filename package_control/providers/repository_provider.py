@@ -262,6 +262,7 @@ class RepositoryProvider():
                 'Dependency Name',
                 {
                     'name': name,
+                    'load_order': two digit string,
                     'description': description,
                     'author': author,
                     'issues': URL,
@@ -305,7 +306,7 @@ class RepositoryProvider():
                 'sources': [self.repo]
             }
 
-            for field in ['name', 'description', 'author', 'issues']:
+            for field in ['name', 'description', 'author', 'issues', 'load_order']:
                 if dependency.get(field):
                     info[field] = dependency.get(field)
 
@@ -401,7 +402,7 @@ class RepositoryProvider():
             # Make sure the dependency has the appropriate keys. We use a
             # function here so that we can break out of multiple loops.
             def is_missing_keys():
-                for key in ['author', 'releases', 'issues', 'description']:
+                for key in ['author', 'releases', 'issues', 'description', 'load_order']:
                     if key not in info:
                         self.broken_dependencies[info['name']] = ProviderException(u'No "%s" key for the dependency "%s" in the repository %s.' % (key, info['name'], self.repo))
                         return True

@@ -331,6 +331,7 @@ class ChannelProvider():
             {
                 'Dependency Name': {
                     'name': name,
+                    'load_order': two digit string,
                     'description': description,
                     'author': author,
                     'issues': URL,

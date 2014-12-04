@@ -46,6 +46,7 @@ from .package_io import read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
 from .versions import version_comparable
+from . import loader
 from . import __version__
 
 
@@ -346,6 +347,8 @@ class PackageManager():
                 console_write(exception, True)
             for name, exception in provider.get_broken_packages():
                 console_write(exception, True)
+            for name, exception in provider.get_broken_dependencies():
+                console_write(exception, True)
 
             cache_key = repo + '.packages'
             set_cache(cache_key, repository_packages, cache_ttl)
@@ -380,8 +383,13 @@ class PackageManager():
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
 
         if int(sublime.version()) > 3000 and unpacked_only == False:
-            package_files = os.listdir(sublime.installed_packages_path())
-            package_names += [f.replace('.sublime-package', '') for f in package_files if re.search('\.sublime-package$', f) != None]
+            for name in os.listdir(sublime.installed_packages_path()):
+                if not re.search('\.sublime-package$', name):
+                    continue
+                name = name.replace('.sublime-package', '')
+                if name == loader.loader_package_name:
+                    continue
+                package_names.append(name)
 
         # Ignore things to be deleted
         ignored = ['User']
@@ -400,6 +408,30 @@ class PackageManager():
         packages = sorted(packages, key=lambda s: s.lower())
 
         return packages
+
+    def list_dependencies(self):
+        """
+        :return: A list of all installed dependency names
+        """
+
+        output = []
+
+        # This is seeded since it is in a .sublime-package with ST3
+        if sys.version_info >= (3,):
+            output.append('0_package_control_loader')
+
+        for package_name in os.listdir(sublime.packages_path()):
+            if package_name[0] == '.':
+                continue
+            package_path = os.path.join(sublime.packages_path(), package_name)
+            if not os.path.isdir(package_path):
+                continue
+            metadata_path = os.path.join(package_path, 'dependency-metadata.json')
+            if not os.path.exists(metadata_path):
+                continue
+            output.append(package_name)
+
+        return sorted(output, key=lambda s: s.lower())
 
     def list_all_packages(self, exclude_dependencies=True):
         """
@@ -432,6 +464,36 @@ class PackageManager():
         packages = [file.replace('.sublime-package', '') for file in files]
         packages = sorted(packages, key=lambda s: s.lower())
         return packages
+
+    def find_required_dependencies(self, ignore_package):
+        """
+        Find all of the dependencies required by the installed packages,
+        ignoring the specified package.
+
+        :param ignore_package:
+            The package to ignore when enumerating dependencies
+
+        :return:
+            A list of the dependencies required by the installed packages
+        """
+
+        output = ['0_package_control_loader', 'bz2']
+
+        # Hard-code Package Control deps by os/plat
+        if os.name == 'nt' and sys.version_info < (3,):
+            output.extend(['ssl-windows', 'select-windows'])
+
+        if sublime.platform() == 'linux':
+            output.append('ssl-linux')
+
+        for package in self.list_packages():
+            if package == ignore_package:
+                continue
+            metadata = self.get_metadata(package)
+            output.extend(metadata.get('dependencies', []))
+
+        output = list(set(output))
+        return sorted(output, key=lambda s: s.lower())
 
     def get_package_dir(self, package):
         """:return: The full filesystem path to the package directory"""
@@ -657,7 +719,7 @@ class PackageManager():
                     self.settings['hg_update_command'], unpacked_package_dir,
                     self.settings['cache_length'], self.settings['debug']).run()
 
-            old_version = self.get_metadata(package_name).get('version')
+            old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
             is_upgrade = old_version != None
 
             # Download the sublime-package or zip file
@@ -777,6 +839,9 @@ class PackageManager():
 
             os.chdir(package_dir)
 
+            # Look for special loader code for dependencies
+            loader_code = None
+
             # Here we don't use .extractall() since it was having issues on OS X
             overwrite_failed = False
             extracted_paths = []
@@ -805,6 +870,10 @@ class PackageManager():
                     dest = dest.replace('/', '\\')
                 else:
                     dest = dest.replace('\\', '/')
+
+                if is_dependency and dest == 'loader.py':
+                    loader_code = package_zip.read(path).decode('utf-8')
+                    continue
 
                 dest = os.path.join(package_dir, dest)
 
@@ -908,6 +977,9 @@ class PackageManager():
                     names.append(package_name)
                 save_list_setting(settings, pc_settings_filename(), names_key, names, original_names)
             sublime.set_timeout(save_names, 1)
+
+            if is_dependency:
+                loader.add(packages[package_name]['load_order'], package_name, loader_code)
 
             # If we didn't extract directly into the Packages/{package_name}/
             # folder, we need to create a .sublime-package file and install it
@@ -1107,7 +1179,7 @@ class PackageManager():
 
         sublime.set_timeout(print_to_panel, 1)
 
-    def remove_package(self, package_name):
+    def remove_package(self, package_name, is_dependency=False):
         """
         Deletes a package
 
@@ -1123,10 +1195,15 @@ class PackageManager():
         :return: bool if the package was successfully deleted
         """
 
-        installed_packages = self.list_packages()
+        exclude_dependencies = not is_dependency
+        installed_packages = self.list_packages(exclude_dependencies=exclude_dependencies)
+
+        package_type = 'package'
+        if is_dependency:
+            package_type = 'dependency'
 
         if package_name not in installed_packages:
-            show_error(u'The package specified, %s, is not installed' % package_name)
+            show_error(u'The %s specified, %s, is not installed' % (package_type, package_name))
             return False
 
         os.chdir(sublime.packages_path())
@@ -1138,7 +1215,7 @@ class PackageManager():
             sublime.packages_path()), 'Pristine Packages', package_filename)
         package_dir = self.get_package_dir(package_name)
 
-        version = self.get_metadata(package_name).get('version')
+        version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
 
         try:
             if os.path.exists(installed_package_path):
@@ -1173,22 +1250,32 @@ class PackageManager():
         }
         self.record_usage(params)
 
-        # Remove the package from the installed packages list
-        def clear_package():
+        names_key = 'installed_packages'
+        if is_dependency:
+            names_key = 'installed_dependencies'
+
+        def save_names():
             settings = sublime.load_settings(pc_settings_filename())
-            installed_packages = settings.get('installed_packages', [])
-            if not installed_packages:
-                installed_packages = []
-            try:
-                installed_packages.remove(package_name)
-                settings.set('installed_packages', installed_packages)
-                sublime.save_settings(pc_settings_filename())
-            except (ValueError):
-                pass # Package was not in installed_packages
-        sublime.set_timeout(clear_package, 1)
+            original_names = load_list_setting(settings, names_key)
+            names = list(original_names)
+            if package_name in names:
+                names.remove(package_name)
+            save_list_setting(settings, pc_settings_filename(), names_key, names, original_names)
+        sublime.set_timeout(save_names, 1)
 
         if can_delete_dir and os.path.exists(package_dir):
             os.rmdir(package_dir)
+
+        if is_dependency:
+            loader.remove(package_name)
+
+        else:
+            # Remove dependencies that are no longer needed
+            installed_dependencies = self.list_dependencies()
+            required_dependencies = self.find_required_dependencies(package_name)
+            orphaned_dependencies = list(set(installed_dependencies) - set(required_dependencies))
+            for dependency in orphaned_dependencies:
+                self.remove_package(dependency, is_dependency=True)
 
         return True
 

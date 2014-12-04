@@ -35,5 +35,31 @@
 				]
 			}
 		]
+	},
+
+	// The "dependencies_cache" is just like "packages_cache", but for
+	// dependencies
+	"dependencies_cache": {
+		"https://packagecontrol.io/packages.json": [
+
+			// Like with packages, dependency info must be fully resolved,
+			// which for packages means releases must have "url", "version",
+			// "sublime_text" and "platforms" keys instead of "base" and "tags".
+			{
+				"name": "bz2",
+				"load_order": "02",
+				"description": "Python bz2 module",
+				"author": "wbond",
+				"issues": "https://github.com/wbond/package_control/issues",
+				"releases": [
+					{
+						"version": "1.0.0",
+						"url": "https://codeload.github.com/codexns/sublime-bz2/zip/1.0.0",
+						"sublime_text": "*",
+						"platforms": ["*"]
+					}
+				]
+			}
+		]
 	}
 }
