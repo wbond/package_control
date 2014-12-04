@@ -5,10 +5,10 @@ from itertools import chain
 
 try:
     # Python 3
-    from urllib.parse import urljoin
+    from urllib.parse import urljoin, urlparse
 except (ImportError):
     # Python 2
-    from urlparse import urljoin
+    from urlparse import urljoin, urlparse
 
 from ..console_write import console_write
 from .provider_exception import ProviderException
@@ -58,6 +58,7 @@ class RepositoryProvider():
         self.settings = settings
         self.failed_sources = {}
         self.broken_packages = {}
+        self.broken_dependencies = {}
 
     @classmethod
     def match_url(cls, repo):
@@ -95,6 +96,16 @@ class RepositoryProvider():
         """
 
         return self.broken_packages.items()
+
+    def get_broken_dependencies(self):
+        """
+        List of dependency names for dependencies that are missing information
+
+        :return:
+            A generator of ("Dependency Name", Exception()) tuples
+        """
+
+        return self.broken_dependencies.items()
 
     def fetch(self):
         """
@@ -233,6 +244,185 @@ class RepositoryProvider():
         except (ValueError):
             raise ProviderException(u'Error parsing JSON from repository %s.' % location)
 
+    def get_dependencies(self, invalid_sources=None):
+        """
+        Provides access to the packages in this repository
+
+        :param invalid_sources:
+            A list of URLs that are permissible to fetch data from
+
+        :raises:
+            ProviderException: when an error occurs trying to open a file
+            DownloaderException: when there is an issue download package info
+            ClientException: when there is an issue parsing package info
+
+        :return:
+            A generator of
+            (
+                'Dependency Name',
+                {
+                    'name': name,
+                    'description': description,
+                    'author': author,
+                    'issues': URL,
+                    'releases': [
+                        {
+                            'sublime_text': compatible version,
+                            'platforms': [platform name, ...],
+                            'url': url,
+                            'version': version,
+                            'sha256': hex hash
+                        }, ...
+                    ],
+                    'sources': [url, ...]
+                }
+            )
+            tuples
+        """
+
+        if 'get_dependencies' in self.cache:
+            for key, value in self.cache['get_dependencies'].items():
+                yield (key, value)
+            return
+
+        if invalid_sources != None and self.repo in invalid_sources:
+            raise StopIteration()
+
+        if not self.fetch_and_validate():
+            return
+
+        debug = self.settings.get('debug')
+
+        github_client = GitHubClient(self.settings)
+        bitbucket_client = BitBucketClient(self.settings)
+
+        if self.schema_major_version < 3:
+            self.repo_info['dependencies'] = []
+
+        output = {}
+        for dependency in self.repo_info['dependencies']:
+            info = {
+                'sources': [self.repo]
+            }
+
+            for field in ['name', 'description', 'author', 'issues']:
+                if dependency.get(field):
+                    info[field] = dependency.get(field)
+
+            if 'name' not in info:
+                self.failed_sources[self.repo] = ProviderException(u'No "name" value for one of the dependencies in the repository %s.' % self.repo)
+                continue
+
+            releases = dependency.get('releases', [])
+
+            if releases and not isinstance(releases, list):
+                self.broken_dependencies[info['name']] = ProviderException(u'The "releases" value is not an array for the dependency "%s" in the repository %s.' % (info['name'], self.repo))
+                continue
+
+            for release in releases:
+                if 'releases' not in info:
+                    info['releases'] = []
+
+                download_details = None
+                download_info = {}
+
+                # Make sure that explicit fields are copied over
+                for field in ['platforms', 'sublime_text', 'version', 'url', 'sha256']:
+                    if field in release:
+                        value = release[field]
+                        if field == 'url':
+                            value = update_url(value, debug)
+                        if field == 'platforms' and not isinstance(release['platforms'], list):
+                            value = [value]
+                        download_info[field] = value
+
+                tags = release.get('tags')
+                branch = release.get('branch')
+
+                if tags or branch:
+                    try:
+                        base = None
+                        if 'base' in release:
+                            base = release['base']
+                        elif details:
+                            base = details
+
+                        if not base:
+                            raise ProviderException(u'Missing root-level "details" key, or release-level "base" key for one of the releases of the dependency "%s" in the repository %s.' % (info['name'], self.repo))
+
+                        github_url = False
+                        bitbucket_url = False
+                        extra = None
+
+                        if tags:
+                            github_url = github_client.make_tags_url(base)
+                            bitbucket_url = bitbucket_client.make_tags_url(base)
+                            if tags != True:
+                                extra = tags
+
+                        if branch:
+                            github_url = github_client.make_branch_url(base, branch)
+                            bitbucket_url = bitbucket_client.make_branch_url(base, branch)
+
+                        if github_url:
+                            downloads = github_client.download_info(github_url, extra)
+                            url = github_url
+                        elif bitbucket_url:
+                            downloads = bitbucket_client.download_info(bitbucket_url, extra)
+                            url = bitbucket_url
+                        else:
+                            raise ProviderException(u'Invalid "base" value "%s" for one of the releases of the dependency "%s" in the repository %s.' % (base, info['name'], self.repo))
+
+                        if downloads == False:
+                            raise ProviderException(u'No valid semver tags found at %s for the dependency "%s" in the repository %s.' % (url, info['name'], self.repo))
+
+                        for download in downloads:
+                            del download['date']
+                            new_download = download_info.copy()
+                            new_download.update(download)
+                            info['releases'].append(new_download)
+
+                    except (DownloaderException, ClientException, ProviderException) as e:
+                        self.broken_dependencies[info['name']] = e
+                        continue
+
+                elif download_info:
+                    if 'url' in download_info:
+                        is_http = urlparse(download_info['url']).scheme == 'http'
+                        if is_http and 'sha256' not in download_info:
+                            self.broken_dependencies[info['name']] = ProviderException(u'No "sha256" key for the non-secure "url" value in one of the releases of the dependency "%s" in the repository %s.' % (info['name'], self.repo))
+                            continue
+
+                    info['releases'].append(download_info)
+
+            if info['name'] in self.broken_dependencies:
+                continue
+
+            # Make sure the dependency has the appropriate keys. We use a
+            # function here so that we can break out of multiple loops.
+            def is_missing_keys():
+                for key in ['author', 'releases', 'issues', 'description']:
+                    if key not in info:
+                        self.broken_dependencies[info['name']] = ProviderException(u'No "%s" key for the dependency "%s" in the repository %s.' % (key, info['name'], self.repo))
+                        return True
+                for release in info.get('releases', []):
+                    for key in ['version', 'url', 'sublime_text', 'platforms']:
+                        if key not in release:
+                            self.broken_dependencies[info['name']] = ProviderException(u'Missing "%s" key for one of the releases of the dependency "%s" in the repository %s.' % (key, info['name'], self.repo))
+                            return True
+                return False
+
+            if is_missing_keys():
+                continue
+
+            info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
+
+            output[info['name']] = info
+            yield (info['name'], info)
+
+        self.cache['get_dependencies'] = output
+
+
     def get_packages(self, invalid_sources=None):
         """
         Provides access to the packages in this repository
@@ -261,7 +451,8 @@ class RepositoryProvider():
                             'platforms': [platform name, ...],
                             'url': url,
                             'date': date,
-                            'version': version
+                            'version': version,
+                            'dependencies': [dependency name, ...]
                         }, ...
                     ]
                     'previous_names': [old_name, ...],
@@ -375,7 +566,7 @@ class RepositoryProvider():
                     download_info = {}
 
                     # Make sure that explicit fields are copied over
-                    for field in ['platforms', 'sublime_text', 'version', 'url', 'date']:
+                    for field in ['platforms', 'sublime_text', 'version', 'url', 'date', 'dependencies']:
                         if field in release:
                             value = release[field]
                             if field == 'url':

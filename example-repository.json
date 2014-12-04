@@ -369,6 +369,61 @@
 		}
 	],
 
+	// Packages that can be listed under "dependencies" in under "releases" of
+	// a normal package. These will typically be compiled Python extensions
+	// that are supplementary, or missing from Sublime Text.
+	"dependencies": [
+		{
+			// Each dependency should have a name, description, author, issues
+			// URL and a list of releases. Each release needs a version, url
+			// sublime_text and platforms keys. If the URL is not over SSL,
+			// there needs to be a sha256 key containing the sha256 hash of the
+			// package file.
+			"name": "bz2",
+			"description": "Python bz2 module",
+			"author": "wbond",
+			"issues": "https://github.com/wbond/package_control/issues",
+			"releases": [
+				{
+					"version": "1.0.0",
+					"url": "https://packagecontrol.io/bz2.sublime-package",
+					"sublime_text": "*",
+					"platforms": ["*"]
+				}
+			]
+		},
+		{
+			"name": "ssl-linux",
+			"description": "Python _ssl module for Linux",
+			"author": "wbond",
+			"issues": "https://github.com/wbond/package_control/issues",
+			"releases": [
+				{
+					"version": "1.0.0",
+					"url": "http://packagecontrol.io/ssl-linux.sublime-package",
+					"sublime_text": "*",
+					"platforms": ["linux"],
+					"sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
+				}
+			]
+		},
+		{
+			"name": "ssl-windows",
+			"description": "Python _ssl module for Sublime Text 2 on Windows",
+			"author": "wbond",
+			"issues": "https://github.com/wbond/package_control/issues",
+			"releases": [
+				{
+					"version": "1.0.0",
+					"url": "http://packagecontrol.io/ssl-windows.sublime-package",
+					"sublime_text": "<3000",
+					"platforms": ["windows"],
+					"sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
+				}
+			]
+		}
+	],
+
 	// If you need/want to split your repository up into multiple smaller
 	// files for the sake of organization, the "includes" key allows you to
 	// enter URL paths that will be combined together and dynamically inserted

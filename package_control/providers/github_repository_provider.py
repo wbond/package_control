@@ -76,6 +76,18 @@ class GitHubRepositoryProvider():
 
         return {}.items()
 
+    def get_broken_dependencies(self):
+        """
+        For API-compatibility with RepositoryProvider
+        """
+
+        return {}.items()
+
+    def get_dependencies(self, ):
+        "For API-compatibility with RepositoryProvider"
+
+        return {}.items()
+
     def get_packages(self, invalid_sources=None):
         """
         Uses the GitHub API to construct necessary info for a package

@@ -314,3 +314,54 @@ class ChannelProvider():
             output[copy['name']] = copy
 
         return output
+
+    def get_dependencies(self, repo):
+        """
+        Provides access to the dependency info that is cached in a channel
+
+        :param repo:
+            The URL of the repository to get the cached info of
+
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A dict in the format:
+            {
+                'Dependency Name': {
+                    'name': name,
+                    'description': description,
+                    'author': author,
+                    'issues': URL,
+                    'releases': [
+                        {
+                            'sublime_text': '*',
+                            'platforms': ['*'],
+                            'url': url,
+                            'date': date,
+                            'version': version,
+                            'sha256': hex_hash
+                        }, ...
+                    ]
+                },
+                ...
+            }
+        """
+
+        self.fetch()
+
+        repo = update_url(repo, self.settings.get('debug'))
+
+        if self.channel_info.get('dependencies_cache', False) == False:
+            return {}
+
+        if self.channel_info['dependencies_cache'].get(repo, False) == False:
+            return {}
+
+        output = {}
+        for dependency in self.channel_info['dependencies_cache'][repo]:
+            dependency['releases'] = version_sort(dependency['releases'], 'platforms', reverse=True)
+            output[dependency['name']] = dependency
+
+        return output

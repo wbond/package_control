@@ -75,6 +75,14 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
         provider = GitHubRepositoryProvider('https://github.com/packagecontrol/package_control-tester', self.github_settings())
         self.assertEqual(list(), list(provider.get_broken_packages()))
 
+    def test_get_dependencies(self):
+        provider = GitHubRepositoryProvider('https://github.com/packagecontrol/package_control-tester', self.github_settings())
+        self.assertEqual(list(), list(provider.get_dependencies()))
+
+    def test_get_broken_dependencies(self):
+        provider = GitHubRepositoryProvider('https://github.com/packagecontrol/package_control-tester', self.github_settings())
+        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+
 
 class GitHubUserProviderTests(unittest.TestCase):
     maxDiff = None
@@ -141,6 +149,14 @@ class GitHubUserProviderTests(unittest.TestCase):
         provider = GitHubUserProvider('https://github.com/packagecontrol', self.github_settings())
         self.assertEqual(list(), list(provider.get_broken_packages()))
 
+    def test_get_dependencies(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol', self.github_settings())
+        self.assertEqual(list(), list(provider.get_dependencies()))
+
+    def test_get_broken_dependencies(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol', self.github_settings())
+        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+
 
 class BitBucketRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
@@ -201,6 +217,14 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
         provider = BitBucketRepositoryProvider('https://bitbucket.org/wbond/package_control-tester', self.bitbucket_settings())
         self.assertEqual(list(), list(provider.get_broken_packages()))
 
+    def test_get_dependencies(self):
+        provider = BitBucketRepositoryProvider('https://bitbucket.org/wbond/package_control-tester', self.bitbucket_settings())
+        self.assertEqual(list(), list(provider.get_dependencies()))
+
+    def test_get_broken_dependencies(self):
+        provider = BitBucketRepositoryProvider('https://bitbucket.org/wbond/package_control-tester', self.bitbucket_settings())
+        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+
 
 class RepositoryProviderTests(unittest.TestCase):
     maxDiff = None
@@ -258,6 +282,11 @@ class RepositoryProviderTests(unittest.TestCase):
             packages
         )
 
+    def test_get_dependencies_10(self):
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json', self.settings())
+        dependencies = [dependency for dependency in provider.get_dependencies()]
+        self.assertEqual([], dependencies)
+
     def test_get_packages_12(self):
         provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json', self.settings())
         packages = [package for package in provider.get_packages()]
@@ -304,6 +333,11 @@ class RepositoryProviderTests(unittest.TestCase):
             )],
             packages
         )
+
+    def test_get_dependencies_12(self):
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json', self.settings())
+        dependencies = [dependency for dependency in provider.get_dependencies()]
+        self.assertEqual([], dependencies)
 
     def test_get_packages_20_explicit(self):
         provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json', self.settings())
@@ -358,6 +392,11 @@ class RepositoryProviderTests(unittest.TestCase):
             )],
             packages
         )
+
+    def test_get_dependencies_20(self):
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json', self.settings())
+        dependencies = [dependency for dependency in provider.get_dependencies()]
+        self.assertEqual([], dependencies)
 
     def test_get_packages_20_github(self):
         provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json', self.settings())
@@ -492,7 +531,8 @@ class RepositoryProviderTests(unittest.TestCase):
                             "date": "2014-11-12 15:52:35",
                             "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
                             "sublime_text": "*",
-                            "platforms": ["windows"]
+                            "platforms": ["windows"],
+                            "dependencies": ["bz2"]
                         },
                         {
                             "version": "1.0.1-beta",
@@ -519,6 +559,69 @@ class RepositoryProviderTests(unittest.TestCase):
                 }
             )],
             packages
+        )
+
+    def test_get_dependencies_300_explicit(self):
+        provider = RepositoryProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json', self.settings())
+        dependencies = [dependency for dependency in provider.get_dependencies()]
+        self.assertEqual(
+            [(
+                'bz2',
+                {
+                    "name": "bz2",
+                    "author": "wbond",
+                    "description": "Python bz2 module",
+                    "issues": "https://github.com/wbond/package_control/issues",
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json'],
+                    "releases": [
+                        {
+                            "version": "1.0.0",
+                            "url": "https://packagecontrol.io/bz2.sublime-package",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            ),
+            (
+                'ssl-linux',
+                {
+                    "name": "ssl-linux",
+                    "description": "Python _ssl module for Linux",
+                    "author": "wbond",
+                    "issues": "https://github.com/wbond/package_control/issues",
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json'],
+                    "releases": [
+                        {
+                            "version": "1.0.0",
+                            "url": "http://packagecontrol.io/ssl-linux.sublime-package",
+                            "sublime_text": "*",
+                            "platforms": ["linux"],
+                            "sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
+                        }
+                    ]
+                }
+            ),
+            (
+                'ssl-windows',
+                {
+                    "name": "ssl-windows",
+                    "description": "Python _ssl module for Sublime Text 2 on Windows",
+                    "author": "wbond",
+                    "issues": "https://github.com/wbond/package_control/issues",
+                    "sources": ['https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json'],
+                    "releases": [
+                        {
+                            "version": "1.0.0",
+                            "url": "http://packagecontrol.io/ssl-windows.sublime-package",
+                            "sublime_text": "<3000",
+                            "platforms": ["windows"],
+                            "sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
+                        }
+                    ]
+                }
+            )],
+            dependencies
         )
 
     def test_get_packages_300_github(self):
@@ -1238,7 +1341,8 @@ class ChannelProviderTests(unittest.TestCase):
                             "date": "2014-11-12 15:52:35",
                             "url": "https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1",
                             "sublime_text": "*",
-                            "platforms": ["windows"]
+                            "platforms": ["windows"],
+                            "dependencies": ["bz2"]
                         },
                         {
                             "version": "1.0.1-beta",
@@ -1492,4 +1596,57 @@ class ChannelProviderTests(unittest.TestCase):
                 }
             },
             provider.get_packages("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-bitbucket_releases.json")
+        )
+
+    def test_get_dependencies_300(self):
+        self.maxDiff = None
+        provider = ChannelProvider('https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json', self.settings())
+        self.assertEqual(
+            {
+                'bz2': {
+                    "name": "bz2",
+                    "author": "wbond",
+                    "description": "Python bz2 module",
+                    "issues": "https://github.com/wbond/package_control/issues",
+                    "releases": [
+                        {
+                            "version": "1.0.0",
+                            "url": "https://packagecontrol.io/bz2.sublime-package",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        }
+                    ]
+                },
+                'ssl-linux': {
+                    "name": "ssl-linux",
+                    "description": "Python _ssl module for Linux",
+                    "author": "wbond",
+                    "issues": "https://github.com/wbond/package_control/issues",
+                    "releases": [
+                        {
+                            "version": "1.0.0",
+                            "url": "http://packagecontrol.io/ssl-linux.sublime-package",
+                            "sublime_text": "*",
+                            "platforms": ["linux"],
+                            "sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
+                        }
+                    ]
+                },
+                'ssl-windows': {
+                    "name": "ssl-windows",
+                    "description": "Python _ssl module for Sublime Text 2 on Windows",
+                    "author": "wbond",
+                    "issues": "https://github.com/wbond/package_control/issues",
+                    "releases": [
+                        {
+                            "version": "1.0.0",
+                            "url": "http://packagecontrol.io/ssl-windows.sublime-package",
+                            "sublime_text": "<3000",
+                            "platforms": ["windows"],
+                            "sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
+                        }
+                    ]
+                }
+            },
+            provider.get_dependencies("https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json")
         )

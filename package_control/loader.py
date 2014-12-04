@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+import json
 from os import path
 import zipfile
 from textwrap import dedent
@@ -16,6 +17,7 @@ from .sys_path import st_dir
 from .clear_directory import delete_directory
 from .console_write import console_write
 from .package_disabler import PackageDisabler
+from .settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
 
@@ -101,10 +103,22 @@ def add(priority, name, code=None):
         if removed_old_loader:
             console_write(u'Cleaning up remenants of old loaders', True)
 
+            pc_settings = sublime.load_settings(pc_settings_filename())
+            orig_installed_packages = load_list_setting(pc_settings, 'installed_packages')
+            installed_packages = list(orig_installed_packages)
+
+            if '0-package_control_loader' in installed_packages:
+                installed_packages.remove('0-package_control_loader')
+
             for name in ['bz2', 'ssl-linux', 'ssl-windows']:
                 dep_dir = path.join(packages_dir, name)
                 if path.exists(dep_dir):
                     delete_directory(dep_dir)
+                if name in installed_packages:
+                    installed_packages.remove(name)
+
+            save_list_setting(pc_settings, pc_settings_filename(),
+                'installed_packages', installed_packages, orig_installed_packages)
 
 
 def remove(name):

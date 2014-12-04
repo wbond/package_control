@@ -10,7 +10,7 @@ from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
 from .open_compat import open_compat, read_compat
-from .settings import pc_settings_filename
+from .settings import pc_settings_filename, load_list_setting
 
 
 class AutomaticUpgrader(threading.Thread):
@@ -20,11 +20,14 @@ class AutomaticUpgrader(threading.Thread):
     settings.
     """
 
-    def __init__(self, found_packages):
+    def __init__(self, found_packages, found_dependencies):
         """
         :param found_packages:
             A list of package names for the packages that were found to be
             installed on the machine.
+
+        :param found_dependencies:
+            A list of installed dependencies found on the machine
         """
 
         self.installer = PackageInstaller()
@@ -44,6 +47,8 @@ class AutomaticUpgrader(threading.Thread):
         # Detect if a package is missing that should be installed
         self.missing_packages = list(set(self.installed_packages) -
             set(found_packages))
+        self.missing_dependencies = list(set(self.installed_dependencies) -
+            set(found_dependencies))
 
         if self.auto_upgrade and self.next_run <= time.time():
             self.save_last_run(time.time())
@@ -92,17 +97,15 @@ class AutomaticUpgrader(threading.Thread):
         with open_compat(self.last_run_file, 'w') as fobj:
             fobj.write(str(int(last_run)))
 
-
     def load_settings(self):
         """
         Loads the list of installed packages
         """
 
         self.settings = sublime.load_settings(pc_settings_filename())
-        self.installed_packages = self.settings.get('installed_packages', [])
+        self.installed_packages = load_list_setting(self.settings, 'installed_packages')
+        self.installed_dependencies = load_list_setting(self.settings, 'installed_dependencies')
         self.should_install_missing = self.settings.get('install_missing')
-        if not isinstance(self.installed_packages, list):
-            self.installed_packages = []
 
     def run(self):
         self.install_missing()
@@ -120,10 +123,15 @@ class AutomaticUpgrader(threading.Thread):
         found on the filesystem and passed as `found_packages`.
         """
 
-        if not self.missing_packages or not self.should_install_missing:
+        if (not self.missing_packages and not self.missing_dependencies) or \
+                not self.should_install_missing:
             return
 
-        console_write(u'Installing %s missing packages' % len(self.missing_packages), True)
+        total_missing_packages = len(self.missing_packages)
+        total_missing_dependencies = len(self.missing_dependencies)
+
+        if total_missing_packages > 0:
+            console_write(u'Installing %s missing packages' % total_missing_packages, True)
 
         # Fetching the list of packages also grabs the renamed packages
         self.manager.list_available_packages()
@@ -141,11 +149,18 @@ class AutomaticUpgrader(threading.Thread):
                     self.installed_packages.append(new_name)
                     self.settings.set('installed_packages', self.installed_packages)
                     sublime.save_settings(pc_settings_filename())
+                sublime.set_timeout(update_installed_packages, 10)
                 package = new_name
-            sublime.set_timeout(update_installed_packages, 10)
 
             if self.installer.manager.install_package(package):
                 console_write(u'Installed missing package %s' % package, True)
+
+        if total_missing_dependencies > 0:
+            console_write(u'Installing %s missing dependencies' % total_missing_dependencies, True)
+
+        for dependency in self.missing_dependencies:
+            if self.installer.manager.install_package(dependency, is_dependency=True):
+                console_write(u'Installed missing dependency %s' % dependency, True)
 
     def print_skip(self):
         """

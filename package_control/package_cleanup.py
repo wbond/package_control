@@ -12,6 +12,7 @@ from .package_manager import PackageManager
 from .open_compat import open_compat
 from .package_io import package_file_exists
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
+from . import loader
 
 
 class PackageCleanup(threading.Thread):
@@ -25,12 +26,15 @@ class PackageCleanup(threading.Thread):
 
         settings = sublime.load_settings(pc_settings_filename())
         self.original_installed_packages = load_list_setting(settings, 'installed_packages')
+        self.original_installed_dependencies = load_list_setting(settings, 'installed_dependencies')
         self.remove_orphaned = settings.get('remove_orphaned', True)
 
         threading.Thread.__init__(self)
 
     def run(self):
         found_packages = []
+        found_dependencies = []
+
         installed_packages = list(self.original_installed_packages)
 
         for package_name in os.listdir(sublime.packages_path()):
@@ -103,6 +107,20 @@ class PackageCleanup(threading.Thread):
                             u'%s - deferring until next start') % package_name
                         console_write(error_string, True)
 
+            if package_file_exists(package_name, 'dependency-metadata.json'):
+                found = False
+                if self.remove_orphaned and package_name not in self.original_installed_dependencies:
+                    if delete_directory(package_dir):
+                        console_write(u'Removed directory for orphaned dependency %s' % package_name, True)
+                    else:
+                        if not os.path.exists(cleanup_file):
+                            open_compat(cleanup_file, 'w').close()
+                        error_string = (u'Unable to remove directory for orphaned dependency ' +
+                            u'%s - deferring until next start') % package_name
+                        console_write(error_string, True)
+                else:
+                    found_dependencies.append(package_name)
+
             if found:
                 found_packages.append(package_name)
 
@@ -111,6 +129,10 @@ class PackageCleanup(threading.Thread):
 
             for file in os.listdir(installed_path):
                 package_name = file.replace('.sublime-package', '')
+
+                if package_name == loader.loader_package_name:
+                    found_dependencies.append(package_name)
+                    continue
 
                 # Cleanup packages that were installed via Package Control, but
                 # we removed from the "installed_packages" list - usually by
@@ -130,9 +152,9 @@ class PackageCleanup(threading.Thread):
                 else:
                     found_packages.append(package_name)
 
-        sublime.set_timeout(lambda: self.finish(installed_packages, found_packages), 10)
+        sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_dependencies), 10)
 
-    def finish(self, installed_packages, found_packages):
+    def finish(self, installed_packages, found_packages, found_dependencies):
         """
         A callback that can be run the main UI thread to perform saving of the
         Package Control.sublime-settings file. Also fires off the
@@ -144,6 +166,10 @@ class PackageCleanup(threading.Thread):
 
         :param found_packages:
             A list of the string package names of all packages that are
+            currently installed on the filesystem.
+
+        :param found_dependencies:
+            A list of the string package names of all dependencies that are
             currently installed on the filesystem.
         """
 
@@ -169,4 +195,4 @@ class PackageCleanup(threading.Thread):
 
         save_list_setting(pc_settings, pc_filename, 'installed_packages',
             installed_packages, self.original_installed_packages)
-        AutomaticUpgrader(found_packages).start()
+        AutomaticUpgrader(found_packages, found_dependencies).start()

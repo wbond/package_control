@@ -1,5 +1,6 @@
 import sys
 import threading
+import os
 from textwrap import dedent
 
 import sublime
@@ -8,17 +9,19 @@ if sys.version_info < (3,):
     from package_control.bootstrap import bootstrap_dependency
     from package_control.package_manager import PackageManager
     from package_control import loader
+    from package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
 else:
     from .package_control.bootstrap import bootstrap_dependency
     from .package_control.package_manager import PackageManager
     from .package_control import loader
+    from .package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
 def plugin_loaded():
     manager = PackageManager()
     settings = manager.settings.copy()
 
-    if not settings.get('installed_dependencies', []):
+    if not os.path.exists(loader.loader_package_path):
         base_loader_code = """
             import sys
             import os
@@ -77,18 +80,43 @@ def plugin_loaded():
                         pc_package_path = buf.value
 
                 sys.path.insert(0, encode(pc_package_path))
+                import package_control
+                # We remove the import path right away so as not to screw up
+                # Sublime Text and its import machinery
+                sys.path.remove(encode(pc_package_path))
 
             else:
                 print(u'Package Control: Error finding main directory from loader')
         """
         base_loader_code = dedent(base_loader_code)
-        loader.add('000', 'package_control', base_loader_code)
+        loader.add('00', 'package_control', base_loader_code)
+
+        pc_settings = sublime.load_settings(pc_settings_filename())
+
+        # Make sure we are track Package Control itself
+        installed_packages = load_list_setting(pc_settings, 'installed_packages')
+        if 'Package Control' not in installed_packages:
+            installed_packages.append('Package Control')
+            save_list_setting(pc_settings, pc_settings_filename(), 'installed_packages', installed_packages)
+
+        installed_dependencies = load_list_setting(pc_settings, 'installed_dependencies')
+
+        # Record that the loader itself is installed
+        if loader.loader_package_name not in installed_dependencies:
+            installed_dependencies.append(loader.loader_package_name)
+
+        # Queue up installation of bz2
+        if 'bz2' not in installed_dependencies:
+            installed_dependencies.append('bz2')
+
+        save_list_setting(pc_settings, pc_settings_filename(), 'installed_dependencies', installed_dependencies)
+
 
     # SSL support fo Linux
     if sublime.platform() == 'linux':
         linux_ssl_url = u'http://packagecontrol.io/ssl-linux.sublime-package'
         linux_ssl_hash = u'd12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4'
-        linux_ssl_priority = u'001'
+        linux_ssl_priority = u'01'
 
         def linux_ssl_show_restart():
             sublime.message_dialog(u'Package Control\n\n'
@@ -106,7 +134,7 @@ def plugin_loaded():
     if sublime.platform() == 'windows' and sys.version_info < (3,):
         win_ssl_url = u'http://packagecontrol.io/ssl-windows.sublime-package'
         win_ssl_hash = u'efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea'
-        win_ssl_priority = u'001'
+        win_ssl_priority = u'01'
 
         def win_ssl_show_restart():
             sublime.message_dialog(u'Package Control\n\n'
