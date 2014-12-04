@@ -569,6 +569,7 @@ class RepositoryProviderTests(unittest.TestCase):
                 'bz2',
                 {
                     "name": "bz2",
+                    "load_order": "02",
                     "author": "wbond",
                     "description": "Python bz2 module",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -587,6 +588,7 @@ class RepositoryProviderTests(unittest.TestCase):
                 'ssl-linux',
                 {
                     "name": "ssl-linux",
+                    "load_order": "01",
                     "description": "Python _ssl module for Linux",
                     "author": "wbond",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -606,6 +608,7 @@ class RepositoryProviderTests(unittest.TestCase):
                 'ssl-windows',
                 {
                     "name": "ssl-windows",
+                    "load_order": "01",
                     "description": "Python _ssl module for Sublime Text 2 on Windows",
                     "author": "wbond",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -1605,6 +1608,7 @@ class ChannelProviderTests(unittest.TestCase):
             {
                 'bz2': {
                     "name": "bz2",
+                    "load_order": "02",
                     "author": "wbond",
                     "description": "Python bz2 module",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -1619,6 +1623,7 @@ class ChannelProviderTests(unittest.TestCase):
                 },
                 'ssl-linux': {
                     "name": "ssl-linux",
+                    "load_order": "01",
                     "description": "Python _ssl module for Linux",
                     "author": "wbond",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -1634,6 +1639,7 @@ class ChannelProviderTests(unittest.TestCase):
                 },
                 'ssl-windows': {
                     "name": "ssl-windows",
+                    "load_order": "01",
                     "description": "Python _ssl module for Sublime Text 2 on Windows",
                     "author": "wbond",
                     "issues": "https://github.com/wbond/package_control/issues",
