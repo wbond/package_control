@@ -85,6 +85,12 @@ def _release(url, manager):
     _lock.acquire()
     try:
         hostname = urlparse(url).hostname.lower()
+
+        # This means the package was reloaded between _grab and _release,
+        # so the downloader is using old code and we want to discard it
+        if hostname not in _managers:
+            return
+
         _managers[hostname].insert(0, manager)
 
         _in_use -= 1
