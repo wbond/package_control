@@ -109,6 +109,10 @@ def plugin_loaded():
         if 'bz2' not in installed_dependencies:
             installed_dependencies.append('bz2')
 
+        # Queue up installation of select module for ST2/Windows
+        if sublime.platform() == 'windows' and sys.version_info < (3,) and 'select-windows' not in installed_dependencies:
+            installed_dependencies.append('select-windows')
+
         save_list_setting(pc_settings, pc_settings_filename(), 'installed_dependencies', installed_dependencies)
 
 
