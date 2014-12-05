@@ -138,7 +138,7 @@ def plugin_loaded():
     # SSL support for SHA-2 certificates with ST2 on Windows
     if sublime.platform() == 'windows' and sys.version_info < (3,):
         win_ssl_url = u'http://packagecontrol.io/ssl-windows.sublime-package'
-        win_ssl_hash = u'b6e3bd1114c2e2e34db869f6c42214827ac0dfff97349fe3a281028e5a205f79'
+        win_ssl_hash = u'3c28982eb400039cfffe53d38510556adead39ba7321f2d15a6770d3ebc75030'
         win_ssl_priority = u'01'
 
         def win_ssl_show_restart():

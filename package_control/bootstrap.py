@@ -95,11 +95,11 @@ def bootstrap_dependency(settings, url, hash_, priority, on_complete):
 
         dest = dest.replace('\\', '/')
 
-        dest = path.join(package_dir, dest)
-
         if dest == u'loader.py':
             code = data_zip.read(zip_path).decode('utf-8')
             continue
+
+        dest = path.join(package_dir, dest)
 
         if dest[-1] == '/':
             if not path.exists(dest):
@@ -123,8 +123,8 @@ def bootstrap_dependency(settings, url, hash_, priority, on_complete):
         settings = sublime.load_settings(filename)
         old = load_list_setting(settings, 'installed_dependencies')
         new = list(old)
-        if loader_name not in new:
-            new.append(loader_name)
+        if loader.loader_package_name not in new:
+            new.append(loader_package_name)
         if package_basename not in new:
             new.append(package_basename)
         save_list_setting(settings, filename, 'installed_dependencies', new, old)

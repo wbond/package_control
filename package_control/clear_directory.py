@@ -108,4 +108,6 @@ def delete_directory(path):
     :param path:
         The path to the folder to be deleted
     """
+
     shutil.rmtree(path, onerror=_on_error)
+    return not os.path.exists(path)

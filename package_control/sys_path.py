@@ -64,8 +64,7 @@ def add(path, first=False):
                 sys.path.remove(enc_path)
             except (ValueError):
                 pass
-            # We insert at 1 since 0 is package_control
-            sys.path.insert(1, enc_path)
+            sys.path.insert(0, enc_path)
         elif enc_path not in sys.path:
             sys.path.append(enc_path)
 
@@ -122,7 +121,7 @@ def generate_dependency_paths(name):
     }
 
 
-def add_dependency(name):
+def add_dependency(name, first=False):
     """
     Accepts a dependency name and automatically adds the appropriate path
     to sys.path, if the dependency has a path for the current platform and
@@ -130,10 +129,13 @@ def add_dependency(name):
 
     :param name:
         A unicode string name of the dependency
+
+    :param first:
+        If the path should be added to the beginning of the list
     """
 
     dep_paths = generate_dependency_paths(name)
 
     for type_ in dep_paths:
         if os.path.exists(encode(dep_paths[type_])):
-            add(dep_paths[type_])
+            add(dep_paths[type_], first=first)
