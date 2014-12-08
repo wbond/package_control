@@ -337,6 +337,9 @@ class RepositoryProvider():
                             value = [value]
                         download_info[field] = value
 
+                if 'platforms' not in download_info:
+                    download_info['platforms'] = ['*']
+
                 tags = release.get('tags')
                 branch = release.get('branch')
 

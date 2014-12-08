@@ -376,9 +376,10 @@
 		{
 			// Each dependency should have a name, load_order, description,
 			// author, issues URL and a list of releases. Each release needs a
-			// version and url or base and tags plus sublime_text and platforms
-			// keys. If the URL is not over SSL, there needs to be a sha256 key
-			// containing the sha256 hash of the package file.
+			// version and url or base and tags plus sublime_text keys. The
+			// platforms key is optionally and defaults to *. If the URL is not
+			// over SSL, there needs to be a sha256 key containing the sha256
+			// hash of the package file.
 			"name": "bz2",
 			"load_order": "02",
 			"description": "Python bz2 module",
@@ -388,8 +389,7 @@
 				{
 					"base": "https://github.com/codexns/sublime-bz2",
 					"tags": true,
-					"sublime_text": "*",
-					"platforms": ["*"]
+					"sublime_text": "*"
 				}
 			]
 		},
