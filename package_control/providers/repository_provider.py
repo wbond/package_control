@@ -120,6 +120,9 @@ class RepositoryProvider():
             return
 
         self.repo_info = self.fetch_location(self.repo)
+        for key in ['packages', 'dependencies']:
+            if key not in self.repo_info:
+                self.repo_info[key] = []
 
         if 'includes' not in self.repo_info:
             return
@@ -143,6 +146,8 @@ class RepositoryProvider():
             include_info = self.fetch_location(include)
             included_packages = include_info.get('packages', [])
             self.repo_info['packages'].extend(included_packages)
+            included_dependencies = include_info.get('dependencies', [])
+            self.repo_info['dependencies'].extend(included_dependencies)
 
     def fetch_and_validate(self):
         """
