@@ -5,6 +5,8 @@ import re
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer
 
+import sublime
+
 from .console_write import console_write
 from .unicode import unicode_from_os
 from .show_error import show_error
@@ -99,13 +101,43 @@ class Cli(object):
             console_write(u"Trying to execute command %s" % create_cmd(args), True)
 
         try:
+            flags = None
+            if os.name == 'nt':
+                flags = subprocess.CREATE_NEW_PROCESS_GROUP
+
             proc = subprocess.Popen(args, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                startupinfo=startupinfo, cwd=cwd)
+                startupinfo=startupinfo, cwd=cwd, creationflags=flags, shell=False)
 
             if input and isinstance(input, str_cls):
                 input = input.encode(encoding)
+
+            stuck = True
+
+            def kill_proc():
+                if not stuck:
+                    return
+                # This doesn't actually work!
+                proc.kill()
+                binary_name = os.path.basename(args[0])
+                if re.search('git', binary_name):
+                    is_vcs = True
+                elif re.search('hg', binary_name):
+                    is_vcs = True
+                message = (u'The process %s seems to have gotten stuck.') % binary_name
+                if is_vcs:
+                    message +=(u' This is likely due to a password or ' + \
+                        u'passphrase prompt. Please ensure %s works without ' + \
+                        u'a prompt, or change the "ignore_vcs_packages" ' + \
+                        u'Package Control setting to true. Sublime Text will ' + \
+                        u'need to be restarted once these changes are made.') % binary_name
+                show_error(message)
+            sublime.set_timeout(kill_proc, 60000)
+
             output, _ = proc.communicate(input)
+
+            stuck = False
+
             output = output.decode(encoding)
             output = output.replace('\r\n', '\n').rstrip(' \n\r')
 
