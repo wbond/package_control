@@ -3,7 +3,7 @@
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
 	"channels": [
-		"https://packagecontrol.io/channel.json"
+		"https://packagecontrol.io/channel_v3.json"
 	],
 
 	// A list of URLs that contain a packages JSON file. These repositories
