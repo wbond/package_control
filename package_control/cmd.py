@@ -106,13 +106,9 @@ class Cli(object):
             console_write(u"Trying to execute command %s" % create_cmd(args), True)
 
         try:
-            flags = None
-            if os.name == 'nt':
-                flags = subprocess.CREATE_NEW_PROCESS_GROUP
-
             proc = subprocess.Popen(args, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                startupinfo=startupinfo, cwd=cwd, creationflags=flags)
+                startupinfo=startupinfo, cwd=cwd)
 
             if input and isinstance(input, str_cls):
                 input = input.encode(encoding)
