@@ -13,6 +13,7 @@ from .open_compat import open_compat
 from .package_io import package_file_exists
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 from . import loader
+from .providers.release_selector import is_compatible_version
 
 
 class PackageCleanup(threading.Thread):
@@ -157,7 +158,82 @@ class PackageCleanup(threading.Thread):
                 else:
                     found_packages.append(package_name)
 
+        invalid_packages = []
+        invalid_dependencies = []
+
+        # Check metadata to verify packages were not improperly installed
+        for package in found_packages:
+            metadata = self.manager.get_metadata(package)
+            if metadata and not self.is_compatible(metadata):
+                invalid_packages.append(package)
+
+        for dependency in found_dependencies:
+            metadata = self.manager.get_metadata(dependency, is_dependency=True)
+            if metadata and not self.is_compatible(metadata):
+                invalid_dependencies.append(package)
+
+        if invalid_packages or invalid_dependencies:
+            def show_sync_error():
+                message = u''
+                if invalid_packages:
+                    package_s = 's were' if len(invalid_packages) != 1 else ' was'
+                    message += (u'The following incompatible package%s ' + \
+                        u'found installed:\n\n%s\n\n') % (package_s,
+                        '\n'.join(invalid_packages))
+                if invalid_dependencies:
+                    dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
+                    message += (u'The following incompatible dependenc%s ' + \
+                        u'found installed:\n\n%s\n\n') % (dependency_s,
+                        '\n'.join(invalid_dependencies))
+                message += u'This is usually due to syncing packages across ' + \
+                    u'different machines in a way that does not check ' + \
+                    u'package metadata for compatibility.\n\n' + \
+                    u'Please visit https://packagecontrol.io/docs/syncing ' + \
+                    u'for information about how to properly sync ' + \
+                    u'configuration and packages across machines.\n\n' + \
+                    u'To restore package functionality, please remove each ' + \
+                    u'listed package and reinstall it.'
+                show_error(message)
+            sublime.set_timeout(show_sync_error, 100)
+
         sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_dependencies), 10)
+
+    def is_compatible(self, metadata):
+        """
+        Detects if a package is compatible with the current Sublime Text install
+
+        :param metadata:
+            A dict from a metadata file
+
+        :return:
+            If the package is compatible
+        """
+
+        sublime_text = metadata.get('sublime_text')
+        platforms = metadata.get('platforms', [])
+
+        # This indicates the metadata is old, so we assume a match
+        if not sublime_text and not platforms:
+            return True
+
+        if not is_compatible_version(sublime_text):
+            return False
+
+        if not isinstance(platforms, list):
+            platforms = [platforms]
+
+        platform_selectors = [sublime.platform() + '-' + sublime.arch(),
+            sublime.platform(), '*']
+
+        matched = False
+        for selector in platform_selectors:
+            if selector in platforms:
+                matched = True
+                break
+        if not matched:
+            return False
+
+        return True
 
     def finish(self, installed_packages, found_packages, found_dependencies):
         """
