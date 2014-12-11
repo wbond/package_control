@@ -123,6 +123,7 @@ mods_load_order = [
     '.commands.grab_certs_command',
     '.commands.install_package_command',
     '.commands.list_packages_command',
+    '.commands.list_unmanaged_packages_command',
     '.commands.package_message_command',
     '.commands.remove_channel_command',
     '.commands.remove_package_command',

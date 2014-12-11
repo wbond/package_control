@@ -13,10 +13,10 @@ class ListUnmanagedPackagesCommand(sublime_plugin.WindowCommand):
 
     def run(self):
         settings = sublime.load_settings('Package Control.sublime-settings')
-        ignored_packages = []
-        ignored_packages.extend(settings.get('unmanaged_packages_ignore', []))
+
+        ignored_packages = settings.get('unmanaged_packages_ignore', [])
         ignored_packages.extend(settings.get('installed_packages', []))
-        ListPackagesThread(
-            self.window,
-            lambda package: package[0] not in ignored_packages,
-        ).start()
+
+        filter_packages = lambda package: package[0] not in ignored_packages
+
+        ListPackagesThread(self.window, filter_packages).start()

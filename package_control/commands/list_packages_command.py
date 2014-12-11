@@ -27,6 +27,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         :param window:
             An instance of :class:`sublime.Window` that represents the Sublime
             Text window to show the list of installed packages in.
+
         :param filter_function:
             A callable to filter packages for display. This function gets
             called for each package in the list with a three-element list
@@ -46,8 +47,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
     def run(self):
         self.package_list = self.make_package_list()
         if self.filter_function:
-            self.package_list = list(filter(self.filter_function,
-                                            self.package_list))
+            self.package_list = list(filter(self.filter_function, self.package_list))
 
         def show_quick_panel():
             if not self.package_list:
