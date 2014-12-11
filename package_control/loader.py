@@ -14,7 +14,6 @@ except (NameError):
 import sublime
 
 from .sys_path import st_dir
-from .clear_directory import delete_directory
 from .console_write import console_write
 from .package_disabler import PackageDisabler
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
@@ -91,6 +90,9 @@ def add(priority, name, code=None):
 
     # Clean things up for people who were tracking the master branch
     if just_created_loader:
+        # Wait to import this to not trigger an error on upgrade from 2.0.0 to 3.0.0
+        from .clear_directory import delete_directory
+
         old_loader_sp = path.join(installed_packages_dir, '0-package_control_loader.sublime-package')
         old_loader_dir = path.join(packages_dir, '0-package_control_loader')
 
