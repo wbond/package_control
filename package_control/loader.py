@@ -4,6 +4,7 @@ import re
 import json
 from os import path
 import zipfile
+import shutil
 from textwrap import dedent
 
 try:
@@ -90,9 +91,6 @@ def add(priority, name, code=None):
 
     # Clean things up for people who were tracking the master branch
     if just_created_loader:
-        # Wait to import this to not trigger an error on upgrade from 2.0.0 to 3.0.0
-        from .clear_directory import delete_directory
-
         old_loader_sp = path.join(installed_packages_dir, '0-package_control_loader.sublime-package')
         old_loader_dir = path.join(packages_dir, '0-package_control_loader')
 
@@ -104,7 +102,10 @@ def add(priority, name, code=None):
 
         if path.exists(old_loader_dir):
             removed_old_loader = True
-            delete_directory(old_loader_dir)
+            try:
+                shutil.rmtree(old_loader_dir)
+            except (OSError):
+                open(os.path.join(old_loader_dir, 'package-control.cleanup'), 'w').close()
 
         if removed_old_loader:
             console_write(u'Cleaning up remenants of old loaders', True)
@@ -119,7 +120,10 @@ def add(priority, name, code=None):
             for name in ['bz2', 'ssl-linux', 'ssl-windows']:
                 dep_dir = path.join(packages_dir, name)
                 if path.exists(dep_dir):
-                    delete_directory(dep_dir)
+                    try:
+                        shutil.rmtree(dep_dir)
+                    except (OSError):
+                        open(os.path.join(dep_dir, 'package-control.cleanup'), 'w').close()
                 if name in installed_packages:
                     installed_packages.remove(name)
 
