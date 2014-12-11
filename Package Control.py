@@ -58,7 +58,6 @@ else:
 
     try:
         # Python 3
-        from .package_control import reloader
         from .package_control import sys_path
 
         from .package_control.commands import *
@@ -66,7 +65,6 @@ else:
 
     except (ValueError):
         # Python 2
-        from package_control import reloader
         from package_control import sys_path
 
         from package_control.commands import *

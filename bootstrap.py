@@ -6,11 +6,13 @@ from textwrap import dedent
 import sublime
 
 if sys.version_info < (3,):
+    from package_control import reloader
     from package_control.bootstrap import bootstrap_dependency
     from package_control.package_manager import PackageManager
     from package_control import loader
     from package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
 else:
+    from .package_control import reloader
     from .package_control.bootstrap import bootstrap_dependency
     from .package_control.package_manager import PackageManager
     from .package_control import loader
