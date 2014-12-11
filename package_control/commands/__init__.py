@@ -13,7 +13,6 @@ from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
 from .remove_package_command import RemovePackageCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
-from .package_message_command import PackageMessageCommand
 from .package_control_insert_command import PackageControlInsertCommand
 from .package_control_tests_command import PackageControlTestsCommand
 from .remove_channel_command import RemoveChannelCommand
@@ -34,7 +33,6 @@ __all__ = [
     'RemovePackageCommand',
     'UpgradeAllPackagesCommand',
     'UpgradePackageCommand',
-    'PackageMessageCommand',
     'PackageControlInsertCommand',
     'PackageControlTestsCommand',
     'RemoveChannelCommand',

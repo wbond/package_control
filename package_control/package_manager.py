@@ -1170,16 +1170,22 @@ class PackageManager():
                 view.set_scratch(True)
 
             def write(string):
-                view.run_command('package_message', {'string': string})
+                view.run_command('insert', {'characters': string})
 
             if not view.size():
+                position = 0
                 view.settings().set("word_wrap", True)
+                view.settings().set("auto_indent", False)
                 write('Package Control Messages\n' +
                     '========================')
+            else:
+                position = view.size()
 
             write(output)
             if window.active_view() != view:
                 window.focus_view(view)
+
+            view.show(sublime.Region(position, position))
 
         sublime.set_timeout(print_to_panel, 1)
 
