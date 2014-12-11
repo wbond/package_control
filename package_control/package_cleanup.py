@@ -41,6 +41,8 @@ class PackageCleanup(threading.Thread):
             found = True
 
             package_dir = os.path.join(sublime.packages_path(), package_name)
+            if not os.path.isdir(package_dir):
+                continue
 
             clean_old_files(package_dir)
 
@@ -128,6 +130,9 @@ class PackageCleanup(threading.Thread):
             installed_path = sublime.installed_packages_path()
 
             for file in os.listdir(installed_path):
+                if file[-16:] != '.sublime-package':
+                    continue
+
                 package_name = file.replace('.sublime-package', '')
 
                 if package_name == loader.loader_package_name:
