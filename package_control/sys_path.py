@@ -16,7 +16,12 @@ if sys.version_info >= (3,):
     def encode(path):
         return path
 
-    pc_package_path = dirname(dirname(__file__))
+    if os.path.basename(__file__) == 'sys_path.py':
+        pc_package_path = dirname(dirname(__file__))
+    # When loaded as a .sublime-package file, the filename ends up being
+    # Package Control.sublime-package/Package Control.package_control.sys_path
+    else:
+        pc_package_path = dirname(__file__)
     st_version = u'3'
 
 else:
