@@ -44,6 +44,10 @@
         "command": "remove_channel"
     },
     {
+        "caption": "Package Control: List Unmanaged Packages",
+        "command": "list_unmanaged_packages"
+    },
+    {
         "caption": "Package Control: Remove Package",
         "command": "remove_package"
     },

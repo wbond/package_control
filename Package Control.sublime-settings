@@ -109,6 +109,9 @@
 	// This is the default behavior when cloning an HG repo.
 	"hg_update_command": ["pull", "--update"],
 
+	// Additional packages to ignore when listing unmanaged packages.
+	"unmanaged_packages_ignore": [],
+
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
 		".hg", ".git", ".svn", "_darcs", "CVS"
