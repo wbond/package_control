@@ -55,10 +55,6 @@ class PackageDisabler():
         if not isinstance(packages, list):
             packages = [packages]
 
-        # Don't disable Package Control so it does not get stuck disabled
-        if 'Package Control' in packages:
-            packages.remove('Package Control')
-
         disabled = []
 
         settings = sublime.load_settings(preferences_filename())
