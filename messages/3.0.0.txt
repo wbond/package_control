@@ -1,0 +1,150 @@
+Package Control 3.0.0 Changelog:
+
+
+TLDR version: Almost two months of full-time development has added dependency
+support, SSL for Linux, new Windows HTTP fallback, ST2 on Windows patches,
+and general improved robustness to Package Control.
+
+
+As of July 2014, I now work for myself. This has allowed me to spend more time
+working on open source software, including Package Control. If you appreciate
+the work I've done, please consider a small donation. If even 5% of regular
+users donated the price of a coffee or beer, that would cover quite a bit of
+my development time! See https://packagecontrol.io/about for options.
+
+
+Some recent Package Control stats:
+
+ + every weekday over 1M JSON requests his the channel server
+ + in December, the channel server will transmit 4TB+ of compressed JSON data
+ + users have installed, upgraded or removed 85M packages since late 2011
+
+
+The following notes detail some of the bigger aspects of this new release.
+
+Backwards Compatibility Breaks
+
+ - For users who have a custom SSL CA certs, please note that any custom certs
+   must now be stored in "Packages/User/Package Control.user-ca-bundle". This
+   mechanism replaces the old "certs" setting. In general this should not be
+   necessary since Package Control now utilizes OS certificate stores for CA
+   certs.
+
+Dependencies
+
+ - Package Control now supports package dependencies for the sake of shipping
+   non-user-facing binary files that are needed by packages. These will commonly
+   include compiled Python modules and executables.
+
+ - A package loader that is run before any other non-default packages. This adds
+   dependency folders to sys.path and makes the "package_control" Python module
+   always available, instead of waiting until Sublime Text loads up all 
+   packages that are alphabetically before "Package Control".
+
+Upgrades
+
+ - Improved handling of package upgrades involving editor customizations.
+   Theme, Color Scheme and Syntax upgrades will no longer cause Sublime Text
+   error messages. If a package containing one of these is being upgraded,
+   Package Control will change the setting back to the default just before
+   starting. Once complete, the customized settings will be restored.
+
+ - In-use file upgrades improved. Package Control performs extra steps on
+   Windows to allow upgrades to occur for packages that use various binary
+   files such as DLLs and executables.
+
+ - A package event API was added to allow packages to know if they were just
+   installed, are about to be upgraded, were just upgraded, or are about to be
+   removed. See https://packagecontrol.io/docs for more details.
+
+ - Package upgrades that are interupted by Sublime Text being closed or
+   restarted will no longer result in packages being left in the
+   "ignored_packages" list.
+
+Commands
+
+ - Additional commands were added to the command palette, including:
+
+    + Advanced Install Package: install packages via a comma-separated list
+    + List Unmanaged Packages: list packages not controlled via Package Control
+    + Remove Channel: helper to remove a channel
+    + Remove Repository: helper to remove a repository
+
+Syncing
+
+ - Package Control will now remove packages, upon start, that have been deleted
+   from the "installed_packages" list. This improves the recommended
+   configuration of just syncing the "Packages/User/" folder.
+
+ - Incorrect syncing of packages will now be detected and users will be
+   notified of the issue. Sync warnings will only be raised when a package for
+   a specific platform or version of Sublime Text is copied to an incompatible
+   location.
+
+Python Patches
+
+ - Upgraded SSL support for Sublime Text 2 on Windows. _ssl.pyd files are
+   installed for ST2 on Windows that are compiled against the latest version
+   of OpenSSL. This allows secure connections to validate modern SSL
+   certificates that use SHA-2 signatures.
+
+ - Package Control now patches the Python select module for Sublime Text 2 on
+   Windows. This patch will make the select module available for use by
+   all packages.
+
+Security
+
+ - All repositories and packages are now required to use SSL for improved
+   security.
+
+ - SSL support for Linux. Package Control now ships _ssl.so files that are
+   compatible with OpenSSL 0.9.8 and 1.0.x (both libssl-1.0.0 and libssl-10).
+   Thanks to the new package loader, these are injected before any other
+   packages are loaded. Gone are the days of package developers having to
+   bundle them individually, or using curl/wget.
+
+ - SSL CA certificates are now 100% sourced from the OS. Previously Package
+   Control included functionality to distribute SSL CA certificates to allow
+   validation of SSL certs on OS X and Windows. With version 3.0.0, Package
+   Control can now explort SSL CA certs from the Windows trust store into the
+   format necessary for OpenSSL. This allows PC to no longer be responsible for
+   distributing SSL CA certs in a secure way.
+
+ - Added a parser that allows Package Control to validate SSL certificates using
+   SubjectAltName fields for certs that are valid for multiple hostnames.
+   Previously such certificates were only supported in Sublime Text 3.
+
+HTTP
+
+ - Urllib-based downloader for Windows. In version 2.0.0, Package Control
+   switched from using urllib for downloads to using the WinINet API on Windows.
+   This allowed PC to delegate all of the work of proxy auto-detection and SSL
+   verification to the OS. Unfortunately some users are unable to connect to
+   the internet using WinINet due to local policies. Other users experienced
+   issues with SSL connectivity through the WinINet API. As of version 3.0.0,
+   Package Control will automatically fall back to the urllib downloader if
+   WinINet is unable to connect.
+
+ - HTTP compression based on bzip2 is now used for the channel file to reduce
+   bandwidth usage. Every Sublime Text install will now have the bz2 module
+   available for use by other packages.
+
+Repositories and Channels
+
+ - A new schema_version of the channel and repository JSON files was released
+   that supports using prefixed tags to allow for semantic versions with
+   separate code-bases for different versions of Sublime Text. See
+   https://github.com/wbond/package_control/blob/master/example-repository.json
+   for details.
+
+ - A new package, ChannelRepositoryTools, was released that provides commands
+   for package developers to upgrade their older repository JSON files to the
+   newest standard. https://packagecontrol.io/packages/ChannelRepositoryTools
+   contains more information.
+
+Package Creation
+
+ - The "Create Binary Package File" command was removed, but replaced with
+   the "package_profiles" setting which allows for any number of different
+   package creation configurations. See Preferences > Package Settings >
+   Package Control > Setting - Default for more details.
