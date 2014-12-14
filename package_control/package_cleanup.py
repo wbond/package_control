@@ -37,6 +37,7 @@ class PackageCleanup(threading.Thread):
         found_dependencies = []
 
         installed_packages = list(self.original_installed_packages)
+        installed_dependencies = list(self.original_installed_dependencies)
 
         for package_name in os.listdir(sublime.packages_path()):
             found = True
@@ -161,13 +162,20 @@ class PackageCleanup(threading.Thread):
         invalid_packages = []
         invalid_dependencies = []
 
-        # Check metadata to verify packages were not improperly installed
+        # Check metadata to verify packages were not improperly installed, and
+        # also make sure we have all dependencies we need
         for package in found_packages:
             if package == 'User':
                 continue
+
             metadata = self.manager.get_metadata(package)
-            if metadata and not self.is_compatible(metadata):
-                invalid_packages.append(package)
+            if metadata:
+                if not self.is_compatible(metadata):
+                    invalid_packages.append(package)
+
+            for dependency in self.manager.get_dependencies(package):
+                if dependency not in installed_dependencies:
+                    installed_dependencies.append(dependency)
 
         for dependency in found_dependencies:
             metadata = self.manager.get_metadata(dependency, is_dependency=True)
@@ -198,7 +206,7 @@ class PackageCleanup(threading.Thread):
                 show_error(message)
             sublime.set_timeout(show_sync_error, 100)
 
-        sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_dependencies), 10)
+        sublime.set_timeout(lambda: self.finish(installed_packages, installed_dependencies, found_packages, found_dependencies), 10)
 
     def is_compatible(self, metadata):
         """
@@ -237,7 +245,7 @@ class PackageCleanup(threading.Thread):
 
         return True
 
-    def finish(self, installed_packages, found_packages, found_dependencies):
+    def finish(self, installed_packages, installed_dependencies, found_packages, found_dependencies):
         """
         A callback that can be run the main UI thread to perform saving of the
         Package Control.sublime-settings file. Also fires off the
@@ -246,6 +254,10 @@ class PackageCleanup(threading.Thread):
         :param installed_packages:
             A list of the string package names of all "installed" packages,
             even ones that do not appear to be in the filesystem.
+
+        :param installed_dependencies:
+            A list of the string dependency names of all "installed"
+            dependencies, even ones that do not appear to be in the filesystem.
 
         :param found_packages:
             A list of the string package names of all packages that are
@@ -275,6 +287,9 @@ class PackageCleanup(threading.Thread):
 
             save_list_setting(settings, filename, 'ignored_packages', new_ignored, ignored)
             save_list_setting(pc_settings, pc_filename, 'in_process_packages', [])
+
+        save_list_setting(pc_settings, pc_filename, 'installed_dependencies',
+            installed_dependencies, self.original_installed_dependencies)
 
         save_list_setting(pc_settings, pc_filename, 'installed_packages',
             installed_packages, self.original_installed_packages)

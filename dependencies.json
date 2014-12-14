@@ -1,0 +1,20 @@
+{
+	"windows": {
+		"<3000": [
+			"select-windows",
+			"ssl-windows",
+			"bz2"
+		]
+	},
+	"linux": {
+		"*": [
+			"ssl-linux",
+			"bz2"
+		]
+	},
+	"*": {
+		"*": [
+			"bz2"
+		]
+	}
+}

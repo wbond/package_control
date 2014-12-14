@@ -39,10 +39,10 @@ from .providers.provider_exception import ProviderException
 from .clients.client_exception import ClientException
 from .download_manager import downloader
 from .providers.channel_provider import ChannelProvider
-from .providers.release_selector import filter_releases
+from .providers.release_selector import filter_releases, is_compatible_version
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
-from .package_io import read_package_file
+from .package_io import read_package_file, package_file_exists
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
 from .versions import version_comparable
@@ -164,6 +164,58 @@ class PackageManager():
             pass
 
         return {}
+
+    def get_dependencies(self, package):
+        """
+        Returns a list of dependencies for the specified package on the
+        current machine
+
+        :param package:
+            The name of the package
+
+        :return:
+            A list of dependency names
+        """
+
+        try:
+            debug = self.settings.get('debug')
+            if not package_file_exists(package, 'dependencies.json'):
+                raise ValueError()
+
+            dep_info_json = read_package_file(package, 'dependencies.json', debug=debug)
+            if not dep_info_json:
+                raise ValueError()
+
+            dep_info = json.loads(dep_info_json)
+            platform_selectors = [sublime.platform() + '-' + sublime.arch(),
+                sublime.platform(), '*']
+
+            for platform_selector in platform_selectors:
+                if platform_selector not in dep_info:
+                    continue
+
+                platform_dep_info = dep_info[platform_selector]
+                versions = platform_dep_info.keys()
+
+                # Sorting reverse will give us >, < then *
+                for version_selector in sorted(versions, reverse=True):
+                    if not is_compatible_version(version_selector):
+                        continue
+                    return platform_dep_info[version_selector]
+
+            # If there were no matches in dependencies.json, but there also
+            # weren't any errors, then it just means there are not dependencies
+            # for this machine
+            return []
+
+        except (IOError, ValueError) as e:
+            pass
+
+        metadata = self.get_metadata(package)
+        if metadata:
+            return metadata.get('dependencies', [])
+
+        return []
 
     def list_repositories(self):
         """
@@ -477,20 +529,12 @@ class PackageManager():
             A list of the dependencies required by the installed packages
         """
 
-        output = ['0_package_control_loader', 'bz2']
-
-        # Hard-code Package Control deps by os/plat
-        if os.name == 'nt' and sys.version_info < (3,):
-            output.extend(['ssl-windows', 'select-windows'])
-
-        if sublime.platform() == 'linux':
-            output.append('ssl-linux')
+        output = ['0_package_control_loader']
 
         for package in self.list_packages():
             if package == ignore_package:
                 continue
-            metadata = self.get_metadata(package)
-            output.extend(metadata.get('dependencies', []))
+            output.extend(self.get_dependencies(package))
 
         output = list(set(output))
         return sorted(output, key=lambda s: s.lower())
