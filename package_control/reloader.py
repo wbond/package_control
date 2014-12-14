@@ -130,6 +130,7 @@ mods_load_order = [
     '.commands.upgrade_all_packages_command',
     '.commands.upgrade_package_command',
     '.commands.package_control_insert_command',
+    '.commands.satisfy_dependencies_command',
     '.commands.package_control_tests_command',
 
     '.automatic_upgrader',

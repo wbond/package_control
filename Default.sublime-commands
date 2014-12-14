@@ -64,6 +64,10 @@
         "command": "upgrade_all_packages"
     },
     {
+        "caption": "Package Control: Satisfy Dependencies",
+        "command": "satisfy_dependencies"
+    },
+    {
         "caption": "Preferences: Package Control Settings – Default",
         "command": "open_file", "args":
         {

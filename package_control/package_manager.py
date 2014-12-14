@@ -187,26 +187,7 @@ class PackageManager():
                 raise ValueError()
 
             dep_info = json.loads(dep_info_json)
-            platform_selectors = [sublime.platform() + '-' + sublime.arch(),
-                sublime.platform(), '*']
-
-            for platform_selector in platform_selectors:
-                if platform_selector not in dep_info:
-                    continue
-
-                platform_dep_info = dep_info[platform_selector]
-                versions = platform_dep_info.keys()
-
-                # Sorting reverse will give us >, < then *
-                for version_selector in sorted(versions, reverse=True):
-                    if not is_compatible_version(version_selector):
-                        continue
-                    return platform_dep_info[version_selector]
-
-            # If there were no matches in dependencies.json, but there also
-            # weren't any errors, then it just means there are not dependencies
-            # for this machine
-            return []
+            return self.select_dependencies(dep_info)
 
         except (IOError, ValueError) as e:
             pass
@@ -215,6 +196,38 @@ class PackageManager():
         if metadata:
             return metadata.get('dependencies', [])
 
+        return []
+
+    def select_dependencies(self, dependency_info):
+        """
+        Takes the a dict from a dependencies.json file and returns the
+        dependency names that are applicable to the current machine
+
+        :param dependency_info:
+            A dict from a dependencies.json file
+
+        :return:
+            A list of dependency names
+        """
+
+        platform_selectors = [sublime.platform() + '-' + sublime.arch(),
+            sublime.platform(), '*']
+
+        for platform_selector in platform_selectors:
+            if platform_selector not in dependency_info:
+                continue
+
+            platform_dependency = dependency_info[platform_selector]
+            versions = platform_dependency.keys()
+
+            # Sorting reverse will give us >, < then *
+            for version_selector in sorted(versions, reverse=True):
+                if not is_compatible_version(version_selector):
+                    continue
+                return platform_dependency[version_selector]
+
+        # If there were no matches in the info, but there also weren't any
+        # errors, then it just means there are not dependencies for this machine
         return []
 
     def list_repositories(self):
@@ -517,7 +530,7 @@ class PackageManager():
         packages = sorted(packages, key=lambda s: s.lower())
         return packages
 
-    def find_required_dependencies(self, ignore_package):
+    def find_required_dependencies(self, ignore_package=None):
         """
         Find all of the dependencies required by the installed packages,
         ignoring the specified package.
@@ -693,46 +706,13 @@ class PackageManager():
             return False
 
         release = packages[package_name]['releases'][0]
-        for dependency in release.get('dependencies', []):
-            dependency_dir = os.path.join(sublime.packages_path(), dependency)
-            dependency_git_dir = os.path.join(dependency_dir, '.git')
-            dependency_hg_dir = os.path.join(dependency_dir, '.hg')
-            dependency_metadata = self.get_metadata(dependency, is_dependency=True)
 
-            install_dependency = False
-            if not os.path.exists(dependency_dir):
-                install_dependency = True
-                if debug:
-                    console_write(u'The dependency %s is not currently installed, installing' % dependency, True)
-            elif os.path.exists(dependency_git_dir):
-                if debug:
-                    console_write(u'The dependency %s is installed via git, leaving alone' % dependency, True)
-            elif os.path.exists(dependency_hg_dir):
-                if debug:
-                    console_write(u'The dependency %s is installed via hg, leaving alone' % dependency, True)
-            elif not dependency_metadata:
-                if debug:
-                    console_write(u'The dependency %s appears to be installed, but is missing metadata, leaving alone' % dependency, True)
-            else:
-                dependency_releases = packages[dependency].get('releases', [])
-                if len(dependency_releases) < 1:
-                    console_write(u'The dependency %s is installed, but there are no available releases, leaving alone' % dependency, True)
-                else:
-                    dependency_release = dependency_releases[0]
-
-                    installed_dependency_version = version_comparable(dependency_metadata.get('version', '0.0.0'))
-                    available_dependency_version = version_comparable(dependency_release.get('version', '0.0.0'))
-
-                    if installed_dependency_version < available_dependency_version:
-                        console_write(u'The dependency %s is installed, but out-of-date, upgrading to latest release' % dependency, True)
-                        install_dependency = True
-                    else:
-                        console_write(u'The dependency %s is installed and up-to-date, leaving alone' % dependency, True)
-
-            if install_dependency:
-                dependency_result = self.install_package(dependency, True)
-                if not dependency_result:
-                    return dependency_result
+        have_installed_dependencies = False
+        if not is_dependency:
+            dependencies = release.get('dependencies', [])
+            if not self.install_dependencies(dependencies):
+                return False
+            have_installed_dependencies = True
 
         url = release['url']
         package_filename = package_name + '.sublime-package'
@@ -818,8 +798,10 @@ class PackageManager():
             skip_root_dir = len(root_level_paths) == 1 and \
                 root_level_paths[0].endswith('/')
 
+            dependencies_path = 'dependencies.json'
             no_package_file_zip_path = '.no-sublime-package'
             if skip_root_dir:
+                dependencies_path = root_level_paths[0] + dependencies_path
                 no_package_file_zip_path = root_level_paths[0] + no_package_file_zip_path
 
             # If we should extract unpacked or as a .sublime-package file
@@ -842,6 +824,19 @@ class PackageManager():
             # of being split out.
             if is_dependency:
                 unpack = True
+
+            # If dependencies were not in the channel, try the package
+            if not is_dependency and not have_installed_dependencies:
+                try:
+                    dep_info_json = package_zip.read(dependencies_path)
+                    dep_info = json.loads(dep_info_json.decode('utf-8'))
+
+                    dependencies = self.select_dependencies(dep_info)
+                    if not self.install_dependencies(dependencies):
+                        return False
+
+                except (KeyError):
+                    pass
 
             metadata_filename = 'package-metadata.json'
             if is_dependency:
@@ -1078,6 +1073,68 @@ class PackageManager():
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
             sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
+
+    def install_dependencies(self, dependencies):
+        """
+        Ensures a list of dependencies are installed and up-to-date
+
+        :param dependencies:
+            A list of dependency names
+
+        :return:
+            A boolean indicating if the dependencies are properly installed
+        """
+
+        debug = self.settings.get('debug')
+
+        packages = self.list_available_packages(exclude_dependencies=False)
+
+        for dependency in dependencies:
+            # This is a per-machine dynamically created dependency, so we skip
+            if dependency == '0_package_control_loader':
+                continue
+
+            dependency_dir = os.path.join(sublime.packages_path(), dependency)
+            dependency_git_dir = os.path.join(dependency_dir, '.git')
+            dependency_hg_dir = os.path.join(dependency_dir, '.hg')
+            dependency_metadata = self.get_metadata(dependency, is_dependency=True)
+
+            install_dependency = False
+            if not os.path.exists(dependency_dir):
+                install_dependency = True
+                if debug:
+                    console_write(u'The dependency %s is not currently installed, installing' % dependency, True)
+            elif os.path.exists(dependency_git_dir):
+                if debug:
+                    console_write(u'The dependency %s is installed via git, leaving alone' % dependency, True)
+            elif os.path.exists(dependency_hg_dir):
+                if debug:
+                    console_write(u'The dependency %s is installed via hg, leaving alone' % dependency, True)
+            elif not dependency_metadata:
+                if debug:
+                    console_write(u'The dependency %s appears to be installed, but is missing metadata, leaving alone' % dependency, True)
+            else:
+                dependency_releases = packages[dependency].get('releases', [])
+                if len(dependency_releases) < 1:
+                    console_write(u'The dependency %s is installed, but there are no available releases, leaving alone' % dependency, True)
+                else:
+                    dependency_release = dependency_releases[0]
+
+                    installed_dependency_version = version_comparable(dependency_metadata.get('version', '0.0.0'))
+                    available_dependency_version = version_comparable(dependency_release.get('version', '0.0.0'))
+
+                    if installed_dependency_version < available_dependency_version:
+                        console_write(u'The dependency %s is installed, but out-of-date, upgrading to latest release' % dependency, True)
+                        install_dependency = True
+                    else:
+                        console_write(u'The dependency %s is installed and up-to-date, leaving alone' % dependency, True)
+
+            if install_dependency:
+                dependency_result = self.install_package(dependency, True)
+                if not dependency_result:
+                    return dependency_result
+
+        return True
 
     def backup_package_dir(self, package_name):
         """
