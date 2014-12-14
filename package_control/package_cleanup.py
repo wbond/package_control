@@ -235,15 +235,11 @@ class PackageCleanup(threading.Thread):
         platform_selectors = [sublime.platform() + '-' + sublime.arch(),
             sublime.platform(), '*']
 
-        matched = False
         for selector in platform_selectors:
             if selector in platforms:
-                matched = True
-                break
-        if not matched:
-            return False
+                return True
 
-        return True
+        return False
 
     def finish(self, installed_packages, installed_dependencies, found_packages, found_dependencies):
         """
