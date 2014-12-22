@@ -1,8 +1,10 @@
 # Package Control
 
-The [Sublime Text](http://www.sublimetext.com) package manager. Please see
-https://packagecontrol.io for installation instructions, a searchable list of
-available packages and detailed documentation.
+The [Sublime Text](http://www.sublimetext.com) package manager. Visit
+[packagecontrol.io](https://packagecontrol.io) for
+[installation instructions](https://packagecontrol.io/installation), a list of
+[available packages](https://packagecontrol.io/browse) and detailed
+[documentation](https://packagecontrol.io/docs).
 
 ## License
 
