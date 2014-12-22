@@ -245,6 +245,18 @@
 			]
 		},
 
+		// Mark a release as requiring one or more dependencies
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"releases": [
+				{
+					"sublime_text": "*",
+					"tags": true,
+					"dependencies": ["bz2"]
+				}
+			]
+		},
+
 		// DEPRECATED. In addition to the recommendation above of pulling
 		// releases from tags that are semantic version numbers, releases can
 		// also come from a branch.
