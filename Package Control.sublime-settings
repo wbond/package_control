@@ -12,7 +12,7 @@
 	"repositories": [],
 
 	// A list of packages to install pre-release versions for. Versions
-	// under 1.0.0 are no considered pre-release, only those using the SemVer
+	// under 1.0.0 are not considered pre-release, only those using the SemVer
 	// -prerelease suffixes will be ignored if the package is not in this
 	// list.
 	"install_prereleases": [],
