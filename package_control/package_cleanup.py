@@ -150,7 +150,12 @@ class PackageCleanup(threading.Thread):
                     # do a dance where we disable the package first, which has
                     # to be done in the main Sublime Text thread.
                     package_filename = os.path.join(installed_path, file)
-                    sublime.set_timeout(lambda: self.remove_package_file(package_name, package_filename), 10)
+                    # Invoke a function to build the callback since we are in a loop
+                    # and the variable values will change by the time the callback is
+                    # actually called
+                    def build_lambda(name, filename):
+                        return lambda: self.remove_package_file(name, filename)
+                    sublime.set_timeout(build_lambda(package_name, package_filename), 10)
 
                 else:
                     found_packages.append(package_name)
@@ -219,12 +224,12 @@ class PackageCleanup(threading.Thread):
         def do_remove():
             try:
                 os.remove(filename)
-                console_write(u'Removed orphaned package %s' % package_name, True)
+                console_write(u'Removed orphaned package %s' % name, True)
 
             except (OSError) as e:
                 error_string = (u'Unable to remove orphaned package ' +
                     u'%s - deferring until next start: %s') % (
-                    package_name, unicode_from_os(e))
+                    name, unicode_from_os(e))
                 console_write(error_string, True)
 
             finally:
@@ -233,7 +238,10 @@ class PackageCleanup(threading.Thread):
                 settings = sublime.load_settings(pref_filename)
                 ignored = load_list_setting(settings, 'ignored_packages')
                 new_ignored = list(ignored)
-                ignored.append(name)
+                try:
+                    new_ignored.remove(name)
+                except (ValueError):
+                    pass
                 save_list_setting(settings, pref_filename, 'ignored_packages', new_ignored, ignored)
 
         # Disable the package so any filesystem locks are released
@@ -241,7 +249,7 @@ class PackageCleanup(threading.Thread):
         settings = sublime.load_settings(pref_filename)
         ignored = load_list_setting(settings, 'ignored_packages')
         new_ignored = list(ignored)
-        ignored.append(name)
+        new_ignored.append(name)
         save_list_setting(settings, pref_filename, 'ignored_packages', new_ignored, ignored)
 
         sublime.set_timeout(do_remove, 700)
