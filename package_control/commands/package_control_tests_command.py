@@ -1,3 +1,4 @@
+import sublime
 import sublime_plugin
 
 from ..tests import runner
@@ -23,3 +24,7 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
                 ChannelProviderTests
             ]
         )
+
+    def is_visible(self):
+        settings = sublime.load_settings('Package Control.sublime-settings')
+        return settings.get('enable_tests', False)

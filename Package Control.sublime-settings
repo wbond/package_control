@@ -158,5 +158,8 @@
 				"__init__.py"
 			]
 		}
-	}
+	},
+
+	// Enable the ability to run the tests - this is only for development
+	"enable_tests": false
 }
