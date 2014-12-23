@@ -119,7 +119,6 @@ mods_load_order = [
     '.commands.discover_packages_command',
     '.commands.enable_package_command',
     '.commands.existing_packages_command',
-    '.commands.grab_certs_command',
     '.commands.install_package_command',
     '.commands.list_packages_command',
     '.commands.list_unmanaged_packages_command',
