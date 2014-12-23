@@ -36,7 +36,6 @@ mods_load_order = [
     '.sys_path',
     '.cache',
     '.http_cache',
-    '.ca_certs',
     '.clear_directory',
     '.cmd',
     '.console_write',
@@ -50,6 +49,7 @@ mods_load_order = [
     '.versions',
 
     '.http',
+    '.http.x509',
     '.http.invalid_certificate_exception',
     '.http.debuggable_http_response',
     '.http.debuggable_https_response',
@@ -58,6 +58,8 @@ mods_load_order = [
     '.http.debuggable_http_handler',
     '.http.validating_https_connection',
     '.http.validating_https_handler',
+
+    '.ca_certs',
 
     '.downloaders',
     '.downloaders.downloader_exception',

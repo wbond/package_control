@@ -5,14 +5,6 @@ from textwrap import dedent
 
 import sublime
 
-# Make sure we have recent code in memory
-reloader_name = 'package_control.reloader'
-if sys.version_info >= (3,):
-    reloader_name = 'Package Control.' + reloader_name
-    from imp import reload
-if reloader_name in sys.modules:
-    reload(sys.modules[reloader_name])
-
 # Clean up the installed and pristine packages for Package Control 2 to
 # prevent a downgrade from happening via Sublime Text
 if sys.version_info < (3,):
@@ -25,6 +17,14 @@ if sys.version_info < (3,):
         os.remove(pristine_file)
     if os.path.exists(installed_file):
         os.remove(installed_file)
+
+# Make sure we have recent code in memory
+reloader_name = 'package_control.reloader'
+if sys.version_info >= (3,):
+    reloader_name = 'Package Control.' + reloader_name
+    from imp import reload
+if reloader_name in sys.modules:
+    reload(sys.modules[reloader_name])
 
 if sys.version_info < (3,):
     from package_control.bootstrap import bootstrap_dependency
