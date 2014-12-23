@@ -5,6 +5,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
+from ..package_manager import PackageManager
 from .existing_packages_command import ExistingPackagesCommand
 
 
@@ -41,8 +42,8 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
         self.window = window
         self.filter_function = filter_function
+        self.manager = PackageManager()
         threading.Thread.__init__(self)
-        ExistingPackagesCommand.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list()

@@ -8,6 +8,7 @@ from ..show_error import show_error
 from .existing_packages_command import ExistingPackagesCommand
 from ..thread_progress import ThreadProgress
 from ..package_disabler import PackageDisabler
+from ..package_manager import PackageManager
 
 
 class RemovePackageCommand(sublime_plugin.WindowCommand,
@@ -25,7 +26,7 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
         """
 
         self.window = window
-        ExistingPackagesCommand.__init__(self)
+        self.manager = PackageManager()
 
     def run(self):
         self.package_list = self.make_package_list('remove')
