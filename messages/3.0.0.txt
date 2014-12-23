@@ -48,7 +48,8 @@ Dependencies
 
  - Package Control now supports package dependencies for the sake of shipping
    non-user-facing binary files that are needed by packages. These will commonly
-   include compiled Python modules and executables.
+   include compiled Python modules and executables. To learn more, read the
+   documentation at https://packagecontrol.io/docs/dependencies.
 
  - A package loader that is run before any other non-default packages. This adds
    dependency folders to sys.path and makes the "package_control" Python module
@@ -69,7 +70,7 @@ Upgrades
 
  - A package event API was added to allow packages to know if they were just
    installed, are about to be upgraded, were just upgraded, or are about to be
-   removed. See https://packagecontrol.io/docs for more details.
+   removed. See https://packagecontrol.io/docs/events for more details.
 
  - Package upgrades that are interupted by Sublime Text being closed or
    restarted will no longer result in packages being left in the
@@ -160,5 +161,5 @@ Package Creation
 
  - The "Create Binary Package File" command was removed, but replaced with
    the "package_profiles" setting which allows for any number of different
-   package creation configurations. See Preferences > Package Settings >
-   Package Control > Setting - Default for more details.
+   package creation configurations. See
+   https://packagecontrol.io/docs/creating_package_files for more details.
