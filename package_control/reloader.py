@@ -140,4 +140,7 @@ mods_load_order = [
 for suffix in mods_load_order:
     mod = mod_prefix + suffix
     if mod in reload_mods:
-        reload(sys.modules[mod])
+        try:
+            reload(sys.modules[mod])
+        except (ImportError):
+            pass # Upgrade issues from PC 2.0 -> 3.0

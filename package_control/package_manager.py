@@ -1275,12 +1275,16 @@ class PackageManager():
 
             if not view.size():
                 position = 0
-                view.settings().set("word_wrap", True)
-                view.settings().set("auto_indent", False)
                 write('Package Control Messages\n' +
                     '========================')
             else:
                 position = view.size()
+
+            view.settings().set("word_wrap", True)
+            view.settings().set("auto_indent", False)
+
+            view.sel().clear()
+            view.sel().add(sublime.Region(position, position))
 
             write(output)
             if window.active_view() != view:
