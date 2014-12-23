@@ -68,7 +68,6 @@ mods_load_order = [
     '.downloaders.caching_downloader',
     '.downloaders.decoding_downloader',
     '.downloaders.limiting_downloader',
-    '.downloaders.cert_provider',
     '.downloaders.urllib_downloader',
     '.downloaders.cli_downloader',
     '.downloaders.curl_downloader',
