@@ -7,7 +7,7 @@ import sublime
 
 # Make sure we have recent code in memory
 reloader_name = 'package_control.reloader'
-if sys.version_info < (3,):
+if sys.version_info >= (3,):
     reloader_name = 'Package Control.' + reloader_name
     from imp import reload
 if reloader_name in sys.modules:
