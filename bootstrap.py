@@ -13,6 +13,19 @@ if sys.version_info >= (3,):
 if reloader_name in sys.modules:
     reload(sys.modules[reloader_name])
 
+# Clean up the installed and pristine packages for Package Control 2 to
+# prevent a downgrade from happening via Sublime Text
+if sys.version_info < (3,):
+    sublime_dir = os.path.dirname(sublime.packages_path())
+    pristine_dir = os.path.join(sublime_dir, 'Pristine Packages')
+    installed_dir = os.path.join(sublime_dir, 'Installed Packages')
+    pristine_file = os.path.join(pristine_dir, 'Package Control.sublime-package')
+    installed_file = os.path.join(installed_dir, 'Package Control.sublime-package')
+    if os.path.exists(pristine_file):
+        os.remove(pristine_file)
+    if os.path.exists(installed_file):
+        os.remove(installed_file)
+
 if sys.version_info < (3,):
     from package_control.bootstrap import bootstrap_dependency
     from package_control.package_manager import PackageManager
