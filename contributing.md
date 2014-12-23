@@ -6,7 +6,7 @@ will improve the likelyhood of your issue be quickly resolved.
     run the `Package Control: List Packages` command from the command palette
  2. Look at the Sublime Text Console (<code>ctrl+`</code>) to see if any python
     errors are listed
- 3. Review the list of [open GitHub issues](https://github.com/wbond/sublime_package_control/issues?state=open)
+ 3. Review the list of [open GitHub issues](https://github.com/wbond/package_control/issues)
     to see if the problem you are experiencing has been reported
  4. Please do not comment on a Closed issue, but feel free to reference it from
     a new one
@@ -21,4 +21,4 @@ log. To do this:
  5. Copy the full contents of the Sublime Text Console
  6. Comment on an existing Open issue, or create a new one
 
-[View open issues on GitHub](https://github.com/wbond/sublime_package_control/issues?state=open)
+[View open issues on GitHub](https://github.com/wbond/package_control/issues)
