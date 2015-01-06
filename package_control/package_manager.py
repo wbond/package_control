@@ -1274,15 +1274,13 @@ class PackageManager():
                 view.run_command('insert', {'characters': string})
 
             if not view.size():
-                position = 0
                 write('Package Control Messages\n' +
                     '========================')
-            else:
-                position = view.size()
 
             view.settings().set("word_wrap", True)
             view.settings().set("auto_indent", False)
 
+            position = view.size()
             view.sel().clear()
             view.sel().add(sublime.Region(position, position))
 
