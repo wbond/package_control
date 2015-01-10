@@ -1103,7 +1103,7 @@ class PackageManager():
             dependency_metadata = self.get_metadata(dependency, is_dependency=True) or {}
 
             dependency_releases = packages.get('dependency', {}).get('releases', [])
-            dependency_release = dependency_releases[0] if dependency_releases else []
+            dependency_release = dependency_releases[0] if dependency_releases else {}
 
             installed_version = dependency_metadata.get('version')
             installed_version = version_comparable(installed_version) if installed_version else None
