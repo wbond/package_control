@@ -120,6 +120,7 @@ def generate_dependency_paths(name):
     arch = sublime.arch()
 
     return {
+        'all': os.path.join(dependency_dir, 'all'),
         'ver': os.path.join(dependency_dir, ver),
         'plat': os.path.join(dependency_dir, u'%s_%s' % (ver, plat)),
         'arch': os.path.join(dependency_dir, u'%s_%s_%s' % (ver, plat, arch))
