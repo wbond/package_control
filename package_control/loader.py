@@ -186,6 +186,12 @@ def remove(name):
     disabler = PackageDisabler()
     disabler.disable_package(loader_package_name)
 
+    # Note: If we "manually" loaded the dependency loader before it will not
+    # be unloaded automatically when the package is disabled. Since it is
+    # highly doubtful that anyone would define `plugin_unloaded` in his
+    # `loader.py`, we don't necessarily have to implement it, but this is just
+    # a note.
+
     def do_swap():
         os.remove(loader_package_path)
         os.rename(new_loader_package_path, loader_package_path)
