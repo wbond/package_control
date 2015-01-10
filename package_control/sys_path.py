@@ -142,6 +142,6 @@ def add_dependency(name, first=False):
 
     dep_paths = generate_dependency_paths(name)
 
-    for type_ in dep_paths:
-        if os.path.exists(encode(dep_paths[type_])):
-            add(dep_paths[type_], first=first)
+    for path in dep_paths.values():
+        if os.path.exists(encode(path)):
+            add(path, first=first)
