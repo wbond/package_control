@@ -13,6 +13,7 @@ except (NameError):
     str_cls = str
 
 import sublime
+import sublime_plugin
 
 from .sys_path import st_dir
 from .console_write import console_write
@@ -88,6 +89,11 @@ def add(priority, name, code=None):
                 just_created_loader = True
                 z.writestr('dependency-metadata.json', loader_metadata_enc)
             z.writestr(loader_filename, code.encode('utf-8'))
+
+        if not just_created_loader:
+            # Manually execute the loader code because Sublime Text does not
+            # detect changes to the zip archive, only if the file is new.
+            sublime_plugin.reload_plugin("%s.%s" % (loader_package_name, loader_filename[:-3]))
 
     # Clean things up for people who were tracking the master branch
     if just_created_loader:
