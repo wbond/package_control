@@ -120,6 +120,7 @@ def generate_dependency_paths(name):
     arch = sublime.arch()
 
     return {
+        'all': os.path.join(dependency_dir, 'all'),
         'ver': os.path.join(dependency_dir, ver),
         'plat': os.path.join(dependency_dir, u'%s_%s' % (ver, plat)),
         'arch': os.path.join(dependency_dir, u'%s_%s_%s' % (ver, plat, arch))
@@ -141,6 +142,6 @@ def add_dependency(name, first=False):
 
     dep_paths = generate_dependency_paths(name)
 
-    for type_ in dep_paths:
-        if os.path.exists(encode(dep_paths[type_])):
-            add(dep_paths[type_], first=first)
+    for path in dep_paths.values():
+        if os.path.exists(encode(path)):
+            add(path, first=first)
