@@ -1094,45 +1094,63 @@ class PackageManager():
             if dependency == '0_package_control_loader':
                 continue
 
+            # Collect dependency information
             dependency_dir = os.path.join(sublime.packages_path(), dependency)
             dependency_git_dir = os.path.join(dependency_dir, '.git')
             dependency_hg_dir = os.path.join(dependency_dir, '.hg')
-            dependency_metadata = self.get_metadata(dependency, is_dependency=True)
+            dependency_metadata = self.get_metadata(dependency, is_dependency=True) or {}
+
+            dependency_releases = packages.get('dependency', {}).get('releases', [])
+            dependency_release = dependency_releases[0] if dependency_releases else []
+
+            installed_version = dependency_metadata.get('version')
+            installed_version = version_comparable(installed_version) if installed_version else None
+            available_version = dependency_release.get('version')
+            available_version = version_comparable(available_version) if available_version else None
+
+            def dependency_write(msg):
+                msg = u"The dependency {dependency} " + msg
+                msg = msg.format(
+                    dependency=dependency,
+                    installed_version=installed_version,
+                    available_version=available_version
+                )
+                console_write(msg, True)
+
+            def dependency_write_debug(msg):
+                if debug:
+                    dependency_write(debug)
 
             install_dependency = False
             if not os.path.exists(dependency_dir):
                 install_dependency = True
-                if debug:
-                    console_write(u'The dependency %s is not currently installed, installing' % dependency, True)
+                dependency_write(u'is not currently installed; installing')
             elif os.path.exists(dependency_git_dir):
-                if debug:
-                    console_write(u'The dependency %s is installed via git, leaving alone' % dependency, True)
+                dependency_write_debug(u'is installed via git; leaving alone')
             elif os.path.exists(dependency_hg_dir):
-                if debug:
-                    console_write(u'The dependency %s is installed via hg, leaving alone' % dependency, True)
+                dependency_write_debug(u'is installed via hg; leaving alone')
             elif not dependency_metadata:
-                if debug:
-                    console_write(u'The dependency %s appears to be installed, but is missing metadata, leaving alone' % dependency, True)
+                dependency_write_debug(u'appears to be installed, but is missing metadata; leaving alone')
+            elif not dependency_releases:
+                dependency_write(u'is installed, but there are no available releases; leaving alone')
+            elif not available_version:
+                dependency_write(u'is installed, but the latest available release could not be determined; leaving alone')
+            elif not installed_version:
+                install_dependency = True
+                dependency_write(u'is installed, but its version is not known; upgrading to latest release {available_version}')
+            elif installed_version < available_version:
+                install_dependency = True
+                dependency_write(u'is installed, but out of date; upgrading to latest release {available_version} from {installed_version}')
             else:
-                dependency_releases = packages[dependency].get('releases', [])
-                if len(dependency_releases) < 1:
-                    console_write(u'The dependency %s is installed, but there are no available releases, leaving alone' % dependency, True)
-                else:
-                    dependency_release = dependency_releases[0]
-
-                    installed_dependency_version = version_comparable(dependency_metadata.get('version', '0.0.0'))
-                    available_dependency_version = version_comparable(dependency_release.get('version', '0.0.0'))
-
-                    if installed_dependency_version < available_dependency_version:
-                        console_write(u'The dependency %s is installed, but out-of-date, upgrading to latest release' % dependency, True)
-                        install_dependency = True
-                    else:
-                        console_write(u'The dependency %s is installed and up-to-date, leaving alone' % dependency, True)
+                dependency_write_debug(u'is installed and up to date ({installed_version}); leaving alone')
 
             if install_dependency:
                 dependency_result = self.install_package(dependency, True)
                 if not dependency_result:
+                    dependency_write(u'could not be installed or updated')
                     return dependency_result
+
+                dependency_write(u'has successfully been installed or updated')
 
         return True
 
