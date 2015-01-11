@@ -142,7 +142,7 @@ def remove(name):
     if not path.exists(loader_package_path):
         return
 
-    loader_filename_regex = u'^\\d\\d-%s.py$' % re.escape(name)
+    loader_filename_regex = u'^\\d\\d-%s.pyc?$' % re.escape(name)
 
     if sys.version_info < (3,):
         for filename in os.listdir(loader_package_path):
