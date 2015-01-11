@@ -73,10 +73,10 @@ class PackageDisabler():
                 ignored.append(package)
                 disabled.append(package)
 
-                if type in ['upgrade', 'remove']:
-                    version = self.get_version(package)
-                    tracker_type = 'pre_upgrade' if type == 'upgrade' else type
-                    events.add(tracker_type, package, version)
+            if type in ['upgrade', 'remove']:
+                version = self.get_version(package)
+                tracker_type = 'pre_upgrade' if type == 'upgrade' else type
+                events.add(tracker_type, package, version)
 
             for window in sublime.windows():
                 for view in window.views():
