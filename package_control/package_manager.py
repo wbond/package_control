@@ -938,7 +938,8 @@ class PackageManager():
                     add_extracted_dirs(dest_dir)
                     extracted_paths.append(dest)
                     try:
-                        open_compat(dest, 'wb').write(package_zip.read(path))
+                        with open_compat(dest, 'wb') as f:
+                            f.write(package_zip.read(path))
                     except (IOError) as e:
                         message = unicode_from_os(e)
                         if re.search('[Ee]rrno 13', message):
