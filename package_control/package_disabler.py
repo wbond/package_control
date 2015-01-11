@@ -106,8 +106,11 @@ class PackageDisabler():
                 self.old_theme = settings.get('theme')
                 settings.set('theme', 'Default.sublime-theme')
 
-        pc_settings.set('in_process_packages', in_process)
-        sublime.save_settings(pc_settings_filename())
+        # We don't mark a package as in-process when disabling it, otherwise
+        # it automatically gets re-enabled the next time Sublime Text starts
+        if type != 'disable':
+            pc_settings.set('in_process_packages', in_process)
+            sublime.save_settings(pc_settings_filename())
 
         settings.set('ignored_packages', ignored)
         sublime.save_settings(preferences_filename())
