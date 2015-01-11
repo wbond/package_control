@@ -230,7 +230,7 @@ class Decoder(object):
     def _decode_integer(self, bytes):
         """Decode an integer value."""
         if sys.version_info >= (3,):
-            values = bytes
+            values = list(bytes)
         else:
             values = [ ord(b) for b in bytes ]
         # check if the integer is normalized
