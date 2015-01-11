@@ -1384,12 +1384,16 @@ class PackageManager():
             loader.remove(package_name)
 
         else:
+            clean_up = " and will be cleaned up on the next restart" if not can_delete_dir else ''
+            console_write(u"The package %s has been removed" % package_name + clean_up, True)
+
             # Remove dependencies that are no longer needed
             installed_dependencies = self.list_dependencies()
             required_dependencies = self.find_required_dependencies(package_name)
             orphaned_dependencies = list(set(installed_dependencies) - set(required_dependencies))
             for dependency in orphaned_dependencies:
-                self.remove_package(dependency, is_dependency=True)
+                if self.remove_package(dependency, is_dependency=True):
+                    console_write(u"The orphaned dependency %s has been removed" % dependency, True)
 
         return True
 
