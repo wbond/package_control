@@ -50,6 +50,7 @@ class PackageDisabler():
              - "remove"
              - "install"
              - "disable"
+             - "loader"
         """
 
         if not isinstance(packages, list):
@@ -126,6 +127,7 @@ class PackageDisabler():
              - "remove"
              - "install"
              - "enable"
+             - "loader"
         """
 
         settings = sublime.load_settings(preferences_filename())
