@@ -178,10 +178,10 @@ def remove(name):
         return
 
     disabler = PackageDisabler()
-    disabler.disable_packages(loader_package_name, '')
+    disabler.disable_packages(loader_package_name, 'loader')
 
     def do_swap():
         os.remove(loader_package_path)
         os.rename(new_loader_package_path, loader_package_path)
-        sublime.set_timeout(lambda: disabler.reenable_package(loader_package_name, ''), 10)
+        sublime.set_timeout(lambda: disabler.reenable_package(loader_package_name, 'loader'), 10)
     sublime.set_timeout(do_swap, 700)
