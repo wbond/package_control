@@ -1100,7 +1100,7 @@ class PackageManager():
             dependency_hg_dir = os.path.join(dependency_dir, '.hg')
             dependency_metadata = self.get_metadata(dependency, is_dependency=True) or {}
 
-            dependency_releases = packages.get('dependency', {}).get('releases', [])
+            dependency_releases = packages.get(dependency, {}).get('releases', [])
             dependency_release = dependency_releases[0] if dependency_releases else {}
 
             installed_version = dependency_metadata.get('version')
@@ -1119,7 +1119,7 @@ class PackageManager():
 
             def dependency_write_debug(msg):
                 if debug:
-                    dependency_write(debug)
+                    dependency_write(msg)
 
             install_dependency = False
             if not os.path.exists(dependency_dir):
