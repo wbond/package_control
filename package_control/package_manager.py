@@ -1403,7 +1403,8 @@ class PackageManager():
             loader.remove(package_name)
 
         else:
-            console_write(u"The package %s has been removed" % package_name, True)
+            clean_up = " and will be cleaned up on the next restart" if not can_delete_dir else ''
+            console_write(u"The package %s has been removed" % package_name + clean_up, True)
 
             # Remove dependencies that are no longer needed
             installed_dependencies = self.list_dependencies()
