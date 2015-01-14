@@ -1100,7 +1100,28 @@ class PackageManager():
             dependency_dir = os.path.join(sublime.packages_path(), dependency)
             dependency_git_dir = os.path.join(dependency_dir, '.git')
             dependency_hg_dir = os.path.join(dependency_dir, '.hg')
-            dependency_metadata = self.get_metadata(dependency, is_dependency=True)
+            dependency_metadata = self.get_metadata(dependency, is_dependency=True) or {}
+
+            dependency_releases = packages.get(dependency, {}).get('releases', [])
+            dependency_release = dependency_releases[0] if dependency_releases else {}
+
+            installed_version = dependency_metadata.get('version')
+            installed_version = version_comparable(installed_version) if installed_version else None
+            available_version = dependency_release.get('version')
+            available_version = version_comparable(available_version) if available_version else None
+
+            def dependency_write(msg):
+                msg = u"The dependency {dependency} " + msg
+                msg = msg.format(
+                    dependency=dependency,
+                    installed_version=installed_version,
+                    available_version=available_version
+                )
+                console_write(msg, True)
+
+            def dependency_write_debug(msg):
+                if debug:
+                    dependency_write(msg)
 
             dependency_releases = packages.get(dependency, {}).get('releases', [])
             dependency_release = dependency_releases[0] if dependency_releases else {}
