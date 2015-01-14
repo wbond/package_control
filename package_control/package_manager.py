@@ -710,9 +710,10 @@ class PackageManager():
         have_installed_dependencies = False
         if not is_dependency:
             dependencies = release.get('dependencies', [])
-            if not self.install_dependencies(dependencies):
-                return False
-            have_installed_dependencies = True
+            if dependencies:
+                if not self.install_dependencies(dependencies):
+                    return False
+                have_installed_dependencies = True
 
         url = release['url']
         package_filename = package_name + '.sublime-package'
