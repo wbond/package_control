@@ -39,7 +39,7 @@ class SatisfyDependenciesThread(threading.Thread):
     def run(self):
         required_dependencies = self.manager.find_required_dependencies()
 
-        if not self.manager.install_dependencies(required_dependencies):
+        if not self.manager.install_dependencies(required_dependencies, fail_early=False):
             self.show_error(u'One or more dependencies could not be installed '
                             'or updated. Please check the console for details.')
 
