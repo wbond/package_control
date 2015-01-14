@@ -1075,7 +1075,7 @@ class PackageManager():
             # after we close it.
             sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
 
-    def install_dependencies(self, dependencies):
+    def install_dependencies(self, dependencies, fail_early=True):
         """
         Ensures a list of dependencies are installed and up-to-date
 
@@ -1090,6 +1090,7 @@ class PackageManager():
 
         packages = self.list_available_packages(exclude_dependencies=False)
 
+        error = False
         for dependency in dependencies:
             # This is a per-machine dynamically created dependency, so we skip
             if dependency == '0_package_control_loader':
@@ -1131,11 +1132,12 @@ class PackageManager():
                         console_write(u'The dependency %s is installed and up-to-date, leaving alone' % dependency, True)
 
             if install_dependency:
-                dependency_result = self.install_package(dependency, True)
-                if not dependency_result:
-                    return dependency_result
+                if not self.install_package(dependency, True):
+                    if fail_early:
+                        return False
+                    error = True
 
-        return True
+        return not error
 
     def cleanup_dependencies(self, ignore_package=None, installed_dependencies=None, required_dependencies=None):
         """
