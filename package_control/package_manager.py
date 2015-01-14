@@ -1076,7 +1076,7 @@ class PackageManager():
             # after we close it.
             sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
 
-    def install_dependencies(self, dependencies):
+    def install_dependencies(self, dependencies, fail_early=True):
         """
         Ensures a list of dependencies are installed and up-to-date
 
@@ -1091,6 +1091,7 @@ class PackageManager():
 
         packages = self.list_available_packages(exclude_dependencies=False)
 
+        error = False
         for dependency in dependencies:
             # This is a per-machine dynamically created dependency, so we skip
             if dependency == '0_package_control_loader':
@@ -1132,11 +1133,48 @@ class PackageManager():
                         console_write(u'The dependency %s is installed and up-to-date, leaving alone' % dependency, True)
 
             if install_dependency:
-                dependency_result = self.install_package(dependency, True)
-                if not dependency_result:
-                    return dependency_result
+                if not self.install_package(dependency, True):
+                    if fail_early:
+                        return False
+                    error = True
 
-        return True
+        return not error
+
+    def cleanup_dependencies(self, ignore_package=None, installed_dependencies=None, required_dependencies=None):
+        """
+        Remove all not needed dependencies by the installed packages,
+        ignoring the specified package.
+
+        :param ignore_package:
+            The package to ignore when enumerating dependencies.
+            Not used when required_dependencies is provided.
+
+        :param installed_dependencies:
+            All installed dependencies, for speedup purposes.
+
+        :param required_dependencies:
+            All required dependencies, for speedup purposes.
+
+        :return:
+            Boolean indicating the success of the removals.
+        """
+
+        if not installed_dependencies:
+            installed_dependencies = self.list_dependencies()
+        if not required_dependencies:
+            required_dependencies = self.find_required_dependencies(ignore_package)
+
+        orphaned_dependencies = set(installed_dependencies) - set(required_dependencies)
+        orphaned_dependencies = sorted(orphaned_dependencies, key=lambda s: s.lower())
+
+        error = False
+        for dependency in orphaned_dependencies:
+            if self.remove_package(dependency, is_dependency=True):
+                console_write(u"The orphaned dependency %s has been removed" % dependency, True)
+            else:
+                error = True
+
+        return not error
 
     def backup_package_dir(self, package_name):
         """
@@ -1385,12 +1423,11 @@ class PackageManager():
             loader.remove(package_name)
 
         else:
+            clean_up = " and will be cleaned up on the next restart" if not can_delete_dir else ''
+            console_write(u"The package %s has been removed" % package_name + clean_up, True)
+
             # Remove dependencies that are no longer needed
-            installed_dependencies = self.list_dependencies()
-            required_dependencies = self.find_required_dependencies(package_name)
-            orphaned_dependencies = list(set(installed_dependencies) - set(required_dependencies))
-            for dependency in orphaned_dependencies:
-                self.remove_package(dependency, is_dependency=True)
+            self.cleanup_dependencies(package_name)
 
         return True
 

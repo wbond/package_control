@@ -3,6 +3,8 @@ import threading
 import sublime
 import sublime_plugin
 
+from functools import partial
+
 from ..show_error import show_error
 from ..package_manager import PackageManager
 from ..thread_progress import ThreadProgress
@@ -31,12 +33,16 @@ class SatisfyDependenciesThread(threading.Thread):
         self.manager = manager
         threading.Thread.__init__(self)
 
+    def show_error(msg):
+        sublime.set_timeout(partial(show_error, msg), 10)
+
     def run(self):
-        dependencies = self.manager.find_required_dependencies()
-        result = self.manager.install_dependencies(dependencies)
-        if not result:
-            def do_show_error():
-                show_error(u'One or more dependencies could not be ' + \
-                    'installed or updated. Please check the console for ' + \
-                    'details.')
-            sublime.set_timeout(do_show_error, 10)
+        required_dependencies = self.manager.find_required_dependencies()
+
+        if not self.manager.install_dependencies(required_dependencies, fail_early=False):
+            self.show_error(u'One or more dependencies could not be installed '
+                            'or updated. Please check the console for details.')
+
+        if not self.manager.cleanup_dependencies(required_dependencies=required_dependencies):
+            self.show_error(u'One or more orphaned dependencies could not be '
+                            'removed. Please check the console for details.')
