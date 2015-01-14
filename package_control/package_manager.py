@@ -1100,7 +1100,7 @@ class PackageManager():
             dependency_dir = os.path.join(sublime.packages_path(), dependency)
             dependency_git_dir = os.path.join(dependency_dir, '.git')
             dependency_hg_dir = os.path.join(dependency_dir, '.hg')
-            dependency_metadata = self.get_metadata(dependency, is_dependency=True) or {}
+            dependency_metadata = self.get_metadata(dependency, is_dependency=True)
 
             dependency_releases = packages.get(dependency, {}).get('releases', [])
             dependency_release = dependency_releases[0] if dependency_releases else {}
