@@ -1156,7 +1156,7 @@ class PackageManager():
 
         return True
 
-    def cleanup_dependencies(self, ignore_package=None, installed_dependencies=None, required_dependencies=None):
+    def cleanup_dependencies(self, ignore_package=None, required_dependencies=None):
         """
         Remove all not needed dependencies by the installed packages,
         ignoring the specified package.
@@ -1165,9 +1165,6 @@ class PackageManager():
             The package to ignore when enumerating dependencies.
             Not used when required_dependencies is provided.
 
-        :param installed_dependencies:
-            All installed dependencies, for speedup purposes.
-
         :param required_dependencies:
             All required dependencies, for speedup purposes.
 
@@ -1175,8 +1172,7 @@ class PackageManager():
             Boolean indicating the success of the removals.
         """
 
-        if not installed_dependencies:
-            installed_dependencies = self.list_dependencies()
+        installed_dependencies = self.list_dependencies()
         if not required_dependencies:
             required_dependencies = self.find_required_dependencies(ignore_package)
 
