@@ -127,6 +127,10 @@ class PackageCleanup(threading.Thread):
                             u'%s - deferring until next start') % package_name
                         console_write(error_string, True)
 
+            if package_name[-20:] == '.package-control-old':
+                console_write(u'Removed old directory %s' % package_name, True)
+                delete_directory(package_dir)
+
             # Skip over dependencies since we handle them separately
             if package_file_exists(package_name, 'dependency-metadata.json'):
                 found_dependencies.append(package_name)

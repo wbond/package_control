@@ -67,7 +67,8 @@ def clear_directory(directory, ignore_paths=None):
                     except OSError:
                         # try to rename file to reduce chance that
                         # file is in use on next start
-                        os.rename(path, path + '.package-control-old')
+                        if path[-20:] != '.package-control-old':
+                            os.rename(path, path + '.package-control-old')
                         raise
             except (OSError, IOError):
                 was_exception = True
@@ -103,7 +104,8 @@ def _on_error(function, path, excinfo):
         # python file that imports the .dll may never get deleted, meaning that
         # the package can never be cleanly removed.
         try:
-            os.rename(path, path + '.package-control-old')
+            if not os.path.isdir(path) and path[-20:] != '.package-control-old':
+                os.rename(path, path + '.package-control-old')
         except (OSError):
             pass
 
