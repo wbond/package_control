@@ -23,8 +23,6 @@ def read_package_file(package, relative_path, binary=False, debug=False):
         if result != False:
             return result
 
-    if debug:
-        console_write(u"Unable to find file %s in the package %s" % (relative_path, package), True)
     return False
 
 
@@ -57,8 +55,6 @@ def _read_regular_file(package, relative_path, binary=False, debug=False):
             return read_compat(f)
 
     except (FileNotFoundError) as e:
-        if debug:
-            console_write(u"Unable to find file %s in the package folder for %s" % (relative_path, package), True)
         return False
 
 
@@ -67,8 +63,6 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
         package + '.sublime-package')
 
     if not os.path.exists(zip_path):
-        if debug:
-            console_write(u"Unable to find a sublime-package file for %s" % package, True)
         return False
 
     try:
@@ -85,8 +79,7 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
         return contents
 
     except (KeyError) as e:
-        if debug:
-            console_write(u"Unable to find file %s in the sublime-package file for %s" % (relative_path, package), True)
+        pass
 
     except (IOError) as e:
         message = unicode_from_os(e)
