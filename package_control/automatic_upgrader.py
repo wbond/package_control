@@ -47,7 +47,7 @@ class AutomaticUpgrader(threading.Thread):
         # Detect if a package is missing that should be installed
         self.missing_packages = list(set(self.installed_packages) -
             set(found_packages))
-        self.missing_dependencies = list(set(self.installed_dependencies) -
+        self.missing_dependencies = list(set(self.manager.find_required_dependencies()) -
             set(found_dependencies))
 
         if self.auto_upgrade and self.next_run <= time.time():
@@ -104,7 +104,6 @@ class AutomaticUpgrader(threading.Thread):
 
         self.settings = sublime.load_settings(pc_settings_filename())
         self.installed_packages = load_list_setting(self.settings, 'installed_packages')
-        self.installed_dependencies = load_list_setting(self.settings, 'installed_dependencies')
         self.should_install_missing = self.settings.get('install_missing')
 
     def run(self):

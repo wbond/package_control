@@ -330,9 +330,6 @@ class PackageCleanup(threading.Thread):
             save_list_setting(settings, filename, 'ignored_packages', new_ignored, ignored)
             save_list_setting(pc_settings, pc_filename, 'in_process_packages', [])
 
-        save_list_setting(pc_settings, pc_filename, 'installed_dependencies',
-            installed_dependencies, self.original_installed_dependencies)
-
         save_list_setting(pc_settings, pc_filename, 'installed_packages',
             installed_packages, self.original_installed_packages)
         AutomaticUpgrader(found_packages, found_dependencies).start()

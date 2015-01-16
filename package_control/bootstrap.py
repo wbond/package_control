@@ -118,18 +118,5 @@ def bootstrap_dependency(settings, url, hash_, priority, on_complete):
 
     console_write(u'Successfully installed bootstrapped dependency %s' % package_basename, True)
 
-    def add_to_installed_dependencies():
-        filename = pc_settings_filename()
-        settings = sublime.load_settings(filename)
-        old = load_list_setting(settings, 'installed_dependencies')
-        new = list(old)
-        if loader.loader_package_name not in new:
-            new.append(loader_package_name)
-        if package_basename not in new:
-            new.append(package_basename)
-        save_list_setting(settings, filename, 'installed_dependencies', new, old)
-    sublime.set_timeout(add_to_installed_dependencies, 10)
-
     if on_complete:
-        # Give add_to_installed_dependencies() time to run
-        sublime.set_timeout(on_complete, 200)
+        sublime.set_timeout(on_complete, 100)

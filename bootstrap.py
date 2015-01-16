@@ -120,23 +120,11 @@ def plugin_loaded():
         installed_packages.append('Package Control')
         save_list_setting(pc_settings, pc_settings_filename(), 'installed_packages', installed_packages)
 
-    orig_installed_dependencies = load_list_setting(pc_settings, 'installed_dependencies')
-    installed_dependencies = list(orig_installed_dependencies)
-
-    # Record that the loader itself is installed
-    if loader.loader_package_name not in installed_dependencies:
-        installed_dependencies.append(loader.loader_package_name)
-
-    # Queue up installation of bz2
-    if 'bz2' not in installed_dependencies:
-        installed_dependencies.append('bz2')
-
-    # Queue up installation of select module for ST2/Windows
-    if sublime.platform() == 'windows' and sys.version_info < (3,) and 'select-windows' not in installed_dependencies:
-        installed_dependencies.append('select-windows')
-
-    save_list_setting(pc_settings, pc_settings_filename(), 'installed_dependencies', installed_dependencies, orig_installed_dependencies)
-
+    # We no longer use the installed_dependencies setting because it is not
+    # necessary and created issues with settings shared across operating systems
+    if pc_settings.get('installed_dependencies'):
+        pc_settings.erase('installed_dependencies')
+        sublime.save_settings(pc_settings_filename())
 
     # SSL support fo Linux
     if sublime.platform() == 'linux':

@@ -1008,22 +1008,19 @@ class PackageManager():
                 }
             self.record_usage(params)
 
-            names_key = 'installed_packages'
-            if is_dependency:
-                names_key = 'installed_dependencies'
+            if not is_dependency:
+                # Record the install in the settings file so that you can move
+                # settings across computers and have the same packages installed
+                def save_names():
+                    settings = sublime.load_settings(pc_settings_filename())
+                    original_names = load_list_setting(settings, 'installed_packages')
+                    names = list(original_names)
+                    if package_name not in names:
+                        names.append(package_name)
+                    save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
+                sublime.set_timeout(save_names, 1)
 
-            # Record the install in the settings file so that you can move
-            # settings across computers and have the same packages installed
-            def save_names():
-                settings = sublime.load_settings(pc_settings_filename())
-                original_names = load_list_setting(settings, names_key)
-                names = list(original_names)
-                if package_name not in names:
-                    names.append(package_name)
-                save_list_setting(settings, pc_settings_filename(), names_key, names, original_names)
-            sublime.set_timeout(save_names, 1)
-
-            if is_dependency:
+            else:
                 loader.add(packages[package_name]['load_order'], package_name, loader_code)
 
             # If we didn't extract directly into the Packages/{package_name}/
@@ -1418,18 +1415,15 @@ class PackageManager():
         }
         self.record_usage(params)
 
-        names_key = 'installed_packages'
-        if is_dependency:
-            names_key = 'installed_dependencies'
-
-        def save_names():
-            settings = sublime.load_settings(pc_settings_filename())
-            original_names = load_list_setting(settings, names_key)
-            names = list(original_names)
-            if package_name in names:
-                names.remove(package_name)
-            save_list_setting(settings, pc_settings_filename(), names_key, names, original_names)
-        sublime.set_timeout(save_names, 1)
+        if not is_dependency:
+            def save_names():
+                settings = sublime.load_settings(pc_settings_filename())
+                original_names = load_list_setting(settings, 'installed_packages')
+                names = list(original_names)
+                if package_name in names:
+                    names.remove(package_name)
+                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
+            sublime.set_timeout(save_names, 1)
 
         if can_delete_dir and os.path.exists(package_dir):
             os.rmdir(package_dir)
