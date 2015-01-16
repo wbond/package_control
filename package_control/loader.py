@@ -6,6 +6,7 @@ from os import path
 import zipfile
 import shutil
 from textwrap import dedent
+from threading import Lock
 
 try:
     str_cls = unicode
@@ -22,6 +23,12 @@ from .settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
 
+loader_lock = Lock()
+# This variable should only be touched while loader_lock is acquired. It is a
+# dict with a kay to allow modification inside of various functions.
+non_local = {'swap_queued': False}
+
+
 packages_dir = path.join(st_dir, u'Packages')
 installed_packages_dir = path.join(st_dir, u'Installed Packages')
 
@@ -31,6 +38,13 @@ if sys.version_info < (3,):
     loader_package_path = path.join(packages_dir, loader_package_name)
 else:
     loader_package_path = path.join(installed_packages_dir, u'%s.sublime-package' % loader_package_name)
+
+# With the zipfile module there is no way to delete a file from a zip, so we
+# must instead copy the other files to a new zipfile and swap the filenames.
+# These files are used in that process.
+new_loader_package_path = loader_package_path + u'-new'
+intermediate_loader_package_path = loader_package_path + u'-intermediate'
+
 
 
 def add(priority, name, code=None):
@@ -83,12 +97,26 @@ def add(priority, name, code=None):
             f.write(code.encode('utf-8'))
 
     else:
-        mode = 'a' if os.path.exists(loader_package_path) else 'w'
-        with zipfile.ZipFile(loader_package_path, mode) as z:
-            if mode == 'w':
-                just_created_loader = True
-                z.writestr('dependency-metadata.json', loader_metadata_enc)
-            z.writestr(loader_filename, code.encode('utf-8'))
+        try:
+            loader_lock.acquire()
+
+            # If a swap of the loader .sublime-package was queued because of a
+            # file being removed, we need to add the new loader code the the
+            # .sublime-package that will be swapped into place shortly.
+            if not non_local['swap_queued']:
+                package_to_update = loader_package_path
+            else:
+                package_to_update = new_loader_package_path
+
+            mode = 'a' if os.path.exists(package_to_update) else 'w'
+            with zipfile.ZipFile(package_to_update, mode) as z:
+                if mode == 'w':
+                    just_created_loader = True
+                    z.writestr('dependency-metadata.json', loader_metadata_enc)
+                z.writestr(loader_filename, code.encode('utf-8'))
+
+        finally:
+            loader_lock.release()
 
         if not just_created_loader:
             # Manually execute the loader code because Sublime Text does not
@@ -158,12 +186,23 @@ def remove(name):
 
     removed = False
 
+    # We acquire a lock so that multiple removals don't stomp on each other
+    loader_lock.acquire()
+
     try:
-        # With the zipfile module there is no way to delete a file, so we
-        # must instead copy the other files to a new zipfile and swap the
-        # filenames
-        new_loader_package_path = loader_package_path + u'-new'
-        old_loader_z = zipfile.ZipFile(loader_package_path, 'r')
+        # This means we have a new loader waiting to be installed, so we want
+        # the source loader zip to be that new one instead of the original
+        if os.path.exists(new_loader_package_path):
+            if os.path.exists(intermediate_loader_package_path):
+                os.remove(intermediate_loader_package_path)
+            os.rename(new_loader_package_path, intermediate_loader_package_path)
+            old_loader_z = zipfile.ZipFile(intermediate_loader_package_path, 'r')
+
+        # Under normal circumstances the source loader zip should be the
+        # loader_package_path
+        else:
+            old_loader_z = zipfile.ZipFile(loader_package_path, 'r')
+
         new_loader_z = zipfile.ZipFile(new_loader_package_path, 'w')
         for enc_filename in old_loader_z.namelist():
             if not isinstance(enc_filename, str_cls):
@@ -178,9 +217,15 @@ def remove(name):
     finally:
         old_loader_z.close()
         new_loader_z.close()
+        if os.path.exists(intermediate_loader_package_path):
+            os.remove(intermediate_loader_package_path)
 
-    if not removed:
+    # If we did not remove any files and there isn't already a swap queued, that
+    # means that nothing in the zip changed, so we do not need to disable the
+    # loader package and then re-enable it
+    if not removed and not non_local['swap_queued']:
         os.remove(new_loader_package_path)
+        loader_lock.release()
         return
 
     disabler = PackageDisabler()
@@ -192,8 +237,26 @@ def remove(name):
     # `loader.py`, we don't necessarily have to implement it, but this is just
     # a note.
 
-    def do_swap():
-        os.remove(loader_package_path)
-        os.rename(new_loader_package_path, loader_package_path)
-        sublime.set_timeout(lambda: disabler.reenable_package(loader_package_name, 'loader'), 10)
-    sublime.set_timeout(do_swap, 700)
+    # It is possible multiple dependencies will be removed in quick succession,
+    # however we pause to let the loader file system lock to be released on
+    # Windows by Sublime Text. The non_local['swap_queued'] variable makes sure
+    # we don't have multiple timeouts set to replace the loader zip with the
+    # new version, thus hitting a race condition where files are overwritten
+    # and rename operations fail because the source file doesn't exist.
+    if not non_local['swap_queued']:
+        def do_swap():
+            loader_lock.acquire()
+
+            os.remove(loader_package_path)
+            os.rename(new_loader_package_path, loader_package_path)
+
+            def do_reenable():
+                disabler.reenable_package(loader_package_name, 'loader')
+                loader_lock.release()
+                non_local['swap_queued'] = False
+            sublime.set_timeout(do_reenable, 10)
+
+        sublime.set_timeout(do_swap, 700)
+        non_local['swap_queued'] = True
+
+    loader_lock.release()
