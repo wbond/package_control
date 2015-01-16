@@ -6,6 +6,7 @@ import time
 
 import sublime
 
+from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
@@ -119,18 +120,41 @@ class AutomaticUpgrader(threading.Thread):
         """
         Installs all packages that were listed in the list of
         `installed_packages` from Package Control.sublime-settings but were not
-        found on the filesystem and passed as `found_packages`.
+        found on the filesystem and passed as `found_packages`. Also installs
+        any missing dependencies.
         """
 
-        if (not self.missing_packages and not self.missing_dependencies) or \
-                not self.should_install_missing:
+        # We always install missing dependencies - this operation does not
+        # obey the "install_missing" setting since not installing dependencies
+        # would result in broken packages.
+        if self.missing_dependencies:
+            total_missing_dependencies = len(self.missing_dependencies)
+            dependency_s = 'ies' if total_missing_dependencies != 1 else 'y'
+            console_write(u'Installing %s missing dependenc%s' %
+                (total_missing_dependencies, dependency_s), True)
+
+            for dependency in self.missing_dependencies:
+                if self.installer.manager.install_package(dependency, is_dependency=True):
+                    console_write(u'Installed missing dependency %s' % dependency, True)
+
+            def notify_restart():
+                message = (u'%s missing dependenc%s were just ' +
+                    u'installed. Sublime Text should be restarted, otherwise ' +
+                    u'one or more of the installed packages may not function ' +
+                    u'properly.') % (total_missing_dependencies, dependency_s)
+                show_error(message)
+            sublime.set_timeout(notify_restart, 1000)
+
+        # Missing package installs are controlled by a setting
+        if not self.missing_packages or not self.should_install_missing:
             return
 
         total_missing_packages = len(self.missing_packages)
-        total_missing_dependencies = len(self.missing_dependencies)
 
         if total_missing_packages > 0:
-            console_write(u'Installing %s missing packages' % total_missing_packages, True)
+            package_s = 's' if total_missing_packages != 1 else ''
+            console_write(u'Installing %s missing package%s' %
+                (total_missing_packages, package_s), True)
 
         # Fetching the list of packages also grabs the renamed packages
         self.manager.list_available_packages()
@@ -153,13 +177,6 @@ class AutomaticUpgrader(threading.Thread):
 
             if self.installer.manager.install_package(package):
                 console_write(u'Installed missing package %s' % package, True)
-
-        if total_missing_dependencies > 0:
-            console_write(u'Installing %s missing dependencies' % total_missing_dependencies, True)
-
-        for dependency in self.missing_dependencies:
-            if self.installer.manager.install_package(dependency, is_dependency=True):
-                console_write(u'Installed missing dependency %s' % dependency, True)
 
     def print_skip(self):
         """
