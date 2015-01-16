@@ -4,6 +4,7 @@ import re
 import json
 from os import path
 import zipfile
+import zipimport
 import shutil
 from textwrap import dedent
 from threading import Lock
@@ -97,6 +98,11 @@ def add(priority, name, code=None):
             f.write(code.encode('utf-8'))
 
     else:
+        # Make sure Python doesn't use the old file listing for the loader
+        # when trying to import modules
+        if loader_package_path in zipimport._zip_directory_cache:
+            del zipimport._zip_directory_cache[loader_package_path]
+
         try:
             loader_lock.acquire()
 
@@ -118,10 +124,11 @@ def add(priority, name, code=None):
         finally:
             loader_lock.release()
 
-        if not just_created_loader:
+        if not just_created_loader and not non_local['swap_queued']:
             # Manually execute the loader code because Sublime Text does not
             # detect changes to the zip archive, only if the file is new.
-            sublime_plugin.reload_plugin("%s.%s" % (loader_package_name, loader_filename[:-3]))
+            importer = zipimport.zipimporter(loader_package_path)
+            importer.load_module(loader_filename[0:-3])
 
     # Clean things up for people who were tracking the master branch
     if just_created_loader:
