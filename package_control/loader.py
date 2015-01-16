@@ -259,8 +259,8 @@ def remove(name):
 
             def do_reenable():
                 disabler.reenable_package(loader_package_name, 'loader')
-                loader_lock.release()
                 non_local['swap_queued'] = False
+                loader_lock.release()
             sublime.set_timeout(do_reenable, 10)
 
         sublime.set_timeout(do_swap, 700)
