@@ -625,7 +625,15 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             success = wininet.InternetQueryOptionA(handle, option, ref, ctypes.byref(to_read_was_read))
             if not success:
                 if ctypes.GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
+
+                    # Some users report issues trying to fetch proxy information.
+                    # Rather than bailing on the connection, we just return
+                    # blank info.
+                    if option == self.INTERNET_OPTION_PROXY:
+                        return InternetProxyInfo()
+
                     raise NonHttpError(self.extract_error())
+
                 # The error was a buffer that was too small, so try again
                 option_buffer_size = to_read_was_read.value
                 try_again = True
