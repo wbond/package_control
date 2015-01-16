@@ -327,6 +327,11 @@ class PackageCleanup(threading.Thread):
             new_ignored = list(ignored)
             for package in in_process:
                 if package in new_ignored:
+                    # This prevents removing unused dependencies from being messed up by
+                    # the functionality to re-enable packages that were left disabled
+                    # by an error.
+                    if loader.loader_package_name == package and loader.is_swapping():
+                        continue
                     console_write(u'The package %s is being re-enabled after a Package Control operation was interrupted' % package, True)
                     new_ignored.remove(package)
 

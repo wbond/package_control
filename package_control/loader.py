@@ -48,6 +48,20 @@ intermediate_loader_package_path = loader_package_path + u'-intermediate'
 
 
 
+def is_swapping():
+    """
+    If the loader is currently being swapped
+
+    :return:
+        Boolean
+    """
+
+    loader_lock.acquire()
+    queued = non_local['swap_queued']
+    loader_lock.release()
+    return queued
+
+
 def add(priority, name, code=None):
     """
     Adds a dependency to the loader
