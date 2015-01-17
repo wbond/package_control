@@ -133,17 +133,22 @@ class AutomaticUpgrader(threading.Thread):
             console_write(u'Installing %s missing dependenc%s' %
                 (total_missing_dependencies, dependency_s), True)
 
+            dependencies_installed = 0
+
             for dependency in self.missing_dependencies:
                 if self.installer.manager.install_package(dependency, is_dependency=True):
                     console_write(u'Installed missing dependency %s' % dependency, True)
+                    dependencies_installed += 1
 
-            def notify_restart():
-                message = (u'%s missing dependenc%s were just ' +
-                    u'installed. Sublime Text should be restarted, otherwise ' +
-                    u'one or more of the installed packages may not function ' +
-                    u'properly.') % (total_missing_dependencies, dependency_s)
-                show_error(message)
-            sublime.set_timeout(notify_restart, 1000)
+            if dependencies_installed:
+                def notify_restart():
+                    dependency_was = 'ies were' if dependencies_installed != 1 else 'y was'
+                    message = (u'%s missing dependenc%s just ' +
+                        u'installed. Sublime Text should be restarted, otherwise ' +
+                        u'one or more of the installed packages may not function ' +
+                        u'properly.') % (dependencies_installed, dependency_was)
+                    show_error(message)
+                sublime.set_timeout(notify_restart, 1000)
 
         # Missing package installs are controlled by a setting
         if not self.missing_packages or not self.should_install_missing:
