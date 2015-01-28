@@ -1,5 +1,6 @@
 import time
 import threading
+import functools
 
 import sublime
 import sublime_plugin
@@ -46,15 +47,9 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
             # Pause so packages can be disabled
             time.sleep(0.7)
 
-            # We use a function to generate the on-complete lambda because if
-            # we don't, the lambda will bind to info at the current scope, and
-            # thus use the last value of info from the loop
-            def make_on_complete(name):
-                return lambda: self.reenable_package(name)
-
             for info in package_list:
                 if info[0] in disabled_packages:
-                    on_complete = make_on_complete(info[0])
+                    on_complete = functools.partial(self.reenable_package, info[0])
                 else:
                     on_complete = None
                 thread = PackageInstallerThread(self.manager, info[0],
