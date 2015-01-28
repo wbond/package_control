@@ -741,14 +741,14 @@ class PackageManager():
                     return False
                 return GitUpgrader(self.settings['git_binary'],
                     self.settings['git_update_command'], unpacked_package_dir,
-                    self.settings['cache_length'], self.settings['debug']).run()
+                    self.settings['cache_length'], debug).run()
             elif os.path.exists(os.path.join(unpacked_package_dir, '.hg')):
                 if self.settings.get('ignore_vcs_packages'):
                     show_error(u'Skipping hg package %s since the setting ignore_vcs_packages is set to true' % package_name)
                     return False
                 return HgUpgrader(self.settings['hg_binary'],
                     self.settings['hg_update_command'], unpacked_package_dir,
-                    self.settings['cache_length'], self.settings['debug']).run()
+                    self.settings['cache_length'], debug).run()
 
             old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
             is_upgrade = old_version != None
