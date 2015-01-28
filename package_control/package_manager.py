@@ -1357,7 +1357,8 @@ class PackageManager():
         :param package_name:
             The package to delete
 
-        :return: bool if the package was successfully deleted
+        :return: bool if the package was successfully deleted or None
+                 if the package needs to be cleaned up on the next restart
         """
 
         exclude_dependencies = not is_dependency
@@ -1438,7 +1439,7 @@ class PackageManager():
             # Remove dependencies that are no longer needed
             self.cleanup_dependencies(package_name)
 
-        return True
+        return True if can_delete_dir else None
 
     def record_usage(self, params):
         """
