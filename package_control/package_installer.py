@@ -211,5 +211,6 @@ class PackageInstallerThread(threading.Thread):
         try:
             self.result = self.manager.install_package(self.package)
         finally:
-            if self.on_complete:
+            # Do not reenable if deferred until next restart
+            if self.on_complete and self.result is not None:
                 sublime.set_timeout(self.on_complete, 700)

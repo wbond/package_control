@@ -92,7 +92,10 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
         time.sleep(0.7)
 
         for package in self.packages:
-            self.manager.install_package(package)
+            result = self.manager.install_package(package)
+            # Do not reenable if installation deferred until next restart
+            if result is None:
+                continue
 
             # We use a wrapper function since this call is in a loop, so
             # directly using the "package" variable would cause the value to

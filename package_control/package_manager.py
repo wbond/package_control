@@ -670,7 +670,9 @@ class PackageManager():
         :param is_dependency:
             If the package is a dependency
 
-        :return: bool if the package was successfully installed
+        :return: bool if the package was successfully deleted or None
+                 if the package needs to be cleaned up on the next restart
+                 and should not be reenabled
         """
 
         debug = self.settings.get('debug')
@@ -855,10 +857,18 @@ class PackageManager():
             if os.path.exists(unpacked_metadata_file) and not unpack:
                 self.backup_package_dir(package_name)
                 if not clear_directory(unpacked_package_dir):
-                    # If there is an error deleting now, we will mark it for
-                    # cleanup the next time Sublime Text starts
-                    open_compat(os.path.join(unpacked_package_dir,
-                        'package-control.cleanup'), 'w').close()
+                    # If deleting failed, queue the package to upgrade upon next start
+                    # where it will be disabled
+                    reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
+                    open_compat(reinstall_file, 'w').close()
+
+                    # Don't delete the metadata file, that way we have it
+                    # when the reinstall happens, and the appropriate
+                    # usage info can be sent back to the server
+                    clear_directory(unpacked_package_dir, [reinstall_file, unpacked_metadata_file])
+
+                    show_error(u'An error occurred while trying to upgrade %s. Please restart Sublime Text to finish the upgrade.' % package_name)
+                    return None
                 else:
                     os.rmdir(unpacked_package_dir)
 
@@ -965,7 +975,7 @@ class PackageManager():
                 clear_directory(package_dir, [reinstall_file, package_metadata_file])
 
                 show_error(u'An error occurred while trying to upgrade %s. Please restart Sublime Text to finish the upgrade.' % package_name)
-                return False
+                return None
 
             # Here we clean out any files that were not just overwritten. It is ok
             # if there is an error removing a file. The next time there is an
@@ -1359,6 +1369,7 @@ class PackageManager():
 
         :return: bool if the package was successfully deleted or None
                  if the package needs to be cleaned up on the next restart
+                 and should not be reenabled
         """
 
         exclude_dependencies = not is_dependency
