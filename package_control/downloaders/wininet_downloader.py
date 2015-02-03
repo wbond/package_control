@@ -510,7 +510,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             except (NonHttpError, HttpError) as e:
 
                 # GitHub and BitBucket seem to time out a lot
-                if str(e).find('timed out') != -1:
+                if unicode_from_os(e).find('timed out') != -1:
                     error_string = u'Downloading %s timed out' % url
                     if tries:
                         error_string += ', trying again'
@@ -518,7 +518,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                             console_write(error_string, True)
                     continue
 
-                error_string = u'%s %s downloading %s.' % (error_message, e, url)
+                error_string = u'%s %s downloading %s.' % (error_message, unicode_from_os(e), url)
 
             finally:
                 if http_connection:
