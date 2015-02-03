@@ -76,6 +76,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
             old_version = SemVer(metadata['version'])
             if version <= old_version:
                 return
+            console_write(u'Upgrading bootstrapped dependency %s to %s from %s' % (package_basename, version, old_version), True)
         except (KeyError, FileNotFoundError):
             # If we can't determine the old version, install the new one
             pass
