@@ -14,7 +14,7 @@ All of the source code (except for `package_control/semver.py` and
 `package_control/http/x509.py`), is under the license:
 
 ```
-Copyright (c) 2011-2014 Will Bond <will@wbond.net>
+Copyright (c) 2011-2015 Will Bond <will@wbond.net>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -62,7 +62,7 @@ THE SOFTWARE.
 `package_control/http/x509.py` is under the license:
 
 ```
-Copyright (c) 2007 the Python-ASN1 authors, 2014 Will Bond <will@wbond.net>
+Copyright (c) 2007 the Python-ASN1 authors, 2014-2015 Will Bond <will@wbond.net>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
