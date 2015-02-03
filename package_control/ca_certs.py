@@ -540,4 +540,8 @@ if os.name == 'nt':
         hundreds_nano_seconds = struct.unpack('>Q', struct.pack('>LL', filetime.dwHighDateTime, filetime.dwLowDateTime))[0]
         seconds_since_1601 = hundreds_nano_seconds / 10000000
         epoch_seconds = seconds_since_1601 - 11644473600 # Seconds from Jan 1 1601 to Jan 1 1970
-        return datetime.datetime.fromtimestamp(epoch_seconds)
+        try:
+            return datetime.datetime.fromtimestamp(epoch_seconds)
+        except (OSError):
+            console_write(u'Error parsing filetime - high: "%s", low: "%s", epoch seconds: "%s"' % (filetime.dwHighDateTime, filetime.dwLowDateTime, epoch_seconds), True)
+            return datetime.datetime(2037, 1, 1)
