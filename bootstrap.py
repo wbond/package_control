@@ -128,7 +128,7 @@ def plugin_loaded():
 
     # SSL support fo Linux
     if sublime.platform() == 'linux':
-        linux_ssl_url = u'http://packagecontrol.io/ssl-linux.sublime-package'
+        linux_ssl_url = u'http://packagecontrol.io/ssl/1.0.1/ssl-linux.sublime-package'
         linux_ssl_hash = u'862d061cbe666777cd1e9cd1cbc7c82f48ad8897dbb68332975f3edf5ce0f38d'
         linux_ssl_priority = u'01'
         linux_ssl_version = '1.0.1'
@@ -147,7 +147,7 @@ def plugin_loaded():
 
     # SSL support for SHA-2 certificates with ST2 on Windows
     if sublime.platform() == 'windows' and sys.version_info < (3,):
-        win_ssl_url = u'http://packagecontrol.io/ssl-windows.sublime-package'
+        win_ssl_url = u'http://packagecontrol.io/ssl/1.0.0/ssl-windows.sublime-package'
         win_ssl_hash = u'3c28982eb400039cfffe53d38510556adead39ba7321f2d15a6770d3ebc75030'
         win_ssl_priority = u'01'
         win_ssl_version = u'1.0.0'
