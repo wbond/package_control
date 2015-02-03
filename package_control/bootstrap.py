@@ -104,7 +104,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         return
 
     if not path.exists(package_dir):
-        os.mkdir(package_dir, 0o755)
+        os.makedirs(package_dir, 0o755)
     else:
         clear_directory(package_dir)
 
@@ -125,11 +125,11 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
 
         if dest[-1] == '/':
             if not path.exists(dest):
-                os.mkdir(dest, 0o755)
+                os.makedirs(dest, 0o755)
         else:
             dest_dir = path.dirname(dest)
             if not path.exists(dest_dir):
-                os.mkdir(dest_dir, 0o755)
+                os.makedirs(dest_dir, 0o755)
 
             with open(dest, 'wb') as f:
                 f.write(data_zip.read(zip_path))
