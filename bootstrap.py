@@ -135,8 +135,9 @@ def plugin_loaded():
 
         def linux_ssl_show_restart():
             sublime.message_dialog(u'Package Control\n\n'
-                u'Package Control just installed the missing Python _ssl ' + \
-                u'module for Linux since Sublime Text does not include it.\n\n' + \
+                u'Package Control just installed or upgraded the missing ' + \
+                u'Python _ssl module for Linux since Sublime Text does not ' + \
+                u'include it.\n\n' + \
                 u'Please restart Sublime Text to make SSL available to all ' + \
                 u'packages.')
 
