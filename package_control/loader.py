@@ -62,6 +62,52 @@ def is_swapping():
     return queued
 
 
+def exists(name):
+    """
+    If a loader for the specified dependency is installed
+
+    :param name:
+        The dependency to check for a loader for
+    """
+
+    if not path.exists(loader_package_path):
+        return False
+
+    loader_filename_regex = u'^\\d\\d-%s.pyc?$' % re.escape(name)
+
+    if sys.version_info < (3,):
+        for filename in os.listdir(loader_package_path):
+            if re.match(loader_filename_regex, filename):
+                return True
+        return False
+
+    # We acquire a lock so that multiple removals don't stomp on each other
+    loader_lock.acquire()
+    found = False
+
+    try:
+        # This means we have a new loader waiting to be installed, so we want
+        # the source loader zip to be that new one instead of the original
+        if os.path.exists(new_loader_package_path):
+            loader_path_to_check = new_loader_package_path
+        else:
+            loader_path_to_check = loader_package_path
+
+        loader_z = zipfile.ZipFile(loader_path_to_check, 'r')
+
+        for filename in loader_z.namelist():
+            if not isinstance(filename, str_cls):
+                filename = filename.decode('utf-8')
+            if re.match(loader_filename_regex, filename):
+                found = True
+                break
+    finally:
+        loader_z.close()
+        loader_lock.release()
+
+    return found
+
+
 def add(priority, name, code=None):
     """
     Adds a dependency to the loader
