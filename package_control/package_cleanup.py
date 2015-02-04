@@ -163,6 +163,8 @@ class PackageCleanup(threading.Thread):
                     # to be done in the main Sublime Text thread.
                     package_filename = os.path.join(installed_path, file)
 
+                    # We use a functools.partial to generate the on-complete callback in
+                    # order to bind the current value of the parameters, unlike lambdas.
                     sublime.set_timeout(functools.partial(
                         self.remove_package_file, package_name, package_filename), 10)
 

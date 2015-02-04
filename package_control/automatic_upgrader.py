@@ -240,6 +240,8 @@ class AutomaticUpgrader(threading.Thread):
 
             for info in package_list:
                 if info[0] in disabled_packages:
+                    # We use a functools.partial to generate the on-complete callback in
+                    # order to bind the current value of the parameters, unlike lambdas.
                     on_complete = functools.partial(self.installer.reenable_package, info[0])
                 else:
                     on_complete = None

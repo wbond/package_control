@@ -101,4 +101,6 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
 
             # Do not reenable if installation deferred until next restart
             if result is not None:
+                # We use a functools.partial to generate the on-complete callback in
+                # order to bind the current value of the parameters, unlike lambdas.
                 sublime.set_timeout(functools.partial(do_reenable_package, package), 700)
