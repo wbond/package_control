@@ -202,7 +202,7 @@ class GitHubClient(JSONApiClient):
         """
 
         user_match = re.match('https?://github.com/([^/]+)/?$', url)
-        if user_match == None:
+        if user_match is None:
             return None
 
         user = user_match.group(1)
@@ -315,11 +315,11 @@ class GitHubClient(JSONApiClient):
 
         branch = 'master'
         branch_match = re.match('https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', url)
-        if branch_match != None:
+        if branch_match is not None:
             branch = branch_match.group(1)
 
         repo_match = re.match('https?://github.com/([^/]+/[^/]+)($|/.*$)', url)
-        if repo_match == None:
+        if repo_match is None:
             return (None, None)
 
         user_repo = repo_match.group(1)

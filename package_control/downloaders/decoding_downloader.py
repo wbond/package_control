@@ -17,6 +17,7 @@ from .downloader_exception import DownloaderException
 
 
 class DecodingDownloader(object):
+
     """
     A base for downloaders that provides the ability to decode bzip2ed, gzipped
     or deflated content.

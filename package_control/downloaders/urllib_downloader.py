@@ -1,5 +1,4 @@
 import re
-import os
 import sys
 
 from .. import http
@@ -28,7 +27,6 @@ from ..console_write import console_write
 from ..unicode import unicode_from_os
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
-from .rate_limit_exception import RateLimitException
 from .downloader_exception import DownloaderException
 from ..ca_certs import get_ca_bundle_path
 from .decoding_downloader import DecodingDownloader
@@ -37,6 +35,7 @@ from .caching_downloader import CachingDownloader
 
 
 class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
+
     """
     A downloader that uses the Python urllib module
 
@@ -270,8 +269,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 console_write(u"  proxy_password: %s" % proxy_password)
 
             secure_url_match = re.match('^https://([^/]+)', url)
-            if secure_url_match != None:
-                secure_domain = secure_url_match.group(1)
+            if secure_url_match is not None:
                 bundle_path = get_ca_bundle_path(self.settings)
                 bundle_path = bundle_path.encode(sys.getfilesystemencoding())
                 handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,

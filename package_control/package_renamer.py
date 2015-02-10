@@ -9,6 +9,7 @@ from .settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
 class PackageRenamer(PackageDisabler):
+
     """
     Class to handle renaming packages via the renamed_packages setting
     gathered from channels and repositories.

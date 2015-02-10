@@ -17,6 +17,7 @@ from .providers.release_selector import is_compatible_version
 
 
 class PackageCleanup(threading.Thread):
+
     """
     Cleans up folders for packages that were removed, but that still have files
     in use.
@@ -106,7 +107,7 @@ class PackageCleanup(threading.Thread):
                     params = {
                         'package': package_name,
                         'operation': 'install',
-                        'version': \
+                        'version':
                             self.manager.get_metadata(package_name).get('version')
                     }
                     self.manager.record_usage(params)
@@ -161,6 +162,7 @@ class PackageCleanup(threading.Thread):
                     # do a dance where we disable the package first, which has
                     # to be done in the main Sublime Text thread.
                     package_filename = os.path.join(installed_path, file)
+
                     # Invoke a function to build the callback since we are in a loop
                     # and the variable values will change by the time the callback is
                     # actually called
@@ -195,22 +197,22 @@ class PackageCleanup(threading.Thread):
                 message = u''
                 if invalid_packages:
                     package_s = 's were' if len(invalid_packages) != 1 else ' was'
-                    message += (u'The following incompatible package%s ' + \
+                    message += (u'The following incompatible package%s '
                         u'found installed:\n\n%s\n\n') % (package_s,
                         '\n'.join(invalid_packages))
                 if invalid_dependencies:
                     dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
-                    message += (u'The following incompatible dependenc%s ' + \
+                    message += (u'The following incompatible dependenc%s '
                         u'found installed:\n\n%s\n\n') % (dependency_s,
                         '\n'.join(invalid_dependencies))
-                message += u'This is usually due to syncing packages across ' + \
-                    u'different machines in a way that does not check ' + \
-                    u'package metadata for compatibility.\n\n' + \
-                    u'Please visit https://packagecontrol.io/docs/syncing ' + \
-                    u'for information about how to properly sync ' + \
-                    u'configuration and packages across machines.\n\n' + \
-                    u'To restore package functionality, please remove each ' + \
-                    u'listed package and reinstall it.'
+                message += (u'This is usually due to syncing packages across '
+                    u'different machines in a way that does not check '
+                    u'package metadata for compatibility.\n\n'
+                    u'Please visit https://packagecontrol.io/docs/syncing '
+                    u'for information about how to properly sync '
+                    u'configuration and packages across machines.\n\n'
+                    u'To restore package functionality, please remove each '
+                    u'listed package and reinstall it.')
                 show_error(message)
             sublime.set_timeout(show_sync_error, 100)
 

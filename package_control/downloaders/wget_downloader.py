@@ -8,7 +8,6 @@ from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
 from .non_clean_exit_error import NonCleanExitError
-from .rate_limit_exception import RateLimitException
 from .downloader_exception import DownloaderException
 from ..ca_certs import get_ca_bundle_path
 from .decoding_downloader import DecodingDownloader
@@ -17,6 +16,7 @@ from .caching_downloader import CachingDownloader
 
 
 class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader):
+
     """
     A downloader that uses the command line program wget
 
@@ -95,8 +95,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             command.extend(['--header', "%s: %s" % (name, value)])
 
         secure_url_match = re.match('^https://([^/]+)', url)
-        if secure_url_match != None:
-            secure_domain = secure_url_match.group(1)
+        if secure_url_match is not None:
             bundle_path = get_ca_bundle_path(self.settings)
             command.append(u'--ca-certificate=' + bundle_path)
 

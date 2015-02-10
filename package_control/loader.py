@@ -15,13 +15,11 @@ except (NameError):
     str_cls = str
 
 import sublime
-import sublime_plugin
 
 from .sys_path import st_dir
 from .console_write import console_write
 from .package_disabler import PackageDisabler
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
-
 
 
 loader_lock = Lock()
@@ -45,7 +43,6 @@ else:
 # These files are used in that process.
 new_loader_package_path = loader_package_path + u'-new'
 intermediate_loader_package_path = loader_package_path + u'-intermediate'
-
 
 
 def is_swapping():
@@ -135,7 +132,7 @@ def add(priority, name, code=None):
 
     just_created_loader = False
 
-    loader_metadata = metadata = {
+    loader_metadata = {
         "version": "1.0.0",
         "sublime_text": "*",
         # Tie the loader to the platform so we can detect

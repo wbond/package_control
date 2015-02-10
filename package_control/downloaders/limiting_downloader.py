@@ -9,6 +9,7 @@ from .rate_limit_exception import RateLimitException
 
 
 class LimitingDownloader(object):
+
     """
     A base for downloaders that checks for rate limiting headers.
     """

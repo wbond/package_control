@@ -1,10 +1,9 @@
 from ctypes import windll, wintypes
 import ctypes
-import time
 import re
 import datetime
 import struct
-import locale
+import locale  # To prevent import errors in thread with datetime
 
 wininet = windll.wininet
 
@@ -19,7 +18,6 @@ from ..console_write import console_write
 from ..unicode import unicode_from_os
 from .non_http_error import NonHttpError
 from .http_error import HttpError
-from .rate_limit_exception import RateLimitException
 from .downloader_exception import DownloaderException
 from .win_downloader_exception import WinDownloaderException
 from .decoding_downloader import DecodingDownloader
@@ -28,6 +26,7 @@ from .caching_downloader import CachingDownloader
 
 
 class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
+
     """
     A downloader that uses the Windows WinINet DLL to perform downloads. This
     has the benefit of utilizing system-level proxy configuration and CA certs.
@@ -154,7 +153,6 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         599: "Network Connect Timeout Error"
     }
 
-
     def __init__(self, settings):
         self.settings = settings
         self.debug = settings.get('debug')
@@ -176,18 +174,15 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         Closes any persistent/open connections
         """
 
-        closed = False
         changed_state_back = False
 
         if self.tcp_connection:
             wininet.InternetCloseHandle(self.tcp_connection)
             self.tcp_connection = None
-            closed = True
 
         if self.network_connection:
             wininet.InternetCloseHandle(self.network_connection)
             self.network_connection = None
-            closed = True
 
         if self.was_offline:
             dw_connected_state = wintypes.DWORD(self.INTERNET_STATE_DISCONNECTED_BY_USER)
@@ -543,7 +538,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
         hundreds_nano_seconds = struct.unpack('>Q', struct.pack('>LL', filetime.dwHighDateTime, filetime.dwLowDateTime))[0]
         seconds_since_1601 = hundreds_nano_seconds / 10000000
-        epoch_seconds = seconds_since_1601 - 11644473600 # Seconds from Jan 1 1601 to Jan 1 1970
+        epoch_seconds = seconds_since_1601 - 11644473600  # Seconds from Jan 1 1601 to Jan 1 1970
         return datetime.datetime.fromtimestamp(epoch_seconds)
 
     def extract_error(self):
@@ -701,6 +696,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
 
 class FileTime(ctypes.Structure):
+
     """
     A Windows struct used by InternetCertificateInfo for certificate
     date information
@@ -713,6 +709,7 @@ class FileTime(ctypes.Structure):
 
 
 class InternetCertificateInfo(ctypes.Structure):
+
     """
     A Windows struct used to store information about an SSL certificate
     """
@@ -730,6 +727,7 @@ class InternetCertificateInfo(ctypes.Structure):
 
 
 class InternetProxyInfo(ctypes.Structure):
+
     """
     A Windows struct usd to store information about the configured proxy server
     """
@@ -742,6 +740,7 @@ class InternetProxyInfo(ctypes.Structure):
 
 
 class InternetConnectedInfo(ctypes.Structure):
+
     """
     A Windows struct usd to store information about the global internet connection state
     """

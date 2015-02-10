@@ -6,6 +6,7 @@ from ..settings import pc_settings_filename
 
 
 class RemoveChannelCommand(sublime_plugin.WindowCommand):
+
     """
     A command to remove a channel from the user's Package Control settings
     """

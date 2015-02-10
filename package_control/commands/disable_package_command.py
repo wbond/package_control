@@ -8,6 +8,7 @@ from ..package_disabler import PackageDisabler
 
 
 class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
+
     """
     A command that adds a package to Sublime Text's ignored packages list
     """

@@ -1,6 +1,6 @@
-import re
 import sys
 import datetime
+import locale  # To prevent import errors in thread with datetime
 
 if sys.version_info >= (3,):
     long = int
@@ -9,7 +9,6 @@ if sys.version_info >= (3,):
 else:
     str_cls = unicode
     bytes_cls = str
-
 
 
 Boolean = 0x01
@@ -55,10 +54,12 @@ STRING_TYPES = [
 
 
 class Error(Exception):
+
     """ASN1 error"""
 
 
 class Decoder(object):
+
     """A ASN.1 decoder. Understands BER (and DER which is a subset)."""
 
     def __init__(self):
@@ -153,7 +154,7 @@ class Decoder(object):
                 raise Error('ASN1 syntax error')
             bytes = self._read_bytes(count)
             if sys.version_info < (3,):
-                bytes = [ ord(b) for b in bytes ]
+                bytes = [ord(b) for b in bytes]
             length = long(0)
             for byte in bytes:
                 length = (length << 8) | byte
@@ -206,7 +207,7 @@ class Decoder(object):
                 byte = input[index]
             else:
                 byte = ord(input[index])
-        except (IndexError) as e:
+        except (IndexError):
             raise Error('Premature end of input.')
         self.m_stack[-1][0] += 1
         return byte
@@ -232,7 +233,7 @@ class Decoder(object):
         if sys.version_info >= (3,):
             values = list(bytes)
         else:
-            values = [ ord(b) for b in bytes ]
+            values = [ord(b) for b in bytes]
         # check if the integer is normalized
         if len(values) > 1 and \
                 (values[0] == 0xff and values[1] & 0x80 or
@@ -251,7 +252,7 @@ class Decoder(object):
                 values[i] = 0x00
         value = long(0)
         for val in values:
-            value = (value << 8) |  val
+            value = (value << 8) | val
         if negative:
             value = -value
         try:
@@ -410,6 +411,7 @@ class Decoder(object):
 
 
 class SubjectAltNameDecoder(Decoder):
+
     def _read_value(self, nr, length):
         """Read a value from the input."""
         bytes = self._read_bytes(length)

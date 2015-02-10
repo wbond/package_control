@@ -13,6 +13,7 @@ from ..package_manager import PackageManager
 
 class RemovePackageCommand(sublime_plugin.WindowCommand,
         ExistingPackagesCommand, PackageDisabler):
+
     """
     A command that presents a list of installed packages, allowing the user to
     select one to remove
@@ -57,6 +58,7 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
 
 
 class RemovePackageThread(threading.Thread, PackageDisabler):
+
     """
     A thread to run the remove package operation in so that the Sublime Text
     UI does not become frozen

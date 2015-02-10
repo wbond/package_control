@@ -6,6 +6,7 @@ from .vcs_upgrader import VcsUpgrader
 
 
 class HgUpgrader(VcsUpgrader):
+
     """
     Allows upgrading a local mercurial-repository-based package
     """
@@ -54,7 +55,7 @@ class HgUpgrader(VcsUpgrader):
 
         cache_key = self.working_copy + '.incoming'
         incoming = get_cache(cache_key)
-        if incoming != None:
+        if incoming is not None:
             return incoming
 
         binary = self.retrieve_binary()
@@ -63,7 +64,7 @@ class HgUpgrader(VcsUpgrader):
 
         args = [binary, 'in', '-q', 'default']
         output = self.execute(args, self.working_copy)
-        if output == False:
+        if output is False:
             return False
 
         incoming = len(output) > 0

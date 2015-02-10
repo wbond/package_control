@@ -7,6 +7,7 @@ from .open_compat import open_compat, read_compat
 
 
 class HttpCache(object):
+
     """
     A data store for caching HTTP response data.
     """

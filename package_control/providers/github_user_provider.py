@@ -7,6 +7,7 @@ from .provider_exception import ProviderException
 
 
 class GitHubUserProvider():
+
     """
     Allows using a GitHub user/organization as the source for multiple packages,
     or in Package Control terminology, a "repository".
@@ -130,7 +131,7 @@ class GitHubUserProvider():
 
         client = GitHubClient(self.settings)
 
-        if invalid_sources != None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
 
         try:

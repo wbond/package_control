@@ -29,6 +29,7 @@ try:
     import ssl
 
     class ValidatingHTTPSConnection(DebuggableHTTPConnection):
+
         """
         A custom HTTPConnection class that validates SSL certificates, and
         allows proxy authentication for HTTPS connections.
@@ -69,11 +70,9 @@ try:
             """
 
             if 'subjectAltName' in cert:
-                return [x[1] for x in cert['subjectAltName']
-                             if x[0].lower() == 'dns']
+                return [x[1] for x in cert['subjectAltName'] if x[0].lower() == 'dns']
             else:
-                return [x[0][1] for x in cert['subject']
-                                if x[0][0].lower() == 'commonname']
+                return [x[0][1] for x in cert['subject'] if x[0][0].lower() == 'commonname']
 
         def validate_cert_host(self, cert, hostname):
             """
@@ -246,7 +245,7 @@ try:
             ha1 = hash(a1)
             ha2 = hash(a2)
 
-            if qop == None:
+            if qop is None:
                 response = hash(u"%s:%s:%s" % (ha1, nonce, ha2))
             elif qop == 'auth':
                 nc = '00000001'

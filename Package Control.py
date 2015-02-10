@@ -1,7 +1,6 @@
 import sublime
 import sys
 import os
-import locale
 
 
 st_version = 2
@@ -55,7 +54,6 @@ else:
     if reloader_name in sys.modules:
         reload(sys.modules[reloader_name])
 
-
     try:
         # Python 3
         from .package_control import sys_path
@@ -65,11 +63,10 @@ else:
 
     except (ValueError):
         # Python 2
-        from package_control import sys_path
+        from package_control import sys_path  # Imported now since uses os.getcwd()
 
         from package_control.commands import *
         from package_control.package_cleanup import PackageCleanup
-
 
     def plugin_loaded():
         # Make sure the user's locale can handle non-ASCII. A whole bunch of
@@ -80,7 +77,7 @@ else:
         # could be installed, they could not be loaded properly.
         try:
             os.path.exists(os.path.join(sublime.packages_path(), u"fran\u00e7ais"))
-        except (UnicodeEncodeError) as e:
+        except (UnicodeEncodeError):
             message = (u"Package Control\n\nYour system's locale is set to a " +
                 u"value that can not handle non-ASCII characters. Package " +
                 u"Control can not properly work unless this is fixed.\n\n" +

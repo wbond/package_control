@@ -3,7 +3,6 @@ import threading
 import sublime
 
 
-
 # This ensures we don't run into issues calling the event tracking methods
 # from threads
 _lock = threading.Lock()

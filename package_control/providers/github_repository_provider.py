@@ -7,6 +7,7 @@ from .provider_exception import ProviderException
 
 
 class GitHubRepositoryProvider():
+
     """
     Allows using a public GitHub repository as the source for a single package.
     For legacy purposes, this can also be treated as the source for a Package
@@ -46,7 +47,7 @@ class GitHubRepositoryProvider():
         master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo)
         branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
             repo)
-        return master != None or branch != None
+        return master is not None or branch is not None
 
     def prefetch(self):
         """
@@ -137,7 +138,7 @@ class GitHubRepositoryProvider():
 
         client = GitHubClient(self.settings)
 
-        if invalid_sources != None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
 
         try:

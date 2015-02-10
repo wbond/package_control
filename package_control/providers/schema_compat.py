@@ -25,7 +25,7 @@ def platforms_to_releases(info, debug):
     for platform in platforms:
         for release in platforms[platform]:
             key = '%s-%s' % (release['version'], release['url'])
-            if not key in temp_releases:
+            if key not in temp_releases:
                 temp_releases[key] = {
                     'sublime_text': '<3000',
                     'version': release['version'],

@@ -22,6 +22,7 @@ from ..versions import version_sort
 
 
 class RepositoryProvider():
+
     """
     Generic repository downloader that fetches package info
 
@@ -116,7 +117,7 @@ class RepositoryProvider():
             DownloaderException: when an error occurs trying to open a URL
         """
 
-        if self.repo_info != None:
+        if self.repo_info is not None:
             return
 
         self.repo_info = self.fetch_location(self.repo)
@@ -291,7 +292,7 @@ class RepositoryProvider():
                 yield (key, value)
             return
 
-        if invalid_sources != None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
 
         if not self.fetch_and_validate():
@@ -366,7 +367,7 @@ class RepositoryProvider():
                         if tags:
                             github_url = github_client.make_tags_url(base)
                             bitbucket_url = bitbucket_client.make_tags_url(base)
-                            if tags != True:
+                            if tags is not True:
                                 extra = tags
 
                         if branch:
@@ -382,7 +383,7 @@ class RepositoryProvider():
                         else:
                             raise ProviderException(u'Invalid "base" value "%s" for one of the releases of the dependency "%s" in the repository %s.' % (base, info['name'], self.repo))
 
-                        if downloads == False:
+                        if downloads is False:
                             raise ProviderException(u'No valid semver tags found at %s for the dependency "%s" in the repository %s.' % (url, info['name'], self.repo))
 
                         for download in downloads:
@@ -430,7 +431,6 @@ class RepositoryProvider():
             yield (info['name'], info)
 
         self.cache['get_dependencies'] = output
-
 
     def get_packages(self, invalid_sources=None):
         """
@@ -481,7 +481,7 @@ class RepositoryProvider():
                 yield (key, value)
             return
 
-        if invalid_sources != None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
 
         if not self.fetch_and_validate():
@@ -522,7 +522,7 @@ class RepositoryProvider():
 
                 # Try to grab package-level details from GitHub or BitBucket
                 if details:
-                    if invalid_sources != None and details in invalid_sources:
+                    if invalid_sources is not None and details in invalid_sources:
                         continue
 
                     info['sources'].append(details)
@@ -598,7 +598,7 @@ class RepositoryProvider():
                                 github_downloads = github_client.download_info(download_details)
                                 bitbucket_downloads = bitbucket_client.download_info(download_details)
 
-                                if github_downloads == False or bitbucket_downloads == False:
+                                if github_downloads is False or bitbucket_downloads is False:
                                     raise ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (download_details, info['name'], self.repo))
 
                                 if github_downloads:
@@ -641,7 +641,7 @@ class RepositoryProvider():
                                 if tags:
                                     github_url = github_client.make_tags_url(base)
                                     bitbucket_url = bitbucket_client.make_tags_url(base)
-                                    if tags != True:
+                                    if tags is not True:
                                         extra = tags
 
                                 if branch:
@@ -657,7 +657,7 @@ class RepositoryProvider():
                                 else:
                                     raise ProviderException(u'Invalid "base" value "%s" for one of the releases of the package "%s" in the repository %s.' % (base, info['name'], self.repo))
 
-                                if downloads == False:
+                                if downloads is False:
                                     raise ProviderException(u'No valid semver tags found at %s for the package "%s" in the repository %s.' % (url, info['name'], self.repo))
 
                                 for download in downloads:

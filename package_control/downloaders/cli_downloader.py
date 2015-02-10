@@ -8,6 +8,7 @@ from .binary_not_found_error import BinaryNotFoundError
 
 
 class CliDownloader(object):
+
     """
     Base for downloaders that use a command line program
 

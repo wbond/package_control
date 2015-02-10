@@ -7,6 +7,7 @@ from .package_manager import PackageManager
 
 
 class PackageCreator():
+
     """
     Abstract class for commands that create .sublime-package files
     """

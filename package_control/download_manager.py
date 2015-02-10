@@ -1,4 +1,3 @@
-import sys
 import re
 import socket
 from threading import Lock, Timer
@@ -160,6 +159,7 @@ def update_url(url, debug):
 
 
 class DownloadManager(object):
+
     def __init__(self, settings):
         # Cache the downloader for re-use
         self.downloader = None

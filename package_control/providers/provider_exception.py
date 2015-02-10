@@ -1,4 +1,5 @@
 class ProviderException(Exception):
+
     """If a provider could not return information"""
 
     def __str__(self):

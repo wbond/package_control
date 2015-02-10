@@ -2,6 +2,7 @@ import threading
 
 
 class BackgroundDownloader(threading.Thread):
+
     """
     Downloads information from one or more URLs in the background.
     Normal usage is to use one BackgroundDownloader per domain name.

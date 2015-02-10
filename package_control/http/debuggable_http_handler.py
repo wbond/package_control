@@ -1,5 +1,3 @@
-import sys
-
 try:
     # Python 3
     from urllib.request import HTTPHandler
@@ -12,6 +10,7 @@ from .persistent_handler import PersistentHandler
 
 
 class DebuggableHTTPHandler(PersistentHandler, HTTPHandler):
+
     """
     A custom HTTPHandler that formats debugging info for Sublime Text
     """

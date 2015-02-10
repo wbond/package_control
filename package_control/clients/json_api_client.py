@@ -13,6 +13,7 @@ from ..download_manager import downloader
 
 
 class JSONApiClient():
+
     def __init__(self, settings):
         self.settings = settings
 

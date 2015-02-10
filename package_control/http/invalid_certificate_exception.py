@@ -9,6 +9,7 @@ except (ImportError):
 
 
 class InvalidCertificateException(HTTPException, URLError):
+
     """
     An exception for when an SSL certification is not valid for the URL
     it was presented for.

@@ -143,4 +143,4 @@ for suffix in mods_load_order:
         try:
             reload(sys.modules[mod])
         except (ImportError):
-            pass # Upgrade issues from PC 2.0 -> 3.0
+            pass  # Upgrade issues from PC 2.0 -> 3.0

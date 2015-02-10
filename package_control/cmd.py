@@ -54,6 +54,7 @@ def create_cmd(args, basename_binary=False):
 
 
 class Cli(object):
+
     """
     Base class for running command line apps
 
@@ -128,10 +129,10 @@ class Cli(object):
                         is_vcs = True
                     message = (u'The process %s seems to have gotten stuck.') % binary_name
                     if is_vcs:
-                        message +=(u' This is likely due to a password or ' + \
-                            u'passphrase prompt. Please ensure %s works without ' + \
-                            u'a prompt, or change the "ignore_vcs_packages" ' + \
-                            u'Package Control setting to true. Sublime Text will ' + \
+                        message += (u' This is likely due to a password or '
+                            u'passphrase prompt. Please ensure %s works without '
+                            u'a prompt, or change the "ignore_vcs_packages" '
+                            u'Package Control setting to true. Sublime Text will '
                             u'need to be restarted once these changes are made.') % binary_name
                     show_error(message)
                 sublime.set_timeout(kill_proc, 60000)

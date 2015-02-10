@@ -9,6 +9,7 @@ from ..thread_progress import ThreadProgress
 
 
 class InstallPackageCommand(sublime_plugin.WindowCommand):
+
     """
     A command that presents the list of available packages and allows the
     user to pick one to install.
@@ -21,6 +22,7 @@ class InstallPackageCommand(sublime_plugin.WindowCommand):
 
 
 class InstallPackageThread(threading.Thread, PackageInstaller):
+
     """
     A thread to run the action of retrieving available packages in. Uses the
     default PackageInstaller.on_done quick panel handler.

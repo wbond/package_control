@@ -9,6 +9,7 @@ from ..console_write import console_write
 
 
 class DebuggableHTTPResponse(HTTPResponse):
+
     """
     A custom HTTPResponse that formats debugging info for Sublime Text
     """

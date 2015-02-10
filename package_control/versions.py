@@ -72,7 +72,7 @@ def version_exclude_prerelease(versions):
 
     output = []
     for version in versions:
-        if SemVer(semver_compat(version)).prerelease != None:
+        if SemVer(semver_compat(version)).prerelease is not None:
             continue
         output.append(version)
     return output

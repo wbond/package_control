@@ -1,15 +1,13 @@
 import sys
 import os
 import re
-import socket
 import json
-import time
 import zipfile
 import shutil
 from fnmatch import fnmatch
 import datetime
 import tempfile
-import locale
+import locale  # To prevent import errors in thread with datetime
 
 try:
     # Python 3
@@ -30,27 +28,25 @@ from .open_compat import open_compat, read_compat
 from .file_not_found_error import FileNotFoundError
 from .unicode import unicode_from_os
 from .clear_directory import clear_directory, delete_directory
-from .cache import (clear_cache, set_cache, get_cache, merge_cache_under_settings,
-    merge_cache_over_settings, set_cache_under_settings, set_cache_over_settings)
+from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.downloader_exception import DownloaderException
 from .providers.provider_exception import ProviderException
 from .clients.client_exception import ClientException
 from .download_manager import downloader
-from .providers.channel_provider import ChannelProvider
 from .providers.release_selector import filter_releases, is_compatible_version
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file, package_file_exists
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
-from .versions import version_comparable
 from . import loader
 from . import __version__
 
 
 class PackageManager():
+
     """
     Allows downloading, creating, installing, upgrading, and deleting packages
 
@@ -160,7 +156,7 @@ class PackageManager():
             if metadata_json:
                 return json.loads(metadata_json)
 
-        except (IOError, ValueError) as e:
+        except (IOError, ValueError):
             pass
 
         return {}
@@ -189,7 +185,7 @@ class PackageManager():
             dep_info = json.loads(dep_info_json)
             return self.select_dependencies(dep_info)
 
-        except (IOError, ValueError) as e:
+        except (IOError, ValueError):
             pass
 
         metadata = self.get_metadata(package)
@@ -260,7 +256,7 @@ class PackageManager():
 
             # If any of the info was not retrieved from the cache, we need to
             # grab the channel to get it
-            if channel_repositories == None:
+            if channel_repositories is None:
 
                 for provider_class in CHANNEL_PROVIDERS:
                     if provider_class.match_url(channel):
@@ -335,7 +331,7 @@ class PackageManager():
 
         if self.settings.get('debug'):
             console_write(u"Fetching list of available packages", True)
-            console_write(u"  Platform: %s-%s" % (sublime.platform(),sublime.arch()))
+            console_write(u"  Platform: %s-%s" % (sublime.platform(), sublime.arch()))
             console_write(u"  Sublime Text Version: %s" % sublime.version())
             console_write(u"  Package Control Version: %s" % __version__)
 
@@ -353,7 +349,7 @@ class PackageManager():
             cache_key = repo + '.packages'
             repository_packages = get_cache(cache_key)
 
-            if repository_packages != None:
+            if repository_packages is not None:
                 packages.update(repository_packages)
                 if not exclude_dependencies:
                     cache_key = repo + '.dependencies'
@@ -447,7 +443,7 @@ class PackageManager():
         package_names = [path for path in package_names if path[0] != '.' and
             os.path.isdir(os.path.join(sublime.packages_path(), path))]
 
-        if int(sublime.version()) > 3000 and unpacked_only == False:
+        if int(sublime.version()) > 3000 and unpacked_only is False:
             for name in os.listdir(sublime.installed_packages_path()):
                 if not re.search('\.sublime-package$', name):
                     continue
@@ -613,6 +609,7 @@ class PackageManager():
 
         if profile:
             profile_settings = self.settings.get('package_profiles').get(profile)
+
         def get_profile_setting(setting, default):
             if profile:
                 profile_value = profile_settings.get(setting)
@@ -746,10 +743,10 @@ class PackageManager():
                     return False
                 return HgUpgrader(self.settings['hg_binary'],
                     self.settings['hg_update_command'], unpacked_package_dir,
-                    self.settings['cache_length'], self.settings['debug']).run()
+                    self.settings['cache_length'], debug).run()
 
             old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
-            is_upgrade = old_version != None
+            is_upgrade = old_version is not None
 
             # Download the sublime-package or zip file
             try:
@@ -1222,7 +1219,7 @@ class PackageManager():
                 if os.path.exists(package_backup_dir):
                     delete_directory(package_backup_dir)
             except (UnboundLocalError):
-                pass # Exeption occurred before package_backup_dir defined
+                pass  # Exeption occurred before package_backup_dir defined
             return False
 
     def print_messages(self, package, package_dir, is_upgrade, old_version, new_version):

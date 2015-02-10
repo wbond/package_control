@@ -65,11 +65,14 @@ __all__ = ('SemVer', 'SemSel', 'SelParseError')
 
 if sys.version_info[0] == 3:
     basestring = str
-    cmp = lambda a, b: (a > b) - (a < b)
+
+    def cmp(a, b):
+        return (a > b) - (a < b)
 
 
 # @functools.total_ordering would be nice here but was added in 2.7, __cmp__ is not Py3
 class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
+
     """Semantic Version, consists of 3 to 5 components defining the version's adicity.
 
     See http://semver.org/ (2.0.0-rc.1) for the standard mainly used for this implementation, few
@@ -352,7 +355,8 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
         self < other: -1
         """
         # Shorthand lambdas
-        cp_len = lambda t, i=0: cmp(len(t[i]), len(t[not i]))
+        def cp_len(t, i=0):
+            return cmp(len(t[i]), len(t[not i]))
 
         for i, (x1, x2) in enumerate(zip(self, other)):
             if i > 2:
@@ -394,6 +398,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
 
 
 class SemComparator(object):
+
     """Holds a SemVer object and a comparing operator and can match these against a given version.
 
     Constructor: SemComparator('<=', SemVer("1.2.3"))
@@ -482,6 +487,7 @@ class SemComparator(object):
 
 
 class SemSelAndChunk(list):
+
     """Extends list and defines a few methods used for matching versions.
 
     New elements should be added by calling `.add_child(op, ver)` which creates a SemComparator
@@ -491,11 +497,14 @@ class SemSelAndChunk(list):
         * matches(ver)
         * add_child(op, ver)
     """
+
     # Magic methods
+
     def __str__(self):
         return ' '.join(map(str, self))
 
     # Utitlity methods
+
     def matches(self, ver):
         """Match all of the added children against `ver`.
 
@@ -530,6 +539,7 @@ class SemSelAndChunk(list):
 
 
 class SemSelOrChunk(list):
+
     """Extends list and defines a few methods used for matching versions.
 
     New elements should be added by calling `.new_child()` which returns a SemSelAndChunk
@@ -539,11 +549,14 @@ class SemSelOrChunk(list):
         * matches(ver)
         * new_child()
     """
+
     # Magic methods
+
     def __str__(self):
         return ' || '.join(map(str, self))
 
     # Utility methods
+
     def matches(self, ver):
         """Match all of the added children against `ver`.
 
@@ -575,6 +588,7 @@ class SemSelOrChunk(list):
 
 
 class SelParseError(Exception):
+
     """An Exception raised when parsing a semantic selector failed.
     """
     pass
@@ -582,6 +596,7 @@ class SelParseError(Exception):
 
 # Subclass `tuple` because this is a somewhat simple method to make this immutable
 class SemSel(tuple):
+
     """A Semantic Version Selector, holds a selector and can match it against semantic versions.
 
     Information on this particular class and their instances:

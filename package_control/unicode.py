@@ -1,4 +1,3 @@
-import os
 import locale
 import sys
 

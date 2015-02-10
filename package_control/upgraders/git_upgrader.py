@@ -7,6 +7,7 @@ from .vcs_upgrader import VcsUpgrader
 
 
 class GitUpgrader(VcsUpgrader):
+
     """
     Allows upgrading a local git-repository-based package
     """
@@ -83,7 +84,7 @@ class GitUpgrader(VcsUpgrader):
 
         cache_key = self.working_copy + '.incoming'
         incoming = get_cache(cache_key)
-        if incoming != None:
+        if incoming is not None:
             return incoming
 
         binary = self.retrieve_binary()
@@ -93,7 +94,7 @@ class GitUpgrader(VcsUpgrader):
         info = self.get_working_copy_info()
 
         res = self.execute([binary, 'fetch', info['remote']], self.working_copy)
-        if res == False:
+        if res is False:
             return False
 
         args = [binary, 'log']

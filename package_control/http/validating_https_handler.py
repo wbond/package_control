@@ -20,6 +20,7 @@ try:
 
     if hasattr(urllib_compat, 'HTTPSHandler'):
         class ValidatingHTTPSHandler(PersistentHandler, urllib_compat.HTTPSHandler):
+
             """
             A urllib handler that validates SSL certificates for HTTPS requests
             """
@@ -55,5 +56,6 @@ try:
 except (ImportError) as e:
 
     class ValidatingHTTPSHandler():
+
         def __init__(self, **kwargs):
             raise e

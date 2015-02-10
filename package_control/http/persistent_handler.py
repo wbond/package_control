@@ -84,7 +84,7 @@ class PersistentHandler:
                 h.request(req.get_method(), req.selector, req.data, headers)
             else:
                 h.request(req.get_method(), req.get_selector(), req.data, headers)
-        except socket.error as err: # timeout error
+        except socket.error as err:  # timeout error
             h.close()
             raise URLError(err)
         else:

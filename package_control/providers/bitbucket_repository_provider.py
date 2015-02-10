@@ -7,6 +7,7 @@ from .provider_exception import ProviderException
 
 
 class BitBucketRepositoryProvider():
+
     """
     Allows using a public BitBucket repository as the source for a single package.
     For legacy purposes, this can also be treated as the source for a Package
@@ -131,7 +132,7 @@ class BitBucketRepositoryProvider():
 
         client = BitBucketClient(self.settings)
 
-        if invalid_sources != None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
 
         try:

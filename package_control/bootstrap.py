@@ -1,10 +1,8 @@
 import zipfile
 import os
 import hashlib
-import sys
 import json
 from os import path
-from textwrap import dedent
 try:
     from urlparse import urlparse
     str_cls = unicode
@@ -21,14 +19,12 @@ import sublime
 from .clear_directory import clear_directory
 from .download_manager import downloader
 from .downloaders.downloader_exception import DownloaderException
-from .settings import pc_settings_filename, load_list_setting, save_list_setting
 from .console_write import console_write
 from . import loader
 from .sys_path import st_dir
 from .open_compat import open_compat, read_compat
 from .semver import SemVer
 from .file_not_found_error import FileNotFoundError
-
 
 
 def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):

@@ -10,6 +10,7 @@ from .existing_packages_command import ExistingPackagesCommand
 
 
 class ListPackagesCommand(sublime_plugin.WindowCommand):
+
     """
     A command that shows a list of all installed packages in the quick panel
     """
@@ -19,6 +20,7 @@ class ListPackagesCommand(sublime_plugin.WindowCommand):
 
 
 class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
+
     """
     A thread to prevent the listing of existing packages from freezing the UI
     """

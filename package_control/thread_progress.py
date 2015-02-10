@@ -2,6 +2,7 @@ import sublime
 
 
 class ThreadProgress():
+
     """
     Animates an indicator, [=   ], in the status area while a thread runs
 
@@ -34,8 +35,7 @@ class ThreadProgress():
         before = i % self.size
         after = (self.size - 1) - before
 
-        sublime.status_message('%s [%s=%s]' % \
-            (self.message, ' ' * before, ' ' * after))
+        sublime.status_message('%s [%s=%s]' % (self.message, ' ' * before, ' ' * after))
 
         if not after:
             self.addend = -1

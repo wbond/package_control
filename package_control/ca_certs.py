@@ -1,17 +1,15 @@
-import hashlib
 import os
 import re
 import time
 import sys
 import struct
-import locale
+import locale  # To prevent import errors in thread with datetime
 import datetime
-import platform
 import base64
 
 if os.name == 'nt':
     import ctypes
-    from ctypes import windll, wintypes, POINTER, Structure, GetLastError, FormatError, sizeof
+    from ctypes import windll, wintypes, POINTER, Structure, GetLastError, FormatError
     crypt32 = windll.crypt32
 
 from .cmd import Cli
@@ -440,20 +438,18 @@ if os.name == 'nt':
     CRYPT_STRING_BASE64HEADER = 0
     CRYPT_STRING_NOCR = 0x80000000
 
-
     def extract_error():
         error_num = GetLastError()
         error_string = FormatError(error_num)
         return unicode_from_os(error_string)
 
-
     PByte = POINTER(wintypes.BYTE)
+
     class CryptBlob(Structure):
         _fields_ = [
             ("cbData", wintypes.DWORD),
             ("pbData", PByte)
         ]
-
 
     class CryptAlgorithmIdentifier(Structure):
         _fields_ = [
@@ -461,13 +457,11 @@ if os.name == 'nt':
             ("Parameters", CryptBlob)
         ]
 
-
     class FileTime(Structure):
         _fields_ = [
             ("dwLowDateTime", wintypes.DWORD),
             ("dwHighDateTime", wintypes.DWORD)
         ]
-
 
     class CertPublicKeyInfo(Structure):
         _fields_ = [
@@ -475,15 +469,14 @@ if os.name == 'nt':
             ("PublicKey", CryptBlob)
         ]
 
-
     class CertExtension(Structure):
         _fields_ = [
             ("pszObjId", wintypes.LPSTR),
             ("fCritical", wintypes.BOOL),
             ("Value", CryptBlob)
         ]
-    PCertExtension = POINTER(CertExtension)
 
+    PCertExtension = POINTER(CertExtension)
 
     class CertInfo(Structure):
         _fields_ = [
@@ -500,8 +493,8 @@ if os.name == 'nt':
             ("cExtension", wintypes.DWORD),
             ("rgExtension", POINTER(PCertExtension))
         ]
-    PCertInfo = POINTER(CertInfo)
 
+    PCertInfo = POINTER(CertInfo)
 
     class CertContext(Structure):
         _fields_ = [
@@ -511,8 +504,8 @@ if os.name == 'nt':
             ("pCertInfo", PCertInfo),
             ("hCertStore", wintypes.HANDLE)
         ]
-    PCertContext = POINTER(CertContext)
 
+    PCertContext = POINTER(CertContext)
 
     crypt32.CertOpenSystemStoreW.argtypes = [wintypes.HANDLE, wintypes.LPCWSTR]
     crypt32.CertOpenSystemStoreW.restype = wintypes.HANDLE
@@ -522,7 +515,6 @@ if os.name == 'nt':
     crypt32.CertCloseStore.restype = wintypes.BOOL
     crypt32.CryptBinaryToStringW.argtypes = [PByte, wintypes.DWORD, wintypes.DWORD, wintypes.LPWSTR, POINTER(wintypes.DWORD)]
     crypt32.CryptBinaryToStringW.restype = wintypes.BOOL
-
 
     def convert_filetime_to_datetime(filetime):
         """
@@ -539,7 +531,7 @@ if os.name == 'nt':
 
         hundreds_nano_seconds = struct.unpack('>Q', struct.pack('>LL', filetime.dwHighDateTime, filetime.dwLowDateTime))[0]
         seconds_since_1601 = hundreds_nano_seconds / 10000000
-        epoch_seconds = seconds_since_1601 - 11644473600 # Seconds from Jan 1 1601 to Jan 1 1970
+        epoch_seconds = seconds_since_1601 - 11644473600  # Seconds from Jan 1 1601 to Jan 1 1970
         try:
             return datetime.datetime.fromtimestamp(epoch_seconds)
         except (OSError):

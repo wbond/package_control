@@ -12,13 +12,12 @@ except (ImportError):
 from ..console_write import console_write
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
-from ..downloaders.downloader_exception import DownloaderException
-from ..clients.client_exception import ClientException
 from ..download_manager import downloader, update_url
 from ..versions import version_sort
 
 
 class ChannelProvider():
+
     """
     Retrieves a channel and provides an API into the information
 

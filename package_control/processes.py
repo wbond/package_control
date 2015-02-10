@@ -2,7 +2,7 @@ import os
 
 if os.name == 'nt':
     import ctypes
-    from ctypes import windll, wintypes, POINTER, pointer, Structure, GetLastError, FormatError, sizeof, byref, cast
+    from ctypes import windll, wintypes, POINTER, sizeof, byref, cast
 
     psapi = windll.psapi
     kernel32 = windll.kernel32
@@ -30,7 +30,6 @@ if os.name == 'nt':
 
     psapi.GetModuleBaseNameW.argtypes = [wintypes.HANDLE, wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD]
     psapi.GetModuleBaseNameW.restype = wintypes.DWORD
-
 
     def list_process_names():
         """
@@ -68,8 +67,7 @@ if os.name == 'nt':
                 if module_res:
                     length = 260
                     buffer = ctypes.create_unicode_buffer(length)
-                    output_size = wintypes.DWORD(length)
-                    name_res = psapi.GetModuleBaseNameW(process_handle, module, buffer, length)
+                    psapi.GetModuleBaseNameW(process_handle, module, buffer, length)
                     name = buffer.value
                     output.append(name)
             kernel32.CloseHandle(process_handle)

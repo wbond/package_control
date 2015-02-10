@@ -10,6 +10,7 @@ from ..package_renamer import PackageRenamer
 
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):
+
     """
     A command that presents the list of installed packages that can be upgraded
     """
@@ -24,6 +25,7 @@ class UpgradePackageCommand(sublime_plugin.WindowCommand):
 
 
 class UpgradePackageThread(threading.Thread, PackageInstaller):
+
     """
     A thread to run the action of retrieving upgradable packages in.
     """
@@ -71,7 +73,8 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         name = self.package_list[picked][0]
 
         if name in self.disable_packages(name, 'upgrade'):
-            on_complete = lambda: self.reenable_package(name)
+            def on_complete():
+                self.reenable_package(name)
         else:
             on_complete = None
 

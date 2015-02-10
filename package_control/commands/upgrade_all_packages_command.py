@@ -10,6 +10,7 @@ from ..package_renamer import PackageRenamer
 
 
 class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
+
     """
     A command to automatically upgrade all installed packages that are
     upgradable.
@@ -25,6 +26,7 @@ class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
 
 
 class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
+
     """
     A thread to run the action of retrieving upgradable packages in.
     """

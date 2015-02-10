@@ -8,7 +8,6 @@ if os.name == 'nt':
 import sublime
 
 
-
 if sys.version_info >= (3,):
     def decode(path):
         return path

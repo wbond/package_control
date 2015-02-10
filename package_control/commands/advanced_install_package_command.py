@@ -19,6 +19,7 @@ except (NameError):
 
 
 class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
+
     """
     A command that accepts a comma-separated list of packages to install, or
     prompts the user to paste a comma-separated list
@@ -68,6 +69,7 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
 
 
 class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
+
     """
     A thread to run the installation of one or more packages in
     """

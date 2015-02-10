@@ -7,6 +7,7 @@ from ..package_disabler import PackageDisabler
 
 
 class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
+
     """
     A command that removes a package from Sublime Text's ignored packages list
     """

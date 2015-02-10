@@ -11,6 +11,7 @@ from ..thread_progress import ThreadProgress
 
 
 class SatisfyDependenciesCommand(sublime_plugin.WindowCommand):
+
     """
     A command that finds all dependencies required by the installed packages
     and makes sure they are all installed and up-to-date.
@@ -24,6 +25,7 @@ class SatisfyDependenciesCommand(sublime_plugin.WindowCommand):
 
 
 class SatisfyDependenciesThread(threading.Thread):
+
     """
     A thread to run the action of retrieving available packages in. Uses the
     default PackageInstaller.on_done quick panel handler.

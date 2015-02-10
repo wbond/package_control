@@ -14,6 +14,7 @@ from .versions import version_comparable
 
 
 class PackageInstaller(PackageDisabler):
+
     """
     Provides helper functionality related to installing packages
     """
@@ -167,7 +168,8 @@ class PackageInstaller(PackageDisabler):
         name = self.package_list[picked][0]
 
         if name in self.disable_packages(name, 'install'):
-            on_complete = lambda: self.reenable_package(name, 'install')
+            def on_complete():
+                self.reenable_package(name, 'install')
         else:
             on_complete = None
 
@@ -178,6 +180,7 @@ class PackageInstaller(PackageDisabler):
 
 
 class PackageInstallerThread(threading.Thread):
+
     """
     A thread to run package install/upgrade operations in so that the main
     Sublime Text thread does not get blocked and freeze the UI

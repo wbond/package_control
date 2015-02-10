@@ -7,6 +7,7 @@ from ..package_manager import PackageManager
 
 
 class ExistingPackagesCommand():
+
     """
     Allows listing installed packages and their current version
     """

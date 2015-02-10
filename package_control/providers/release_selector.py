@@ -1,8 +1,7 @@
 import re
 import sublime
 
-from ..versions import version_sort, version_exclude_prerelease
-
+from ..versions import version_exclude_prerelease
 
 
 def filter_releases(package, settings, releases):

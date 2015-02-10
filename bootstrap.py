@@ -135,16 +135,15 @@ def plugin_loaded():
 
         def linux_ssl_show_restart():
             sublime.message_dialog(u'Package Control\n\n'
-                u'Package Control just installed or upgraded the missing ' + \
-                u'Python _ssl module for Linux since Sublime Text does not ' + \
-                u'include it.\n\n' + \
-                u'Please restart Sublime Text to make SSL available to all ' + \
+                u'Package Control just installed or upgraded the missing '
+                u'Python _ssl module for Linux since Sublime Text does not '
+                u'include it.\n\n'
+                u'Please restart Sublime Text to make SSL available to all '
                 u'packages.')
 
         linux_ssl_args = (settings, linux_ssl_url,
             linux_ssl_hash, linux_ssl_priority, linux_ssl_version, linux_ssl_show_restart)
         threading.Thread(target=bootstrap_dependency, args=linux_ssl_args).start()
-
 
     # SSL support for SHA-2 certificates with ST2 on Windows
     if sublime.platform() == 'windows' and sys.version_info < (3,):
@@ -155,9 +154,9 @@ def plugin_loaded():
 
         def win_ssl_show_restart():
             sublime.message_dialog(u'Package Control\n\n'
-                u'Package Control just upgraded the Python _ssl module for ' + \
-                u'ST2 on Windows because the bundled one does not include ' + \
-                u'support for modern SSL certificates.\n\n' + \
+                u'Package Control just upgraded the Python _ssl module for '
+                u'ST2 on Windows because the bundled one does not include '
+                u'support for modern SSL certificates.\n\n'
                 u'Please restart Sublime Text to complete the upgrade.')
 
         win_ssl_args = (settings, win_ssl_url, win_ssl_hash,

@@ -2,6 +2,7 @@ import sublime_plugin
 
 
 class PackageControlInsertCommand(sublime_plugin.TextCommand):
+
     """
     A command used by the test runner to display output in the output panel
     """

@@ -9,7 +9,6 @@ except (ImportError):
     from urllib.parse import quote
 
 
-
 # A predefined list of readme filenames to look for
 _readme_filenames = [
     'readme',

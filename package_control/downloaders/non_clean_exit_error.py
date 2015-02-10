@@ -1,4 +1,5 @@
 class NonCleanExitError(Exception):
+
     """
     When an subprocess does not exit cleanly
 

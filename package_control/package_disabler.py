@@ -1,4 +1,3 @@
-import sys
 import json
 
 import sublime
@@ -68,7 +67,7 @@ class PackageDisabler():
         self.old_color_schemes = {}
 
         for package in packages:
-            if not package in ignored:
+            if package not in ignored:
                 in_process.append(package)
                 ignored.append(package)
                 disabled.append(package)

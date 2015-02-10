@@ -2,6 +2,7 @@ import threading
 import re
 import os
 import datetime
+import locale  # To prevent import errors in thread with datetime
 import time
 
 import sublime
@@ -15,6 +16,7 @@ from .settings import pc_settings_filename, load_list_setting
 
 
 class AutomaticUpgrader(threading.Thread):
+
     """
     Automatically checks for updated packages and installs them. controlled
     by the `auto_upgrade`, `auto_upgrade_ignore`, and `auto_upgrade_frequency`
@@ -172,11 +174,13 @@ class AutomaticUpgrader(threading.Thread):
             if package in renamed_packages:
                 old_name = package
                 new_name = renamed_packages[old_name]
+
                 def update_installed_packages():
                     self.installed_packages.remove(old_name)
                     self.installed_packages.append(new_name)
                     self.settings.set('installed_packages', self.installed_packages)
                     sublime.save_settings(pc_settings_filename())
+
                 sublime.set_timeout(update_installed_packages, 10)
                 package = new_name
 

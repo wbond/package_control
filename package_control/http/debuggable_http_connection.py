@@ -1,21 +1,18 @@
-import os
-import re
 import socket
 
 try:
     # Python 3
     from http.client import HTTPConnection
-    from urllib.error import URLError
 except (ImportError):
     # Python 2
     from httplib import HTTPConnection
-    from urllib2 import URLError
 
 from ..console_write import console_write
 from .debuggable_http_response import DebuggableHTTPResponse
 
 
 class DebuggableHTTPConnection(HTTPConnection):
+
     """
     A custom HTTPConnection that formats debugging info for Sublime Text
     """

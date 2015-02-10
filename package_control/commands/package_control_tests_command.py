@@ -7,6 +7,7 @@ from ..tests.providers import GitHubRepositoryProviderTests, BitBucketRepository
 
 
 class PackageControlTestsCommand(sublime_plugin.WindowCommand):
+
     """
     A command to run the tests for Package Control
     """
