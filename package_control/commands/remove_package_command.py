@@ -74,6 +74,9 @@ class RemovePackageThread(threading.Thread, PackageDisabler):
         time.sleep(0.7)
         self.result = self.manager.remove_package(self.package)
 
-        def unignore_package():
-            self.reenable_package(self.package, 'remove')
-        sublime.set_timeout(unignore_package, 200)
+        # Do not reenable if removing deferred until next restart
+        if self.result is not None:
+            def unignore_package():
+                    self.reenable_package(self.package, 'remove')
+
+            sublime.set_timeout(unignore_package, 200)

@@ -3,7 +3,7 @@ import threading
 import sublime
 import sublime_plugin
 
-from functools import partial
+import functools
 
 from ..show_error import show_error
 from ..package_manager import PackageManager
@@ -36,7 +36,7 @@ class SatisfyDependenciesThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def show_error(msg):
-        sublime.set_timeout(partial(show_error, msg), 10)
+        sublime.set_timeout(functools.partial(show_error, msg), 10)
 
     def run(self):
         required_dependencies = self.manager.find_required_dependencies()

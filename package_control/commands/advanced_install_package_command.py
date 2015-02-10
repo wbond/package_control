@@ -1,6 +1,7 @@
 import threading
 import re
 import time
+import functools
 
 import sublime
 import sublime_plugin
@@ -93,15 +94,15 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
         # Allow packages to properly disable
         time.sleep(0.7)
 
-        for package in self.packages:
-            self.manager.install_package(package)
+        def do_reenable_package(package_name):
+            type_ = 'install' if package_name not in self.installed else 'upgrade'
+            self.reenable_package(package_name, type_)
 
-            # We use a wrapper function since this call is in a loop, so
-            # directly using the "package" variable would cause the value to
-            # change between when we set the callback and executed it.
-            def reenable_package(package_name):
-                def do_reenable_package():
-                    type_ = 'install' if package_name not in self.installed else 'upgrade'
-                    self.reenable_package(package_name, type_)
-                return do_reenable_package
-            sublime.set_timeout(reenable_package(package), 700)
+        for package in self.packages:
+            result = self.manager.install_package(package)
+
+            # Do not reenable if installation deferred until next restart
+            if result is not None:
+                # We use a functools.partial to generate the on-complete callback in
+                # order to bind the current value of the parameters, unlike lambdas.
+                sublime.set_timeout(functools.partial(do_reenable_package, package), 700)

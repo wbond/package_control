@@ -4,6 +4,7 @@ import os
 import datetime
 import locale  # To prevent import errors in thread with datetime
 import time
+import functools
 
 import sublime
 
@@ -241,15 +242,11 @@ class AutomaticUpgrader(threading.Thread):
             # Wait so that the ignored packages can be "unloaded"
             time.sleep(0.7)
 
-            # We use a function to generate the on-complete lambda because if
-            # we don't, the lambda will bind to info at the current scope, and
-            # thus use the last value of info from the loop
-            def make_on_complete(name):
-                return lambda: self.installer.reenable_package(name)
-
             for info in package_list:
                 if info[0] in disabled_packages:
-                    on_complete = make_on_complete(info[0])
+                    # We use a functools.partial to generate the on-complete callback in
+                    # order to bind the current value of the parameters, unlike lambdas.
+                    on_complete = functools.partial(self.installer.reenable_package, info[0])
                 else:
                     on_complete = None
 

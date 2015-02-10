@@ -83,6 +83,7 @@ class PackageRenamer(PackageDisabler):
 
             sublime.set_timeout(lambda: self.disable_packages(package_name, 'remove'), 10)
 
+            remove_result = True
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
                 sublime.set_timeout(lambda: self.disable_packages(new_package_name, 'install'), 10)
                 time.sleep(0.7)
@@ -104,12 +105,14 @@ class PackageRenamer(PackageDisabler):
 
             else:
                 time.sleep(0.7)
-                installer.manager.remove_package(package_name)
+                remove_result = installer.manager.remove_package(package_name)
                 message_string = u'Removed %s since package with new name (%s) already exists' % (
                     package_name, new_package_name)
                 console_write(message_string, True)
 
-            sublime.set_timeout(lambda: self.reenable_package(package_name, 'remove'), 700)
+            # Do not reenable if removal has been delayed until next restart
+            if remove_result is not None:
+                sublime.set_timeout(lambda: self.reenable_package(package_name, 'remove'), 700)
 
             try:
                 installed_packages.remove(package_name)

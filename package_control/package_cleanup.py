@@ -1,5 +1,6 @@
 import threading
 import os
+import functools
 
 import sublime
 
@@ -163,12 +164,9 @@ class PackageCleanup(threading.Thread):
                     # to be done in the main Sublime Text thread.
                     package_filename = os.path.join(installed_path, file)
 
-                    # Invoke a function to build the callback since we are in a loop
-                    # and the variable values will change by the time the callback is
-                    # actually called
-                    def build_lambda(name, filename):
-                        return lambda: self.remove_package_file(name, filename)
-                    sublime.set_timeout(build_lambda(package_name, package_filename), 10)
+                    # We use a functools.partial to generate the on-complete callback in
+                    # order to bind the current value of the parameters, unlike lambdas.
+                    sublime.set_timeout(functools.partial(self.remove_package_file, package_name, package_filename), 10)
 
                 else:
                     found_packages.append(package_name)
