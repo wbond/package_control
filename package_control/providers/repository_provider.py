@@ -252,7 +252,7 @@ class RepositoryProvider():
 
     def get_dependencies(self, invalid_sources=None):
         """
-        Provides access to the packages in this repository
+        Provides access to the dependencies in this repository
 
         :param invalid_sources:
             A list of URLs that are permissible to fetch data from
@@ -330,7 +330,6 @@ class RepositoryProvider():
                 if 'releases' not in info:
                     info['releases'] = []
 
-                download_details = None
                 download_info = {}
 
                 # Make sure that explicit fields are copied over
@@ -354,11 +353,9 @@ class RepositoryProvider():
                         base = None
                         if 'base' in release:
                             base = release['base']
-                        elif details:
-                            base = details
 
                         if not base:
-                            raise ProviderException(u'Missing root-level "details" key, or release-level "base" key for one of the releases of the dependency "%s" in the repository %s.' % (info['name'], self.repo))
+                            raise ProviderException(u'Missing release-level "base" key for one of the releases of the dependency "%s" in the repository %s.' % (info['name'], self.repo))
 
                         github_url = False
                         bitbucket_url = False
