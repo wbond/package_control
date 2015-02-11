@@ -64,7 +64,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
 
     # The package has already been installed. Don't reinstall unless we have
     # a newer version.
-    if path.exists(package_dir):
+    if path.exists(package_dir) and loader.exists(package_basename):
         try:
             dep_metadata_path = path.join(package_dir, 'dependency-metadata.json')
             with open_compat(dep_metadata_path, 'r') as f:
