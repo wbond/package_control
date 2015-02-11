@@ -31,11 +31,13 @@ if sys.version_info < (3,):
     from package_control.package_manager import PackageManager
     from package_control import loader
     from package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
+    import package_control
 else:
     from .package_control.bootstrap import bootstrap_dependency
     from .package_control.package_manager import PackageManager
     from .package_control import loader
     from .package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
+    from . import package_control
 
 
 def plugin_loaded():
@@ -112,20 +114,6 @@ def plugin_loaded():
         base_loader_code = dedent(base_loader_code).lstrip()
         loader.add('00', 'package_control', base_loader_code)
 
-    pc_settings = sublime.load_settings(pc_settings_filename())
-
-    # Make sure we are track Package Control itself
-    installed_packages = load_list_setting(pc_settings, 'installed_packages')
-    if 'Package Control' not in installed_packages:
-        installed_packages.append('Package Control')
-        save_list_setting(pc_settings, pc_settings_filename(), 'installed_packages', installed_packages)
-
-    # We no longer use the installed_dependencies setting because it is not
-    # necessary and created issues with settings shared across operating systems
-    if pc_settings.get('installed_dependencies'):
-        pc_settings.erase('installed_dependencies')
-        sublime.save_settings(pc_settings_filename())
-
     # SSL support fo Linux
     if sublime.platform() == 'linux':
         linux_ssl_url = u'http://packagecontrol.io/ssl/1.0.1/ssl-linux.sublime-package'
@@ -141,8 +129,8 @@ def plugin_loaded():
                 u'Please restart Sublime Text to make SSL available to all '
                 u'packages.')
 
-        linux_ssl_args = (settings, linux_ssl_url,
-            linux_ssl_hash, linux_ssl_priority, linux_ssl_version, linux_ssl_show_restart)
+        linux_ssl_args = (settings, linux_ssl_url, linux_ssl_hash,
+            linux_ssl_priority, linux_ssl_version, linux_ssl_show_restart)
         threading.Thread(target=bootstrap_dependency, args=linux_ssl_args).start()
 
     # SSL support for SHA-2 certificates with ST2 on Windows
@@ -159,9 +147,29 @@ def plugin_loaded():
                 u'support for modern SSL certificates.\n\n'
                 u'Please restart Sublime Text to complete the upgrade.')
 
-        win_ssl_args = (settings, win_ssl_url, win_ssl_hash,
-            win_ssl_priority, win_ssl_version, win_ssl_show_restart)
+        win_ssl_args = (settings, win_ssl_url, win_ssl_hash, win_ssl_priority,
+            win_ssl_version, win_ssl_show_restart)
         threading.Thread(target=bootstrap_dependency, args=win_ssl_args).start()
+
+    pc_settings = sublime.load_settings(pc_settings_filename())
+
+    # Make sure we are track Package Control itself
+    installed_packages = load_list_setting(pc_settings, 'installed_packages')
+    if 'Package Control' not in installed_packages:
+        params = {
+            'package': 'Package Control',
+            'operation': 'install',
+            'version': package_control.__version__
+        }
+        manager.record_usage(params)
+        installed_packages.append('Package Control')
+        save_list_setting(pc_settings, pc_settings_filename(), 'installed_packages', installed_packages)
+
+    # We no longer use the installed_dependencies setting because it is not
+    # necessary and created issues with settings shared across operating systems
+    if pc_settings.get('installed_dependencies'):
+        pc_settings.erase('installed_dependencies')
+        sublime.save_settings(pc_settings_filename())
 
 # ST2 compat
 if sys.version_info < (3,):
