@@ -134,7 +134,7 @@ class PackageCleanup(threading.Thread):
                 delete_directory(package_dir)
 
             # Skip over dependencies since we handle them separately
-            if package_file_exists(package_name, 'dependency-metadata.json'):
+            if package_file_exists(package_name, 'dependency-metadata.json') and loader.exists(package_name):
                 found_dependencies.append(package_name)
                 continue
 
