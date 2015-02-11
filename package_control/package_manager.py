@@ -1028,6 +1028,8 @@ class PackageManager():
                 sublime.set_timeout(save_names, 1)
 
             else:
+                if loader.exists(package_name):
+                    loader.remove(package_name)
                 loader.add(packages[package_name]['load_order'], package_name, loader_code)
 
             # If we didn't extract directly into the Packages/{package_name}/
