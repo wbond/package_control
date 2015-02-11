@@ -23,9 +23,11 @@ from .settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
 loader_lock = Lock()
-# This variable should only be touched while loader_lock is acquired. It is a
-# dict with a kay to allow modification inside of various functions.
-non_local = {'swap_queued': False}
+# This variable should only be touched while loader_lock is acquired.
+non_local = {
+    'swap_queued': False,
+    'loaders': None
+}
 
 
 packages_dir = path.join(st_dir, u'Packages')
@@ -43,6 +45,22 @@ else:
 # These files are used in that process.
 new_loader_package_path = loader_package_path + u'-new'
 intermediate_loader_package_path = loader_package_path + u'-intermediate'
+
+
+def __update_loaders(z):
+    """
+    Updates the cached list of loaders from a zipfile. The loader_lock MUST
+    be held when calling this function.
+
+    :param z:
+        The zipfile.ZipFile object to list the files in
+    """
+
+    non_local['loaders'] = []
+    for filename in z.namelist():
+        if not isinstance(filename, str_cls):
+            filename = filename.decode('utf-8')
+        non_local['loaders'].append(filename)
 
 
 def is_swapping():
@@ -83,23 +101,23 @@ def exists(name):
     found = False
 
     try:
-        # This means we have a new loader waiting to be installed, so we want
-        # the source loader zip to be that new one instead of the original
-        if os.path.exists(new_loader_package_path):
-            loader_path_to_check = new_loader_package_path
-        else:
-            loader_path_to_check = loader_package_path
+        # We cache the list of loaders for performance
+        if non_local['loaders'] is None:
+            # This means we have a new loader waiting to be installed, so we want
+            # the source loader zip to be that new one instead of the original
+            if os.path.exists(new_loader_package_path):
+                loader_path_to_check = new_loader_package_path
+            else:
+                loader_path_to_check = loader_package_path
 
-        loader_z = zipfile.ZipFile(loader_path_to_check, 'r')
+            with zipfile.ZipFile(loader_path_to_check, 'r') as z:
+                __update_loaders(z)
 
-        for filename in loader_z.namelist():
-            if not isinstance(filename, str_cls):
-                filename = filename.decode('utf-8')
+        for filename in non_local['loaders']:
             if re.match(loader_filename_regex, filename):
                 found = True
                 break
     finally:
-        loader_z.close()
         loader_lock.release()
 
     return found
@@ -177,6 +195,7 @@ def add(priority, name, code=None):
                     just_created_loader = True
                     z.writestr('dependency-metadata.json', loader_metadata_enc)
                 z.writestr(loader_filename, code.encode('utf-8'))
+                __update_loaders(z)
 
         finally:
             loader_lock.release()
@@ -277,6 +296,8 @@ def remove(name):
                 removed = True
                 continue
             new_loader_z.writestr(enc_filename, old_loader_z.read(enc_filename))
+
+        __update_loaders(new_loader_z)
 
     finally:
         old_loader_z.close()
