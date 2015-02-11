@@ -42,7 +42,7 @@ def plugin_loaded():
     manager = PackageManager()
     settings = manager.settings.copy()
 
-    if not os.path.exists(loader.loader_package_path):
+    if not loader.exists('package_control'):
         base_loader_code = """
             import sys
             import os
