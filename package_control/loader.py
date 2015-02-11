@@ -144,7 +144,7 @@ def add(priority, name, code=None):
             from package_control import sys_path
             sys_path.add_dependency(%s)
         """ % repr(name)
-        code = dedent(code)
+        code = dedent(code).lstrip()
 
     loader_filename = '%s-%s.py' % (priority, name)
 

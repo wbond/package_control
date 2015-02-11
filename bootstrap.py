@@ -109,7 +109,7 @@ def plugin_loaded():
             else:
                 print(u'Package Control: Error finding main directory from loader')
         """
-        base_loader_code = dedent(base_loader_code)
+        base_loader_code = dedent(base_loader_code).lstrip()
         loader.add('00', 'package_control', base_loader_code)
 
     pc_settings = sublime.load_settings(pc_settings_filename())
