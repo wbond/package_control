@@ -667,7 +667,7 @@ class PackageManager():
         :param is_dependency:
             If the package is a dependency
 
-        :return: bool if the package was successfully deleted or None
+        :return: bool if the package was successfully installed or None
                  if the package needs to be cleaned up on the next restart
                  and should not be reenabled
         """

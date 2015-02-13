@@ -252,10 +252,13 @@ class AutomaticUpgrader(threading.Thread):
 
                 self.installer.manager.install_package(info[0])
 
-                version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', info[2])
-                if version == info[2] and version.find('pull with') != -1:
-                    vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
+                version = re.search(r'v[^;\s]+', info[2])
+                if version:
+                    version = version.group()
+                elif 'pull with' in info[2].find():
+                    vcs = re.search(r'^pull with (\w+)', info[2]).group(1)
                     version = 'latest %s commit' % vcs
+
                 message_string = u'Upgraded %s to %s' % (info[0], version)
                 console_write(message_string, True)
                 if on_complete:
