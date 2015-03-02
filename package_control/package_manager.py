@@ -1280,7 +1280,7 @@ class PackageManager():
                     message += read_compat(f).replace('\n', '\n  ')
                 output += message + '\n'
             except (FileNotFoundError):
-                console_write(u'Error opening install messages for %s from %s' % (package, install_file), True)
+                console_write(u'Error opening install message for %s from %s' % (package, install_file), True)
 
         elif is_upgrade and old_version:
             upgrade_messages = list(set(message_info.keys()) -
@@ -1311,7 +1311,7 @@ class PackageManager():
                         message += read_compat(f).replace('\n', '\n  ')
                     output += message + '\n'
                 except (FileNotFoundError):
-                    console_write(u'Error opening %s messages for %s from %s' % (version, package, upgrade_file), True)
+                    console_write(u'Error opening %s message for %s from %s' % (version, package, upgrade_file), True)
 
         if not output:
             return
@@ -1330,26 +1330,28 @@ class PackageManager():
                 view = window.new_file()
                 view.set_name('Package Control Messages')
                 view.set_scratch(True)
+                view.settings().set("word_wrap", True)
+                view.settings().set("auto_indent", False)
+            else:
+                view.set_read_only(False)
 
             def write(string):
                 view.run_command('insert', {'characters': string})
 
             if not view.size():
-                write('Package Control Messages\n' +
-                    '========================')
-
-            view.settings().set("word_wrap", True)
-            view.settings().set("auto_indent", False)
+                write('Package Control Messages\n'
+                      '========================')
 
             position = view.size()
             view.sel().clear()
             view.sel().add(sublime.Region(position, position))
-
             write(output)
+
             if window.active_view() != view:
                 window.focus_view(view)
 
             view.show(sublime.Region(position, position))
+            view.set_read_only(True)
 
         sublime.set_timeout(print_to_panel, 1)
 
