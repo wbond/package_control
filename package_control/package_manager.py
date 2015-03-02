@@ -1270,21 +1270,22 @@ class PackageManager():
             return
         messages_fp.close()
 
+        def read_message(message_path):
+            with open_compat(message_path, 'r') as f:
+                return '\n  %s\n' % read_compat(f).rstrip().replace('\n', '\n  ')
+
         output = ''
         if not is_upgrade and message_info.get('install'):
             try:
                 install_file = message_info.get('install')
                 install_path = os.path.join(package_dir, install_file)
-                message = '\n\n%s:\n%s\n\n  ' % (package, ('-' * len(package)))
-                with open_compat(install_path, 'r') as f:
-                    message += read_compat(f).replace('\n', '\n  ')
-                output += message + '\n'
+                output += read_message(install_path)
             except (FileNotFoundError):
-                console_write(u'Error opening install message for %s from %s' % (package, install_file), True)
+                console_write(u'Error opening install message for %s from %s'
+                              % (package, install_file), True)
 
         elif is_upgrade and old_version:
-            upgrade_messages = list(set(message_info.keys()) -
-                set(['install']))
+            upgrade_messages = list(set(message_info.keys()) - set(['install']))
             upgrade_messages = version_sort(upgrade_messages, reverse=True)
             old_version_cmp = version_comparable(old_version)
             new_version_cmp = version_comparable(new_version)
@@ -1301,20 +1302,15 @@ class PackageManager():
                 try:
                     upgrade_file = message_info.get(version)
                     upgrade_path = os.path.join(package_dir, upgrade_file)
-                    if not output:
-                        message = '\n\n%s:\n%s\n' % (package,
-                            ('-' * len(package)))
-                    else:
-                        message = ''
-                    message += '\n  '
-                    with open_compat(upgrade_path, 'r') as f:
-                        message += read_compat(f).replace('\n', '\n  ')
-                    output += message + '\n'
+                    output += read_message(upgrade_path)
                 except (FileNotFoundError):
-                    console_write(u'Error opening %s message for %s from %s' % (version, package, upgrade_file), True)
+                    console_write(u'Error opening %s message for %s from %s'
+                                  % (version, package, upgrade_file), True)
 
         if not output:
             return
+        else:
+            output = '\n\n%s\n%s\n' % (package, ('-' * len(package))) + output
 
         def print_to_panel():
             window = sublime.active_window()
