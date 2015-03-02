@@ -1328,6 +1328,7 @@ class PackageManager():
                 view.set_scratch(True)
                 view.settings().set("word_wrap", True)
                 view.settings().set("auto_indent", False)
+                view.settings().set("tab_width", 2)
             else:
                 view.set_read_only(False)
                 if window.active_view() != view:
