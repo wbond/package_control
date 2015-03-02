@@ -1334,23 +1334,33 @@ class PackageManager():
                 view.settings().set("auto_indent", False)
             else:
                 view.set_read_only(False)
+                if window.active_view() != view:
+                    window.focus_view(view)
 
             def write(string):
                 view.run_command('insert', {'characters': string})
 
+            old_sel = list(view.sel())
+            old_vpos = view.viewport_position()
+
+            size = view.size()
+            view.sel().clear()
+            view.sel().add(sublime.Region(size, size))
+
             if not view.size():
                 write('Package Control Messages\n'
                       '========================')
-
-            position = view.size()
-            view.sel().clear()
-            view.sel().add(sublime.Region(position, position))
             write(output)
 
-            if window.active_view() != view:
-                window.focus_view(view)
+            # Move caret to the new end of the file if it was previously
+            if sublime.Region(size, size) == old_sel[-1]:
+                old_sel[-1] = sublime.Region(view.size(), view.size())
 
-            view.show(sublime.Region(position, position))
+            view.sel().clear()
+            for reg in old_sel:
+                view.sel().add(reg)
+
+            view.set_viewport_position(old_vpos, False)
             view.set_read_only(True)
 
         sublime.set_timeout(print_to_panel, 1)
