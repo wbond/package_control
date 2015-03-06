@@ -520,8 +520,10 @@ class PackageManager():
         else:
             files = os.listdir(os.path.join(os.path.dirname(
                 sublime.packages_path()), 'Pristine Packages'))
-            files = list(set(files) - set(os.listdir(
-                sublime.installed_packages_path())))
+            files = list(set(files)
+                         - set(os.listdir(sublime.installed_packages_path())))
+            if "User.sublime-package" in files:  # Don't ask why
+                files.remove("User.sublime-package")
         packages = [file.replace('.sublime-package', '') for file in files]
         packages = sorted(packages, key=lambda s: s.lower())
         return packages
