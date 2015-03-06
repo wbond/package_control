@@ -4,6 +4,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
+from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
 from ..package_installer import PackageInstaller, PackageInstallerThread
 from ..package_renamer import PackageRenamer
@@ -55,7 +56,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
             if not self.package_list:
                 show_error('There are no packages ready for upgrade')
                 return
-            self.window.show_quick_panel(self.package_list, self.on_done)
+            show_quick_panel(self.window, self.package_list, self.on_done)
         sublime.set_timeout(show_panel, 10)
 
     def on_done(self, picked):

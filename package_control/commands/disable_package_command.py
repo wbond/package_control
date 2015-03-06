@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
+from ..show_quick_panel import show_quick_panel
 from ..package_manager import PackageManager
 from ..settings import preferences_filename
 from ..package_disabler import PackageDisabler
@@ -25,7 +26,7 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
         if not self.package_list:
             show_error('There are no enabled packages to disable.')
             return
-        self.window.show_quick_panel(self.package_list, self.on_done)
+        show_quick_panel(self.window, self.package_list, self.on_done)
 
     def on_done(self, picked):
         """
