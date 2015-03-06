@@ -92,8 +92,9 @@ class PackageRenamer(PackageDisabler):
                 # a different case, so we work around that with a temporary name
                 if os.name == 'nt' and changing_case:
                     temp_package_name = '__' + new_package_name
-                    temp_package_path = os.path.join(sublime.packages_path(),
-                        temp_package_name)
+                    temp_package_path = os.path.join(
+                        os.path.dirname(sublime.packages_path()), temp_package_name
+                    )
                     os.rename(package_path, temp_package_path)
                     package_path = temp_package_path
 
