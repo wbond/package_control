@@ -8,7 +8,7 @@ def show_quick_panel(window, *args, **kwargs):
     Accepts same parameters as window.show_quick_panel, plus:
 
     :param window:
-        Same as for window.show_quick_panel
+        sublime.Window instance where the panel should be shown.
     """
     if int(sublime.version()) >= 3070:
         # Override the flags parameter to include the KEEP_OPEN_ON_FOCUS_LOST
