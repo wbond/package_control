@@ -1,5 +1,6 @@
 import os
 import time
+from functools import partial
 
 import sublime
 
@@ -81,11 +82,14 @@ class PackageRenamer(PackageDisabler):
             else:
                 continue
 
-            sublime.set_timeout(lambda: self.disable_packages(package_name, 'remove'), 10)
+            # We use a functools.partial to generate the on-complete callback in
+            # order to bind the current value of the parameters, unlike lambdas.
+            # This is needed for a total of 4 times here.
+            sublime.set_timeout(partial(self.disable_packages, package_name, 'remove'), 10)
 
             remove_result = True
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
-                sublime.set_timeout(lambda: self.disable_packages(new_package_name, 'install'), 10)
+                sublime.set_timeout(partial(self.disable_packages, new_package_name, 'install'), 10)
                 time.sleep(0.7)
 
                 # Windows will not allow you to rename to the same name with
@@ -101,7 +105,7 @@ class PackageRenamer(PackageDisabler):
                 installed_packages.append(new_package_name)
 
                 console_write(u'Renamed %s to %s' % (package_name, new_package_name), True)
-                sublime.set_timeout(lambda: self.reenable_package(new_package_name, 'install'), 700)
+                sublime.set_timeout(partial(self.reenable_package, new_package_name, 'install'), 700)
 
             else:
                 time.sleep(0.7)
@@ -112,7 +116,7 @@ class PackageRenamer(PackageDisabler):
 
             # Do not reenable if removal has been delayed until next restart
             if remove_result is not None:
-                sublime.set_timeout(lambda: self.reenable_package(package_name, 'remove'), 700)
+                sublime.set_timeout(partial(self.reenable_package, package_name, 'remove'), 700)
 
             try:
                 installed_packages.remove(package_name)
