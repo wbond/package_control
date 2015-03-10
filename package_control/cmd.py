@@ -156,7 +156,7 @@ class Cli(object):
         except (OSError) as e:
             cmd = create_cmd(args)
             error = unicode_from_os(e)
-            message = u"Error executing: %s\n%s\n\nTry checking your \"%s_binary\" setting?" % (cmd, error, self.cli_name)
+            message = u"Error executing: %s\n\n%s\n\nTry checking your \"%s_binary\" setting?" % (cmd, error, self.cli_name)
             show_error(message)
             return False
 
