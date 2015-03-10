@@ -76,7 +76,7 @@ class GitUpgrader(VcsUpgrader):
         args = [binary]
         args.extend(self.update_command)
         args.extend([info['remote'], info['remote_branch']])
-        self.execute(args, self.working_copy)
+        self.execute(args, self.working_copy, meaningful_output=True)
         return True
 
     def incoming(self):
@@ -99,7 +99,7 @@ class GitUpgrader(VcsUpgrader):
 
         args = [binary, 'log']
         args.append('..%s/%s' % (info['remote'], info['remote_branch']))
-        output = self.execute(args, self.working_copy)
+        output = self.execute(args, self.working_copy, meaningful_output=True)
         incoming = len(output) > 0
 
         set_cache(cache_key, incoming, self.cache_length)

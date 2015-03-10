@@ -47,7 +47,7 @@ class HgUpgrader(VcsUpgrader):
         args = [binary]
         args.extend(self.update_command)
         args.append('default')
-        self.execute(args, self.working_copy)
+        self.execute(args, self.working_copy, meaningful_output=True)
         return True
 
     def incoming(self):
@@ -63,7 +63,7 @@ class HgUpgrader(VcsUpgrader):
             return False
 
         args = [binary, 'in', '-q', 'default']
-        output = self.execute(args, self.working_copy)
+        output = self.execute(args, self.working_copy, meaningful_output=True)
         if output is False:
             return False
 

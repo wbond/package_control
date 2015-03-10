@@ -74,7 +74,7 @@ class Cli(object):
         self.binary_locations = binary_locations
         self.debug = debug
 
-    def execute(self, args, cwd, input=None, encoding='utf-8'):
+    def execute(self, args, cwd, input=None, encoding='utf-8', meaningful_output=False):
         """
         Creates a subprocess with the executable/args
 
@@ -86,6 +86,10 @@ class Cli(object):
 
         :param input:
             The input text to send to the program
+
+        :param meaningful_output:
+            If the output from the command is possibly meaningful and should
+            be displayed if in debug mode
 
         :return: A string of the executable output
         """
@@ -150,6 +154,9 @@ class Cli(object):
                 message = u"Error executing: %s\n\n%s\n\nVCS-based packages can be ignored with the \"ignore_vcs_packages\" setting." % (cmd, output)
                 show_error(message)
                 return False
+
+            if meaningful_output and self.debug and len(output) > 0:
+                console_write('  %s' % output.replace('\n', '\n  '))
 
             return output
 
