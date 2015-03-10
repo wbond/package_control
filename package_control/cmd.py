@@ -109,7 +109,7 @@ class Cli(object):
         try:
             proc = subprocess.Popen(args, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                startupinfo=startupinfo, cwd=cwd)
+                startupinfo=startupinfo, cwd=cwd, env=os.environ)
 
             if input and isinstance(input, str_cls):
                 input = input.encode(encoding)
