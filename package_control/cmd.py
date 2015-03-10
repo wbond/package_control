@@ -104,7 +104,7 @@ class Cli(object):
                     cwd = buf.value
 
         if self.debug:
-            console_write(u"Trying to execute command %s" % create_cmd(args), True)
+            console_write(u"Executing %s [%s]" % (create_cmd(args), cwd), True)
 
         try:
             proc = subprocess.Popen(args, stdin=subprocess.PIPE,
