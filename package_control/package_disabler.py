@@ -30,9 +30,9 @@ class PackageDisabler():
         metadata_json = read_package_file(package, 'package-metadata.json')
         if metadata_json:
             metadata = json.loads(metadata_json)
-            return metadata.get('version', 'unknown')
+            return metadata.get('version', 'unknown version')
 
-        return 'unknown'
+        return 'unknown version'
 
     def disable_packages(self, packages, type='upgrade'):
         """
