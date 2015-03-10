@@ -144,6 +144,13 @@ class Cli(object):
             output = output.decode(encoding)
             output = output.replace('\r\n', '\n').rstrip(' \n\r')
 
+            if proc.returncode != 0:
+                cmd = create_cmd(args)
+                error = output
+                message = u"Error executing: %s\n\n%s\n\nVCS-based packages can be ignored with the \"ignore_vcs_packages\" setting." % (cmd, output)
+                show_error(message)
+                return False
+
             return output
 
         except (OSError) as e:
