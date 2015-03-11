@@ -243,20 +243,19 @@ class AutomaticUpgrader(threading.Thread):
             time.sleep(0.7)
 
             for info in package_list:
-                if info[0] in disabled_packages:
+                package_name = info[0]
+
+                if package_name in disabled_packages:
                     # We use a functools.partial to generate the on-complete callback in
                     # order to bind the current value of the parameters, unlike lambdas.
-                    on_complete = functools.partial(self.installer.reenable_package, info[0])
+                    on_complete = functools.partial(self.installer.reenable_package, package_name)
                 else:
                     on_complete = None
 
-                self.installer.manager.install_package(info[0])
+                self.installer.manager.install_package(package_name)
+                version = self.installer.manager.get_version(package_name)
 
-                version = re.sub('^.*?(v[\d\.]+).*?$', '\\1', info[2])
-                if version == info[2] and version.find('pull with') != -1:
-                    vcs = re.sub('^pull with (\w+).*?$', '\\1', version)
-                    version = 'latest %s commit' % vcs
-                message_string = u'Upgraded %s to %s' % (info[0], version)
+                message_string = u'Upgraded %s to %s' % (package_name, version)
                 console_write(message_string, True)
                 if on_complete:
                     sublime.set_timeout(on_complete, 700)

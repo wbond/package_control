@@ -104,3 +104,20 @@ class GitUpgrader(VcsUpgrader):
 
         set_cache(cache_key, incoming, self.cache_length)
         return incoming
+
+    def latest_commit(self):
+        """
+        :return:
+            The latest commit hash
+        """
+
+        binary = self.retrieve_binary()
+        if not binary:
+            return False
+
+        args = [binary, 'rev-parse', '--short', 'HEAD']
+        output = self.execute(args, self.working_copy)
+        if output is False:
+            return False
+
+        return output.strip()

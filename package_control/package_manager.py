@@ -231,6 +231,27 @@ class PackageManager():
 
         return self._is_git_package(package) or self._is_hg_package(package)
 
+    def get_version(self, package):
+        """
+        Determines the current version for a package
+
+        :param package:
+            The package name
+        """
+
+        version = self.get_metadata(package).get('version')
+
+        if version:
+            return version
+
+        if self.is_vcs_package(package):
+            upgrader = self.instantiate_upgrader(package)
+            version = upgrader.latest_commit()
+            if version:
+                return '%s commit %s' % (upgrader.cli_name, version)
+
+        return 'unknown version'
+
     def instantiate_upgrader(self, package):
         """
         Creates an HgUpgrader or GitUpgrader object to run operations on a VCS-
