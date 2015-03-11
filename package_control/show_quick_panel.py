@@ -1,23 +1,23 @@
 import sublime
 
 
-def show_quick_panel(window, *args, **kwargs):
+def show_quick_panel(window, list, on_done):
     """
     Wrapper for the window.show_quick_panel API that keeps it open.
 
-    Accepts same parameters as window.show_quick_panel, plus:
-
     :param window:
-        sublime.Window instance where the panel should be shown.
-    """
-    if int(sublime.version()) >= 3070:
-        # Override the flags parameter to include the KEEP_OPEN_ON_FOCUS_LOST
-        # flag
-        import inspect
-        sig = inspect.signature(window.show_quick_panel)
-        ba = sig.bind(*args, **kwargs)
-        ba.arguments['flags'] = (ba.arguments.get('flags', 0)
-                                 | sublime.KEEP_OPEN_ON_FOCUS_LOST)
-        args, kwargs = ba.args, ba.kwargs
+        sublime.Window instance where the panel should be shown
 
-    return window.show_quick_panel(*args, **kwargs)
+    :param list:
+        The list to pass to window.show_quick_panel()
+
+    :param on_done:
+        The callback to execute when the user has selected an item
+    """
+
+    # When possible, keep the quick panel open until the users picks an option
+    flags = 0
+    if int(sublime.version()) >= 3070:
+        flags = sublime.KEEP_OPEN_ON_FOCUS_LOST
+
+    return window.show_quick_panel(list, on_done, flags)
