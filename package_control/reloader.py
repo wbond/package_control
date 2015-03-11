@@ -42,6 +42,7 @@ mods_load_order = [
     '.processes',
     '.settings',
     '.show_error',
+    '.show_quick_panel',
     '.unicode',
     '.thread_progress',
     '.package_io',
