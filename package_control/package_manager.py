@@ -603,19 +603,19 @@ class PackageManager():
         """ :return: A list of all default package names"""
 
         if int(sublime.version()) > 3000:
-            bundled_packages_path = os.path.join(os.path.dirname(sublime.executable_path()),
-                'Packages')
-            files = os.listdir(bundled_packages_path)
+            app_dir = os.path.dirname(sublime.executable_path())
+            files = os.listdir(os.path.join(app_dir, 'Packages'))
 
         else:
-            files = os.listdir(os.path.join(os.path.dirname(
-                sublime.packages_path()), 'Pristine Packages'))
-            files = list(set(files)
-                         - set(os.listdir(sublime.installed_packages_path())))
-            if "User.sublime-package" in files:  # Don't ask why
-                files.remove("User.sublime-package")
+            config_dir = os.path.dirname(sublime.packages_path())
+            pristine_files = os.listdir(os.path.join(config_dir, 'Pristine Packages'))
+            installed_files = os.listdir(sublime.installed_packages_path())
+            files = list(set(pristine_files) - set(installed_files))
+
         packages = [file.replace('.sublime-package', '') for file in files]
+        packages = set(packages) - set(['User', 'Default'])
         packages = sorted(packages, key=lambda s: s.lower())
+
         return packages
 
     def find_required_dependencies(self, ignore_package=None):
