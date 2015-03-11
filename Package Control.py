@@ -16,6 +16,20 @@ elif int(sublime.version()) > 3000:
 
 if st_version == 3:
     installed_dir, _ = __name__.split('.')
+
+    if os.path.basename(__file__) == 'sys_path.py':
+        pc_package_path = os.path.dirname(os.path.dirname(__file__))
+    # When loaded as a .sublime-package file, the filename ends up being
+    # Package Control.sublime-package/Package Control.package_control.sys_path
+    else:
+        pc_package_path = os.path.dirname(__file__)
+    st_dir = os.path.dirname(os.path.dirname(pc_package_path))
+
+    package_path = os.path.join(st_dir, 'Installed Packages', 'Package Control.sublime-package')
+    pc_python_path = os.path.join(st_dir, 'Packages', 'Package Control', 'Package Control.py')
+    has_packed = os.path.exists(package_path)
+    has_unpacked = os.path.exists(pc_python_path)
+
 elif st_version == 2:
     installed_dir = os.path.basename(os.getcwd())
 
@@ -39,6 +53,18 @@ if installed_dir != 'Package Control':
             u"\"%s.sublime-package\" to " % installed_dir +
             u"\"Package Control.sublime-package\" ")
     message += u"and restart Sublime Text."
+    sublime.error_message(message)
+
+elif st_version == 3 and has_packed and has_unpacked:
+    message = (u"Package Control\n\n"
+        u"It appears you have Package Control installed as both "
+        u"a .sublime-package file and a directory inside of the "
+        u"Packages folder.\n\n"
+        u"To fix this issue, please:\n\n"
+        u"1. Open the \"Preferences\" menu\n"
+        u"2. Select \"Browse Packages\u2026\"\n"
+        u"3. Delete the folder \"Package Control\"\n"
+        u"4. Restart Sublime Text")
     sublime.error_message(message)
 
 # Normal execution will finish setting up the package
