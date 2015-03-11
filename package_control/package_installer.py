@@ -1,4 +1,3 @@
-import os
 import re
 import threading
 import time
@@ -8,8 +7,6 @@ import sublime
 from .thread_progress import ThreadProgress
 from .package_manager import PackageManager
 from .package_disabler import PackageDisabler
-from .upgraders.git_upgrader import GitUpgrader
-from .upgraders.hg_upgrader import HgUpgrader
 from .versions import version_comparable
 
 
@@ -85,7 +82,6 @@ class PackageInstaller(PackageDisabler):
             new_version = 'v' + release['version']
 
             vcs = None
-            package_dir = self.manager.get_package_dir(package)
             settings = self.manager.settings
 
             if override_action:
@@ -93,22 +89,12 @@ class PackageInstaller(PackageDisabler):
                 extra = ''
 
             else:
-                if os.path.exists(os.path.join(package_dir, '.git')):
+                if self.manager.is_vcs_package(package):
                     if settings.get('ignore_vcs_packages'):
                         continue
-                    vcs = 'git'
-                    incoming = GitUpgrader(settings.get('git_binary'),
-                        settings.get('git_update_command'), package_dir,
-                        settings.get('cache_length'), settings.get('debug')
-                        ).incoming()
-                elif os.path.exists(os.path.join(package_dir, '.hg')):
-                    if settings.get('ignore_vcs_packages'):
-                        continue
-                    vcs = 'hg'
-                    incoming = HgUpgrader(settings.get('hg_binary'),
-                        settings.get('hg_update_command'), package_dir,
-                        settings.get('cache_length'), settings.get('debug')
-                        ).incoming()
+                    upgrader = self.manager.instantiate_upgrader(package)
+                    vcs = upgrader.cli_name
+                    incoming = upgrader.incoming()
 
                 if installed:
                     if vcs:

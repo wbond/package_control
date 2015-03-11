@@ -194,6 +194,75 @@ class PackageManager():
 
         return []
 
+    def _is_git_package(self, package):
+        """
+        :param package:
+            The package name
+
+        :return:
+            If the package is installed via git
+        """
+
+        git_dir = os.path.join(self.get_package_dir(package), '.git')
+        return os.path.exists(git_dir) and os.path.isdir(git_dir)
+
+    def _is_hg_package(self, package):
+        """
+        :param package:
+            The package name
+
+        :return:
+            If the package is installed via hg
+        """
+
+        hg_dir = os.path.join(self.get_package_dir(package), '.hg')
+        return os.path.exists(hg_dir) and os.path.isdir(hg_dir)
+
+    def is_vcs_package(self, package):
+        """
+        If the package is installed via git or hg
+
+        :param package:
+            The package to check
+
+        :return:
+            bool
+        """
+
+        return self._is_git_package(package) or self._is_hg_package(package)
+
+    def instantiate_upgrader(self, package):
+        """
+        Creates an HgUpgrader or GitUpgrader object to run operations on a VCS-
+        based package
+
+        :param package:
+            The name of the package
+
+        :return:
+            GitUpgrader, HgUpgrader or None
+        """
+
+        if self._is_git_package(package):
+            return GitUpgrader(
+                self.settings['git_binary'],
+                self.settings['git_update_command'],
+                self.get_package_dir(package),
+                self.settings['cache_length'],
+                self.settings['debug']
+            )
+
+        if self._is_hg_package(package):
+            return HgUpgrader(
+                self.settings['hg_binary'],
+                self.settings['hg_update_command'],
+                self.get_package_dir(package),
+                self.settings['cache_length'],
+                self.settings['debug']
+            )
+
+        return None
+
     def select_dependencies(self, dependency_info):
         """
         Takes the a dict from a dependencies.json file and returns the
@@ -732,20 +801,12 @@ class PackageManager():
             pristine_package_path = os.path.join(os.path.dirname(
                 sublime.packages_path()), 'Pristine Packages', package_filename)
 
-            if os.path.exists(os.path.join(unpacked_package_dir, '.git')):
+            if self.is_vcs_package(package_name):
+                upgrader = self.instantiate_upgrader(package_name)
                 if self.settings.get('ignore_vcs_packages'):
-                    show_error(u'Skipping git package %s since the setting ignore_vcs_packages is set to true' % package_name)
+                    show_error(u'Skipping %s package %s since the setting ignore_vcs_packages is set to true' % (upgrader.cli_name, package_name))
                     return False
-                return GitUpgrader(self.settings['git_binary'],
-                    self.settings['git_update_command'], unpacked_package_dir,
-                    self.settings['cache_length'], debug).run()
-            elif os.path.exists(os.path.join(unpacked_package_dir, '.hg')):
-                if self.settings.get('ignore_vcs_packages'):
-                    show_error(u'Skipping hg package %s since the setting ignore_vcs_packages is set to true' % package_name)
-                    return False
-                return HgUpgrader(self.settings['hg_binary'],
-                    self.settings['hg_update_command'], unpacked_package_dir,
-                    self.settings['cache_length'], debug).run()
+                return upgrader.run()
 
             old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
             is_upgrade = old_version is not None
