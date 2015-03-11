@@ -5,6 +5,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
+from ..show_quick_panel import show_quick_panel
 from ..package_manager import PackageManager
 from .existing_packages_command import ExistingPackagesCommand
 
@@ -52,12 +53,12 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         if self.filter_function:
             self.package_list = list(filter(self.filter_function, self.package_list))
 
-        def show_quick_panel():
+        def show_panel():
             if not self.package_list:
                 show_error('There are no packages to list')
                 return
-            self.window.show_quick_panel(self.package_list, self.on_done)
-        sublime.set_timeout(show_quick_panel, 10)
+            show_quick_panel(self.window, self.package_list, self.on_done)
+        sublime.set_timeout(show_panel, 10)
 
     def on_done(self, picked):
         """

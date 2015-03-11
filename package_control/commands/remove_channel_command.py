@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
+from ..show_quick_panel import show_quick_panel
 from ..settings import pc_settings_filename
 
 
@@ -29,7 +30,7 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
             run = True
 
         if run:
-            self.window.show_quick_panel(self.channels, self.on_done)
+            show_quick_panel(self.window, self.channels, self.on_done)
 
     def on_done(self, index):
         """

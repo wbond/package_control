@@ -5,6 +5,7 @@ import sublime
 import sublime_plugin
 
 from ..show_error import show_error
+from ..show_quick_panel import show_quick_panel
 from .existing_packages_command import ExistingPackagesCommand
 from ..thread_progress import ThreadProgress
 from ..package_disabler import PackageDisabler
@@ -34,7 +35,7 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
         if not self.package_list:
             show_error('There are no packages that can be removed.')
             return
-        self.window.show_quick_panel(self.package_list, self.on_done)
+        show_quick_panel(self.window, self.package_list, self.on_done)
 
     def on_done(self, picked):
         """
