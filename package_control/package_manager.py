@@ -529,36 +529,15 @@ class PackageManager():
         :return: A list of all installed, non-default, non-dependency, package names
         """
 
-        package_names = os.listdir(sublime.packages_path())
-        package_names = [path for path in package_names if path[0] != '.' and
-            os.path.isdir(os.path.join(sublime.packages_path(), path))]
+        packages = self._list_visible_dirs(sublime.packages_path())
 
         if int(sublime.version()) > 3000 and unpacked_only is False:
-            for name in os.listdir(sublime.installed_packages_path()):
-                if not re.search('\.sublime-package$', name):
-                    continue
-                name = name.replace('.sublime-package', '')
-                if name == loader.loader_package_name:
-                    continue
-                package_names.append(name)
+            packages |= self._list_sublime_package_files(sublime.installed_packages_path())
 
-        # Ignore things to be deleted
-        ignored = ['User']
-        for package in package_names:
-            cleanup_file = os.path.join(sublime.packages_path(), package,
-                'package-control.cleanup')
-            if os.path.exists(cleanup_file):
-                ignored.append(package)
-            dependency_file = os.path.join(sublime.packages_path(), package,
-                'dependency-metadata.json')
-            if exclude_dependencies and os.path.exists(dependency_file):
-                ignored.append(package)
-
-        packages = list(set(package_names) - set(ignored) -
-            set(self.list_default_packages()))
-        packages = sorted(packages, key=lambda s: s.lower())
-
-        return packages
+        packages -= set(self.list_default_packages())
+        packages -= set(self.list_dependencies())
+        packages -= set(['User', 'Default'])
+        return sorted(packages, key=lambda s: s.lower())
 
     def list_dependencies(self):
         """
@@ -571,16 +550,10 @@ class PackageManager():
         if sys.version_info >= (3,):
             output.append('0_package_control_loader')
 
-        for package_name in os.listdir(sublime.packages_path()):
-            if package_name[0] == '.':
+        for name in self._list_visible_dirs(sublime.packages_path()):
+            if not self._is_dependency(name):
                 continue
-            package_path = os.path.join(sublime.packages_path(), package_name)
-            if not os.path.isdir(package_path):
-                continue
-            metadata_path = os.path.join(package_path, 'dependency-metadata.json')
-            if not os.path.exists(metadata_path):
-                continue
-            output.append(package_name)
+            output.append(name)
 
         return sorted(output, key=lambda s: s.lower())
 
@@ -596,27 +569,85 @@ class PackageManager():
         """
 
         packages = self.list_default_packages() + self.list_packages(exclude_dependencies=exclude_dependencies)
-        packages = sorted(packages, key=lambda s: s.lower())
-        return packages
+        return sorted(packages, key=lambda s: s.lower())
 
     def list_default_packages(self):
         """ :return: A list of all default package names"""
 
         if int(sublime.version()) > 3000:
             app_dir = os.path.dirname(sublime.executable_path())
-            files = os.listdir(os.path.join(app_dir, 'Packages'))
+            packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
 
         else:
             config_dir = os.path.dirname(sublime.packages_path())
-            pristine_files = os.listdir(os.path.join(config_dir, 'Pristine Packages'))
-            installed_files = os.listdir(sublime.installed_packages_path())
-            files = list(set(pristine_files) - set(installed_files))
 
-        packages = [file.replace('.sublime-package', '') for file in files]
-        packages = set(packages) - set(['User', 'Default'])
-        packages = sorted(packages, key=lambda s: s.lower())
+            pristine_dir = os.path.join(config_dir, 'Pristine Packages')
+            pristine_files = self._list_sublime_package_files(pristine_dir)
 
-        return packages
+            installed_dir = sublime.installed_packages_path()
+            installed_files = self._list_sublime_package_files(installed_dir)
+
+            packages = pristine_files - installed_files
+
+        packages -= set(['User', 'Default'])
+        return sorted(packages, key=lambda s: s.lower())
+
+    def _list_visible_dirs(self, path):
+        """
+        Return a set of directories in the folder specified that are not
+        hidden and are not marked to be removed
+
+        :param path:
+            The folder to list the directories inside of
+
+        :return:
+            A set of directory names
+        """
+
+        output = []
+        for filename in os.listdir(path):
+            if filename[0] == '.':
+                continue
+            file_path = os.path.join(path, filename)
+            if not os.path.isdir(file_path):
+                continue
+            # Don't include a dir if it is going to be cleaned up
+            if os.path.exists(os.path.join(file_path, 'package-control.cleanup')):
+                continue
+            output.append(filename)
+        return set(output)
+
+    def _list_sublime_package_files(self, path):
+        """
+        Return a set of all .sublime-package files in a folder
+
+        :param path:
+            The directory to look in for .sublime-package files
+
+        :return:
+            A set of the package names - i.e. with the .sublime-package suffix removed
+        """
+
+        output = []
+        for filename in os.listdir(path):
+            if not re.search('\.sublime-package$', filename):
+                continue
+            output.append(filename.replace('.sublime-package', ''))
+        return set(output)
+
+    def _is_dependency(self, name):
+        """
+        Checks if a package specified is a dependency
+
+        :param name:
+            The name of the package to check if it is a dependency
+
+        :return:
+            Bool, if the package is a dependency
+        """
+
+        metadata_path = os.path.join(sublime.packages_path(), name, 'dependency-metadata.json')
+        return os.path.exists(metadata_path)
 
     def find_required_dependencies(self, ignore_package=None):
         """
