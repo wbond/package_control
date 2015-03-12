@@ -66,7 +66,12 @@ class CliDownloader(object):
         """
 
         if self.settings.get('debug'):
-            console_write(u"Trying to execute command %s" % create_cmd(args), True)
+            console_write(
+                u'''
+                Trying to execute command %s
+                ''',
+                create_cmd(args)
+            )
 
         proc = subprocess.Popen(args, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)

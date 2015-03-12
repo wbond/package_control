@@ -37,8 +37,13 @@ class DebuggableHTTPConnection(HTTPConnection):
 
     def connect(self):
         if self.debuglevel == -1:
-            console_write(u'Urllib %s Debug General' % self._debug_protocol, True)
-            console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
+            console_write(
+                u'''
+                Urllib %s Debug General
+                  Connecting to %s on port %s
+                ''',
+                (self._debug_protocol, self.host, self.port)
+            )
         HTTPConnection.connect(self)
 
     def send(self, string):
@@ -53,9 +58,15 @@ class DebuggableHTTPConnection(HTTPConnection):
         HTTPConnection.send(self, string)
         if reset_debug or self.debuglevel == -1:
             if len(string.strip()) > 0:
-                console_write(u'Urllib %s Debug Write' % self._debug_protocol, True)
-                for line in string.strip().splitlines():
-                    console_write(u'  ' + line.decode('iso-8859-1'))
+                unicode_string = string.strip().decode('iso-8859-1')
+                indented_headers = u'\n  '.join(unicode_string.splitlines())
+                console_write(
+                    u'''
+                    Urllib %s Debug Write
+                      %s
+                    ''',
+                    (self._debug_protocol, indented_headers)
+                )
             if reset_debug:
                 self.debuglevel = reset_debug
 

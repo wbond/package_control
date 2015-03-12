@@ -20,9 +20,19 @@ class PersistentHandler:
         if self.connection:
             if self._debuglevel == 5:
                 s = '' if self.use_count == 1 else 's'
-                console_write(u"Urllib %s Debug General" % self.connection._debug_protocol, True)
-                console_write(u"  Closing connection to %s on port %s after %s request%s" % (
-                    self.connection.host, self.connection.port, self.use_count, s))
+                console_write(
+                    u'''
+                    Urllib %s Debug General
+                      Closing connection to %s on port %s after %s request%s
+                    ''',
+                    (
+                        self.connection._debug_protocol,
+                        self.connection.host,
+                        self.connection.port,
+                        self.use_count,
+                        s
+                    )
+                )
             self.connection.close()
             self.connection = None
             self.use_count = 0
@@ -49,9 +59,13 @@ class PersistentHandler:
         else:
             h = self.connection
             if self._debuglevel == 5:
-                console_write(u"Urllib %s Debug General" % h._debug_protocol, True)
-                console_write(u"  Re-using connection to %s on port %s for request #%s" % (
-                    h.host, h.port, self.use_count))
+                console_write(
+                    u'''
+                    Urllib %s Debug General
+                      Re-using connection to %s on port %s for request #%s
+                    ''',
+                    (h._debug_protocol, h.host, h.port, self.use_count)
+                )
 
         if sys.version_info >= (3,):
             headers = dict(req.unredirected_hdrs)
@@ -96,9 +110,13 @@ class PersistentHandler:
         else:
             if self._debuglevel == 5:
                 s = '' if self.use_count == 1 else 's'
-                console_write(u"Urllib %s Debug General" % h._debug_protocol, True)
-                console_write(u"  Closing connection to %s on port %s after %s request%s" % (
-                    h.host, h.port, self.use_count, s))
+                console_write(
+                    u'''
+                    Urllib %s Debug General
+                      Closing connection to %s on port %s after %s request%s
+                    ''',
+                    (h._debug_protocol, h.host, h.port, self.use_count, s)
+                )
             self.use_count = 0
             self.connection = None
 

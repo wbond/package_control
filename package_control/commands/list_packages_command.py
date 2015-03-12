@@ -55,7 +55,11 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
         def show_panel():
             if not self.package_list:
-                show_error('There are no packages to list')
+                show_error(
+                    u'''
+                    There are no packages to list
+                    '''
+                )
                 return
             show_quick_panel(self.window, self.package_list, self.on_done)
         sublime.set_timeout(show_panel, 10)

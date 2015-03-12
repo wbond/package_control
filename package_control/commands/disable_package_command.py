@@ -24,7 +24,11 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
         self.package_list = list(set(packages) - set(ignored))
         self.package_list = sorted(self.package_list, key=lambda s: s.lower())
         if not self.package_list:
-            show_error('There are no enabled packages to disable.')
+            show_error(
+                u'''
+                There are no enabled packages to disable.
+                '''
+            )
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
 

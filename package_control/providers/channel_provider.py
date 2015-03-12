@@ -90,7 +90,12 @@ class ChannelProvider():
                 raise ProviderException(u'Error, file %s does not exist' % self.channel)
 
             if self.settings.get('debug'):
-                console_write(u'Loading %s as a channel' % self.channel, True)
+                console_write(
+                    u'''
+                    Loading %s as a channel
+                    ''',
+                    self.channel
+                )
 
             # We open as binary so we get bytes like the DownloadManager
             with open(self.channel, 'rb') as f:

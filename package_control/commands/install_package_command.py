@@ -47,7 +47,11 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
         def show_panel():
             if not self.package_list:
-                show_error('There are no packages available for installation')
+                show_error(
+                    u'''
+                    There are no packages available for installation
+                    '''
+                )
                 return
             show_quick_panel(self.window, self.package_list, self.on_done)
 

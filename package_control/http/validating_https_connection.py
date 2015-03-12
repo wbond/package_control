@@ -123,10 +123,6 @@ try:
             status_line = u"%s %s %s" % (version, code, message.rstrip())
             headers = [status_line]
 
-            if self.debuglevel in [-1, 5]:
-                console_write(u'Urllib %s Debug Read' % self._debug_protocol, True)
-                console_write(u"  %s" % status_line)
-
             content_length = 0
             close_connection = False
             while True:
@@ -149,8 +145,15 @@ try:
                 if name in ['connection', 'proxy-connection'] and value == 'close':
                     close_connection = True
 
-                if self.debuglevel in [-1, 5]:
-                    console_write(u"  %s" % line.rstrip())
+            if self.debuglevel in [-1, 5]:
+                indented_headers = u'\n  '.join(headers)
+                console_write(
+                    u'''
+                    Urllib %s Debug Read
+                      %s
+                    ''',
+                    (self._debug_protocol, indented_headers)
+                )
 
             # Handle proxy auth for SSL connections since regular urllib punts on this
             if code == 407 and self.passwd and 'Proxy-Authorization' not in self._tunnel_headers:
@@ -278,17 +281,26 @@ try:
             """
 
             if self.debuglevel == -1:
-                console_write(u"Urllib HTTPS Debug General", True)
-                console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
+                console_write(
+                    u'''
+                    Urllib HTTPS Debug General
+                      Connecting to %s on port %s
+                    ''',
+                    (self.host, self.port)
+                )
 
             self.sock = socket.create_connection((self.host, self.port), self.timeout)
             if self._tunnel_host:
                 self._tunnel()
 
             if self.debuglevel == -1:
-                console_write(u"Urllib HTTPS Debug General", True)
-                console_write(u"  Connecting to %s on port %s" % (self.host, self.port))
-                console_write(u"  CA certs file at %s" % (self.ca_certs.decode(sys.getfilesystemencoding())))
+                console_write(
+                    u'''
+                    Urllib HTTPS Debug General
+                      Upgrading connection to SSL using CA certs file at %s
+                    ''',
+                    self.ca_certs.decode(sys.getfilesystemencoding())
+                )
 
             self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
                 certfile=self.cert_file, cert_reqs=self.cert_reqs,
@@ -296,10 +308,15 @@ try:
 
             if self.debuglevel == -1:
                 cipher_info = self.sock.cipher()
-                console_write(u"  Successfully upgraded connection to %s:%s with SSL" % (
-                    self.host, self.port))
-                console_write(u"  Using %s with cipher %s" % (
-                    cipher_info[1], cipher_info[0]))
+                console_write(
+                    u'''
+                      Successfully upgraded connection to %s:%s with SSL
+                      Using %s with cipher %s
+                    ''',
+                    (self.host, self.port, cipher_info[1], cipher_info[0]),
+                    indent='  ',
+                    prefix=False
+                )
 
             # This debugs and validates the SSL certificate
             if self.cert_reqs & ssl.CERT_REQUIRED:
@@ -335,26 +352,33 @@ try:
                             field_name = pair[0][0]
                         subject_parts.append(field_name + '=' + pair[0][1])
 
-                    console_write(u"  Server SSL certificate:")
-                    console_write(u"    subject: " + ','.join(subject_parts))
+                    console_write(
+                        u'''
+                          Server SSL certificate:
+                            subject: %s
+                        ''',
+                        ','.join(subject_parts),
+                        indent='  ',
+                        prefix=False
+                    )
                     if 'subjectAltName' in cert:
                         alt_names = [c[1] for c in cert['subjectAltName']]
                         alt_names = ', '.join(alt_names)
-                        console_write(u"    subject alt name: %s" % alt_names)
+                        console_write(u'    subject alt name: %s', alt_names, prefix=False)
                     if 'notAfter' in cert:
-                        console_write(u"    expire date: " + cert['notAfter'])
+                        console_write(u'    expire date: %s', cert['notAfter'], prefix=False)
 
                 hostname = self.host.split(':', 0)[0]
 
                 if not self.validate_cert_host(cert, hostname):
                     if self.debuglevel == -1:
-                        console_write(u"  Certificate INVALID")
+                        console_write(u'  Certificate INVALID', prefix=False)
 
                     raise InvalidCertificateException(hostname, cert,
                         'hostname mismatch')
 
                 if self.debuglevel == -1:
-                    console_write(u"  Certificate validated for %s" % hostname)
+                    console_write(u'  Certificate validated for %s', hostname, prefix=False)
 
 except (ImportError):
     pass

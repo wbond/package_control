@@ -66,7 +66,13 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
     except (zipfile.BadZipfile):
-        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package, True)
+        console_write(
+            u'''
+            An error occurred while trying to unzip the sublime-package file
+            for %s.
+            ''',
+            package
+        )
         return False
 
     try:
@@ -79,10 +85,22 @@ def _read_zip_file(package, relative_path, binary=False, debug=False):
         pass
 
     except (IOError):
-        console_write(u'Unable to read file from sublime-package file for %s due to an invalid filename' % package, True)
+        console_write(
+            u'''
+            Unable to read file from sublime-package file for %s due to an
+            invalid filename
+            ''',
+            package
+        )
 
     except (UnicodeDecodeError):
-        console_write(u'Unable to read file from sublime-package file for %s due to an invalid filename or character encoding issue' % package, True)
+        console_write(
+            u'''
+            Unable to read file from sublime-package file for %s due to an
+            invalid filename or character encoding issue
+            ''',
+            package
+        )
 
     return False
 
@@ -104,7 +122,13 @@ def _zip_file_exists(package, relative_path):
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
     except (zipfile.BadZipfile):
-        console_write(u'An error occurred while trying to unzip the sublime-package file for %s.' % package, True)
+        console_write(
+            u'''
+            An error occurred while trying to unzip the sublime-package file
+            for %s.
+            ''',
+            package
+        )
         return False
 
     try:

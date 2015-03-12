@@ -16,6 +16,7 @@ from .show_error import show_error
 from .console_write import console_write
 from .cache import set_cache, get_cache
 from .unicode import unicode_from_os
+from . import text
 
 from .downloaders import DOWNLOADERS
 from .downloaders.urllib_downloader import UrlLibDownloader
@@ -153,7 +154,12 @@ def update_url(url, debug):
         url = 'https://packagecontrol.io/channel_v3.json'
 
     if debug and url != original_url:
-        console_write(u'Fixed URL from %s to %s' % (original_url, url), True)
+        console_write(
+            u'''
+            Fixed URL from %s to %s
+            ''',
+            (original_url, url)
+        )
 
     return url
 
@@ -215,9 +221,17 @@ class DownloadManager(object):
                     pass
 
         if not self.downloader:
-            error_string = u'Unable to download %s due to no ssl module available and no capable program found. Please install curl or wget.' % url
+            error_string = text.format(
+                u'''
+                Unable to download %s due to no ssl module available and no
+                capable program found.
+
+                Please install curl or wget.
+                ''',
+                url
+            )
             show_error(error_string)
-            raise DownloaderException(error_string)
+            raise DownloaderException(error_string.replace('\n\n', ' '))
 
         url = url.replace(' ', '%20')
         hostname = urlparse(url).hostname
@@ -247,17 +261,30 @@ class DownloadManager(object):
             except (TypeError) as e:
                 ip = None
 
-            console_write(u"Download Debug", True)
-            console_write(u"  URL: %s" % url)
+            console_write(
+                u'''
+                Download Debug
+                  URL: %s
+                  Timeout: %s
+                  Resolved IP: %s
+                ''',
+                (url, ip, str(timeout))
+            )
             if ipv6:
-                console_write(u"  Resolved IPv6: %s" % ipv6)
-            console_write(u"  Resolved IP: %s" % ip)
-            console_write(u"  Timeout: %s" % str(timeout))
+                console_write(
+                    u'  Resolved IPv6: %s',
+                    ipv6,
+                    prefix=False
+                )
 
         if hostname in rate_limited_domains:
-            error_string = u"Skipping due to hitting rate limit for %s" % hostname
+            error_string = u'Skipping due to hitting rate limit for %s' % hostname
             if self.settings.get('debug'):
-                console_write(u"  %s" % error_string)
+                console_write(
+                    u'  %s',
+                    error_string,
+                    prefix=False
+                )
             raise DownloaderException(error_string)
 
         try:
@@ -268,15 +295,23 @@ class DownloadManager(object):
             rate_limited_domains.append(hostname)
             set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
 
-            error_string = (u'Hit rate limit of %s for %s, skipping all futher ' +
-                u'download requests for this domain') % (e.limit, e.domain)
-            console_write(error_string, True)
+            console_write(
+                u'''
+                Hit rate limit of %s for %s. Skipping all futher download
+                requests for this domain.
+                ''',
+                (e.limit, e.domain)
+            )
             raise
 
         except (WinDownloaderException) as e:
 
-            error_string = (u'Attempting to use Urllib downloader due to WinINet error: %s') % e
-            console_write(error_string, True)
+            console_write(
+                u'''
+                Attempting to use Urllib downloader due to WinINet error: %s
+                ''',
+                e
+            )
 
             # Here we grab the proxy info extracted from WinInet to fill in
             # the Package Control settings if those are not present. This should

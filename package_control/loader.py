@@ -225,7 +225,11 @@ def add(priority, name, code=None):
                 open(os.path.join(old_loader_dir, 'package-control.cleanup'), 'w').close()
 
         if removed_old_loader:
-            console_write(u'Cleaning up remenants of old loaders', True)
+            console_write(
+                u'''
+                Cleaning up remenants of old loaders
+                '''
+            )
 
             pc_settings = sublime.load_settings(pc_settings_filename())
             orig_installed_packages = load_list_setting(pc_settings, 'installed_packages')

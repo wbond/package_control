@@ -72,16 +72,33 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
             old_version = SemVer(metadata['version'])
             if version <= old_version:
                 return
-            console_write(u'Upgrading bootstrapped dependency %s to %s from %s' % (package_basename, version, old_version), True)
+
+            console_write(
+                u'''
+                Upgrading bootstrapped dependency %s to %s from %s
+                ''',
+                (package_basename, version, old_version)
+            )
+
         except (KeyError, FileNotFoundError):
             # If we can't determine the old version, install the new one
             pass
 
     with downloader(url, settings) as manager:
         try:
-            console_write(u'Downloading bootstrapped dependency %s' % package_basename, True)
+            console_write(
+                u'''
+                Downloading bootstrapped dependency %s
+                ''',
+                package_basename
+            )
             data = manager.fetch(url, 'Error downloading bootstrapped dependency %s.' % package_basename)
-            console_write(u'Successfully downloaded bootstraped dependency %s' % package_basename, True)
+            console_write(
+                u'''
+                Successfully downloaded bootstraped dependency %s
+                ''',
+                package_basename
+            )
             data_io = BytesIO(data)
 
         except (DownloaderException) as e:
@@ -90,13 +107,23 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
 
     data_hash = hashlib.sha256(data).hexdigest()
     if data_hash != hash_:
-        console_write(u'Error validating bootstrapped dependency %s (got %s instead of %s)' % (package_basename, data_hash, hash_), True)
+        console_write(
+            u'''
+            Error validating bootstrapped dependency %s (got %s instead of %s)
+            ''',
+            (package_basename, data_hash, hash_)
+        )
         return
 
     try:
         data_zip = zipfile.ZipFile(data_io, 'r')
     except (zipfile.BadZipfile):
-        console_write(u'Error unzipping bootstrapped dependency %s' % package_filename, True)
+        console_write(
+            u'''
+            Error unzipping bootstrapped dependency %s
+            ''',
+            package_filename
+        )
         return
 
     if not path.exists(package_dir):
@@ -134,10 +161,20 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
 
     if loader.exists(package_basename):
         loader.remove(package_basename)
-        console_write(u'Removed old loader for bootstrapped dependency %s' % package_basename, True)
+        console_write(
+            u'''
+            Removed old loader for bootstrapped dependency %s
+            ''',
+            package_basename
+        )
     loader.add(priority, package_basename, code)
 
-    console_write(u'Successfully installed bootstrapped dependency %s' % package_basename, True)
+    console_write(
+        u'''
+        Successfully installed bootstrapped dependency %s
+        ''',
+        package_basename
+    )
 
     if on_complete:
         sublime.set_timeout(on_complete, 100)

@@ -42,9 +42,19 @@ class SatisfyDependenciesThread(threading.Thread):
         required_dependencies = self.manager.find_required_dependencies()
 
         if not self.manager.install_dependencies(required_dependencies, fail_early=False):
-            self.show_error(u'One or more dependencies could not be installed '
-                            'or updated. Please check the console for details.')
+            self.show_error(
+                u'''
+                One or more dependencies could not be installed or updated.
+
+                Please check the console for details.
+                '''
+            )
 
         if not self.manager.cleanup_dependencies(required_dependencies=required_dependencies):
-            self.show_error(u'One or more orphaned dependencies could not be '
-                            'removed. Please check the console for details.')
+            self.show_error(
+                u'''
+                One or more orphaned dependencies could not be removed.
+
+                Please check the console for details.
+                '''
+            )

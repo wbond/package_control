@@ -23,8 +23,12 @@ def clean_old_files(directory):
                 try:
                     os.remove(path)
                 except (OSError) as e:
-                    console_write(u'Error removing old file "%s": %s' % (path,
-                        unicode_from_os(e)), True)
+                    console_write(
+                        u'''
+                        Error removing old file "%s": %s
+                        ''',
+                        (path, unicode_from_os(e))
+                    )
 
 
 def clear_directory(directory, ignore_paths=None):

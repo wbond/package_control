@@ -4,7 +4,7 @@ import sublime
 
 from .settings import preferences_filename, pc_settings_filename, load_list_setting
 from .package_io import package_file_exists, read_package_file
-from . import events
+from . import events, text
 
 
 class PackageDisabler():
@@ -153,10 +153,15 @@ class PackageDisabler():
             sublime.save_settings(preferences_filename())
 
             if type == 'remove' and self.old_theme_package == package:
-                sublime.message_dialog(u"Package Control\n\n" +
-                    u"Your active theme was just removed and the Default " +
-                    u"theme was enabled in its place. You may see some " +
-                    u"graphical corruption until you restart Sublime Text.")
+                sublime.message_dialog(text.format(
+                    u'''
+                    Package Control
+
+                    Your active theme was just removed and the Default theme was
+                    enabled in its place. You may see some graphical corruption
+                    until you restart Sublime Text.
+                    '''
+                ))
 
             # By delaying the restore, we give Sublime Text some time to
             # re-enable the package, making errors less likely
@@ -173,9 +178,14 @@ class PackageDisabler():
 
                 if type == 'upgrade' and self.old_theme_package == package:
                     settings.set('theme', self.old_theme)
-                    sublime.message_dialog(u"Package Control\n\n" +
-                        u"Your active theme was just upgraded. You may see some " +
-                        u"graphical corruption until you restart Sublime Text.")
+                    sublime.message_dialog(text.format(
+                        u'''
+                        Package Control
+
+                        Your active theme was just upgraded. You may see some
+                        graphical corruption until you restart Sublime Text.
+                        '''
+                    ))
 
                 if type == 'upgrade' and self.old_color_scheme_package == package:
                     settings.set('color_scheme', self.old_color_scheme)

@@ -21,7 +21,11 @@ class PackageCreator():
         self.manager = PackageManager()
         self.packages = self.manager.list_packages(unpacked_only=True)
         if not self.packages:
-            show_error('There are no packages available to be packaged')
+            show_error(
+                u'''
+                There are no packages available to be packaged
+                '''
+            )
             return
         show_quick_panel(self.window, self.packages, self.on_done)
 

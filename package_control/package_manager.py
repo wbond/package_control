@@ -124,7 +124,11 @@ class PackageManager():
                 del filtered_settings[key]
 
         if filtered_settings != previous_settings and previous_settings != {}:
-            console_write(u'Settings change detected, clearing cache', True)
+            console_write(
+                u'''
+                Settings change detected, clearing cache
+                '''
+            )
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
 
@@ -396,7 +400,7 @@ class PackageManager():
                     set_cache_under_settings(self, 'unavailable_dependencies', channel, unavailable_dependencies, cache_ttl, list_=True)
 
                 except (DownloaderException, ClientException, ProviderException) as e:
-                    console_write(e, True)
+                    console_write(e)
                     continue
 
             repositories.extend(channel_repositories)
@@ -420,10 +424,20 @@ class PackageManager():
         """
 
         if self.settings.get('debug'):
-            console_write(u"Fetching list of available packages", True)
-            console_write(u"  Platform: %s-%s" % (sublime.platform(), sublime.arch()))
-            console_write(u"  Sublime Text Version: %s" % sublime.version())
-            console_write(u"  Package Control Version: %s" % __version__)
+            console_write(
+                u'''
+                Fetching list of available packages
+                  Platform: %s-%s
+                  Sublime Text Version: %s
+                  Package Control Version: %s
+                ''',
+                (
+                    sublime.platform(),
+                    sublime.arch(),
+                    sublime.version(),
+                    __version__
+                )
+            )
 
         cache_ttl = self.settings.get('cache_length')
         repositories = self.list_repositories()
@@ -495,11 +509,11 @@ class PackageManager():
 
             # Display errors we encountered while fetching package info
             for url, exception in provider.get_failed_sources():
-                console_write(exception, True)
+                console_write(exception)
             for name, exception in provider.get_broken_packages():
-                console_write(exception, True)
+                console_write(exception)
             for name, exception in provider.get_broken_dependencies():
-                console_write(exception, True)
+                console_write(exception)
 
             cache_key = repo + '.packages'
             set_cache(cache_key, repository_packages, cache_ttl)
@@ -705,8 +719,13 @@ class PackageManager():
         package_dir = self.get_package_dir(package_name)
 
         if not os.path.exists(package_dir):
-            show_error(u'The folder for the package name specified, %s, does not exist in %s' % (
-                package_name, sublime.packages_path()))
+            show_error(
+                u'''
+                The folder for the package name specified, %s,
+                does not exists in %s
+                ''',
+                (package_name, sublime.packages_path())
+            )
             return False
 
         package_filename = package_name + '.sublime-package'
@@ -723,8 +742,14 @@ class PackageManager():
             package_file = zipfile.ZipFile(package_path, "w",
                 compression=zipfile.ZIP_DEFLATED)
         except (OSError, IOError) as e:
-            show_error(u'An error occurred creating the package file %s in %s.\n\n%s' % (
-                package_filename, package_destination, unicode_from_os(e)))
+            show_error(
+                u'''
+                An error occurred creating the package file %s in %s.
+
+                %s
+                ''',
+                (package_filename, package_destination, unicode_from_os(e))
+            )
             return False
 
         if int(sublime.version()) >= 3000:
@@ -812,7 +837,13 @@ class PackageManager():
             package_type = 'dependency'
 
         if is_unavailable and not is_available:
-            console_write(u'The %s "%s" is either not available on this platform or for this version of Sublime Text' % (package_type, package_name), True)
+            console_write(
+                u'''
+                The %s "%s" is either not available on this platform or for
+                this version of Sublime Text
+                ''',
+                (package_type, package_name)
+            )
             # If a dependency is not available on this machine, that means it
             # is not needed
             if is_dependency:
@@ -820,11 +851,12 @@ class PackageManager():
             return False
 
         if not is_available:
-            message = u'The %s specified, %s, is not available' % (package_type, package_name)
+            message = u'The %s specified, %s, is not available'
+            params = (package_type, package_name)
             if is_dependency:
-                console_write(message, True)
+                console_write(message, params)
             else:
-                show_error(message)
+                show_error(message, params)
             return False
 
         release = packages[package_name]['releases'][0]
@@ -858,7 +890,13 @@ class PackageManager():
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
                 if self.settings.get('ignore_vcs_packages'):
-                    show_error(u'Skipping %s package %s since the setting ignore_vcs_packages is set to true' % (upgrader.cli_name, package_name))
+                    show_error(
+                        u'''
+                        Skipping %s package %s since the setting
+                        "ignore_vcs_packages" is set to true
+                        ''',
+                        (upgrader.cli_name, package_name)
+                    )
                     return False
                 return upgrader.run()
 
@@ -870,8 +908,14 @@ class PackageManager():
                 with downloader(url, self.settings) as manager:
                     package_bytes = manager.fetch(url, 'Error downloading package.')
             except (DownloaderException) as e:
-                console_write(e, True)
-                show_error(u'Unable to download %s. Please view the console for more details.' % package_name)
+                console_write(e)
+                show_error(
+                    u'''
+                    Unable to download %s. Please view the console for
+                    more details.
+                    ''',
+                    package_name
+                )
                 return False
 
             with open_compat(tmp_package_path, "wb") as package_file:
@@ -881,7 +925,13 @@ class PackageManager():
             try:
                 package_zip = zipfile.ZipFile(tmp_package_path, 'r')
             except (zipfile.BadZipfile):
-                show_error(u'An error occurred while trying to unzip the package file for %s. Please try installing the package again.' % package_name)
+                show_error(
+                    u'''
+                    An error occurred while trying to unzip the package file
+                    for %s. Please try installing the package again.
+                    ''',
+                    package_name
+                )
                 return False
 
             # Scan through the root level of the zip file to gather some info
@@ -892,7 +942,13 @@ class PackageManager():
                     if not isinstance(path, str_cls):
                         path = path.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
-                    console_write(u'One or more of the zip file entries in %s is not encoded using UTF-8, aborting' % package_name, True)
+                    console_write(
+                        u'''
+                        One or more of the zip file entries in %s is not
+                        encoded using UTF-8, aborting
+                        ''',
+                        package_name
+                    )
                     return False
 
                 last_path = path
@@ -901,7 +957,13 @@ class PackageManager():
                     root_level_paths.append(path)
                 # Make sure there are no paths that look like security vulnerabilities
                 if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
-                    show_error(u'The package specified, %s, contains files outside of the package dir and cannot be safely installed.' % package_name)
+                    show_error(
+                        u'''
+                        The package specified, %s, contains files outside of
+                        the package dir and cannot be safely installed.
+                        ''',
+                        package_name
+                    )
                     return False
 
             if last_path and len(root_level_paths) == 0:
@@ -979,7 +1041,13 @@ class PackageManager():
                     # usage info can be sent back to the server
                     clear_directory(unpacked_package_dir, [reinstall_file, unpacked_metadata_file])
 
-                    show_error(u'An error occurred while trying to upgrade %s. Please restart Sublime Text to finish the upgrade.' % package_name)
+                    show_error(
+                        u'''
+                        An error occurred while trying to upgrade %s. Please
+                        restart Sublime Text to finish the upgrade.
+                        ''',
+                        package_name
+                    )
                     return None
                 else:
                     os.rmdir(unpacked_package_dir)
@@ -1018,13 +1086,25 @@ class PackageManager():
                     if not isinstance(dest, str_cls):
                         dest = dest.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
-                    console_write(u'One or more of the zip file entries in %s is not encoded using UTF-8, aborting' % package_name, True)
+                    console_write(
+                        u'''
+                        One or more of the zip file entries in %s is not
+                        encoded using UTF-8, aborting
+                        ''',
+                        package_name
+                    )
                     return False
 
                 if os.name == 'nt':
                     regex = ':|\*|\?|"|<|>|\|'
                     if re.search(regex, dest) != None:
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % package_name, True)
+                        console_write(
+                            u'''
+                            Skipping file from package named %s due to an
+                            invalid filename
+                            ''',
+                            package_name
+                        )
                         continue
 
                 # If there was only a single directory in the package, we remove
@@ -1068,10 +1148,22 @@ class PackageManager():
                         if re.search('[Ee]rrno 13', message):
                             overwrite_failed = True
                             break
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % package_name, True)
+                        console_write(
+                            u'''
+                            Skipping file from package named %s due to an
+                            invalid filename
+                            ''',
+                            package_name
+                        )
 
                     except (UnicodeDecodeError):
-                        console_write(u'Skipping file from package named %s due to an invalid filename' % package_name, True)
+                        console_write(
+                            u'''
+                            Skipping file from package named %s due to an
+                            invalid filename
+                            ''',
+                            package_name
+                        )
 
             package_zip.close()
             package_zip = None
@@ -1086,7 +1178,13 @@ class PackageManager():
                 # usage info can be sent back to the server
                 clear_directory(package_dir, [reinstall_file, package_metadata_file])
 
-                show_error(u'An error occurred while trying to upgrade %s. Please restart Sublime Text to finish the upgrade.' % package_name)
+                show_error(
+                    u'''
+                    An error occurred while trying to upgrade %s. Please restart
+                    Sublime Text to finish the upgrade.
+                    ''',
+                    package_name
+                )
                 return None
 
             # Here we clean out any files that were not just overwritten. It is ok
@@ -1156,8 +1254,14 @@ class PackageManager():
                     package_zip = zipfile.ZipFile(tmp_package_path, "w",
                         compression=zipfile.ZIP_DEFLATED)
                 except (OSError, IOError) as e:
-                    show_error(u'An error occurred creating the package file %s in %s.\n\n%s' % (
-                        package_filename, tmp_dir, unicode_from_os(e)))
+                    show_error(
+                        u'''
+                        An error occurred creating the package file %s in %s.
+
+                        %s
+                        ''',
+                        (package_filename, tmp_dir, unicode_from_os(e))
+                    )
                     return False
 
                 package_dir_regex = re.compile('^' + re.escape(package_dir))
@@ -1239,7 +1343,7 @@ class PackageManager():
                     installed_version=installed_version,
                     available_version=available_version
                 )
-                console_write(msg, True)
+                console_write(msg)
 
             def dependency_write_debug(msg):
                 if debug:
@@ -1306,7 +1410,12 @@ class PackageManager():
         error = False
         for dependency in orphaned_dependencies:
             if self.remove_package(dependency, is_dependency=True):
-                console_write(u"The orphaned dependency %s has been removed" % dependency, True)
+                console_write(
+                    u'''
+                    The orphaned dependency %s has been removed
+                    ''',
+                    dependency
+                )
             else:
                 error = True
 
@@ -1335,13 +1444,25 @@ class PackageManager():
                 os.makedirs(backup_dir)
             package_backup_dir = os.path.join(backup_dir, package_name)
             if os.path.exists(package_backup_dir):
-                console_write(u"FOLDER %s ALREADY EXISTS!" % package_backup_dir)
+                console_write(
+                    u'''
+                    Backup folder "%s" already exists!
+                    ''',
+                    package_backup_dir
+                )
             shutil.copytree(package_dir, package_backup_dir)
             return True
 
         except (OSError, IOError) as e:
-            show_error(u'An error occurred while trying to backup the package directory for %s.\n\n%s' % (
-                package_name, unicode_from_os(e)))
+            show_error(
+                u'''
+                An error occurred while trying to backup the package directory
+                for %s.
+
+                %s
+                ''',
+                (package_name, unicode_from_os(e))
+            )
             try:
                 if os.path.exists(package_backup_dir):
                     delete_directory(package_backup_dir)
@@ -1381,7 +1502,12 @@ class PackageManager():
         try:
             message_info = json.loads(read_compat(messages_fp))
         except (ValueError):
-            console_write(u'Error parsing messages.json for %s' % package, True)
+            console_write(
+                u'''
+                Error parsing messages.json for %s
+                ''',
+                package
+            )
             return
         messages_fp.close()
 
@@ -1395,7 +1521,12 @@ class PackageManager():
                     message += read_compat(f).replace('\n', '\n  ')
                 output += message + '\n'
             except (FileNotFoundError):
-                console_write(u'Error opening install messages for %s from %s' % (package, install_file), True)
+                console_write(
+                    u'''
+                    Error opening install messages for %s from %s
+                    ''',
+                    (package, install_file)
+                )
 
         elif is_upgrade and old_version:
             upgrade_messages = list(set(message_info.keys()) -
@@ -1426,7 +1557,12 @@ class PackageManager():
                         message += read_compat(f).replace('\n', '\n  ')
                     output += message + '\n'
                 except (FileNotFoundError):
-                    console_write(u'Error opening %s messages for %s from %s' % (version, package, upgrade_file), True)
+                    console_write(
+                        u'''
+                        Error opening %s messages for %s from %s
+                        ''',
+                        (version, package, upgrade_file)
+                    )
 
         if not output:
             return
@@ -1494,7 +1630,12 @@ class PackageManager():
             package_type = 'dependency'
 
         if package_name not in installed_packages:
-            show_error(u'The %s specified, %s, is not installed' % (package_type, package_name))
+            show_error(
+                u'''
+                The %s specified, %s, is not installed
+                ''',
+                (package_type, package_name)
+            )
             return False
 
         os.chdir(sublime.packages_path())
@@ -1512,16 +1653,30 @@ class PackageManager():
             if os.path.exists(installed_package_path):
                 os.remove(installed_package_path)
         except (OSError, IOError) as e:
-            show_error(u'An error occurred while trying to remove the installed package file for %s.\n\n%s' % (
-                package_name, unicode_from_os(e)))
+            show_error(
+                u'''
+                An error occurred while trying to remove the installed package
+                file for %s.
+
+                %s
+                ''',
+                (package_name, unicode_from_os(e))
+            )
             return False
 
         try:
             if os.path.exists(pristine_package_path):
                 os.remove(pristine_package_path)
         except (OSError, IOError) as e:
-            show_error(u'An error occurred while trying to remove the pristine package file for %s.\n\n%s' % (
-                package_name, unicode_from_os(e)))
+            show_error(
+                u'''
+                An error occurred while trying to remove the pristine package
+                file for %s.
+
+                %s
+                ''',
+                (package_name, unicode_from_os(e))
+            )
             return False
 
         # We don't delete the actual package dir immediately due to a bug
@@ -1558,8 +1713,10 @@ class PackageManager():
             loader.remove(package_name)
 
         else:
-            clean_up = " and will be cleaned up on the next restart" if not can_delete_dir else ''
-            console_write(u"The package %s has been removed" % package_name + clean_up, True)
+            message = u'The package %s has been removed' % package_name
+            if can_delete_dir:
+                message += u' and will be cleaned up on the next restart'
+            console_write(message)
 
             # Remove dependencies that are no longer needed
             self.cleanup_dependencies(package_name)
@@ -1595,7 +1752,7 @@ class PackageManager():
             with downloader(url, self.settings) as manager:
                 result = manager.fetch(url, 'Error submitting usage information.')
         except (DownloaderException) as e:
-            console_write(e, True)
+            console_write(e)
             return
 
         try:
@@ -1603,4 +1760,9 @@ class PackageManager():
             if result['result'] != 'success':
                 raise ValueError()
         except (ValueError):
-            console_write(u'Error submitting usage information for %s' % params['package'], True)
+            console_write(
+                u'''
+                Error submitting usage information for %s
+                ''',
+                params['package']
+            )

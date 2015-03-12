@@ -32,6 +32,7 @@ from ..ca_certs import get_ca_bundle_path
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
 from .caching_downloader import CachingDownloader
+from .. import text
 
 
 class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
@@ -143,8 +144,13 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                         tries += 1
                         continue
 
-                error_string = u'%s HTTP exception %s (%s) downloading %s.' % (
-                    error_message, e.__class__.__name__, unicode_from_os(e), url)
+                exception_type = e.__class__.__name__
+                error_string = text.format(
+                    u'''
+                    %s HTTP exception %s (%s) downloading %s.
+                    ''',
+                    (error_message, exception_type, unicode_from_os(e), url)
+                )
 
             except (HTTPError) as e:
                 # Make sure the response is closed so we can re-use the connection
@@ -160,37 +166,53 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
 
                 # Bitbucket and Github return 503 a decent amount
                 if unicode_from_os(e.code) == '503' and tries != 0:
-                    error_string = u'Downloading %s was rate limited' % url
-                    if tries:
-                        error_string += ', trying again'
-                        if debug:
-                            console_write(error_string, True)
+                    if tries and debug:
+                        console_write(
+                            u'''
+                            Downloading %s was rate limited, trying again
+                            ''',
+                            url
+                        )
                     continue
 
-                error_string = u'%s HTTP error %s downloading %s.' % (
-                    error_message, unicode_from_os(e.code), url)
+                error_string = text.format(
+                    u'''
+                    %s HTTP error %s downloading %s.
+                    ''',
+                    (error_message, unicode_from_os(e.code), url)
+                )
 
             except (URLError) as e:
 
                 # Bitbucket and Github timeout a decent amount
                 if unicode_from_os(e.reason) == 'The read operation timed out' \
                         or unicode_from_os(e.reason) == 'timed out':
-                    error_string = u'Downloading %s timed out' % url
-                    if tries:
-                        error_string += ', trying again'
-                        if debug:
-                            console_write(error_string, True)
+                    if tries and debug:
+                        console_write(
+                            u'''
+                            Downloading %s timed out, trying again
+                            ''',
+                            url
+                        )
                     continue
 
-                error_string = u'%s URL error %s downloading %s.' % (
-                    error_message, unicode_from_os(e.reason), url)
+                error_string = text.format(
+                    u'''
+                    %s URL error %s downloading %s.
+                    ''',
+                    (error_message, unicode_from_os(e.reason), url)
+                )
 
             except (ConnectionError):
                 # Handle broken pipes/reset connections by creating a new opener, and
                 # thus getting new handlers and a new connection
-                error_string = u'Connection went away while trying to download %s, trying again' % url
                 if debug:
-                    console_write(error_string, True)
+                    console_write(
+                        u'''
+                        Connection went away while trying to download %s, trying again
+                        ''',
+                        url
+                    )
 
                 self.opener = None
                 self.setup_opener(url, timeout)
@@ -262,11 +284,16 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             debug = self.settings.get('debug')
 
             if debug:
-                console_write(u"Urllib Debug Proxy", True)
-                console_write(u"  http_proxy: %s" % http_proxy)
-                console_write(u"  https_proxy: %s" % https_proxy)
-                console_write(u"  proxy_username: %s" % proxy_username)
-                console_write(u"  proxy_password: %s" % proxy_password)
+                console_write(
+                    u'''
+                    Urllib Debug Proxy
+                      http_proxy: %s
+                      https_proxy: %s
+                      proxy_username: %s
+                      proxy_password: %s
+                    ''',
+                    (http_proxy, https_proxy, proxy_username, proxy_password)
+                )
 
             secure_url_match = re.match('^https://([^/]+)', url)
             if secure_url_match is not None:

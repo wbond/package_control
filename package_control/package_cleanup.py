@@ -13,7 +13,7 @@ from .package_manager import PackageManager
 from .open_compat import open_compat
 from .package_io import package_file_exists
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
-from . import loader
+from . import loader, text
 from .providers.release_selector import is_compatible_version
 
 
@@ -46,14 +46,23 @@ class PackageCleanup(threading.Thread):
         for dependency in extra_dependencies:
             dependency_dir = os.path.join(sublime.packages_path(), dependency)
             if delete_directory(dependency_dir):
-                console_write(u'Removed directory for unneeded dependency %s' % dependency, True)
+                console_write(
+                    u'''
+                    Removed directory for unneeded dependency %s
+                    ''',
+                    dependency
+                )
             else:
                 cleanup_file = os.path.join(dependency_dir, 'package-control.cleanup')
                 if not os.path.exists(cleanup_file):
                     open_compat(cleanup_file, 'w').close()
-                error_string = (u'Unable to remove directory for unneeded dependency ' +
-                    u'%s - deferring until next start') % dependency
-                console_write(error_string, True)
+                console_write(
+                    u'''
+                    Unable to remove directory for unneeded dependency %s -
+                    deferring until next start
+                    ''',
+                    dependency
+                )
             # Make sure when cleaning up the dependency files that we remove the loader for it also
             loader.remove(dependency)
 
@@ -70,14 +79,23 @@ class PackageCleanup(threading.Thread):
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
                 if delete_directory(package_dir):
-                    console_write(u'Removed old directory %s' % package_name, True)
+                    console_write(
+                        u'''
+                        Removed old directory %s
+                        ''',
+                        package_name
+                    )
                     found = False
                 else:
                     if not os.path.exists(cleanup_file):
                         open_compat(cleanup_file, 'w').close()
-                    error_string = (u'Unable to remove old directory ' +
-                        u'%s - deferring until next start') % package_name
-                    console_write(error_string, True)
+                    console_write(
+                        u'''
+                        Unable to remove old directory %s - deferring until next
+                        start
+                        ''',
+                        package_name
+                    )
 
             # Finish reinstalling packages that could not be upgraded due to
             # in-use files
@@ -87,15 +105,19 @@ class PackageCleanup(threading.Thread):
                 if not clear_directory(package_dir, [metadata_path]):
                     if not os.path.exists(reinstall):
                         open_compat(reinstall, 'w').close()
-                    # Assigning this here prevents the callback from referencing the value
-                    # of the "package_name" variable when it is executed
-                    restart_message = (u'An error occurred while trying to ' +
-                        u'finish the upgrade of %s. You will most likely need to ' +
-                        u'restart your computer to complete the upgrade.') % package_name
 
-                    def show_still_locked():
-                        show_error(restart_message)
-                    sublime.set_timeout(show_still_locked, 10)
+                    def show_still_locked(package_name):
+                        show_error(
+                            u'''
+                            An error occurred while trying to finish the upgrade of
+                            %s. You will most likely need to restart your computer
+                            to complete the upgrade.
+                            ''',
+                            package_name
+                        )
+                    # We use a functools.partial to generate the on-complete callback in
+                    # order to bind the current value of the parameters, unlike lambdas.
+                    sublime.set_timeout(functools.partial(show_still_locked, package_name), 10)
                 else:
                     self.manager.install_package(package_name)
 
@@ -120,17 +142,31 @@ class PackageCleanup(threading.Thread):
                 elif self.remove_orphaned and package_name not in self.original_installed_packages:
                     self.manager.backup_package_dir(package_name)
                     if delete_directory(package_dir):
-                        console_write(u'Removed directory for orphaned package %s' % package_name, True)
+                        console_write(
+                            u'''
+                            Removed directory for orphaned package %s
+                            ''',
+                            package_name
+                        )
                         found = False
                     else:
                         if not os.path.exists(cleanup_file):
                             open_compat(cleanup_file, 'w').close()
-                        error_string = (u'Unable to remove directory for orphaned package ' +
-                            u'%s - deferring until next start') % package_name
-                        console_write(error_string, True)
+                        console_write(
+                            u'''
+                            Unable to remove directory for orphaned package %s -
+                            deferring until next start
+                            ''',
+                            package_name
+                        )
 
             if package_name[-20:] == '.package-control-old':
-                console_write(u'Removed old directory %s' % package_name, True)
+                console_write(
+                    u'''
+                    Removed old directory %s
+                    ''',
+                    package_name
+                )
                 delete_directory(package_dir)
 
             # Skip over dependencies since we handle them separately
@@ -195,22 +231,40 @@ class PackageCleanup(threading.Thread):
                 message = u''
                 if invalid_packages:
                     package_s = 's were' if len(invalid_packages) != 1 else ' was'
-                    message += (u'The following incompatible package%s '
-                        u'found installed:\n\n%s\n\n') % (package_s,
-                        '\n'.join(invalid_packages))
+                    message += text.format(
+                        u'''
+                        The following incompatible package%s found installed:
+
+                        %s
+
+                        ''',
+                        (package_s, '\n'.join(invalid_packages))
+                    )
                 if invalid_dependencies:
                     dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
-                    message += (u'The following incompatible dependenc%s '
-                        u'found installed:\n\n%s\n\n') % (dependency_s,
-                        '\n'.join(invalid_dependencies))
-                message += (u'This is usually due to syncing packages across '
-                    u'different machines in a way that does not check '
-                    u'package metadata for compatibility.\n\n'
-                    u'Please visit https://packagecontrol.io/docs/syncing '
-                    u'for information about how to properly sync '
-                    u'configuration and packages across machines.\n\n'
-                    u'To restore package functionality, please remove each '
-                    u'listed package and reinstall it.')
+                    message += text.format(
+                        u'''
+                        The following incompatible dependenc%s found installed:
+
+                        %s
+
+                        ''',
+                        (dependency_s, '\n'.join(invalid_dependencies))
+                    )
+                message += text.format(
+                    u'''
+                    This is usually due to syncing packages across different
+                    machines in a way that does not check package metadata for
+                    compatibility.
+
+                    Please visit https://packagecontrol.io/docs/syncing for
+                    information about how to properly sync configuration and
+                    packages across machines.
+
+                    To restore package functionality, please remove each listed
+                    package and reinstall it.
+                    '''
+                )
                 show_error(message)
             sublime.set_timeout(show_sync_error, 100)
 
@@ -231,13 +285,21 @@ class PackageCleanup(threading.Thread):
         def do_remove():
             try:
                 os.remove(filename)
-                console_write(u'Removed orphaned package %s' % name, True)
+                console_write(
+                    u'''
+                    Removed orphaned package %s
+                    ''',
+                    name
+                )
 
             except (OSError) as e:
-                error_string = (u'Unable to remove orphaned package ' +
-                    u'%s - deferring until next start: %s') % (
-                    name, unicode_from_os(e))
-                console_write(error_string, True)
+                console_write(
+                    u'''
+                    Unable to remove orphaned package %s - deferring until
+                    next start: %s
+                    ''',
+                    (name, unicode_from_os(e))
+                )
 
             finally:
                 # Always re-enable the package so it doesn't get stuck
@@ -332,7 +394,13 @@ class PackageCleanup(threading.Thread):
                     # by an error.
                     if loader.loader_package_name == package and loader.is_swapping():
                         continue
-                    console_write(u'The package %s is being re-enabled after a Package Control operation was interrupted' % package, True)
+                    console_write(
+                        u'''
+                        The package %s is being re-enabled after a Package
+                        Control operation was interrupted
+                        ''',
+                        package
+                    )
                     new_ignored.remove(package)
 
             save_list_setting(settings, filename, 'ignored_packages', new_ignored, ignored)

@@ -26,10 +26,19 @@ class HgUpgrader(VcsUpgrader):
         binary = self.find_binary(name)
 
         if not binary:
-            show_error((u'Unable to find %s. Please set the hg_binary setting by accessing the ' +
-                u'Preferences > Package Settings > Package Control > Settings \u2013 User menu entry. ' +
-                u'The Settings \u2013 Default entry can be used for reference, but changes to that will be ' +
-                u'overwritten upon next upgrade.') % name)
+            show_error(
+                u'''
+                Unable to find %s.
+
+                Please set the "hg_binary" setting by accessing the
+                Preferences > Package Settings > Package Control > Settings
+                \u2013 User menu entry.
+
+                The Settings \u2013 Default entry can be used for reference,
+                but changes to that will be overwritten upon next upgrade.
+                ''',
+                name
+            )
             return False
 
         return binary

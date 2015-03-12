@@ -71,7 +71,11 @@ def get_ca_bundle_path(settings):
                 if len(user_certs) > 0:
                     merged.write(b'\n')
         if settings.get('debug'):
-            console_write(u"Regnerated the merged CA bundle from the system and user CA bundles", True)
+            console_write(
+                u'''
+                Regenerated the merged CA bundle from the system and user CA bundles
+                '''
+            )
 
     return merged_ca_bundle_path
 
@@ -92,7 +96,11 @@ def get_user_ca_bundle_path(settings):
     user_ca_bundle_path = os.path.join(ca_bundle_dir, 'Package Control.user-ca-bundle')
     if not os.path.exists(user_ca_bundle_path):
         if settings.get('debug'):
-            console_write(u"Created blank user CA bundle", True)
+            console_write(
+                u'''
+                Created blank user CA bundle
+                '''
+            )
         open(user_ca_bundle_path, 'a').close()
 
     return user_ca_bundle_path
@@ -129,18 +137,36 @@ def get_system_ca_bundle_path(settings):
         if not exists or is_old:
             if platform == 'darwin':
                 if debug:
-                    console_write(u"Generating new CA bundle from system keychain", True)
+                    console_write(
+                        u'''
+                        Generating new CA bundle from system keychain
+                        '''
+                    )
                 _osx_create_ca_bundle(settings, ca_path)
             elif platform == 'win32':
                 if debug:
-                    console_write(u"Generating new CA bundle from system certificate store", True)
+                    console_write(
+                        u'''
+                        Generating new CA bundle from system certificate store
+                        '''
+                    )
                 _win_create_ca_bundle(settings, ca_path)
 
             if debug:
-                console_write(u"Finished generating new CA bundle at %s" % ca_path, True)
+                console_write(
+                    u'''
+                    Finished generating new CA bundle at %s
+                    ''',
+                    ca_path
+                )
 
         elif debug:
-            console_write(u"Found previously exported CA bundle at %s" % ca_path, True)
+            console_write(
+                u'''
+                Found previously exported CA bundle at %s
+                ''',
+                ca_path
+            )
 
     # Linux
     else:
@@ -163,7 +189,12 @@ def get_system_ca_bundle_path(settings):
                 break
 
         if debug and ca_path:
-            console_write(u"Found system CA bundle at %s" % ca_path, True)
+            console_write(
+                u'''
+                Found system CA bundle at %s
+                ''',
+                ca_path
+            )
 
     return ca_path
 
@@ -243,28 +274,53 @@ def _osx_create_ca_bundle(settings, destination):
 
             if cert_info['notBefore'] > now:
                 if debug:
-                    console_write(u'Skipping certificate "%s" since it is not valid yet' % name, True)
+                    console_write(
+                        u'''
+                        Skipping certificate "%s" since it is not valid yet
+                        ''',
+                        name
+                    )
                 continue
 
             if cert_info['notAfter'] < now:
                 if debug:
-                    console_write(u'Skipping certificate "%s" since it is no longer valid' % name, True)
+                    console_write(
+                        u'''
+                        Skipping certificate "%s" since it is no longer valid
+                        ''',
+                        name
+                    )
                 continue
 
             if cert_info['algorithm'] in ['md5WithRSAEncryption', 'md2WithRSAEncryption']:
                 if debug:
-                    console_write(u'Skipping certificate "%s" since it uses the signature algorithm %s' % (name, cert_info['algorithm']), True)
+                    console_write(
+                        u'''
+                        Skipping certificate "%s" since it uses the signature algorithm %s
+                        ''',
+                        (name, cert_info['algorithm'])
+                    )
                 continue
 
             if distrusted_certs:
                 # If it is a distrusted cert, we move on to the next
                 if name in distrusted_certs:
                     if settings.get('debug'):
-                        console_write(u'Skipping certificate "%s" because it is distrusted' % name, True)
+                        console_write(
+                            u'''
+                            Skipping certificate "%s" because it is distrusted
+                            ''',
+                            name
+                        )
                     continue
 
             if debug:
-                console_write(u'Exported certificate "%s"' % name, True)
+                console_write(
+                    u'''
+                    Exported certificate "%s"
+                    ''',
+                    name
+                )
 
             certs.append(cert)
 
@@ -318,7 +374,12 @@ def _osx_get_distrusted_certs(settings):
         distrusted = re.match('^\s+Result\s+Type\s+:\s+kSecTrustSettingsResultDeny', line)
         if ssl_policy and distrusted and cert_name not in distrusted_certs:
             if settings.get('debug'):
-                console_write(u'Found SSL distrust setting for certificate "%s"' % cert_name, True)
+                console_write(
+                    u'''
+                    Found SSL distrust setting for certificate "%s"
+                    ''',
+                    cert_name
+                )
             distrusted_certs.append(cert_name)
 
     return distrusted_certs
@@ -335,7 +396,12 @@ def _win_create_ca_bundle(settings, destination):
         store_handle = crypt32.CertOpenSystemStoreW(None, store)
 
         if not store_handle:
-            console_write(u"Error opening system certificate store %s: %s" % (store, extract_error()), True)
+            console_write(
+                u'''
+                Error opening system certificate store %s: %s
+                ''',
+                (store, extract_error())
+            )
             continue
 
         cert_pointer = crypt32.CertEnumCertificatesInStore(store_handle, None)
@@ -347,7 +413,11 @@ def _win_create_ca_bundle(settings, destination):
             if context.dwCertEncodingType != X509_ASN_ENCODING:
                 skip = True
                 if debug:
-                    console_write(u'Skipping certificate since it is not x509 encoded', True)
+                    console_write(
+                        u'''
+                        Skipping certificate since it is not x509 encoded
+                        '''
+                    )
 
             if not skip:
                 cert_info = context.pCertInfo.contents
@@ -375,13 +445,23 @@ def _win_create_ca_bundle(settings, destination):
 
                 if not_before > now:
                     if debug:
-                        console_write(u'Skipping certificate "%s" since it is not valid yet' % name, True)
+                        console_write(
+                            u'''
+                            Skipping certificate "%s" since it is not valid yet
+                            ''',
+                            name
+                        )
                     skip = True
 
             if not skip:
                 if not_after < now:
                     if debug:
-                        console_write(u'Skipping certificate "%s" since it is no longer valid' % name, True)
+                        console_write(
+                            u'''
+                            Skipping certificate "%s" since it is no longer valid
+                            ''',
+                            name
+                        )
                     skip = True
 
             if not skip:
@@ -392,7 +472,13 @@ def _win_create_ca_bundle(settings, destination):
                 details = parse(data.raw[:cert_length])
                 if details['algorithm'] in ['md5WithRSAEncryption', 'md2WithRSAEncryption']:
                     if debug:
-                        console_write(u'Skipping certificate "%s" since it uses the signature algorithm %s' % (name, details['algorithm']), True)
+                        console_write(
+                            u'''
+                            Skipping certificate "%s" since it uses the
+                            signature algorithm %s
+                            ''',
+                            (name, details['algorithm'])
+                        )
                     skip = True
 
             if not skip:
@@ -404,7 +490,12 @@ def _win_create_ca_bundle(settings, destination):
                 length = output_size.value
 
                 if not result:
-                    console_write(u'Error determining certificate size for "%s"' % name, True)
+                    console_write(
+                        u'''
+                        Error determining certificate size for "%s"
+                        ''',
+                        name
+                    )
                     skip = True
 
             if not skip:
@@ -417,7 +508,12 @@ def _win_create_ca_bundle(settings, destination):
                 output = buffer.value
 
                 if debug:
-                    console_write(u'Exported certificate "%s"' % name, True)
+                    console_write(
+                        u'''
+                        Exported certificate "%s"
+                        ''',
+                        name
+                    )
 
                 certs.append(output.strip())
 
@@ -426,7 +522,12 @@ def _win_create_ca_bundle(settings, destination):
         result = crypt32.CertCloseStore(store_handle, 0)
         store_handle = None
         if not result:
-            console_write(u'Error closing certificate store "%s"' % store, True)
+            console_write(
+                u'''
+                Error closing certificate store "%s"
+                ''',
+                store
+            )
 
     with open_compat(destination, 'w') as f:
         f.write(u"\n".join(certs))
@@ -535,5 +636,10 @@ if os.name == 'nt':
         try:
             return datetime.datetime.fromtimestamp(epoch_seconds)
         except (OSError):
-            console_write(u'Error parsing filetime - high: "%s", low: "%s", epoch seconds: "%s"' % (filetime.dwHighDateTime, filetime.dwLowDateTime, epoch_seconds), True)
+            console_write(
+                u'''
+                Error parsing filetime - high: "%s", low: "%s", epoch seconds: "%s"
+                ''',
+                (filetime.dwHighDateTime, filetime.dwLowDateTime, epoch_seconds)
+            )
             return datetime.datetime(2037, 1, 1)

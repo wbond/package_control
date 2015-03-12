@@ -29,13 +29,13 @@ if reloader_name in sys.modules:
 if sys.version_info < (3,):
     from package_control.bootstrap import bootstrap_dependency
     from package_control.package_manager import PackageManager
-    from package_control import loader
+    from package_control import loader, text
     from package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
     import package_control
 else:
     from .package_control.bootstrap import bootstrap_dependency
     from .package_control.package_manager import PackageManager
-    from .package_control import loader
+    from .package_control import loader, text
     from .package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
     from . import package_control
 
@@ -122,12 +122,17 @@ def plugin_loaded():
         linux_ssl_version = '1.0.1'
 
         def linux_ssl_show_restart():
-            sublime.message_dialog(u'Package Control\n\n'
-                u'Package Control just installed or upgraded the missing '
-                u'Python _ssl module for Linux since Sublime Text does not '
-                u'include it.\n\n'
-                u'Please restart Sublime Text to make SSL available to all '
-                u'packages.')
+            sublime.message_dialog(text.format(
+                u'''
+                Package Control
+
+                Package Control just installed or upgraded the missing Python
+                _ssl module for Linux since Sublime Text does not include it.
+
+                Please restart Sublime Text to make SSL available to all
+                packages.
+                '''
+            ))
 
         linux_ssl_args = (settings, linux_ssl_url, linux_ssl_hash,
             linux_ssl_priority, linux_ssl_version, linux_ssl_show_restart)
@@ -141,11 +146,17 @@ def plugin_loaded():
         win_ssl_version = u'1.0.0'
 
         def win_ssl_show_restart():
-            sublime.message_dialog(u'Package Control\n\n'
-                u'Package Control just upgraded the Python _ssl module for '
-                u'ST2 on Windows because the bundled one does not include '
-                u'support for modern SSL certificates.\n\n'
-                u'Please restart Sublime Text to complete the upgrade.')
+            sublime.message_dialog(text.format(
+                u'''
+                Package Control
+
+                Package Control just upgraded the Python _ssl module for ST2 on
+                Windows because the bundled one does not include support for
+                modern SSL certificates.
+
+                Please restart Sublime Text to complete the upgrade.
+                '''
+            ))
 
         win_ssl_args = (settings, win_ssl_url, win_ssl_hash, win_ssl_priority,
             win_ssl_version, win_ssl_show_restart)

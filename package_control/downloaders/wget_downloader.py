@@ -115,11 +115,16 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             command.append(u"--proxy-password=%s" % proxy_password)
 
         if self.debug:
-            console_write(u"Wget Debug Proxy", True)
-            console_write(u"  http_proxy: %s" % http_proxy)
-            console_write(u"  https_proxy: %s" % https_proxy)
-            console_write(u"  proxy_username: %s" % proxy_username)
-            console_write(u"  proxy_password: %s" % proxy_password)
+            console_write(
+                u'''
+                Wget Debug Proxy
+                  http_proxy: %s
+                  https_proxy: %s
+                  proxy_username: %s
+                  proxy_password: %s
+                ''',
+                (http_proxy, https_proxy, proxy_username, proxy_password)
+            )
 
         command.append(url)
 
@@ -155,11 +160,13 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                     if general['status'] == 503 and tries != 0:
                         # GitHub and BitBucket seem to rate limit via 503
-                        error_string = u'Downloading %s was rate limited' % url
-                        if tries:
-                            error_string += ', trying again'
-                            if self.debug:
-                                console_write(error_string, True)
+                        if tries and self.debug:
+                            console_write(
+                                u'''
+                                Downloading %s was rate limited, trying again
+                                ''',
+                                url
+                            )
                         continue
 
                     download_error = 'HTTP error %s' % general['status']
@@ -170,11 +177,13 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                     # GitHub and BitBucket seem to time out a lot
                     if download_error.find('timed out') != -1:
-                        error_string = u'Downloading %s timed out' % url
-                        if tries:
-                            error_string += ', trying again'
-                            if self.debug:
-                                console_write(error_string, True)
+                        if tries and self.debug:
+                            console_write(
+                                u'''
+                                Downloading %s timed out, trying again
+                                ''',
+                                url
+                            )
                         continue
 
                 error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
@@ -250,12 +259,12 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     continue
 
                 if section != last_section:
-                    console_write(u"Wget HTTP Debug %s" % section, True)
+                    console_write(u'Wget HTTP Debug %s', section)
 
                 if section == 'Read':
                     header_lines.append(line)
 
-                console_write(u'  ' + line)
+                console_write(u'  %s', line, prefix=False)
                 last_section = section
 
         else:

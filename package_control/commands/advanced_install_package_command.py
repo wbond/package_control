@@ -55,7 +55,11 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
         input = input.strip()
 
         if not input:
-            show_error(u"No package names were entered" % input)
+            show_error(
+                u'''
+                No package names were entered
+                '''
+            )
             return
 
         self.start(self.split(input))

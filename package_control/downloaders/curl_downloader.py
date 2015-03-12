@@ -106,11 +106,16 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         proxy_password = self.settings.get('proxy_password')
 
         if debug:
-            console_write(u"Curl Debug Proxy", True)
-            console_write(u"  http_proxy: %s" % http_proxy)
-            console_write(u"  https_proxy: %s" % https_proxy)
-            console_write(u"  proxy_username: %s" % proxy_username)
-            console_write(u"  proxy_password: %s" % proxy_password)
+            console_write(
+                u'''
+                Curl Debug Proxy
+                  http_proxy: %s
+                  https_proxy: %s
+                  proxy_username: %s
+                  proxy_password: %s
+                ''',
+                (http_proxy, https_proxy, proxy_username, proxy_password)
+            )
 
         if http_proxy or https_proxy:
             command.append('--proxy-anyauth')
@@ -179,15 +184,19 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                 self.clean_tmp_file()
 
+                download_error = e.stderr.rstrip()
+
                 if e.returncode == 22:
                     code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
                     if code == '503' and tries != 0:
                         # GitHub and BitBucket seem to rate limit via 503
-                        error_string = u'Downloading %s was rate limited' % url
-                        if tries:
-                            error_string += ', trying again'
-                            if debug:
-                                console_write(error_string, True)
+                        if tries and debug:
+                            console_write(
+                                u'''
+                                Downloading %s was rate limited, trying again
+                                ''',
+                                url
+                            )
                         continue
 
                     download_error = u'HTTP error ' + code
@@ -201,28 +210,29 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     ipv6_error = re.search('^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable', full_debug, re.I | re.M)
                     if ipv6_error and tries != 0:
                         if debug:
-                            error_string = u'Downloading %s failed because the ipv6 address %s was not reachable, retrying using ipv4' % (url, ipv6_error.group(1))
-                            console_write(error_string, True)
+                            console_write(
+                                u'''
+                                Downloading %s failed because the ipv6 address
+                                %s was not reachable, retrying using ipv4
+                                ''',
+                                (url, ipv6_error.group(1))
+                            )
                         command.insert(1, '-4')
                         continue
-
-                    else:
-                        download_error = e.stderr.rstrip()
 
                 elif e.returncode == 6:
                     download_error = u'URL error host not found'
 
                 elif e.returncode == 28:
                     # GitHub and BitBucket seem to time out a lot
-                    error_string = u'Downloading %s timed out' % url
-                    if tries:
-                        error_string += ', trying again'
-                        if debug:
-                            console_write(error_string, True)
+                    if tries and debug:
+                        console_write(
+                            u'''
+                            Downloading %s timed out, trying again
+                            ''',
+                            url
+                        )
                     continue
-
-                else:
-                    download_error = e.stderr.rstrip()
 
                 error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
 
@@ -240,9 +250,14 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         for section in sections:
             type = section['type']
-            contents = section['contents'].replace(u"\n", u"\n  ")
-            console_write(u"Curl HTTP Debug %s" % type, True)
-            console_write(u"  %s" % contents)
+            indented_contents = section['contents'].replace(u"\n", u"\n  ")
+            console_write(
+                u'''
+                Curl HTTP Debug %s
+                  %s
+                ''',
+                (type, indented_contents)
+            )
 
     def supports_ssl(self):
         """

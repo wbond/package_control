@@ -239,7 +239,12 @@ class RepositoryProvider():
                 raise ProviderException(u'Error, file %s does not exist' % location)
 
             if self.settings.get('debug'):
-                console_write(u'Loading %s as a repository' % location, True)
+                console_write(
+                    u'''
+                    Loading %s as a repository
+                    ''',
+                    location
+                )
 
             # We open as binary so we get bytes like the DownloadManager
             with open(location, 'rb') as f:

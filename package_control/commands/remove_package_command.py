@@ -33,7 +33,11 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
     def run(self):
         self.package_list = self.make_package_list('remove')
         if not self.package_list:
-            show_error('There are no packages that can be removed.')
+            show_error(
+                u'''
+                There are no packages that can be removed.
+                '''
+            )
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
 

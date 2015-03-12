@@ -54,7 +54,11 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
         def show_panel():
             if not self.package_list:
-                show_error('There are no packages ready for upgrade')
+                show_error(
+                    u'''
+                    There are no packages ready for upgrade
+                    '''
+                )
                 return
             show_quick_panel(self.window, self.package_list, self.on_done)
         sublime.set_timeout(show_panel, 10)

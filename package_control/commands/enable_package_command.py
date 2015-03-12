@@ -18,7 +18,11 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
         self.disabled_packages = self.settings.get('ignored_packages')
         self.disabled_packages.sort()
         if not self.disabled_packages:
-            show_error('There are no disabled packages to enable.')
+            show_error(
+                u'''
+                There are no disabled packages to enable.
+                '''
+            )
             return
         show_quick_panel(self.window, self.disabled_packages, self.on_done)
 

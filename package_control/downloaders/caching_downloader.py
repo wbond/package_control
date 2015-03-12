@@ -83,12 +83,20 @@ class CachingDownloader(object):
 
         if not cache:
             if debug:
-                console_write(u"Skipping cache since there is no cache object", True)
+                console_write(
+                    u'''
+                    Skipping cache since there is no cache object
+                    '''
+                )
             return content
 
         if method.lower() != 'get':
             if debug:
-                console_write(u"Skipping cache since the HTTP method != GET", True)
+                console_write(
+                    u'''
+                    Skipping cache since the HTTP method != GET
+                    '''
+                )
             return content
 
         status = int(status)
@@ -96,7 +104,11 @@ class CachingDownloader(object):
         # Don't do anything unless it was successful or not modified
         if status not in [200, 304]:
             if debug:
-                console_write(u"Skipping cache since the HTTP status code not one of: 200, 304", True)
+                console_write(
+                    u'''
+                    Skipping cache since the HTTP status code not one of: 200, 304
+                    '''
+                )
             return content
 
         key = self.generate_key(url)
@@ -105,7 +117,12 @@ class CachingDownloader(object):
             cached_content = cache.get(key)
             if cached_content:
                 if debug:
-                    console_write(u"Using cached content for %s from %s" % (url, cache.path(key)), True)
+                    console_write(
+                        u'''
+                        Using cached content for %s from %s
+                        ''',
+                        (url, cache.path(key))
+                    )
                 return cached_content
 
             # If we got a 304, but did not have the cached content
@@ -125,7 +142,11 @@ class CachingDownloader(object):
         # Don't ever cache zip/binary files for the sake of hard drive space
         if headers.get('content-type') in ['application/zip', 'application/octet-stream']:
             if debug:
-                console_write(u"Skipping cache since the response is a zip file", True)
+                console_write(
+                    u'''
+                    Skipping cache since the response is a zip file
+                    '''
+                )
             return content
 
         etag = headers.get('etag')
@@ -139,7 +160,12 @@ class CachingDownloader(object):
 
         info_key = self.generate_key(url, '.info')
         if debug:
-            console_write(u"Caching %s in %s" % (url, cache.path(key)), True)
+            console_write(
+                u'''
+                Caching %s in %s
+                ''',
+                (url, cache.path(key))
+            )
 
         cache.set(info_key, struct_json.encode('utf-8'))
         cache.set(key, content)
@@ -184,6 +210,11 @@ class CachingDownloader(object):
             return False
 
         if self.settings.get('debug'):
-            console_write(u"Using cached content for %s from %s" % (url, cache.path(key)), True)
+            console_write(
+                u'''
+                Using cached content for %s from %s
+                ''',
+                (url, cache.path(key))
+            )
 
         return cache.get(key)

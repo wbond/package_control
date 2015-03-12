@@ -16,7 +16,11 @@ class RemoveRepositoryCommand(sublime_plugin.WindowCommand):
         self.settings = sublime.load_settings(pc_settings_filename())
         self.repositories = self.settings.get('repositories')
         if not self.repositories:
-            show_error(u'There are no repositories to remove.')
+            show_error(
+                u'''
+                There are no repositories to remove.
+                '''
+            )
             return
 
         show_quick_panel(self.window, self.repositories, self.on_done)

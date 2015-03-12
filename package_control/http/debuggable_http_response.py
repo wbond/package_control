@@ -27,8 +27,6 @@ class DebuggableHTTPResponse(HTTPResponse):
     def begin(self):
         return_value = HTTPResponse.begin(self)
         if self.debuglevel == -1:
-            console_write(u'Urllib %s Debug Read' % self._debug_protocol, True)
-
             # Python 2
             if hasattr(self.msg, 'headers'):
                 headers = self.msg.headers
@@ -45,8 +43,16 @@ class DebuggableHTTPResponse(HTTPResponse):
             }
             status_line = versions[self.version] + ' ' + str(self.status) + ' ' + self.reason
             headers.insert(0, status_line)
-            for line in headers:
-                console_write(u"  %s" % line.rstrip())
+
+            indented_headers = u'\n  '.join(headers)
+            console_write(
+                u'''
+                Urllib %s Debug Read
+                  %s
+                ''',
+                (self._debug_protocol, indented_headers)
+            )
+
         return return_value
 
     def is_keep_alive(self):
