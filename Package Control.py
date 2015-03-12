@@ -2,6 +2,14 @@ import sublime
 import sys
 import os
 
+# These imports are used during the sanity checking phase
+try:
+    # Python 3
+    from .package_control import sys_path
+except (ValueError):
+    # Python 2
+    from package_control import sys_path
+
 
 st_version = 2
 
@@ -17,16 +25,8 @@ elif int(sublime.version()) > 3000:
 if st_version == 3:
     installed_dir, _ = __name__.split('.')
 
-    if os.path.basename(__file__) == 'sys_path.py':
-        pc_package_path = os.path.dirname(os.path.dirname(__file__))
-    # When loaded as a .sublime-package file, the filename ends up being
-    # Package Control.sublime-package/Package Control.package_control.sys_path
-    else:
-        pc_package_path = os.path.dirname(__file__)
-    st_dir = os.path.dirname(os.path.dirname(pc_package_path))
-
-    package_path = os.path.join(st_dir, 'Installed Packages', 'Package Control.sublime-package')
-    pc_python_path = os.path.join(st_dir, 'Packages', 'Package Control', 'Package Control.py')
+    package_path = os.path.join(sys_path.st_dir, 'Installed Packages', 'Package Control.sublime-package')
+    pc_python_path = os.path.join(sys_path.st_dir, 'Packages', 'Package Control', 'Package Control.py')
     has_packed = os.path.exists(package_path)
     has_unpacked = os.path.exists(pc_python_path)
 
@@ -40,7 +40,7 @@ if installed_dir != 'Package Control':
         u"incorrectly.\n\nIt should be installed as \"Package Control\", " +
         u"but seems to be installed as \"%s\".\n\n" % installed_dir)
     # If installed unpacked
-    if os.path.exists(os.path.join(sublime.packages_path(), installed_dir)):
+    if os.path.exists(os.path.join(sys_path.st_dir, 'Packages', installed_dir)):
         message += (u"Please use the Preferences > Browse Packages... menu " +
             u"entry to open the \"Packages/\" folder and rename" +
             u"\"%s/\" to \"Package Control/\" " % installed_dir)
@@ -82,15 +82,11 @@ else:
 
     try:
         # Python 3
-        from .package_control import sys_path
-
         from .package_control.commands import *
         from .package_control.package_cleanup import PackageCleanup
 
     except (ValueError):
         # Python 2
-        from package_control import sys_path  # Imported now since uses os.getcwd()
-
         from package_control.commands import *
         from package_control.package_cleanup import PackageCleanup
 
