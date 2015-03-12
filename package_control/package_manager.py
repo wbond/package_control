@@ -604,7 +604,7 @@ class PackageManager():
             A set of directory names
         """
 
-        output = []
+        output = set()
         for filename in os.listdir(path):
             if filename[0] == '.':
                 continue
@@ -614,8 +614,8 @@ class PackageManager():
             # Don't include a dir if it is going to be cleaned up
             if os.path.exists(os.path.join(file_path, 'package-control.cleanup')):
                 continue
-            output.append(filename)
-        return set(output)
+            output.add(filename)
+        return output
 
     def _list_sublime_package_files(self, path):
         """
@@ -628,12 +628,12 @@ class PackageManager():
             A set of the package names - i.e. with the .sublime-package suffix removed
         """
 
-        output = []
+        output = set()
         for filename in os.listdir(path):
             if not re.search('\.sublime-package$', filename):
                 continue
-            output.append(filename.replace('.sublime-package', ''))
-        return set(output)
+            output.add(filename.replace('.sublime-package', ''))
+        return output
 
     def _is_dependency(self, name):
         """
