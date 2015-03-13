@@ -41,7 +41,7 @@ from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file, package_file_exists
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
-from . import loader
+from . import loader, text
 from . import __version__
 
 
@@ -1509,26 +1509,26 @@ class PackageManager():
             return
         messages_fp.close()
 
+        def read_message(message_path):
+            with open_compat(message_path, 'r') as f:
+                return '\n  %s\n' % read_compat(f).rstrip().replace('\n', '\n  ')
+
         output = ''
         if not is_upgrade and message_info.get('install'):
             try:
                 install_file = message_info.get('install')
                 install_path = os.path.join(package_dir, install_file)
-                message = '\n\n%s:\n%s\n\n  ' % (package, ('-' * len(package)))
-                with open_compat(install_path, 'r') as f:
-                    message += read_compat(f).replace('\n', '\n  ')
-                output += message + '\n'
+                output += read_message(install_path)
             except (FileNotFoundError):
                 console_write(
                     u'''
-                    Error opening install messages for %s from %s
+                    Error opening install message for %s from %s
                     ''',
                     (package, install_file)
                 )
 
         elif is_upgrade and old_version:
-            upgrade_messages = list(set(message_info.keys()) -
-                set(['install']))
+            upgrade_messages = list(set(message_info.keys()) - set(['install']))
             upgrade_messages = version_sort(upgrade_messages, reverse=True)
             old_version_cmp = version_comparable(old_version)
             new_version_cmp = version_comparable(new_version)
@@ -1545,25 +1545,19 @@ class PackageManager():
                 try:
                     upgrade_file = message_info.get(version)
                     upgrade_path = os.path.join(package_dir, upgrade_file)
-                    if not output:
-                        message = '\n\n%s:\n%s\n' % (package,
-                            ('-' * len(package)))
-                    else:
-                        message = ''
-                    message += '\n  '
-                    with open_compat(upgrade_path, 'r') as f:
-                        message += read_compat(f).replace('\n', '\n  ')
-                    output += message + '\n'
+                    output += read_message(upgrade_path)
                 except (FileNotFoundError):
                     console_write(
                         u'''
-                        Error opening %s messages for %s from %s
+                        Error opening %s message for %s from %s
                         ''',
                         (version, package, upgrade_file)
                     )
 
         if not output:
             return
+        else:
+            output = '\n\n%s\n%s\n' % (package, '-' * len(package)) + output
 
         def print_to_panel():
             window = sublime.active_window()
@@ -1579,26 +1573,43 @@ class PackageManager():
                 view = window.new_file()
                 view.set_name('Package Control Messages')
                 view.set_scratch(True)
+                view.settings().set("word_wrap", True)
+                view.settings().set("auto_indent", False)
+                view.settings().set("tab_width", 2)
+            else:
+                view.set_read_only(False)
+                if window.active_view() != view:
+                    window.focus_view(view)
 
             def write(string):
                 view.run_command('insert', {'characters': string})
 
-            if not view.size():
-                write('Package Control Messages\n' +
-                    '========================')
+            old_sel = list(view.sel())
+            old_vpos = view.viewport_position()
 
-            view.settings().set("word_wrap", True)
-            view.settings().set("auto_indent", False)
-
-            position = view.size()
+            size = view.size()
             view.sel().clear()
-            view.sel().add(sublime.Region(position, position))
+            view.sel().add(sublime.Region(size, size))
 
+            if not view.size():
+                write(text.format(
+                    u'''
+                    Package Control Messages
+                    ========================
+                    '''
+                ))
             write(output)
-            if window.active_view() != view:
-                window.focus_view(view)
 
-            view.show(sublime.Region(position, position))
+            # Move caret to the new end of the file if it was previously
+            if sublime.Region(size, size) == old_sel[-1]:
+                old_sel[-1] = sublime.Region(view.size(), view.size())
+
+            view.sel().clear()
+            for reg in old_sel:
+                view.sel().add(reg)
+
+            view.set_viewport_position(old_vpos, False)
+            view.set_read_only(True)
 
         sublime.set_timeout(print_to_panel, 1)
 
