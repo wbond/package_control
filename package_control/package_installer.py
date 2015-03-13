@@ -90,7 +90,10 @@ class PackageInstaller(PackageDisabler):
 
             else:
                 if self.manager.is_vcs_package(package):
-                    if settings.get('ignore_vcs_packages'):
+                    to_ignore = settings.get('ignore_vcs_packages')
+                    if to_ignore is True:
+                        continue
+                    if isinstance(to_ignore, list) and package in to_ignore:
                         continue
                     upgrader = self.manager.instantiate_upgrader(package)
                     vcs = upgrader.cli_name

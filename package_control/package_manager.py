@@ -887,7 +887,9 @@ class PackageManager():
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
-                if self.settings.get('ignore_vcs_packages'):
+                to_ignore = self.settings.get('ignore_vcs_packages')
+
+                if to_ignore is True:
                     show_error(
                         u'''
                         Skipping %s package %s since the setting
@@ -896,6 +898,17 @@ class PackageManager():
                         (upgrader.cli_name, package_name)
                     )
                     return False
+
+                if isinstance(to_ignore, list) and package_name in to_ignore:
+                    show_error(
+                        u'''
+                        Skipping %s package %s since it is listed in the
+                        "ignore_vcs_packages" setting
+                        ''',
+                        (upgrader.cli_name, package_name)
+                    )
+                    return False
+
                 return upgrader.run()
 
             old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')

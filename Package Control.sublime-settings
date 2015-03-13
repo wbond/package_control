@@ -88,10 +88,17 @@
 	// with the current version.
 	"user_agent": "Package Control v%s",
 
-	// Setting this to true will cause Package Control to ignore all git
-	// and hg repositories - this may help if trying to list packages to install
-	// hangs
-	"ignore_vcs_packages": false,
+	// A list of package names to ignore when performing operations. This will
+	// only affect packages that appear to be a git or hg repository, but will
+	// be especially useful for package developers who manually deal with the
+	// repository and don't want Package Control touching it.
+	//
+	// It can help if trying to list packages to install hangs, possibly due
+	// to an interactive prompt.
+	//
+	// The setting can also be set to the boolean true to ignore all git and hg
+	// repositories, no matter what the name.
+	"ignore_vcs_packages": [],
 
 	// Custom path(s) to "git" binary for when it can't be automatically
 	// found on the system and a package includes a .git metadata directory.
