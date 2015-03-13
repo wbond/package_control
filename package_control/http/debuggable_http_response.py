@@ -29,7 +29,7 @@ class DebuggableHTTPResponse(HTTPResponse):
         if self.debuglevel == -1:
             # Python 2
             if hasattr(self.msg, 'headers'):
-                headers = self.msg.headers
+                headers = [line.rstrip() for line in self.msg.headers]
             # Python 3
             else:
                 headers = []
