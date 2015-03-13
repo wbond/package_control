@@ -237,6 +237,18 @@ class DownloadManager(object):
         # Make sure we have a downloader, and it supports SSL if we need it
         if not self.downloader or (is_ssl and not self.downloader.supports_ssl()):
             for downloader_name in downloader_list:
+
+                if downloader_name not in DOWNLOADERS:
+                    error_string = text.format(
+                        u'''
+                        The downloader "%s" from the "downloader_precedence"
+                        setting for the platform "%s" is invalid
+                        ''',
+                        (downloader_name, platform)
+                    )
+                    show_error(error_string)
+                    raise DownloaderException(error_string)
+
                 try:
                     downloader = DOWNLOADERS[downloader_name](self.settings)
                     if is_ssl and not downloader.supports_ssl():
