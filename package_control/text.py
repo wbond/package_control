@@ -41,9 +41,10 @@ def format(string, params=None, strip=True, indent=None):
     if output[0] == u'\n' and output[1] != u'\n':
         output = output[1:]
 
-    # Unwrap lines, taking into account bulleted lists and ordered lists
+    # Unwrap lines, taking into account bulleted lists, ordered lists and
+    # underlines consisting of = signs
     if output.find(u'\n') != -1:
-        output = re.sub(u'(?<=\\S)\n(?=[^ \n\t\d\*\-])', u' ', output)
+        output = re.sub(u'(?<=\\S)\n(?=[^ \n\t\d\*\-=])', u' ', output)
 
     # By default we want to trim a single trailing newline from a string since
     # that is likely from the code formatting, but that trimming is prevented
