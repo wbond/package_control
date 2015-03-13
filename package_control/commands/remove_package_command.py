@@ -4,7 +4,7 @@ import time
 import sublime
 import sublime_plugin
 
-from ..show_error import show_error
+from .. import text
 from ..show_quick_panel import show_quick_panel
 from .existing_packages_command import ExistingPackagesCommand
 from ..thread_progress import ThreadProgress
@@ -33,11 +33,13 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
     def run(self):
         self.package_list = self.make_package_list('remove')
         if not self.package_list:
-            show_error(
+            sublime.message_dialog(text.format(
                 u'''
-                There are no packages that can be removed.
+                Package Control
+
+                There are no packages that can be removed
                 '''
-            )
+            ))
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
 

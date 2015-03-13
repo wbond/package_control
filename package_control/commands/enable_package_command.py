@@ -1,7 +1,7 @@
 import sublime
 import sublime_plugin
 
-from ..show_error import show_error
+from .. import text
 from ..show_quick_panel import show_quick_panel
 from ..settings import preferences_filename
 from ..package_disabler import PackageDisabler
@@ -18,11 +18,13 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
         self.disabled_packages = self.settings.get('ignored_packages')
         self.disabled_packages.sort()
         if not self.disabled_packages:
-            show_error(
+            sublime.message_dialog(text.format(
                 u'''
-                There are no disabled packages to enable.
+                Package Control
+
+                There are no disabled packages to enable
                 '''
-            )
+            ))
             return
         show_quick_panel(self.window, self.disabled_packages, self.on_done)
 

@@ -3,7 +3,7 @@ import threading
 import sublime
 import sublime_plugin
 
-from ..show_error import show_error
+from .. import text
 from ..show_quick_panel import show_quick_panel
 from ..package_installer import PackageInstaller
 from ..thread_progress import ThreadProgress
@@ -47,11 +47,13 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
         def show_panel():
             if not self.package_list:
-                show_error(
+                sublime.message_dialog(text.format(
                     u'''
+                    Package Control
+
                     There are no packages available for installation
                     '''
-                )
+                ))
                 return
             show_quick_panel(self.window, self.package_list, self.on_done)
 

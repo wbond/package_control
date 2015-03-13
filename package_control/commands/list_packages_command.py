@@ -4,7 +4,7 @@ import os
 import sublime
 import sublime_plugin
 
-from ..show_error import show_error
+from .. import text
 from ..show_quick_panel import show_quick_panel
 from ..package_manager import PackageManager
 from .existing_packages_command import ExistingPackagesCommand
@@ -55,11 +55,13 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
         def show_panel():
             if not self.package_list:
-                show_error(
+                sublime.message_dialog(text.format(
                     u'''
+                    Package Control
+
                     There are no packages to list
                     '''
-                )
+                ))
                 return
             show_quick_panel(self.window, self.package_list, self.on_done)
         sublime.set_timeout(show_panel, 10)

@@ -1,7 +1,6 @@
 import sublime
 import sublime_plugin
 
-from ..show_error import show_error
 from ..show_quick_panel import show_quick_panel
 from ..settings import pc_settings_filename
 from .. import text
@@ -17,11 +16,13 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
         self.settings = sublime.load_settings(pc_settings_filename())
         self.channels = self.settings.get('channels')
         if not self.channels:
-            show_error(
+            sublime.message_dialog(test.format(
                 u'''
-                There are no channels to remove.
+                Package Control
+
+                There are no channels to remove
                 '''
-            )
+            ))
             return
 
         run = False
