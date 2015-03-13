@@ -2,6 +2,7 @@ import re
 import socket
 from threading import Lock, Timer
 from contextlib import contextmanager
+import sys
 
 try:
     # Python 3
@@ -210,11 +211,34 @@ class DownloadManager(object):
 
         url = update_url(url, self.settings.get('debug'))
 
+        # We don't use sublime.platform() here since this is used for
+        # the crawler on packagecontrol.io also
+        if sys.platform == 'darwin':
+            platform = 'osx'
+        elif sys.platform == 'win32':
+            platform = 'windows'
+        else:
+            platform = 'linux'
+
+        downloader_precedence = self.settings.get('downloader_precedence', {})
+        downloader_list = downloader_precedence.get(platform, [])
+
+        if not isinstance(downloader_list, list) or len(downloader_list) == 0:
+            error_string = text.format(
+                u'''
+                No list of preferred downloaders specified in the
+                "downloader_precedence" setting for the platform "%s"
+                ''',
+                platform
+            )
+            show_error(error_string)
+            raise DownloaderException(error_string)
+
         # Make sure we have a downloader, and it supports SSL if we need it
         if not self.downloader or (is_ssl and not self.downloader.supports_ssl()):
-            for downloader_class in DOWNLOADERS:
+            for downloader_name in downloader_list:
                 try:
-                    downloader = downloader_class(self.settings)
+                    downloader = DOWNLOADERS[downloader_name](self.settings)
                     if is_ssl and not downloader.supports_ssl():
                         continue
                     self.downloader = downloader
@@ -225,10 +249,14 @@ class DownloadManager(object):
         if not self.downloader:
             error_string = text.format(
                 u'''
-                Unable to download %s due to no ssl module available and no
-                capable program found.
+                None of the preferred downloaders can download %s.
 
-                Please install curl or wget.
+                This is usually either because the ssl module is unavailable
+                and/or the command line curl or wget executables could not be
+                found in the PATH.
+
+                If you customized the "downloader_precedence" setting, please
+                verify your customization.
                 ''',
                 url
             )

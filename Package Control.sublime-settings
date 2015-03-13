@@ -123,6 +123,24 @@
 	// Additional packages to ignore when listing unmanaged packages.
 	"unmanaged_packages_ignore": [],
 
+	// The downloader backends that should be used for HTTP(S) requests, split
+	// by operating system to allow for configuration to be shared.
+	//
+	// Valid options include: "urllib", "curl", "wget", (Windows-only) "wininet"
+	//
+	// This setting allows Windows users to bypass wininet and use urllib
+	// instead if they machine or network presents trouble to wininet. Some
+	// OS X and Linux users have also reported better luck with certain proxies
+	// using curl or wget instead of urllib.
+	//
+	// The "curl" and "wget" options require the command line "curl" or "wget"
+	// program installed and present in the PATH.
+	"downloader_precedence": {
+		"windows": ["wininet"],
+		"osx": ["urllib"],
+		"linux": ["urllib", "curl", "wget"]
+	},
+
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
 		".hg", ".git", ".svn", "_darcs", "CVS"

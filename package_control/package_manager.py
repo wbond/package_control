@@ -71,6 +71,7 @@ class PackageManager():
             'channels',
             'debug',
             'dirs_to_ignore',
+            'downloader_precedence',
             'files_to_ignore',
             'files_to_include',
             'git_binary',
