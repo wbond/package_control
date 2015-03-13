@@ -282,21 +282,26 @@ class AutomaticUpgrader(threading.Thread):
 
         disabled_packages = []
 
-        def do_upgrades():
-            # Wait so that the ignored packages can be "unloaded"
-            time.sleep(0.7)
+        # Disabling a package means changing settings, which can only be done
+        # in the main thread. We then then wait a bit and continue with the
+        # upgrades.
+        def disable_packages():
+            packages = [info[0] for info in package_list]
+            disabled_packages.extend(self.installer.disable_packages(packages, 'upgrade'))
+        sublime.set_timeout(disable_packages, 1)
 
-            for info in package_list:
-                package_name = info[0]
+        # Wait so that the ignored packages can be "unloaded"
+        time.sleep(0.7)
 
+        for info in package_list:
+            package_name = info[0]
+
+            if self.installer.manager.install_package(package_name):
                 if package_name in disabled_packages:
                     # We use a functools.partial to generate the on-complete callback in
                     # order to bind the current value of the parameters, unlike lambdas.
                     on_complete = functools.partial(self.installer.reenable_package, package_name, 'upgrade')
-                else:
-                    on_complete = None
-
-                self.installer.manager.install_package(package_name)
+                    sublime.set_timeout(on_complete, 700)
 
                 version = self.installer.manager.get_version(package_name)
                 console_write(
@@ -305,14 +310,3 @@ class AutomaticUpgrader(threading.Thread):
                     ''',
                     (package_name, version)
                 )
-                if on_complete:
-                    sublime.set_timeout(on_complete, 700)
-
-        # Disabling a package means changing settings, which can only be done
-        # in the main thread. We then create a new background thread so that
-        # the upgrade process does not block the UI.
-        def disable_packages():
-            packages = [info[0] for info in package_list]
-            disabled_packages.extend(self.installer.disable_packages(packages, 'upgrade'))
-            threading.Thread(target=do_upgrades).start()
-        sublime.set_timeout(disable_packages, 1)
