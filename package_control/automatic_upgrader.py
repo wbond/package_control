@@ -1,5 +1,4 @@
 import threading
-import re
 import os
 import datetime
 import locale  # To prevent import errors in thread with datetime

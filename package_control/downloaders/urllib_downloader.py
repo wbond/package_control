@@ -1,7 +1,7 @@
 import re
 import sys
 
-from .. import http
+from .. import http  # Monkey patches various Python 2 issues with urllib2
 
 try:
     # Python 3

@@ -8,6 +8,7 @@ from ..settings import pc_settings_filename
 
 
 class AddChannelCommand(sublime_plugin.WindowCommand):
+
     """
     A command to add a new channel (list of repositories) to the user's machine
     """

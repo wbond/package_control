@@ -820,8 +820,6 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        debug = self.settings.get('debug')
-
         exclude_dependencies = not is_dependency
         packages = self.list_available_packages(exclude_dependencies=exclude_dependencies)
 
