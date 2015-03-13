@@ -268,7 +268,7 @@ class DownloadManager(object):
                   Timeout: %s
                   Resolved IP: %s
                 ''',
-                (url, ip, str(timeout))
+                (url, str(timeout), ip)
             )
             if ipv6:
                 console_write(
