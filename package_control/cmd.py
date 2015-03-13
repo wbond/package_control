@@ -178,7 +178,7 @@ class Cli(object):
                 return False
 
             if meaningful_output and self.debug and len(output) > 0:
-                console_write('  %s' % output.replace('\n', '\n  '))
+                console_write(output, indent='  ', prefix=False)
 
             return output
 
