@@ -78,7 +78,7 @@ class ChannelProvider():
             DownloaderException: when an error occurs trying to open a URL
         """
 
-        if self.channel_info != None:
+        if self.channel_info is not None:
             return
 
         if re.match('https?://', self.channel, re.I):
@@ -129,7 +129,7 @@ class ChannelProvider():
         self.schema_major_version = int(version_parts[0])
 
         # Fix any out-dated repository URLs in the package cache
-        debug =  self.settings.get('debug')
+        debug = self.settings.get('debug')
         packages_key = 'packages_cache' if self.schema_major_version >= 2 else 'packages'
         if packages_key in channel_info:
             original_cache = channel_info[packages_key]
