@@ -2,6 +2,13 @@ import tempfile
 import re
 import os
 
+try:
+    # Python 2
+    str_cls = unicode
+except (NameError):
+    # Python 3
+    str_cls = str
+
 from ..console_write import console_write
 from ..unicode import unicode_from_os
 from ..open_compat import open_compat, read_compat
@@ -75,7 +82,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 return cached
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
-        command = [self.wget, '--connect-timeout=' + str(int(timeout)), '-o',
+        command = [self.wget, '--connect-timeout=' + str_cls(int(timeout)), '-o',
             self.tmp_file, '-O', '-', '--secure-protocol=TLSv1']
 
         user_agent = self.settings.get('user_agent')

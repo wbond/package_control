@@ -11,7 +11,7 @@ from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
-from .open_compat import open_compat, read_compat
+from .open_compat import open_compat, read_compat, write_compat
 from .settings import pc_settings_filename, load_list_setting
 
 
@@ -98,7 +98,7 @@ class AutomaticUpgrader(threading.Thread):
         """
 
         with open_compat(self.last_run_file, 'w') as fobj:
-            fobj.write(str(int(last_run)))
+            write_compat(fobj, int(last_run))
 
     def load_settings(self):
         """

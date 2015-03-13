@@ -129,7 +129,7 @@ try:
                 line = response.fp.readline()
 
                 if sys.version_info >= (3,):
-                    line = str(line, encoding='iso-8859-1')
+                    line = line.decode('iso-8859-1')
 
                 if line == '\r\n':
                     break

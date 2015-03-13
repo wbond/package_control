@@ -25,3 +25,10 @@ def read_compat(file_obj):
         return file_obj.read()
     else:
         return unicode(file_obj.read(), 'utf-8', errors='replace')
+
+
+def write_compat(file_obj, value):
+    if sys.version_info >= (3,):
+        return file_obj.write(str(value))
+    else:
+        return file_obj.write(unicode(value).encode('utf-8'))

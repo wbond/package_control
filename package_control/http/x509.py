@@ -57,6 +57,17 @@ class Error(Exception):
 
     """ASN1 error"""
 
+    def __unicode__(self):
+        return self.args[0]
+
+    def __str__(self):
+        if sys.version_info < (3,):
+            return self.__bytes__()
+        return self.__unicode__()
+
+    def __bytes__(self):
+        return self.__unicode__().encode('utf-8')
+
 
 class Decoder(object):
 
@@ -70,7 +81,7 @@ class Decoder(object):
     def start(self, data):
         """Start processing `data'."""
         if not isinstance(data, bytes_cls):
-            raise Error('Expecting string instance.')
+            raise Error(u'Expecting string instance.')
         self.m_stack = [[0, data]]
         self.m_tag = None
 
@@ -78,7 +89,7 @@ class Decoder(object):
         """Return the value of the next tag without moving to the next
         TLV record."""
         if self.m_stack is None:
-            raise Error('No input selected. Call start() first.')
+            raise Error(u'No input selected. Call start() first.')
         if self._end_of_input():
             return None
         if self.m_tag is None:
@@ -88,7 +99,7 @@ class Decoder(object):
     def read(self):
         """Read a simple value and move to the next TLV record."""
         if self.m_stack is None:
-            raise Error('No input selected. Call start() first.')
+            raise Error(u'No input selected. Call start() first.')
         if self._end_of_input():
             return None
         tag = self.peek()
@@ -104,10 +115,10 @@ class Decoder(object):
     def enter(self):
         """Enter a constructed tag."""
         if self.m_stack is None:
-            raise Error('No input selected. Call start() first.')
+            raise Error(u'No input selected. Call start() first.')
         nr, typ, cls = self.peek()
         if typ != TypeConstructed:
-            raise Error('Cannot enter a non-constructed tag.')
+            raise Error(u'Cannot enter a non-constructed tag.')
         length = self._read_length()
         bytes = self._read_bytes(length)
         self.m_stack.append([0, bytes])
@@ -116,16 +127,16 @@ class Decoder(object):
     def leave(self):
         """Leave the last entered constructed tag."""
         if self.m_stack is None:
-            raise Error('No input selected. Call start() first.')
+            raise Error(u'No input selected. Call start() first.')
         if len(self.m_stack) == 1:
-            raise Error('Tag stack is empty.')
+            raise Error(u'Tag stack is empty.')
         del self.m_stack[-1]
         self.m_tag = None
 
     def _decode_boolean(self, bytes):
         """Decode a boolean value."""
         if len(bytes) != 1:
-            raise Error('ASN1 syntax error')
+            raise Error(u'ASN1 syntax error')
         if bytes[0] == '\x00':
             return False
         return True
@@ -151,7 +162,7 @@ class Decoder(object):
         if byte & 0x80:
             count = byte & 0x7f
             if count == 0x7f:
-                raise Error('ASN1 syntax error')
+                raise Error(u'ASN1 syntax error')
             bytes = self._read_bytes(count)
             if sys.version_info < (3,):
                 bytes = [ord(b) for b in bytes]
@@ -208,7 +219,7 @@ class Decoder(object):
             else:
                 byte = ord(input[index])
         except (IndexError):
-            raise Error('Premature end of input.')
+            raise Error(u'Premature end of input.')
         self.m_stack[-1][0] += 1
         return byte
 
@@ -218,7 +229,7 @@ class Decoder(object):
         index, input = self.m_stack[-1]
         bytes = input[index:index+count]
         if len(bytes) != count:
-            raise Error('Premature end of input.')
+            raise Error(u'Premature end of input.')
         self.m_stack[-1][0] += count
         return bytes
 
@@ -238,7 +249,7 @@ class Decoder(object):
         if len(values) > 1 and \
                 (values[0] == 0xff and values[1] & 0x80 or
                  values[0] == 0x00 and not (values[1] & 0x80)):
-            raise Error('ASN1 syntax error')
+            raise Error(u'ASN1 syntax error')
         negative = values[0] & 0x80
         if negative:
             # make positive by taking two's complement
@@ -268,7 +279,7 @@ class Decoder(object):
     def _decode_null(self, bytes):
         """Decode a Null value."""
         if len(bytes) != 0:
-            raise Error('ASN1 syntax error')
+            raise Error(u'ASN1 syntax error')
         return None
 
     def _decode_object_identifier(self, bytes):
@@ -281,13 +292,13 @@ class Decoder(object):
             else:
                 byte = ord(bytes[i])
             if value == 0 and byte == 0x80:
-                raise Error('ASN1 syntax error')
+                raise Error(u'ASN1 syntax error')
             value = (value << 7) | (byte & 0x7f)
             if not byte & 0x80:
                 result.append(value)
                 value = 0
         if len(result) == 0 or result[0] > 1599:
-            raise Error('ASN1 syntax error')
+            raise Error(u'ASN1 syntax error')
         result = [result[0] // 40, result[0] % 40] + result[1:]
         result = map(str, result)
         return '.'.join(result)

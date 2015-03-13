@@ -102,7 +102,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
             data_io = BytesIO(data)
 
         except (DownloaderException) as e:
-            console_write(u'%s' % str(e), True)
+            console_write(e)
             return
 
     data_hash = hashlib.sha256(data).hexdigest()

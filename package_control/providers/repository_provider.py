@@ -6,9 +6,11 @@ from itertools import chain
 try:
     # Python 3
     from urllib.parse import urljoin, urlparse
+    str_cls = str
 except (ImportError):
     # Python 2
     from urlparse import urljoin, urlparse
+    str_cls = unicode
 
 from ..console_write import console_write
 from .provider_exception import ProviderException
@@ -188,7 +190,7 @@ class RepositoryProvider():
             if isinstance(self.schema_version, int):
                 self.schema_version = float(self.schema_version)
             if isinstance(self.schema_version, float):
-                self.schema_version = str(self.schema_version)
+                self.schema_version = str_cls(self.schema_version)
         except (ValueError):
             error_string = u'%s the "schema_version" is not a valid number.' % schema_error
             fail(error_string)

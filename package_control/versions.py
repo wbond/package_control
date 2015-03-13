@@ -17,6 +17,7 @@ def semver_compat(v):
     """
 
     if isinstance(v, SemVer):
+        # SemVer only defined __str__, not __unicode__, so we always use str()
         return str(v)
 
     # Allowing passing in a dict containing info about a package

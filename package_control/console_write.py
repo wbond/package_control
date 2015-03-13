@@ -4,6 +4,7 @@ try:
     # Python 2
     str_cls = unicode
 except (NameError):
+    # Python 3
     str_cls = str
 
 from . import text

@@ -6,9 +6,11 @@ from contextlib import contextmanager
 try:
     # Python 3
     from urllib.parse import urlparse
+    str_cls = str
 except (ImportError):
     # Python 2
     from urlparse import urlparse
+    str_cls = unicode
 
 from . import __version__
 
@@ -268,7 +270,7 @@ class DownloadManager(object):
                   Timeout: %s
                   Resolved IP: %s
                 ''',
-                (url, str(timeout), ip)
+                (url, str_cls(timeout), ip)
             )
             if ipv6:
                 console_write(
