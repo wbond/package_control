@@ -346,7 +346,10 @@ def _osx_get_distrusted_certs(settings):
     """
 
     args = ['/usr/bin/security', 'dump-trust-settings', '-d']
-    result = Cli(None, settings.get('debug')).execute(args, '/usr/bin')
+    result = Cli(None, settings.get('debug')).execute(args, '/usr/bin', ignore_errors='No Trust Settings were found')
+
+    if not result:
+        return []
 
     distrusted_certs = []
     cert_name = None

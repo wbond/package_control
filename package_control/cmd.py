@@ -75,7 +75,7 @@ class Cli(object):
         self.binary_locations = binary_locations
         self.debug = debug
 
-    def execute(self, args, cwd, input=None, encoding='utf-8', meaningful_output=False):
+    def execute(self, args, cwd, input=None, encoding='utf-8', meaningful_output=False, ignore_errors=None):
         """
         Creates a subprocess with the executable/args
 
@@ -91,6 +91,9 @@ class Cli(object):
         :param meaningful_output:
             If the output from the command is possibly meaningful and should
             be displayed if in debug mode
+
+        :param ignore_errors:
+            A regex of errors to ignore
 
         :return: A string of the executable output
         """
@@ -164,18 +167,19 @@ class Cli(object):
             output = output.replace('\r\n', '\n').rstrip(' \n\r')
 
             if proc.returncode != 0:
-                show_error(
-                    u'''
-                    Error executing: %s
+                if not ignore_errors or re.search(ignore_errors, output) is None:
+                    show_error(
+                        u'''
+                        Error executing: %s
 
-                    %s
+                        %s
 
-                    VCS-based packages can be ignored with the
-                    "ignore_vcs_packages" setting.
-                    ''',
-                    (create_cmd(args), output)
-                )
-                return False
+                        VCS-based packages can be ignored with the
+                        "ignore_vcs_packages" setting.
+                        ''',
+                        (create_cmd(args), output)
+                    )
+                    return False
 
             if meaningful_output and self.debug and len(output) > 0:
                 console_write(output, indent='  ', prefix=False)
