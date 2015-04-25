@@ -16,13 +16,12 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
 
     def run(self):
         manager = PackageManager()
-        packages = manager.list_all_packages()
+        packages = manager.list_packages(exclude=['dependencies'])
         self.settings = sublime.load_settings(preferences_filename())
         ignored = self.settings.get('ignored_packages')
         if not ignored:
             ignored = []
-        self.package_list = list(set(packages) - set(ignored))
-        self.package_list = sorted(self.package_list, key=lambda s: s.lower())
+        self.package_list = sorted(packages - set(ignored), key=lambda s: s.lower())
         if not self.package_list:
             sublime.message_dialog(text.format(
                 u'''

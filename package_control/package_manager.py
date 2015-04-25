@@ -533,62 +533,91 @@ class PackageManager():
 
         return packages
 
-    def list_packages(self, unpacked_only=False, exclude_dependencies=True):
-        """
+    def list_packages(self, include=['normal'], exclude=[], unpacked_only=False):
+        """List all packages on the machine and filter them.
+
+        :param include:
+            A list of package type strings that should be included in the result,
+            or the string `"*"` which translates to all packages.
+
+            Allowed are:
+            - dependencies - All dependencies
+            - default - The default packages (minus Default)
+            - normal - All packages that are not in any of the other categories
+              (minus Default and User)
+
+        :param exclude:
+            Similar to above, but a list of package types that will be excluded
+            from the result.
+            This implicitly sets `include = "*"`.
+
         :param unpacked_only:
-            Only list packages that are not inside of .sublime-package files
+            If only unpacked packages should be considered.
+            This implicitly sets `include = ['normal']` amd `exclude = []`.
 
-        :param exclude_dependencies:
-            If dependencies should be excluded
-
-        :return: A list of all installed, non-default, non-dependency, package names
+        :return:
+            A set of all packages as specified.
         """
+        # Note: installed_packages, dependencies and default_packages are
+        # subtracted for unpacked_only, because an unpacked package with the same
+        # name would be incomplete since it overrides and dependencies are not
+        # actual packages.
+        if unpacked_only:
+            include = ['normal']
+        if exclude or include == '*':
+            include = ['default', 'normal', 'dependencies']
+            include = list(set(include) - set(exclude))
+        if not include:
+            return set()
 
-        packages = self._list_visible_dirs(sublime.packages_path())
+        default_packages = self._list_default_packages()
+        if include == ['default']:
+            return default_packages  # The first shortcut
 
-        if int(sublime.version()) > 3000 and unpacked_only is False:
-            packages |= self._list_sublime_package_files(sublime.installed_packages_path())
+        unpacked_packages = self._list_visible_dirs(sublime.packages_path())
+        dependencies = set(name for name in unpacked_packages if self._is_dependency(name))
+        # This is seeded since it is in a .sublime-package with ST3
+        if sys.version_info >= (3,):
+            dependencies.add('0_package_control_loader')
+        if include == ['dependencies']:
+            return dependencies  # The second shortcut
 
-        packages -= set(self.list_default_packages())
-        if exclude_dependencies:
-            packages -= set(self.list_dependencies())
+        installed_packages = self._list_sublime_package_files(sublime.installed_packages_path())
+
+        # Subtraction is important. For example, normal packages that have the
+        # same name as a default package are override packages and to be excluded
+        # if the default packages are not requested.
+        packages = set()
+        if 'normal' in include:
+            packages |= unpacked_packages
+
+        if not unpacked_only:
+            packages |= installed_packages
+        else:
+            packages -= installed_packages
+
+        if 'dependencies' in include:
+            packages |= dependencies
+        else:
+            packages -= dependencies
+
+        if 'default' in include:
+            packages |= default_packages
+        else:
+            packages -= default_packages
+
         packages -= set(['User', 'Default'])
-        return sorted(packages, key=lambda s: s.lower())
+
+        return packages
 
     def list_dependencies(self):
         """
         :return: A list of all installed dependency names
         """
+        return self.list_packages(['dependencies'])
 
-        output = []
-
-        # This is seeded since it is in a .sublime-package with ST3
-        if sys.version_info >= (3,):
-            output.append('0_package_control_loader')
-
-        for name in self._list_visible_dirs(sublime.packages_path()):
-            if not self._is_dependency(name):
-                continue
-            output.append(name)
-
-        return sorted(output, key=lambda s: s.lower())
-
-    def list_all_packages(self, exclude_dependencies=True):
-        """
-        Lists all packages on the machine
-
-        :param exclude_dependencies:
-            If dependencies should be excluded
-
-        :return:
-            A list of all installed package names, including default packages
-        """
-
-        packages = self.list_default_packages() + self.list_packages(exclude_dependencies=exclude_dependencies)
-        return sorted(packages, key=lambda s: s.lower())
-
-    def list_default_packages(self):
-        """ :return: A list of all default package names"""
+    def _list_default_packages(self):
+        """ :return: A set of all default package names"""
 
         if int(sublime.version()) > 3000:
             app_dir = os.path.dirname(sublime.executable_path())
@@ -606,7 +635,7 @@ class PackageManager():
             packages = pristine_files - installed_files
 
         packages -= set(['User', 'Default'])
-        return sorted(packages, key=lambda s: s.lower())
+        return packages
 
     def _list_visible_dirs(self, path):
         """
@@ -1417,7 +1446,7 @@ class PackageManager():
         if not required_dependencies:
             required_dependencies = self.find_required_dependencies(ignore_package)
 
-        orphaned_dependencies = set(installed_dependencies) - set(required_dependencies)
+        orphaned_dependencies = installed_dependencies - set(required_dependencies)
         orphaned_dependencies = sorted(orphaned_dependencies, key=lambda s: s.lower())
 
         error = False
@@ -1646,8 +1675,8 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        exclude_dependencies = not is_dependency
-        installed_packages = self.list_packages(exclude_dependencies=exclude_dependencies)
+        include = ['dependencies'] if is_dependency else ['normal']
+        installed_packages = self.list_packages(include)
 
         package_type = 'package'
         if is_dependency:

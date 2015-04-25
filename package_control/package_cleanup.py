@@ -39,7 +39,7 @@ class PackageCleanup(threading.Thread):
 
         found_dependencies = []
         installed_dependencies = self.manager.list_dependencies()
-        extra_dependencies = list(set(installed_dependencies) - set(self.manager.find_required_dependencies()))
+        extra_dependencies = list(installed_dependencies - set(self.manager.find_required_dependencies()))
 
         # Clean up unneeded dependencies so that found_dependencies will only
         # end up having required dependencies added to it

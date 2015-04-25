@@ -20,6 +20,7 @@ class PackageCreator():
 
         self.manager = PackageManager()
         self.packages = self.manager.list_packages(unpacked_only=True)
+        self.packages = sorted(self.packages, key=lambda s: s.lower())
         if not self.packages:
             show_error(
                 u'''
