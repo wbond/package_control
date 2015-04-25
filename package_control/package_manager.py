@@ -168,14 +168,14 @@ class PackageManager():
 
     def get_dependencies(self, package):
         """
-        Returns a list of dependencies for the specified package on the
+        Returns a set of dependencies for the specified package on the
         current machine
 
         :param package:
             The name of the package
 
         :return:
-            A list of dependency names
+            A set of dependency names
         """
 
         try:
@@ -195,9 +195,9 @@ class PackageManager():
 
         metadata = self.get_metadata(package)
         if metadata:
-            return metadata.get('dependencies', [])
+            return set(metadata.get('dependencies', []))
 
-        return []
+        return set()
 
     def _is_git_package(self, package):
         """
@@ -298,7 +298,7 @@ class PackageManager():
             A dict from a dependencies.json file
 
         :return:
-            A list of dependency names
+            A set of dependency names
         """
 
         platform_selectors = [sublime.platform() + '-' + sublime.arch(),
@@ -315,11 +315,11 @@ class PackageManager():
             for version_selector in sorted(versions, reverse=True):
                 if not is_compatible_version(version_selector):
                     continue
-                return platform_dependency[version_selector]
+                return set(platform_dependency[version_selector])
 
         # If there were no matches in the info, but there also weren't any
         # errors, then it just means there are not dependencies for this machine
-        return []
+        return set()
 
     def list_repositories(self):
         """
@@ -731,18 +731,17 @@ class PackageManager():
             The package to ignore when enumerating dependencies
 
         :return:
-            A list of the dependencies required by the installed packages
+            A set of the dependencies required by the installed packages
         """
 
-        output = ['0_package_control_loader']
+        output = set()
+        output.add('0_package_control_loader')
 
         for package in self.list_packages():
-            if package == ignore_package:
-                continue
-            output.extend(self.get_dependencies(package))
+            if package != ignore_package:
+                output |= self.get_dependencies(package)
 
-        output = list(set(output))
-        return sorted(output, key=lambda s: s.lower())
+        return output
 
     def get_package_dir(self, package):
         """:return: The full filesystem path to the package directory"""
@@ -1474,7 +1473,7 @@ class PackageManager():
         if not required_dependencies:
             required_dependencies = self.find_required_dependencies(ignore_package)
 
-        orphaned_dependencies = installed_dependencies - set(required_dependencies)
+        orphaned_dependencies = installed_dependencies - required_dependencies
         orphaned_dependencies = sorted(orphaned_dependencies, key=lambda s: s.lower())
 
         error = False

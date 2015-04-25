@@ -48,10 +48,8 @@ class AutomaticUpgrader(threading.Thread):
         self.determine_next_run()
 
         # Detect if a package is missing that should be installed
-        self.missing_packages = list(set(self.installed_packages) -
-            set(found_packages))
-        self.missing_dependencies = list(set(self.manager.find_required_dependencies()) -
-            set(found_dependencies))
+        self.missing_packages = set(self.installed_packages) - found_packages
+        self.missing_dependencies = self.manager.find_required_dependencies() - found_dependencies
 
         if self.auto_upgrade and self.next_run <= time.time():
             self.save_last_run(time.time())

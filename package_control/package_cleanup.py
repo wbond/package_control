@@ -34,12 +34,12 @@ class PackageCleanup(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        found_packages = []
-        installed_packages = list(self.original_installed_packages)
+        found_packages = set()
+        installed_packages = self.original_installed_packages[:]
 
-        found_dependencies = []
+        found_dependencies = set()
         installed_dependencies = self.manager.list_dependencies()
-        extra_dependencies = list(installed_dependencies - set(self.manager.find_required_dependencies()))
+        extra_dependencies = installed_dependencies - self.manager.find_required_dependencies()
 
         # Clean up unneeded dependencies so that found_dependencies will only
         # end up having required dependencies added to it
@@ -171,11 +171,11 @@ class PackageCleanup(threading.Thread):
 
             # Skip over dependencies since we handle them separately
             if package_file_exists(package_name, 'dependency-metadata.json') and (package_name == loader.loader_package_name or loader.exists(package_name)):
-                found_dependencies.append(package_name)
+                found_dependencies.add(package_name)
                 continue
 
             if found:
-                found_packages.append(package_name)
+                found_packages.add(package_name)
 
         if int(sublime.version()) >= 3000:
             installed_path = sublime.installed_packages_path()
@@ -187,7 +187,7 @@ class PackageCleanup(threading.Thread):
                 package_name = file.replace('.sublime-package', '')
 
                 if package_name == loader.loader_package_name:
-                    found_dependencies.append(package_name)
+                    found_dependencies.add(package_name)
                     continue
 
                 # Cleanup packages that were installed via Package Control, but
@@ -205,7 +205,7 @@ class PackageCleanup(threading.Thread):
                     sublime.set_timeout(functools.partial(self.remove_package_file, package_name, package_filename), 10)
 
                 else:
-                    found_packages.append(package_name)
+                    found_packages.add(package_name)
 
         invalid_packages = []
         invalid_dependencies = []
