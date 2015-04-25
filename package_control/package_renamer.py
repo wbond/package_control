@@ -47,8 +47,7 @@ class PackageRenamer(PackageDisabler):
         case_insensitive_fs = sublime.platform() in ['windows', 'osx']
 
         # Rename directories for packages that have changed names
-        for package_name in renamed_packages:
-            new_package_name = renamed_packages[package_name]
+        for package_name, new_package_name in renamed_packages.items():
             changing_case = package_name.lower() == new_package_name.lower()
 
             # Since Windows and OSX use case-insensitive filesystems, we have to
@@ -56,14 +55,8 @@ class PackageRenamer(PackageDisabler):
             # package is just changing the case of it. If we don't find the old
             # name for it, we continue the loop since os.path.exists() will return
             # true due to the case-insensitive nature of the filesystems.
-            has_old = False
-            if case_insensitive_fs and changing_case:
-                for present_package_name in present_packages:
-                    if present_package_name == package_name:
-                        has_old = True
-                        break
-                if not has_old:
-                    continue
+            if case_insensitive_fs and changing_case and package_name not in present_packages:
+                continue
 
             # For handling .sublime-package files
             package_file = os.path.join(sublime.installed_packages_path(),
