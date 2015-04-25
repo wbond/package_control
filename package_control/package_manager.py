@@ -533,6 +533,34 @@ class PackageManager():
 
         return packages
 
+    class LazyPackages(object):
+        """A lazy but caching mapping which calculates attribute values only
+        when needed.
+        """
+
+        def __getattr__(self, name):
+            val = getattr(self, "_" + name)()
+            setattr(self, name, val)
+            return val
+
+        def __init__(self, manager):
+            self.manager = manager
+
+        def _default(self):
+            return self.manager._list_default_packages()
+
+        def _installed(self):
+            return self.manager._list_sublime_package_files(sublime.installed_packages_path())
+
+        def _unpacked(self):
+            return self.manager._list_visible_dirs(sublime.packages_path())
+
+        def _dependencies(self):
+            dependencies = set(name for name in self.unpacked if self.manager._is_dependency(name))
+            if sys.version_info >= (3,):
+                dependencies.add('0_package_control_loader')  # .sublime-package with ST3
+            return dependencies
+
     def list_packages(self, include=['normal'], exclude=[], unpacked_only=False):
         """List all packages on the machine and filter them.
 
@@ -570,45 +598,45 @@ class PackageManager():
         if not include:
             return set()
 
-        default_packages = self._list_default_packages()
+        # We use a few shortcuts that don't require calculation of all
+        # packages sets (which needs disk access).
+        # A lazy and caching mapping is used to reduce duplicated code.
+        packages = self.LazyPackages(self)
+
         if include == ['default']:
-            return default_packages  # The first shortcut
-
-        unpacked_packages = self._list_visible_dirs(sublime.packages_path())
-        dependencies = set(name for name in unpacked_packages if self._is_dependency(name))
-        # This is seeded since it is in a .sublime-package with ST3
-        if sys.version_info >= (3,):
-            dependencies.add('0_package_control_loader')
-        if include == ['dependencies']:
-            return dependencies  # The second shortcut
-
-        installed_packages = self._list_sublime_package_files(sublime.installed_packages_path())
+            # Speedup: Don't need installed, unpacked packages or dependencies
+            return packages.default
+        elif include == ['dependencies']:
+            # Speedup: Don't need installed or default packages
+            return packages.dependencies
+        elif len(include) == 3:
+            # Speedup: Don't need dependencies
+            return (packages.unpacked | packages.installed | packages.default) - set(['User', 'Default'])
 
         # Subtraction is important. For example, normal packages that have the
         # same name as a default package are override packages and to be excluded
         # if the default packages are not requested.
-        packages = set()
+        result = set()
         if 'normal' in include:
-            packages |= unpacked_packages
+            result |= packages.unpacked
 
         if not unpacked_only:
-            packages |= installed_packages
+            result |= packages.installed
         else:
-            packages -= installed_packages
+            result -= packages.installed
 
         if 'dependencies' in include:
-            packages |= dependencies
+            result |= packages.dependencies
         else:
-            packages -= dependencies
+            result -= packages.dependencies
 
         if 'default' in include:
-            packages |= default_packages
+            result |= packages.default
         else:
-            packages -= default_packages
+            result -= packages.default
 
-        packages -= set(['User', 'Default'])
-
-        return packages
+        result -= set(['User', 'Default'])
+        return result
 
     def list_dependencies(self):
         """
