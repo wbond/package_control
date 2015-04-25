@@ -6,6 +6,7 @@ import sublime_plugin
 import functools
 
 from ..show_error import show_error
+from ..console_write import console_write
 from ..package_manager import PackageManager
 from ..thread_progress import ThreadProgress
 
@@ -40,6 +41,7 @@ class SatisfyDependenciesThread(threading.Thread):
 
     def run(self):
         required_dependencies = self.manager.find_required_dependencies()
+        error = False
 
         if not self.manager.install_dependencies(required_dependencies, fail_early=False):
             self.show_error(
@@ -49,6 +51,7 @@ class SatisfyDependenciesThread(threading.Thread):
                 Please check the console for details.
                 '''
             )
+            error = True
 
         if not self.manager.cleanup_dependencies(required_dependencies=required_dependencies):
             self.show_error(
@@ -58,3 +61,7 @@ class SatisfyDependenciesThread(threading.Thread):
                 Please check the console for details.
                 '''
             )
+            error = True
+
+        if not error:
+            console_write(u"All dependencies have been satisfied.")
