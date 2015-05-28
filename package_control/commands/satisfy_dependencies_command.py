@@ -64,4 +64,4 @@ class SatisfyDependenciesThread(threading.Thread):
             error = True
 
         if not error:
-            console_write(u"All dependencies have been satisfied.")
+            console_write(u'All dependencies have been satisfied')
