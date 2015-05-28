@@ -143,7 +143,7 @@ class AutomaticUpgrader(threading.Thread):
 
             for dependency in self.missing_dependencies:
                 if self.installer.manager.install_package(dependency, is_dependency=True):
-                    console_write(u'Installed missing dependency %s' % dependency, True)
+                    console_write(u'Installed missing dependency %s', dependency)
                     dependencies_installed += 1
 
             if dependencies_installed:
