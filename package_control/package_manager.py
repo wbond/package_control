@@ -550,7 +550,8 @@ class PackageManager():
             packages |= self._list_sublime_package_files(sublime.installed_packages_path())
 
         packages -= set(self.list_default_packages())
-        packages -= set(self.list_dependencies())
+        if exclude_dependencies:
+            packages -= set(self.list_dependencies())
         packages -= set(['User', 'Default'])
         return sorted(packages, key=lambda s: s.lower())
 
