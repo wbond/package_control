@@ -156,8 +156,7 @@ class PackageManager():
             metadata_filename = 'dependency-metadata.json'
 
         try:
-            debug = self.settings.get('debug')
-            metadata_json = read_package_file(package, metadata_filename, debug=debug)
+            metadata_json = read_package_file(package, metadata_filename)
             if metadata_json:
                 return json.loads(metadata_json)
 
@@ -179,11 +178,10 @@ class PackageManager():
         """
 
         try:
-            debug = self.settings.get('debug')
             if not package_file_exists(package, 'dependencies.json'):
                 raise ValueError()
 
-            dep_info_json = read_package_file(package, 'dependencies.json', debug=debug)
+            dep_info_json = read_package_file(package, 'dependencies.json')
             if not dep_info_json:
                 raise ValueError()
 

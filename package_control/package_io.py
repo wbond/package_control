@@ -8,16 +8,16 @@ from .open_compat import open_compat, read_compat
 from .file_not_found_error import FileNotFoundError
 
 
-def read_package_file(package, relative_path, binary=False, debug=False):
+def read_package_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
 
     if os.path.exists(package_dir):
-        result = _read_regular_file(package, relative_path, binary, debug)
+        result = _read_regular_file(package, relative_path, binary)
         if result is not False:
             return result
 
     if int(sublime.version()) >= 3000:
-        result = _read_zip_file(package, relative_path, binary, debug)
+        result = _read_zip_file(package, relative_path, binary)
         if result is not False:
             return result
 
@@ -44,7 +44,7 @@ def _get_package_dir(package):
     return os.path.join(sublime.packages_path(), package)
 
 
-def _read_regular_file(package, relative_path, binary=False, debug=False):
+def _read_regular_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
     try:
@@ -55,7 +55,7 @@ def _read_regular_file(package, relative_path, binary=False, debug=False):
         return False
 
 
-def _read_zip_file(package, relative_path, binary=False, debug=False):
+def _read_zip_file(package, relative_path, binary=False):
     zip_path = os.path.join(sublime.installed_packages_path(),
         package + '.sublime-package')
 
