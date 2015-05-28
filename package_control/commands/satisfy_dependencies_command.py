@@ -35,7 +35,7 @@ class SatisfyDependenciesThread(threading.Thread):
         self.manager = manager
         threading.Thread.__init__(self)
 
-    def show_error(msg):
+    def show_error(self, msg):
         sublime.set_timeout(functools.partial(show_error, msg), 10)
 
     def run(self):
