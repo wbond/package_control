@@ -109,8 +109,13 @@ class PackageManager():
         if self.settings.get('https_proxy') == False:
             self.settings['https_proxy'] = ''
 
+        # We cache these to prevent IPC calls between plugin_host and the main
+        # Sublime Text executable
         self.settings['platform'] = sublime.platform()
-        self.settings['version'] = sublime.version()
+        self.settings['arch'] = sublime.arch()
+        self.settings['version'] = int(sublime.version())
+        self.settings['packages_path'] = sublime.packages_path()
+        self.settings['installed_packages_path'] = sublime.installed_packages_path()
 
         # Use the cache to see if settings have changed since the last
         # time the package manager was created, and clearing any cached
@@ -299,8 +304,8 @@ class PackageManager():
             A list of dependency names
         """
 
-        platform_selectors = [sublime.platform() + '-' + sublime.arch(),
-            sublime.platform(), '*']
+        platform_selectors = [self.settings['platform'] + '-' + self.settings['arch'],
+            self.settings['platform'], '*']
 
         for platform_selector in platform_selectors:
             if platform_selector not in dependency_info:
@@ -431,9 +436,9 @@ class PackageManager():
                   Package Control Version: %s
                 ''',
                 (
-                    sublime.platform(),
-                    sublime.arch(),
-                    sublime.version(),
+                    self.settings['platform'],
+                    self.settings['arch'],
+                    self.settings['version'],
                     __version__
                 )
             )
@@ -542,10 +547,10 @@ class PackageManager():
         :return: A list of all installed, non-default, non-dependency, package names
         """
 
-        packages = self._list_visible_dirs(sublime.packages_path())
+        packages = self._list_visible_dirs(self.settings['packages_path'])
 
-        if int(sublime.version()) > 3000 and unpacked_only is False:
-            packages |= self._list_sublime_package_files(sublime.installed_packages_path())
+        if self.settings['version'] > 3000 and unpacked_only is False:
+            packages |= self._list_sublime_package_files(self.settings['installed_packages_path'])
 
         packages -= set(self.list_default_packages())
         if exclude_dependencies:
@@ -564,7 +569,7 @@ class PackageManager():
         if sys.version_info >= (3,):
             output.append('0_package_control_loader')
 
-        for name in self._list_visible_dirs(sublime.packages_path()):
+        for name in self._list_visible_dirs(self.settings['packages_path']):
             if not self._is_dependency(name):
                 continue
             output.append(name)
@@ -588,17 +593,17 @@ class PackageManager():
     def list_default_packages(self):
         """ :return: A list of all default package names"""
 
-        if int(sublime.version()) > 3000:
+        if self.settings['version'] > 3000:
             app_dir = os.path.dirname(sublime.executable_path())
             packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
 
         else:
-            config_dir = os.path.dirname(sublime.packages_path())
+            config_dir = os.path.dirname(self.settings['packages_path'])
 
             pristine_dir = os.path.join(config_dir, 'Pristine Packages')
             pristine_files = self._list_sublime_package_files(pristine_dir)
 
-            installed_dir = sublime.installed_packages_path()
+            installed_dir = self.settings['installed_packages_path']
             installed_files = self._list_sublime_package_files(installed_dir)
 
             packages = pristine_files - installed_files
@@ -660,7 +665,7 @@ class PackageManager():
             Bool, if the package is a dependency
         """
 
-        metadata_path = os.path.join(sublime.packages_path(), name, 'dependency-metadata.json')
+        metadata_path = os.path.join(self.settings['packages_path'], name, 'dependency-metadata.json')
         return os.path.exists(metadata_path)
 
     def find_required_dependencies(self, ignore_package=None):
@@ -688,7 +693,7 @@ class PackageManager():
     def get_package_dir(self, package):
         """:return: The full filesystem path to the package directory"""
 
-        return os.path.join(sublime.packages_path(), package)
+        return os.path.join(self.settings['packages_path'], package)
 
     def get_mapped_name(self, package):
         """:return: The name of the package after passing through mapping rules"""
@@ -724,7 +729,7 @@ class PackageManager():
                 The folder for the package name specified, %s,
                 does not exists in %s
                 ''',
-                (package_name, sublime.packages_path())
+                (package_name, self.settings['packages_path'])
             )
             return False
 
@@ -732,8 +737,8 @@ class PackageManager():
         package_path = os.path.join(package_destination,
             package_filename)
 
-        if not os.path.exists(sublime.installed_packages_path()):
-            os.mkdir(sublime.installed_packages_path())
+        if not os.path.exists(self.settings['installed_packages_path']):
+            os.mkdir(self.settings['installed_packages_path'])
 
         if os.path.exists(package_path):
             os.remove(package_path)
@@ -752,7 +757,7 @@ class PackageManager():
             )
             return False
 
-        if int(sublime.version()) >= 3000:
+        if self.settings['version'] >= 3000:
             compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
 
         if profile:
@@ -880,10 +885,10 @@ class PackageManager():
             tmp_package_path = os.path.join(tmp_dir, package_filename)
 
             unpacked_package_dir = self.get_package_dir(package_name)
-            package_path = os.path.join(sublime.installed_packages_path(),
+            package_path = os.path.join(self.settings['installed_packages_path'],
                 package_filename)
             pristine_package_path = os.path.join(os.path.dirname(
-                sublime.packages_path()), 'Pristine Packages', package_filename)
+                self.settings['packages_path']), 'Pristine Packages', package_filename)
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
@@ -997,7 +1002,7 @@ class PackageManager():
 
             # By default, ST3 prefers .sublime-package files since this allows
             # overriding files in the Packages/{package_name}/ folder
-            if int(sublime.version()) >= 3000:
+            if self.settings['version'] >= 3000:
                 unpack = False
 
             # If the package maintainer doesn't want a .sublime-package
@@ -1298,7 +1303,7 @@ class PackageManager():
             if os.path.exists(pristine_package_path):
                 os.remove(pristine_package_path)
 
-            os.chdir(sublime.packages_path())
+            os.chdir(self.settings['packages_path'])
             return True
 
         finally:
@@ -1334,7 +1339,7 @@ class PackageManager():
                 continue
 
             # Collect dependency information
-            dependency_dir = os.path.join(sublime.packages_path(), dependency)
+            dependency_dir = os.path.join(self.settings['packages_path'], dependency)
             dependency_git_dir = os.path.join(dependency_dir, '.git')
             dependency_hg_dir = os.path.join(dependency_dir, '.hg')
             dependency_metadata = self.get_metadata(dependency, is_dependency=True)
@@ -1443,13 +1448,13 @@ class PackageManager():
             If the backup succeeded
         """
 
-        package_dir = os.path.join(sublime.packages_path(), package_name)
+        package_dir = os.path.join(self.settings['packages_path'], package_name)
         if not os.path.exists(package_dir):
             return True
 
         try:
             backup_dir = os.path.join(os.path.dirname(
-                sublime.packages_path()), 'Backup',
+                self.settings['packages_path']), 'Backup',
                 datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
             if not os.path.exists(backup_dir):
                 os.makedirs(backup_dir)
@@ -1660,13 +1665,13 @@ class PackageManager():
             )
             return False
 
-        os.chdir(sublime.packages_path())
+        os.chdir(self.settings['packages_path'])
 
         package_filename = package_name + '.sublime-package'
-        installed_package_path = os.path.join(sublime.installed_packages_path(),
+        installed_package_path = os.path.join(self.settings['installed_packages_path'],
             package_filename)
         pristine_package_path = os.path.join(os.path.dirname(
-            sublime.packages_path()), 'Pristine Packages', package_filename)
+            self.settings['packages_path']), 'Pristine Packages', package_filename)
         package_dir = self.get_package_dir(package_name)
 
         version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
