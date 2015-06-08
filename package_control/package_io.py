@@ -25,6 +25,9 @@ def read_package_file(package, relative_path, binary=False):
 
 
 def package_file_exists(package, relative_path):
+    if relative_path is None:
+        return False
+
     package_dir = _get_package_dir(package)
 
     if os.path.exists(package_dir):
