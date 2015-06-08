@@ -1,4 +1,7 @@
 {
+	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
+	// COMMENTS ARE NOT ALLOWED IN JSON
+
 	// This file is a filesystem-level solution for specifying dependencies
 	// for packages. This is most useful for package developers since they are
 	// not installing their own packages from a repository or channel, and

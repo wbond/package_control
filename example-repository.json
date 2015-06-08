@@ -1,4 +1,7 @@
 {
+	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
+	// COMMENTS ARE NOT ALLOWED IN JSON
+
 	"schema_version": "3.0.0",
 
 	// Packages can be specified with a simple URL to a GitHub or BitBucket

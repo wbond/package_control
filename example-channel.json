@@ -1,4 +1,7 @@
 {
+	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
+	// COMMENTS ARE NOT ALLOWED IN JSON
+
 	"schema_version": "3.0.0",
 
 	// All repositories must be an HTTPS URL. SSL certificates help prevent
