@@ -1757,7 +1757,7 @@ class PackageManager():
 
         else:
             message = u'The package %s has been removed' % package_name
-            if can_delete_dir:
+            if not can_delete_dir:
                 message += u' and will be cleaned up on the next restart'
             console_write(message)
 
