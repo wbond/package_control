@@ -81,6 +81,8 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         package_name = self.package_list[picked][0]
 
         def open_dir():
-            self.window.run_command('open_dir',
-                {"dir": os.path.join(sublime.packages_path(), package_name)})
+            package_dir = self.manager.get_package_dir(package_name)
+            if not os.path.exists(package_dir):
+                package_dir = self.manager.settings['installed_packages_path']
+            self.window.run_command('open_dir', {"dir": package_dir})
         sublime.set_timeout(open_dir, 10)
