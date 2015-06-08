@@ -9,6 +9,22 @@ from .file_not_found_error import FileNotFoundError
 
 
 def read_package_file(package, relative_path, binary=False):
+    """
+    Reads the contents of a file that is part of a package
+
+    :param package:
+        The name of the package to read from
+
+    :param relative_path:
+        The path to the file, relative to the package root
+
+    :param binary:
+        If the contents should be read as a byte string instead of a unicode string
+
+    :return:
+        A unicode or byte string (depending on value if binary param) or False on error
+    """
+
     package_dir = _get_package_dir(package)
 
     if os.path.exists(package_dir):
@@ -25,6 +41,20 @@ def read_package_file(package, relative_path, binary=False):
 
 
 def package_file_exists(package, relative_path):
+    """
+    Determines if a file exists inside of the package specified. Handles both
+    packed and unpacked packages.
+
+    :param package:
+        The name of the package to look in
+
+    :param relative_path:
+        The path to the file, relative to the package root
+
+    :return:
+        A bool - if the file exists
+    """
+
     if relative_path is None:
         return False
 
