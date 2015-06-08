@@ -4,7 +4,12 @@ import sublime
 
 from .settings import preferences_filename, pc_settings_filename, load_list_setting
 from .package_io import package_file_exists, read_package_file
-from . import events, text
+from . import text
+
+# This has to be imported this way for consistency with the public API,
+# otherwise this code and packages will each load a different instance of the
+# module, and the event tracking won't work
+from package_control import events
 
 
 class PackageDisabler():
