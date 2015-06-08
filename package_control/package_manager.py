@@ -160,13 +160,19 @@ class PackageManager():
         if is_dependency:
             metadata_filename = 'dependency-metadata.json'
 
-        try:
+        if package_file_exists(package, metadata_filename):
             metadata_json = read_package_file(package, metadata_filename)
             if metadata_json:
-                return json.loads(metadata_json)
-
-        except (IOError, ValueError):
-            pass
+                try:
+                    return json.loads(metadata_json)
+                except (ValueError):
+                    console_write(
+                        u'''
+                        An error occurred while trying to parse the package
+                        metadata for %s.
+                        ''',
+                        package
+                    )
 
         return {}
 
@@ -182,19 +188,19 @@ class PackageManager():
             A list of dependency names
         """
 
-        try:
-            if not package_file_exists(package, 'dependencies.json'):
-                raise ValueError()
-
+        if package_file_exists(package, 'dependencies.json'):
             dep_info_json = read_package_file(package, 'dependencies.json')
-            if not dep_info_json:
-                raise ValueError()
-
-            dep_info = json.loads(dep_info_json)
-            return self.select_dependencies(dep_info)
-
-        except (IOError, ValueError):
-            pass
+            if dep_info_json:
+                try:
+                    return self.select_dependencies(json.loads(dep_info_json))
+                except (ValueError):
+                    console_write(
+                        u'''
+                        An error occurred while trying to parse the
+                        dependencies.json for %s.
+                        ''',
+                        package
+                    )
 
         metadata = self.get_metadata(package)
         if metadata:
@@ -1022,7 +1028,17 @@ class PackageManager():
             if not is_dependency and not have_installed_dependencies:
                 try:
                     dep_info_json = package_zip.read(dependencies_path)
-                    dep_info = json.loads(dep_info_json.decode('utf-8'))
+                    try:
+                        dep_info = json.loads(dep_info_json.decode('utf-8'))
+                    except (ValueError):
+                        console_write(
+                            u'''
+                            An error occurred while trying to parse the
+                            dependencies.json for %s.
+                            ''',
+                            package_name
+                        )
+                        return False
 
                     dependencies = self.select_dependencies(dep_info)
                     if not self.install_dependencies(dependencies):

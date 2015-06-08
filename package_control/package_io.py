@@ -25,12 +25,13 @@ def read_package_file(package, relative_path, binary=False):
         A unicode or byte string (depending on value if binary param) or False on error
     """
 
+    if relative_path is None:
+        return False
+
     package_dir = _get_package_dir(package)
 
-    if os.path.exists(package_dir):
-        result = _read_regular_file(package, relative_path, binary)
-        if result is not False:
-            return result
+    if os.path.exists(package_dir) and _regular_file_exists(package, relative_path):
+        return _read_regular_file(package, relative_path, binary)
 
     if int(sublime.version()) >= 3000:
         result = _read_zip_file(package, relative_path, binary)
@@ -80,12 +81,9 @@ def _get_package_dir(package):
 def _read_regular_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
-    try:
-        with open_compat(file_path, ('rb' if binary else 'r')) as f:
-            return read_compat(f)
 
-    except (FileNotFoundError):
-        return False
+    with open_compat(file_path, ('rb' if binary else 'r')) as f:
+        return read_compat(f)
 
 
 def _read_zip_file(package, relative_path, binary=False):
