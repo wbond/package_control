@@ -220,7 +220,14 @@ class DownloadManager(object):
         else:
             platform = 'linux'
 
-        downloader_precedence = self.settings.get('downloader_precedence', {})
+        downloader_precedence = self.settings.get(
+            'downloader_precedence',
+            {
+                "windows": ["wininet"],
+                "osx": ["urllib"],
+                "linux": ["urllib", "curl", "wget"]
+            }
+        )
         downloader_list = downloader_precedence.get(platform, [])
 
         if not isinstance(downloader_list, list) or len(downloader_list) == 0:
