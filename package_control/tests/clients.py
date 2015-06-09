@@ -29,13 +29,13 @@ class GitHubClientTests(unittest.TestCase):
             {
                 'name': 'package_control-tester',
                 'description': 'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
-                'homepage': 'https://github.com/packagecontrol/package_control-tester',
-                'author': 'packagecontrol',
-                'readme': 'https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md',
-                'issues': 'https://github.com/packagecontrol/package_control-tester/issues',
-                'donate': 'https://gratipay.com/on/github/packagecontrol/'
+                'homepage': 'https://github.com/packagecontrol-test/package_control-tester',
+                'author': 'packagecontrol-test',
+                'readme': 'https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md',
+                'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
+                'donate': 'https://gratipay.com/on/github/packagecontrol-test/'
             },
-            client.repo_info('https://github.com/packagecontrol/package_control-tester')
+            client.repo_info('https://github.com/packagecontrol-test/package_control-tester')
         )
 
     def test_github_client_user_info(self):
@@ -45,13 +45,13 @@ class GitHubClientTests(unittest.TestCase):
             [{
                 'name': 'package_control-tester',
                 'description': 'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
-                'homepage': 'https://github.com/packagecontrol/package_control-tester',
-                'author': 'packagecontrol',
-                'readme': 'https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md',
-                'issues': 'https://github.com/packagecontrol/package_control-tester/issues',
-                'donate': 'https://gratipay.com/on/github/packagecontrol/'
+                'homepage': 'https://github.com/packagecontrol-test/package_control-tester',
+                'author': 'packagecontrol-test',
+                'readme': 'https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md',
+                'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
+                'donate': 'https://gratipay.com/on/github/packagecontrol-test/'
             }],
-            client.user_info('https://github.com/packagecontrol')
+            client.user_info('https://github.com/packagecontrol-test')
         )
 
     def test_github_readme(self):
@@ -62,7 +62,7 @@ class GitHubClientTests(unittest.TestCase):
                 'contents': '# Package Control Tester\n\nThis repo is used to test the various clients and providers that are part of\nPackage Control.\n',
                 'format': 'markdown'
             },
-            client.readme_info('https://raw.githubusercontent.com/packagecontrol/package_control-tester/master/readme.md')
+            client.readme_info('https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md')
         )
 
     def test_github_client_branch_downloads(self):
@@ -72,10 +72,10 @@ class GitHubClientTests(unittest.TestCase):
                 {
                     'date': LAST_COMMIT_TIMESTAMP,
                     'version': LAST_COMMIT_VERSION,
-                    'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/master'
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/master'
                 }
             ],
-            client.download_info('https://github.com/packagecontrol/package_control-tester')
+            client.download_info('https://github.com/packagecontrol-test/package_control-tester')
         )
 
     def test_github_client_tags_downloads(self):
@@ -85,25 +85,25 @@ class GitHubClientTests(unittest.TestCase):
                 {
                     'date': '2014-11-12 15:52:35',
                     'version': '1.0.1',
-                    'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1'
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1'
                 },
                 {
                     'date': '2014-11-12 15:14:23',
                     'version': '1.0.1-beta',
-                    'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.1-beta'
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1-beta'
                 },
                 {
                     'date': '2014-11-12 15:14:13',
                     'version': '1.0.0',
-                    'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/1.0.0'
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.0'
                 },
                 {
                     'date': '2014-11-12 02:02:22',
                     'version': '0.9.0',
-                    'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/0.9.0'
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/0.9.0'
                 }
             ],
-            client.download_info('https://github.com/packagecontrol/package_control-tester/tags')
+            client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags')
         )
 
     def test_github_client_tags_prefix_downloads(self):
@@ -113,10 +113,10 @@ class GitHubClientTests(unittest.TestCase):
                 {
                     'date': '2014-11-28 20:54:15',
                     'version': '1.0.2',
-                    'url': 'https://codeload.github.com/packagecontrol/package_control-tester/zip/win-1.0.2'
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/win-1.0.2'
                 }
             ],
-            client.download_info('https://github.com/packagecontrol/package_control-tester/tags', 'win-')
+            client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags', 'win-')
         )
 
 
