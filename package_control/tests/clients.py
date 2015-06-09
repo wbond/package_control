@@ -33,7 +33,7 @@ class GitHubClientTests(unittest.TestCase):
                 'author': 'packagecontrol-test',
                 'readme': 'https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md',
                 'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
-                'donate': 'https://gratipay.com/on/github/packagecontrol-test/'
+                'donate': None
             },
             client.repo_info('https://github.com/packagecontrol-test/package_control-tester')
         )
@@ -49,7 +49,7 @@ class GitHubClientTests(unittest.TestCase):
                 'author': 'packagecontrol-test',
                 'readme': 'https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md',
                 'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
-                'donate': 'https://gratipay.com/on/github/packagecontrol-test/'
+                'donate': None
             }],
             client.user_info('https://github.com/packagecontrol-test')
         )
@@ -139,7 +139,7 @@ class BitBucketClientTests(unittest.TestCase):
                 'author': 'wbond',
                 'readme': 'https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md',
                 'issues': 'https://bitbucket.org/wbond/package_control-tester/issues',
-                'donate': 'https://gratipay.com/on/bitbucket/wbond/'
+                'donate': None
             },
             client.repo_info('https://bitbucket.org/wbond/package_control-tester')
         )

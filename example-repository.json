@@ -147,25 +147,9 @@
 			]
 		},
 
-		// The URL to donate to support the development of a package.
-		// GitHub repositories will default to:
-		//
-		// https://gratipay.com/on/github/{username}/
-		//
-		// BitBucket repositories will default to:
-		//
-		// https://gratipay.com/on/bitbucket/{username}/
-		//
-		// Other URLs with special integration include:
-		//
-		// https://flattr.com/profile/{username}
-		// https://www.dwolla.com/hub/{username}
-		//
-		// This may also contain a URL to another other donation-type site
-		// where users may support the author for their development of the
-		// package.
-		//
-		// This key may be set to null to remove the donate link from a package.
+		// The URL to donate to support the development of a package. Used to
+		// default to Gittip/Gratipay, however they switched to a curated model
+		// so the default was removed.
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
 			"donate": "https://gratipay.com/wbond/",
