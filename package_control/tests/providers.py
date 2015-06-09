@@ -232,7 +232,13 @@ class RepositoryProviderTests(unittest.TestCase):
     def settings(self):
         return {
             'debug': True,
-            'cache': HttpCache(604800)
+            'cache': HttpCache(604800),
+            'query_string_params': {
+                'api.github.com': {
+                    'client_id': CLIENT_ID,
+                    'client_secret': CLIENT_SECRET
+                }
+            }
         }
 
     def test_get_packages_10(self):
