@@ -50,8 +50,9 @@ def get_ca_bundle_path(settings):
     merged_ca_bundle_path = os.path.join(ca_bundle_dir, 'Package Control.merged-ca-bundle')
 
     merged_missing = not os.path.exists(merged_ca_bundle_path)
+    merged_empty = (not merged_missing) and os.stat(merged_ca_bundle_path).st_size == 0
 
-    regenerate = merged_missing
+    regenerate = merged_missing or merged_empty
     if system_ca_bundle_path and not merged_missing:
         regenerate = regenerate or os.path.getmtime(system_ca_bundle_path) > os.path.getmtime(merged_ca_bundle_path)
     if os.path.exists(user_ca_bundle_path) and not merged_missing:
@@ -131,10 +132,15 @@ def get_system_ca_bundle_path(settings):
         ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
 
         exists = os.path.exists(ca_path)
-        # The bundle is old if it is a week or more out of date
-        is_old = exists and os.stat(ca_path).st_mtime < time.time() - 604800
+        is_empty = False
+        is_old = False
+        if exists:
+            stats = os.stat(ca_path)
+            is_empty = stats.st_size == 0
+            # The bundle is old if it is a week or more out of date
+            is_old = stats.st_mtime < time.time() - 604800
 
-        if not exists or is_old:
+        if not exists or is_empty or is_old:
             if platform == 'darwin':
                 if debug:
                     console_write(
