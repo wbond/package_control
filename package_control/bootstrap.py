@@ -140,9 +140,18 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
 
         dest = dest.replace('\\', '/')
 
-        if dest == u'loader.py':
+        # loader.py is included for backwards compatibility. New code should use
+        # loader.code with Python inside of it. We no longer use loader.py since
+        # we can't have any files ending in .py in the root of a package,
+        # otherwise Sublime Text loads it as a plugin and then the dependency
+        # path added to sys.path and the package path loaded by Sublime Text
+        # conflict and there will be errors when Sublime Text tries to
+        # initialize plugins. By using loader.code, developers can git clone a
+        # dependency into their Packages folder without issue.
+        if dest in set([u'loader.py', u'loader.code']):
             code = data_zip.read(zip_path).decode('utf-8')
-            continue
+            if dest == u'loader.py':
+                continue
 
         dest = path.join(package_dir, dest)
 
