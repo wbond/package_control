@@ -279,7 +279,7 @@
 				{
 					"sublime_text": "<3000",
 					"tags": "st2-"
-				}
+				},
 				{
 					"sublime_text": ">=3000",
 					"tags": "st3-"
@@ -321,7 +321,7 @@
 
 		// If for some reason one of the releases is from a different repository
 		// than the top-level "details" key, a "base" key may be specified in
-		// the release with the GitHub or BitBucket repository to use for tags. 
+		// the release with the GitHub or BitBucket repository to use for tags.
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
@@ -329,7 +329,7 @@
 					"base": "https://github.com/wbond/sublime_alignment",
 					"sublime_text": "<3000",
 					"tags": true
-				}
+				},
 				{
 					"sublime_text": ">=3000",
 					"tags": true
