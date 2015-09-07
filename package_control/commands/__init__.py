@@ -7,6 +7,7 @@ from .create_package_command import CreatePackageCommand
 from .disable_package_command import DisablePackageCommand
 from .discover_packages_command import DiscoverPackagesCommand
 from .enable_package_command import EnablePackageCommand
+from .install_local_dependency_command import InstallLocalDependencyCommand
 from .install_package_command import InstallPackageCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
@@ -28,6 +29,7 @@ __all__ = [
     'DisablePackageCommand',
     'DiscoverPackagesCommand',
     'EnablePackageCommand',
+    'InstallLocalDependencyCommand',
     'InstallPackageCommand',
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',

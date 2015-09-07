@@ -32,6 +32,10 @@
         "command": "grab_certs"
     },
     {
+        "caption": "Package Control: Install Local Dependency",
+        "command": "install_local_dependency"
+    },
+    {
         "caption": "Package Control: Install Package",
         "command": "install_package"
     },

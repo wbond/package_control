@@ -582,6 +582,22 @@ class PackageManager():
 
         return sorted(output, key=lambda s: s.lower())
 
+    def list_unloaded_dependencies(self):
+        """
+        :return:
+            A list of the names of dependencies in the Packages/ folder that
+            are not currently being loaded
+        """
+
+        output = []
+        for name in self._list_visible_dirs(self.settings['packages_path']):
+            hidden_file_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
+            if not os.path.exists(hidden_file_path):
+                continue
+            if not loader.exists(name):
+                output.append(name)
+        return output
+
     def list_all_packages(self, exclude_dependencies=True):
         """
         Lists all packages on the machine
