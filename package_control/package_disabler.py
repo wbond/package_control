@@ -8,8 +8,13 @@ from . import text
 
 # This has to be imported this way for consistency with the public API,
 # otherwise this code and packages will each load a different instance of the
-# module, and the event tracking won't work
-from package_control import events
+# module, and the event tracking won't work. However, upon initial install,
+# when running ST3, the module will not yet be imported, and the cwd will not
+# be Packages/Package Control/ so we need to patch it into sys.modules.
+try:
+    from package_control import events
+except (ImportError):
+    events = None
 
 
 class PackageDisabler():
@@ -59,6 +64,11 @@ class PackageDisabler():
              - "disable"
              - "loader"
         """
+
+        global events
+
+        if events is None:
+            from package_control import events
 
         if not isinstance(packages, list):
             packages = [packages]
@@ -139,6 +149,11 @@ class PackageDisabler():
              - "enable"
              - "loader"
         """
+
+        global events
+
+        if events is None:
+            from package_control import events
 
         settings = sublime.load_settings(preferences_filename())
         ignored = load_list_setting(settings, 'ignored_packages')
