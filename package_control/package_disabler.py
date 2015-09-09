@@ -63,6 +63,9 @@ class PackageDisabler():
              - "install"
              - "disable"
              - "loader"
+
+        :return:
+            A list of package names that were disabled
         """
 
         global events
