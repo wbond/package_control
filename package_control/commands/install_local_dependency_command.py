@@ -57,10 +57,12 @@ class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
             with open(hidden_file_path, 'rb') as f:
                 data = f.read().decode('utf-8').strip()
                 if data.isdigit():
-                    priority = int(data)
+                    priority = data
+                    if len(priority) == 1:
+                        priority = '0' + priority
 
         if priority is None:
-            priority = 50
+            priority = '50'
 
         code = None
         is_py_loader = os.path.exists(loader_py_path)
