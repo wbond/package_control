@@ -11,8 +11,8 @@ from ..package_manager import PackageManager
 class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
 
     """
-    A command that finds allows package developers to install a dependency that
-    exists in the Packages/ folder, but is not currently being loaded.
+    A command that allows package developers to install a dependency that exists
+    in the Packages/ folder, but is not currently being loaded.
     """
 
     def run(self):
