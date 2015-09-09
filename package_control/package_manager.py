@@ -1718,20 +1718,13 @@ class PackageManager():
 
         version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
 
+        cleanup_complete = True
+
         try:
             if os.path.exists(installed_package_path):
                 os.remove(installed_package_path)
         except (OSError, IOError) as e:
-            show_error(
-                u'''
-                An error occurred while trying to remove the installed package
-                file for %s.
-
-                %s
-                ''',
-                (package_name, unicode_from_os(e))
-            )
-            return False
+            cleanup_complete = False
 
         try:
             if os.path.exists(pristine_package_path):
@@ -1748,15 +1741,16 @@ class PackageManager():
             )
             return False
 
-        # We don't delete the actual package dir immediately due to a bug
-        # in sublime_plugin.py
-        can_delete_dir = True
-        if not clear_directory(package_dir):
-            # If there is an error deleting now, we will mark it for
-            # cleanup the next time Sublime Text starts
-            open_compat(os.path.join(package_dir, 'package-control.cleanup'),
-                'w').close()
-            can_delete_dir = False
+        if os.path.exists(package_dir):
+            # We don't delete the actual package dir immediately due to a bug
+            # in sublime_plugin.py
+            can_delete_dir = True
+            if not clear_directory(package_dir):
+                # If there is an error deleting now, we will mark it for
+                # cleanup the next time Sublime Text starts
+                open_compat(os.path.join(package_dir, 'package-control.cleanup'), 'w').close()
+                cleanup_complete = False
+                can_delete_dir = False
 
         params = {
             'package': package_name,
@@ -1775,7 +1769,7 @@ class PackageManager():
                 save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
             sublime.set_timeout(save_names, 1)
 
-        if can_delete_dir and os.path.exists(package_dir):
+        if os.path.exists(package_dir) and can_delete_dir:
             os.rmdir(package_dir)
 
         if is_dependency:
@@ -1783,14 +1777,14 @@ class PackageManager():
 
         else:
             message = u'The package %s has been removed' % package_name
-            if not can_delete_dir:
+            if not cleanup_complete:
                 message += u' and will be cleaned up on the next restart'
             console_write(message)
 
             # Remove dependencies that are no longer needed
             self.cleanup_dependencies(package_name)
 
-        return True if can_delete_dir else None
+        return True if cleanup_complete else None
 
     def record_usage(self, params):
         """
