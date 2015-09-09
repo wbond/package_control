@@ -1,5 +1,8 @@
 import locale
 import sys
+import ctypes
+import tempfile
+import os
 
 
 # Sublime Text on OS X does not seem to report the correct encoding
@@ -46,3 +49,94 @@ def unicode_from_os(e):
             except:
                 pass
     return unicode(e, errors='replace')
+
+
+def tempfile_unicode_patch():
+    """
+    This function monkey-patches the tempfile module in ST2 on Windows to
+    properly handle non-ASCII paths from environmental variables being
+    used as the basis for a temp directory.
+    """
+
+    if sys.version_info >= (3,):
+        return
+
+    if sys.platform != 'win32':
+        return
+
+    if hasattr(tempfile._candidate_tempdir_list, 'patched'):
+        return
+
+    unicode_error = False
+    for var in ['TMPDIR', 'TEMP', 'TMP']:
+        dir_ = os.getenv(var)
+        if not dir_:
+            continue
+        # If the path contains a non-unicode chars that is also
+        # non-ASCII, then this will fail
+        try:
+            dir_ + u''
+        except (UnicodeDecodeError):
+            unicode_error = True
+            break
+        # Windows paths can not contain a ?, so this is evidence
+        # that a unicode deocding issue happened
+        if dir_.find('?') != -1:
+            unicode_error = True
+            break
+
+    if not unicode_error:
+        return
+
+    kernel32 = ctypes.windll.kernel32
+
+    kernel32.GetEnvironmentStringsW.argtypes = []
+    kernel32.GetEnvironmentStringsW.restype = ctypes.c_void_p
+
+    str_pointer = kernel32.GetEnvironmentStringsW()
+    string = ctypes.wstring_at(str_pointer)
+
+    env_vars = {}
+    while string != '':
+        if string[0].isalpha():
+            name, value = string.split(u'=', 1)
+            env_vars[name.encode('ascii')] = value
+        # Include the trailing null byte, and measure each
+        # char as 2 bytes since Windows uses UTF-16 for
+        # wide chars
+        str_pointer += (len(string) + 1) * 2
+
+        string = ctypes.wstring_at(str_pointer)
+
+    # This is pulled from tempfile.py in Python 2.6 and patched to grab the
+    # temp path environmental variables as unicode from the call to
+    # GetEnvironmentStringsW()
+    def _candidate_tempdir_list():
+        dirlist = []
+
+        # First, try the environment.
+        for envname in 'TMPDIR', 'TEMP', 'TMP':
+            dirname = env_vars.get(envname)
+            if dirname:
+                dirlist.append(dirname)
+
+        # Failing that, try OS-specific locations.
+        if os.name == 'riscos':
+            dirname = os.getenv('Wimp$ScrapDir')
+            if dirname:
+                dirlist.append(dirname)
+        elif os.name == 'nt':
+            dirlist.extend([r'c:\temp', r'c:\tmp', r'\temp', r'\tmp'])
+        else:
+            dirlist.extend(['/tmp', '/var/tmp', '/usr/tmp'])
+
+        # As a last resort, the current directory.
+        try:
+            dirlist.append(os.getcwd())
+        except (AttributeError, os.error):
+            dirlist.append(os.curdir)
+
+        return dirlist
+
+    tempfile._candidate_tempdir_list = _candidate_tempdir_list
+    setattr(tempfile._candidate_tempdir_list, 'patched', True)

@@ -111,11 +111,13 @@ else:
         # Python 3
         from .package_control.commands import *
         from .package_control.package_cleanup import PackageCleanup
+        from .package_control.unicode import tempfile_unicode_patch
 
     except (ValueError):
         # Python 2
         from package_control.commands import *
         from package_control.package_cleanup import PackageCleanup
+        from package_control.unicode import tempfile_unicode_patch
 
     def plugin_loaded():
         # Make sure the user's locale can handle non-ASCII. A whole bunch of
@@ -145,6 +147,9 @@ else:
             )
             sublime.error_message(message)
             return
+
+        # This handles fixing unicode issues with tempdirs on ST2 for Windows
+        tempfile_unicode_patch()
 
         # Start shortly after Sublime starts so package renames don't cause errors
         # with keybindings, settings, etc disappearing in the middle of parsing
