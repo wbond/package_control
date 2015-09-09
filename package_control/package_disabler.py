@@ -2,7 +2,7 @@ import json
 
 import sublime
 
-from .settings import preferences_filename, pc_settings_filename, load_list_setting
+from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 from .package_io import package_file_exists, read_package_file
 from . import text
 
@@ -126,11 +126,9 @@ class PackageDisabler():
         # We don't mark a package as in-process when disabling it, otherwise
         # it automatically gets re-enabled the next time Sublime Text starts
         if type != 'disable':
-            pc_settings.set('in_process_packages', in_process)
-            sublime.save_settings(pc_settings_filename())
+            save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
-        settings.set('ignored_packages', ignored)
-        sublime.save_settings(preferences_filename())
+        save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
         return disabled
 
@@ -171,9 +169,8 @@ class PackageDisabler():
             elif type == 'remove':
                 events.clear('remove', package)
 
-            settings.set('ignored_packages',
-                list(set(ignored) - set([package])))
-            sublime.save_settings(preferences_filename())
+            ignored = list(set(ignored) - set([package]))
+            save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
             if type == 'remove' and self.old_theme_package == package:
                 sublime.message_dialog(text.format(
@@ -222,5 +219,4 @@ class PackageDisabler():
 
         if package in in_process:
             in_process.remove(package)
-            pc_settings.set('in_process_packages', in_process)
-            sublime.save_settings(pc_settings_filename())
+            save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
