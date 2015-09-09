@@ -1,6 +1,7 @@
 import os
 import subprocess
 import re
+import sys
 
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer
@@ -105,7 +106,7 @@ class Cli(object):
 
             # Make sure the cwd is ascii
             try:
-                cwd.encode('ascii')
+                cwd.encode('mbcs')
             except UnicodeEncodeError:
                 buf = create_unicode_buffer(512)
                 if windll.kernel32.GetShortPathNameW(cwd, buf, len(buf)):
@@ -120,6 +121,8 @@ class Cli(object):
             )
 
         try:
+            if sys.platform == 'win32' and sys.version_info < (3,):
+                cwd = cwd.encode('mbcs')
             proc = subprocess.Popen(args, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 startupinfo=startupinfo, cwd=cwd, env=os.environ)
