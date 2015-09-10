@@ -1,5 +1,5 @@
 {
-	"version": "3.1.0-beta4",
+	"version": "3.1.0-beta5",
 	"url": "https://packagecontrol.io",
 	"description": "A full-featured package manager",
 	"sublime_text": "*",
