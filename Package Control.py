@@ -2,27 +2,13 @@ import sublime
 import sys
 import os
 
-# These imports are used during the sanity checking phase
-try:
-    # Python 3
-    from .package_control import text, sys_path
-except (ValueError):
-    # Python 2
-    from package_control import text, sys_path
 
-
-st_version = 2
-
-# Warn about out-dated versions of ST3
-if sublime.version() == '':
-    st_version = 3
-    print('Package Control: Please upgrade to Sublime Text 3 build 3012 or newer')
-
-elif int(sublime.version()) > 3000:
-    st_version = 3
+st_version = 2 if sys.version_info < (3,) else 3
 
 
 if st_version == 3:
+    from .package_control import text, sys_path
+
     installed_dir, _ = __name__.split('.')
 
     package_path = os.path.join(sys_path.st_dir, 'Installed Packages', 'Package Control.sublime-package')
@@ -31,6 +17,8 @@ if st_version == 3:
     has_unpacked = os.path.exists(pc_python_path)
 
 elif st_version == 2:
+    from package_control import text, sys_path
+
     installed_dir = os.path.basename(os.getcwd())
 
 
@@ -96,24 +84,6 @@ elif st_version == 3 and has_packed and has_unpacked:
 
 # Normal execution will finish setting up the package
 else:
-    module_prefix = 'package_control'
-
-    # ST3 loads each package as a module, so it needs an extra prefix
-    if st_version == 3:
-        module_prefix = 'Package Control.' + module_prefix
-        from imp import reload
-
-    # Make sure all dependencies are reloaded on upgrade
-    reloader_name = module_prefix + '.reloader'
-    commands_name = module_prefix + '.commands'
-    if reloader_name in sys.modules:
-        reload(sys.modules[reloader_name])
-    elif commands_name in sys.modules:
-        if st_version == 3:
-            from .package_control import reloader
-        else:
-            from package_control import reloader
-
     if st_version == 3:
         from .package_control.commands import *
         from .package_control.package_cleanup import PackageCleanup

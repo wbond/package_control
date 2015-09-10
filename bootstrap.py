@@ -18,21 +18,6 @@ if sys.version_info < (3,):
     if os.path.exists(installed_file):
         os.remove(installed_file)
 
-# Make sure we have recent code in memory
-module_prefix = 'package_control'
-if sys.version_info >= (3,):
-    module_prefix = 'Package Control.' + module_prefix
-    from imp import reload
-reloader_name = module_prefix + '.reloader'
-commands_name = module_prefix + '.commands'
-if reloader_name in sys.modules:
-    reload(sys.modules[reloader_name])
-elif commands_name in sys.modules:
-    if sys.version_info < (3,):
-        from package_control import reloader
-    else:
-        from .package_control import reloader
-
 if sys.version_info < (3,):
     from package_control.bootstrap import bootstrap_dependency
     from package_control.package_manager import PackageManager

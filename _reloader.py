@@ -1,14 +1,47 @@
+import os
 import sys
+import sublime_plugin
 
-import sublime
+if sys.version_info >= (3,):
+    import importlib
+    import zipimport
 
 
-st_version = 2
-# With the way ST3 works, the sublime module is not "available" at startup
-# which results in an empty version number
-if sublime.version() == '' or int(sublime.version()) > 3000:
-    st_version = 3
+mod_prefix = 'package_control'
+
+# ST3 loads each package as a module, so it needs an extra prefix
+if sys.version_info >= (3,):
+    bare_mod_prefix = mod_prefix
+    mod_prefix = 'Package Control.' + mod_prefix
     from imp import reload
+
+# When reloading the package, we also need to reload the base "package_control"
+# module in ST3. This flag inidicates we should re-add the PC package path
+# to the beginning of sys.path before we try to reload.
+do_insert = False
+is_zipped = False
+
+commands_name = mod_prefix + '.commands'
+if commands_name in sys.modules and sys.version_info >= (3,):
+    # Unfortunately with ST3, the ZipLoader does not "properly"
+    # implement load_module(), instead loading the code from the zip
+    # file when the object is instantiated. This means that calling
+    # reload() by itself does nothing. Instead we have to refresh the
+    # actual source code and then call reload().
+    pc_package_path = os.path.dirname(__file__)
+    if pc_package_path.endswith('.sublime-package'):
+        refreshing_zip_loader = sublime_plugin.ZipLoader(pc_package_path)
+        pc_zip_loader = sys.modules[commands_name].__loader__
+        if hasattr(pc_zip_loader, 'contents') and hasattr(pc_zip_loader, 'packages'):
+            pc_zip_loader.contents = refreshing_zip_loader.contents
+            pc_zip_loader.packages = refreshing_zip_loader.packages
+
+        if pc_package_path in zipimport._zip_directory_cache:
+            del zipimport._zip_directory_cache[pc_package_path]
+        is_zipped = True
+
+    importlib.invalidate_caches()
+    do_insert = True
 
 
 # Python allows reloading modules on the fly, which allows us to do live upgrades.
@@ -20,15 +53,10 @@ if sublime.version() == '' or int(sublime.version()) > 3000:
 #
 # There are solutions for doing this all programatically, but this is much easier
 # to understand.
-
 reload_mods = []
 for mod in sys.modules:
-    if mod[0:15].lower().replace(' ', '_') == 'package_control' and sys.modules[mod] != None:
+    if mod[0:15] in set(['package_control', 'Package Control']) and sys.modules[mod] is not None:
         reload_mods.append(mod)
-
-mod_prefix = 'package_control'
-if st_version == 3:
-    mod_prefix = 'Package Control.' + mod_prefix
 
 mods_load_order = [
     '',
@@ -36,15 +64,17 @@ mods_load_order = [
     '.sys_path',
     '.text',
     '.cache',
+    '.file_not_found_error',
+    '.open_compat',
     '.http_cache',
-    '.clear_directory',
-    '.cmd',
     '.console_write',
+    '.unicode',
+    '.clear_directory',
+    '.show_error',
+    '.cmd',
     '.processes',
     '.settings',
-    '.show_error',
     '.show_quick_panel',
-    '.unicode',
     '.thread_progress',
     '.package_io',
     '.semver',
@@ -63,7 +93,6 @@ mods_load_order = [
 
     '.ca_certs',
 
-    '.downloaders',
     '.downloaders.downloader_exception',
     '.downloaders.rate_limit_exception',
     '.downloaders.binary_not_found_error',
@@ -78,6 +107,7 @@ mods_load_order = [
     '.downloaders.wget_downloader',
     '.downloaders.wininet_downloader',
     '.downloaders.background_downloader',
+    '.downloaders',
 
     '.download_manager',
 
@@ -88,7 +118,6 @@ mods_load_order = [
     '.clients.readme_client',
     '.clients.json_api_client',
 
-    '.providers',
     '.providers.provider_exception',
     '.providers.bitbucket_repository_provider',
     '.providers.github_repository_provider',
@@ -97,6 +126,7 @@ mods_load_order = [
     '.providers.release_selector',
     '.providers.channel_provider',
     '.providers.repository_provider',
+    '.providers',
 
     '.upgraders',
     '.upgraders.vcs_upgrader',
@@ -105,6 +135,7 @@ mods_load_order = [
 
     '.package_manager',
     '.package_creator',
+    '.package_disabler',
     '.package_installer',
     '.package_renamer',
 
@@ -140,6 +171,21 @@ mods_load_order = [
     '.package_cleanup'
 ]
 
+
+if do_insert:
+    if is_zipped:
+        # When we run into modules imports from a .sublime-package, the
+        # in memory modules reference a zipimport.zipimporter object that
+        # has an out-dated reference to the .sublime-package file, which
+        # means when we call reload(), we get a zipimport.ZipImportError
+        # of "bad local file header". To work around this, we construct
+        # new zipimporter instances and attach them to the in-memory
+        # modules using the .__loader__ attribute.
+        loaders = {}
+        loaders[''] = zipimport.zipimporter(pc_package_path)
+    else:
+        sys.path.insert(0, pc_package_path)
+
 for suffix in mods_load_order:
     mod = mod_prefix + suffix
     if mod in reload_mods:
@@ -147,3 +193,22 @@ for suffix in mods_load_order:
             reload(sys.modules[mod])
         except (ImportError):
             pass  # Upgrade issues from PC 2.0 -> 3.0
+    if sys.version_info >= (3,):
+        bare_mod = bare_mod_prefix + suffix
+        if bare_mod in reload_mods:
+            bare_module = sys.modules[bare_mod]
+            if is_zipped:
+                # See the command above near "if is_zipped:" to understand why
+                # we are replacing the .__loader__ attribute of the modules with
+                # a fresh zipimporter object.
+                if bare_mod.find('.') == -1:
+                    loader_lookup = ''
+                else:
+                    loader_lookup = os.sep.join(bare_mod.split('.')[0:-1])
+                    if loader_lookup not in loaders:
+                        loaders[loader_lookup] = zipimport.zipimporter(os.path.join(pc_package_path, loader_lookup) + os.sep)
+                bare_module.__loader__ = loaders[loader_lookup]
+            reload(bare_module)
+
+if do_insert and not is_zipped:
+    sys.path.remove(pc_package_path)
