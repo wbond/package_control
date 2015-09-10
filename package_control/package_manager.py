@@ -1336,9 +1336,21 @@ class PackageManager():
                 package_zip.close()
                 package_zip = None
 
-                if os.path.exists(package_path):
-                    os.remove(package_path)
-                shutil.move(tmp_package_path, package_path)
+                try:
+                    if os.path.exists(package_path):
+                        os.remove(package_path)
+                    shutil.move(tmp_package_path, package_path)
+                except (OSError):
+                    new_package_path = package_path.replace('.sublime-package', '.sublime-package-new')
+                    shutil.move(tmp_package_path, new_package_path)
+                    show_error(
+                        u'''
+                        An error occurred while trying to upgrade %s. Please restart
+                        Sublime Text to finish the upgrade.
+                        ''',
+                        package_name
+                    )
+                    return None
 
             # We have to remove the pristine package too or else Sublime Text 2
             # will silently delete the package
