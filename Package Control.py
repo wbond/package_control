@@ -96,25 +96,30 @@ elif st_version == 3 and has_packed and has_unpacked:
 
 # Normal execution will finish setting up the package
 else:
-    reloader_name = 'package_control.reloader'
+    module_prefix = 'package_control'
 
     # ST3 loads each package as a module, so it needs an extra prefix
     if st_version == 3:
-        reloader_name = 'Package Control.' + reloader_name
+        module_prefix = 'Package Control.' + module_prefix
         from imp import reload
 
     # Make sure all dependencies are reloaded on upgrade
+    reloader_name = module_prefix + '.reloader'
+    commands_name = module_prefix + '.commands'
     if reloader_name in sys.modules:
         reload(sys.modules[reloader_name])
+    elif commands_name in sys.modules:
+        if st_version == 3:
+            from .package_control import reloader
+        else:
+            from package_control import reloader
 
-    try:
-        # Python 3
+    if st_version == 3:
         from .package_control.commands import *
         from .package_control.package_cleanup import PackageCleanup
         from .package_control.unicode import tempfile_unicode_patch
 
-    except (ValueError):
-        # Python 2
+    else:
         from package_control.commands import *
         from package_control.package_cleanup import PackageCleanup
         from package_control.unicode import tempfile_unicode_patch
