@@ -202,6 +202,9 @@ class PackageInstallerThread(threading.Thread):
             time.sleep(0.7)
         try:
             self.result = self.manager.install_package(self.package)
+        except (Exception):
+            self.result = False
+            raise
         finally:
             # Do not reenable if deferred until next restart
             if self.on_complete and self.result is not None:
