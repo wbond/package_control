@@ -688,7 +688,8 @@ class PackageManager():
         """
 
         metadata_path = os.path.join(self.settings['packages_path'], name, 'dependency-metadata.json')
-        return os.path.exists(metadata_path)
+        hidden_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
+        return os.path.exists(metadata_path) or os.path.exists(hidden_path)
 
     def find_required_dependencies(self, ignore_package=None):
         """
@@ -708,6 +709,18 @@ class PackageManager():
             if package == ignore_package:
                 continue
             output.extend(self.get_dependencies(package))
+
+        # Consider any folder with a .sublime-dependency file that does not
+        # have a dependency-metadata.json file to be a dependency that was
+        # hand-installed by a developer, and thus "required"
+        for name in self._list_visible_dirs(self.settings['packages_path']):
+            metadata_path = os.path.join(self.settings['packages_path'], name, 'dependency-metadata.json')
+            hidden_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
+            metadata_exists = os.path.exists(metadata_path)
+            hidden_exists = os.path.exists(hidden_path)
+            if metadata_exists or not hidden_exists:
+                continue
+            output.append(name)
 
         output = list(set(output))
         return sorted(output, key=lambda s: s.lower())
