@@ -1,9 +1,10 @@
 import locale
 import sys
-import ctypes
 import tempfile
 import os
 
+if sys.platform == 'win32':
+    import ctypes
 
 # Sublime Text on OS X does not seem to report the correct encoding
 # so we hard-code that to UTF-8
