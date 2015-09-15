@@ -25,6 +25,19 @@ from .sys_path import st_dir
 from .open_compat import open_compat, read_compat
 from .semver import SemVer
 from .file_not_found_error import FileNotFoundError
+from .settings import pc_settings_filename
+
+
+def mark_bootstrapped():
+    """
+    Mark Package Control as successfully bootstrapped
+    """
+
+    pc_settings = sublime.load_settings(pc_settings_filename())
+
+    if not pc_settings.get('bootstrapped'):
+        pc_settings.set('bootstrapped', True)
+        sublime.save_settings(pc_settings_filename())
 
 
 def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
@@ -71,8 +84,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
                 metadata = json.loads(read_compat(f))
             old_version = SemVer(metadata['version'])
             if version <= old_version:
-                if on_complete:
-                    sublime.set_timeout(on_complete, 100)
+                sublime.set_timeout(mark_bootstrapped, 10)
                 return
 
             console_write(
@@ -187,5 +199,6 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         package_basename
     )
 
+    sublime.set_timeout(mark_bootstrapped, 10)
     if on_complete:
         sublime.set_timeout(on_complete, 100)

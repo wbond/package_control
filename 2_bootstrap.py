@@ -1,7 +1,6 @@
 import sys
 import threading
 import os
-import functools
 from textwrap import dedent
 
 import sublime
@@ -20,17 +19,13 @@ if sys.version_info < (3,):
         os.remove(installed_file)
 
 if sys.version_info < (3,):
-    from package_control.bootstrap import bootstrap_dependency
+    from package_control.bootstrap import bootstrap_dependency, mark_bootstrapped
     from package_control.package_manager import PackageManager
     from package_control import loader, text
-    from package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
-    import package_control
 else:
-    from .package_control.bootstrap import bootstrap_dependency
+    from .package_control.bootstrap import bootstrap_dependency, mark_bootstrapped
     from .package_control.package_manager import PackageManager
     from .package_control import loader, text
-    from .package_control.settings import pc_settings_filename, load_list_setting, save_list_setting
-    from . import package_control
 
 
 def plugin_loaded():
@@ -107,41 +102,25 @@ def plugin_loaded():
         base_loader_code = dedent(base_loader_code).lstrip()
         loader.add('00', 'package_control', base_loader_code)
 
-    def mark_bootstrapped(restart_message=None):
-        """
-        Make Package Control as successfully bootstrapped and show any required
-        message to the user
-
-        :param restart_message:
-            Any message to display to the user once the bookkeeping is complete
-        """
-
-        pc_settings = sublime.load_settings(pc_settings_filename())
-
-        if not pc_settings.get('bootstrapped'):
-            pc_settings.set('bootstrapped', True)
-            sublime.save_settings(pc_settings_filename())
-
-        if restart_message:
-            sublime.message_dialog(restart_message)
-
     # SSL support fo Linux
     if sublime.platform() == 'linux':
         linux_ssl_url = u'http://packagecontrol.io/ssl/1.0.1/ssl-linux.sublime-package'
         linux_ssl_hash = u'862d061cbe666777cd1e9cd1cbc7c82f48ad8897dbb68332975f3edf5ce0f38d'
         linux_ssl_priority = u'01'
         linux_ssl_version = '1.0.1'
-        linux_ssl_restart_message = text.format(
-            u'''
-            Package Control
 
-            Package Control just installed or upgraded the missing Python
-            _ssl module for Linux since Sublime Text does not include it.
+        def linux_ssl_show_restart():
+            sublime.message_dialog(text.format(
+                u'''
+                Package Control
 
-            Please restart Sublime Text to make SSL available to all
-            packages.
-            '''
-        )
+                Package Control just installed or upgraded the missing Python
+                _ssl module for Linux since Sublime Text does not include it.
+
+                Please restart Sublime Text to make SSL available to all
+                packages.
+                '''
+            ))
 
         threading.Thread(
             target=bootstrap_dependency,
@@ -151,7 +130,7 @@ def plugin_loaded():
                 linux_ssl_hash,
                 linux_ssl_priority,
                 linux_ssl_version,
-                functools.partial(mark_bootstrapped, linux_ssl_restart_message),
+                linux_ssl_show_restart,
             )
         ).start()
 
@@ -161,17 +140,19 @@ def plugin_loaded():
         win_ssl_hash = u'3c28982eb400039cfffe53d38510556adead39ba7321f2d15a6770d3ebc75030'
         win_ssl_priority = u'01'
         win_ssl_version = u'1.0.0'
-        win_ssl_restart_message = text.format(
-            u'''
-            Package Control
 
-            Package Control just upgraded the Python _ssl module for ST2 on
-            Windows because the bundled one does not include support for
-            modern SSL certificates.
+        def win_ssl_show_restart():
+            sublime.message_dialog(text.format(
+                u'''
+                Package Control
 
-            Please restart Sublime Text to complete the upgrade.
-            '''
-        )
+                Package Control just upgraded the Python _ssl module for ST2 on
+                Windows because the bundled one does not include support for
+                modern SSL certificates.
+
+                Please restart Sublime Text to complete the upgrade.
+                '''
+            ))
 
         threading.Thread(
             target=bootstrap_dependency,
@@ -181,7 +162,7 @@ def plugin_loaded():
                 win_ssl_hash,
                 win_ssl_priority,
                 win_ssl_version,
-                functools.partial(mark_bootstrapped, win_ssl_restart_message),
+                win_ssl_show_restart,
             )
         ).start()
 
