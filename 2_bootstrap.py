@@ -107,10 +107,10 @@ def plugin_loaded():
         base_loader_code = dedent(base_loader_code).lstrip()
         loader.add('00', 'package_control', base_loader_code)
 
-    def pc_bookkeeping(restart_message=None):
+    def mark_bootstrapped(restart_message=None):
         """
-        Some settings changes that need to happen on all machines, but should
-        only happen after dependencies have been bootstrapped.
+        Make Package Control as successfully bootstrapped and show any required
+        message to the user
 
         :param restart_message:
             Any message to display to the user once the bookkeeping is complete
@@ -118,31 +118,12 @@ def plugin_loaded():
 
         pc_settings = sublime.load_settings(pc_settings_filename())
 
-        # Make sure we are track Package Control itself
-        installed_packages = load_list_setting(pc_settings, 'installed_packages')
-        if 'Package Control' not in installed_packages:
-            params = {
-                'package': 'Package Control',
-                'operation': 'install',
-                'version': package_control.__version__
-            }
-
-            def record_usage():
-                manager.record_usage(params)
-                if restart_message:
-                    sublime.set_timeout(lambda: sublime.message_dialog(restart_message), 10)
-
-            # Run recording the usage in a thread to prevent blocking the UI
-            # because of a slow internet connection
-            threading.Thread(target=record_usage).start()
-            installed_packages.append('Package Control')
-            save_list_setting(pc_settings, pc_settings_filename(), 'installed_packages', installed_packages)
-
-        # We no longer use the installed_dependencies setting because it is not
-        # necessary and created issues with settings shared across operating systems
-        if pc_settings.get('installed_dependencies'):
-            pc_settings.erase('installed_dependencies')
+        if not pc_settings.get('bootstrapped'):
+            pc_settings.set('bootstrapped', True)
             sublime.save_settings(pc_settings_filename())
+
+        if restart_message:
+            sublime.message_dialog(restart_message)
 
     # SSL support fo Linux
     if sublime.platform() == 'linux':
@@ -170,7 +151,7 @@ def plugin_loaded():
                 linux_ssl_hash,
                 linux_ssl_priority,
                 linux_ssl_version,
-                functools.partial(pc_bookkeeping, linux_ssl_restart_message),
+                functools.partial(mark_bootstrapped, linux_ssl_restart_message),
             )
         ).start()
 
@@ -200,12 +181,12 @@ def plugin_loaded():
                 win_ssl_hash,
                 win_ssl_priority,
                 win_ssl_version,
-                functools.partial(pc_bookkeeping, win_ssl_restart_message),
+                functools.partial(mark_bootstrapped, win_ssl_restart_message),
             )
         ).start()
 
     else:
-        pc_bookkeeping()
+        mark_bootstrapped()
 
 # ST2 compat
 if sys.version_info < (3,):
