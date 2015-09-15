@@ -71,6 +71,8 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
                 metadata = json.loads(read_compat(f))
             old_version = SemVer(metadata['version'])
             if version <= old_version:
+                if on_complete:
+                    sublime.set_timeout(on_complete, 100)
                 return
 
             console_write(
