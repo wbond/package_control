@@ -88,11 +88,15 @@ else:
         from .package_control.commands import *
         from .package_control.package_cleanup import PackageCleanup
         from .package_control.unicode import tempfile_unicode_patch
+        from .package_control.console_write import console_write
+        from .package_control.settings import pc_settings_filename
 
     else:
         from package_control.commands import *
         from package_control.package_cleanup import PackageCleanup
         from package_control.unicode import tempfile_unicode_patch
+        from package_control.console_write import console_write
+        from package_control.settings import pc_settings_filename
 
     def plugin_loaded():
         # Make sure the user's locale can handle non-ASCII. A whole bunch of
@@ -126,9 +130,18 @@ else:
         # This handles fixing unicode issues with tempdirs on ST2 for Windows
         tempfile_unicode_patch()
 
-        # Start shortly after Sublime starts so package renames don't cause errors
-        # with keybindings, settings, etc disappearing in the middle of parsing
-        sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
+        pc_settings = sublime.load_settings(pc_settings_filename())
+
+        if not pc_settings.get('bootstrapped'):
+            console_write(
+                u'''
+                Not running package cleanup since bootstrapping is not yet complete
+                '''
+            )
+        else:
+            # Start shortly after Sublime starts so package renames don't cause errors
+            # with keybindings, settings, etc disappearing in the middle of parsing
+            sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
 
     if st_version == 2:
         plugin_loaded()

@@ -37,19 +37,10 @@ class PackageCleanup(threading.Thread):
 
         self.original_installed_packages = load_list_setting(settings, 'installed_packages')
         self.remove_orphaned = settings.get('remove_orphaned', True)
-        self.bootstrapped = settings.get('bootstrapped', False)
 
         threading.Thread.__init__(self)
 
     def run(self):
-        if not self.bootstrapped:
-            console_write(
-                u'''
-                Not running package cleanup since bootstrapping is not yet complete
-                '''
-            )
-            return
-
         # Ensure we record the installation of Package Control itself
         if 'Package Control' not in self.original_installed_packages:
             params = {
