@@ -82,3 +82,25 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
+
+## How to report an issue
+
+The following information must be submitted to speed up the bug review process:
+
+### Summary 
+Fill in a short, one sentence description of the problem. For example, "Saving file in .tiff format causes program to exit."
+
+### Details 
+This is your long version of the issue. Be as specific as possible. Make sure to give a rational, complete depiction of the problem; saying "The print button is broken" does not describe the problem enough.
+
+### Reproducibility 
+This is a very important field. Does this happen every time you follow some procedure? Does it only happen on Tuesdays? Was it only once?
+
+### Steps to Reproduce 
+As discussed earlier, provide the steps you followed to reach the bug. If the problem cannot be reproduced, say so in "Reproducibility" and give the steps to the best of your memory.
+
+### Software Version 
+Your current version can be viewed by accessing the Preferences > Package Settings > Package Control > Settings – Default under the user_agent parameter
+
+### Operating System 
+There are many ways to determine the operating system you are running, but running uname -sr in a terminal is one way to do it.
