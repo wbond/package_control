@@ -1462,8 +1462,8 @@ class PackageManager():
                     if fail_early:
                         return False
                     error = True
-
-                dependency_write(u'has successfully been installed or updated')
+                else:
+                    dependency_write(u'has successfully been installed or updated')
 
         return not error
 
