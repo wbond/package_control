@@ -889,7 +889,7 @@ class PackageManager():
             return False
 
         if not is_available:
-            message = u'The %s specified, %s, is not available'
+            message = u"The %s '%s' is not available"
             params = (package_type, package_name)
             if is_dependency:
                 console_write(message, params)
@@ -1420,7 +1420,7 @@ class PackageManager():
             available_version = version_comparable(available_version) if available_version else None
 
             def dependency_write(msg):
-                msg = u"The dependency {dependency} " + msg
+                msg = u"The dependency '{dependency}' " + msg
                 msg = msg.format(
                     dependency=dependency,
                     installed_version=installed_version,
