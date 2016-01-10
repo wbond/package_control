@@ -1435,7 +1435,7 @@ class PackageManager():
             install_dependency = False
             if not os.path.exists(dependency_dir):
                 install_dependency = True
-                dependency_write(u'is not currently installed; installing')
+                dependency_write(u'is not currently installed; installing...')
             elif os.path.exists(dependency_git_dir):
                 dependency_write_debug(u'is installed via git; leaving alone')
             elif os.path.exists(dependency_hg_dir):
@@ -1448,10 +1448,10 @@ class PackageManager():
                 dependency_write(u'is installed, but the latest available release could not be determined; leaving alone')
             elif not installed_version:
                 install_dependency = True
-                dependency_write(u'is installed, but its version is not known; upgrading to latest release {available_version}')
+                dependency_write(u'is installed, but its version is not known; upgrading to latest release {available_version}...')
             elif installed_version < available_version:
                 install_dependency = True
-                dependency_write(u'is installed, but out of date; upgrading to latest release {available_version} from {installed_version}')
+                dependency_write(u'is installed, but out of date; upgrading to latest release {available_version} from {installed_version}...')
             else:
                 dependency_write_debug(u'is installed and up to date ({installed_version}); leaving alone')
 
