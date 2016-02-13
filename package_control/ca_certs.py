@@ -352,7 +352,9 @@ def _osx_get_distrusted_certs(settings):
     """
 
     args = ['/usr/bin/security', 'dump-trust-settings', '-d']
-    result = Cli(None, settings.get('debug')).execute(args, '/usr/bin', ignore_errors='No Trust Settings were found')
+    result = Cli(None, settings.get('debug')).execute(args, '/usr/bin',
+        ignore_errors='No Trust Settings were found|SecTrustSettingsCopyTrustSettings: The specified item '
+                      'could not be found in the keychain.')
 
     if not result:
         return []
