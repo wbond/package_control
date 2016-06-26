@@ -1,7 +1,7 @@
-import base64
 import os
 import oscrypto
 import time
+import ssl
 import sys
 
 from .console_write import console_write
@@ -218,12 +218,4 @@ def create_ca_bundle(settings, destination):
 
     with open_compat(destination, 'w') as f:
         for der_bytes, _, _ in oscrypto.trust_list.extract_from_system():
-            f.write(u'-----BEGIN CERTIFICATE-----\n')
-
-            der_str = base64.standard_b64encode(der_bytes).decode()
-
-            for i in range(0, len(der_str), 64):
-                j = i + 64
-                f.write(der_str[i:j] + u'\n')
-
-            f.write(u'-----END CERTIFICATE-----\n')
+            f.write(ssl.DER_cert_to_PEM_cert(der_bytes))
