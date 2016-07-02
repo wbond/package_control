@@ -4,7 +4,7 @@ import ssl
 import sys
 
 from .console_write import console_write
-from .deps import oscrypto
+from .deps.oscrypto import trust_list
 from .open_compat import open_compat, read_compat
 
 try:
@@ -217,5 +217,5 @@ def create_ca_bundle(settings, destination):
     """
 
     with open_compat(destination, 'w') as f:
-        for der_bytes, _, _ in oscrypto.trust_list.extract_from_system():
+        for der_bytes, _, _ in trust_list.extract_from_system():
             f.write(ssl.DER_cert_to_PEM_cert(der_bytes))

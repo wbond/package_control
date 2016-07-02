@@ -2,7 +2,9 @@
 # Not a .py to prevent ST from thinking this is a plugin
 
 import inspect
-import os.path
+import os
+import shutil
+import tempfile
 
 from pip.vcs.git import Git
 
@@ -15,22 +17,109 @@ DEPENDENCIES = [
     ('asn1crypto', 'https://github.com/wbond/asn1crypto.git', '0.18.0')
 ]
 
+REQUIRED_FILES = {
+    'oscrypto': [
+        '_linux_bsd/__init__.py',
+        '_linux_bsd/trust_list.py',
+
+        '_osx/__init__.py',
+        '_osx/_core_foundation.py',
+        '_osx/_core_foundation_cffi.py',
+        '_osx/_core_foundation_ctypes.py',
+        '_osx/_security.py',
+        '_osx/_security_cffi.py',
+        '_osx/_security_ctypes.py',
+        '_osx/trust_list.py',
+
+        '_win/__init__.py',
+        '_win/_crypt32.py',
+        '_win/_crypt32_cffi.py',
+        '_win/_crypt32_ctypes.py',
+        '_win/_decode.py',
+        '_win/_kernel32.py',
+        '_win/_kernel32_cffi.py',
+        '_win/_kernel32_ctypes.py',
+        '_win/trust_list.py',
+
+        '__init__.py',
+        '_errors.py',
+        '_ffi.py',
+        '_types.py',
+        'errors.py',
+        'trust_list.py',
+    ],
+
+    'asn1crypto': [
+        '_perf/__init__.py',
+        '_perf/_big_num_cffi.py',
+        '_perf/_big_num_ctypes.py',
+
+        '__init__.py',
+        '_elliptic_curve.py',
+        '_errors.py',
+        '_ffi.py',
+        '_int.py',
+        '_iri.py',
+        '_ordereddict.py',
+        '_teletex_codec.py',
+        '_types.py',
+        'algos.py',
+        'core.py',
+        'keys.py',
+        'pem.py',
+        'util.py',
+        'x509.py',
+    ]
+}
+
+
+def clone_repo(url, rev, dest):
+    Git('git+{}@{}'.format(url, rev)).obtain(dest)
+
+
+def get_dep(name, repo, rev, mod_dir, tmp_dir):
+    repo_dir = os.path.join(tmp_dir, name)
+
+    clone_repo(repo, rev, repo_dir)
+    copy_files(os.path.join(repo_dir, name), REQUIRED_FILES[name], mod_dir)
+
+
+def copy_files(src_root, src_files, dst):
+    for file in src_files:
+        src_file = os.path.join(src_root, file)
+        dst_file = os.path.join(dst, file)
+
+        dst_file_dir = os.path.dirname(dst_file)
+        if not os.path.exists(dst_file_dir):
+            os.makedirs(dst_file_dir)
+
+        shutil.copyfile(src_file, dst_file)
+
 
 def main():
-    for dep, url, rev in DEPENDENCIES:
-        print('Installing {} ({}) from {}'.format(dep, rev, url))
-
-        Git(
-            'git+{}@{}'.format(url, rev)
-        ).obtain(
-            os.path.join(INSTALL_DIR, dep)
-        )
-
     init_file = os.path.join(INSTALL_DIR, '__init__.py')
 
     if not os.path.exists(init_file):
-        print('Creating __init__.py')
+        if not os.path.exists(INSTALL_DIR):
+            print('Creating package_control/deps/')
+            os.makedirs(INSTALL_DIR)
+
+        print('Creating package_control/deps/__init__.py')
         open(init_file, 'w').close()
+
+    tmp_dir = tempfile.mkdtemp('package_control', 'get_deps')
+
+    for dep_name, url, rev in DEPENDENCIES:
+        mod_dir = os.path.join(INSTALL_DIR, dep_name)
+
+        if os.path.exists(mod_dir):
+            print('Skipping {}'.format(dep_name))
+            continue
+
+        print('Installing {} ({}) from {}'.format(dep_name, rev, url))
+        get_dep(dep_name, url, rev, mod_dir, tmp_dir)
+
+    shutil.rmtree(tmp_dir)
 
 
 if __name__ == '__main__':
