@@ -1,10 +1,10 @@
 import os
-import oscrypto
 import time
 import ssl
 import sys
 
 from .console_write import console_write
+from .deps import oscrypto
 from .open_compat import open_compat, read_compat
 
 try:

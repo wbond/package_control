@@ -2,3 +2,5 @@
 *.sublime-project
 *.thTheme.cache
 *.sublime-workspace
+
+/package_control/deps/
