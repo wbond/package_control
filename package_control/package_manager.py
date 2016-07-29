@@ -813,7 +813,8 @@ class PackageManager():
         trailing_package_dir = package_dir + slash if package_dir[-1] != slash else package_dir
         package_dir_regex = re.compile('^' + re.escape(trailing_package_dir))
         for root, dirs, files in os.walk(package_dir):
-            [dirs.remove(dir_) for dir_ in dirs if dir_ in dirs_to_ignore]
+            # add "dir" to "paths" list if "dir" is not in "dirs_to_ignore"
+            dirs[:] = [x for x in dirs if x not in dirs_to_ignore]
             paths = dirs
             paths.extend(files)
             for path in paths:
