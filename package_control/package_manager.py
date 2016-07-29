@@ -890,7 +890,7 @@ class PackageManager():
             return False
 
         if not is_available:
-            message = u'The %s specified, %s, is not available'
+            message = u"The %s '%s' is not available"
             params = (package_type, package_name)
             if is_dependency:
                 console_write(message, params)
@@ -1421,7 +1421,7 @@ class PackageManager():
             available_version = version_comparable(available_version) if available_version else None
 
             def dependency_write(msg):
-                msg = u"The dependency {dependency} " + msg
+                msg = u"The dependency '{dependency}' " + msg
                 msg = msg.format(
                     dependency=dependency,
                     installed_version=installed_version,
@@ -1436,7 +1436,7 @@ class PackageManager():
             install_dependency = False
             if not os.path.exists(dependency_dir):
                 install_dependency = True
-                dependency_write(u'is not currently installed; installing')
+                dependency_write(u'is not currently installed; installing...')
             elif os.path.exists(dependency_git_dir):
                 dependency_write_debug(u'is installed via git; leaving alone')
             elif os.path.exists(dependency_hg_dir):
@@ -1449,10 +1449,10 @@ class PackageManager():
                 dependency_write(u'is installed, but the latest available release could not be determined; leaving alone')
             elif not installed_version:
                 install_dependency = True
-                dependency_write(u'is installed, but its version is not known; upgrading to latest release {available_version}')
+                dependency_write(u'is installed, but its version is not known; upgrading to latest release {available_version}...')
             elif installed_version < available_version:
                 install_dependency = True
-                dependency_write(u'is installed, but out of date; upgrading to latest release {available_version} from {installed_version}')
+                dependency_write(u'is installed, but out of date; upgrading to latest release {available_version} from {installed_version}...')
             else:
                 dependency_write_debug(u'is installed and up to date ({installed_version}); leaving alone')
 
@@ -1463,8 +1463,8 @@ class PackageManager():
                     if fail_early:
                         return False
                     error = True
-
-                dependency_write(u'has successfully been installed or updated')
+                else:
+                    dependency_write(u'has successfully been installed or updated')
 
         return not error
 
