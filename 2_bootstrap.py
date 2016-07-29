@@ -103,7 +103,7 @@ def plugin_loaded():
         loader.add('00', 'package_control', base_loader_code)
 
     # SSL support fo Linux
-    if sublime.platform() == 'linux':
+    if sublime.platform() == 'linux' and int(sublime.version()) < 3109:
         linux_ssl_url = u'http://packagecontrol.io/ssl/1.0.1/ssl-linux.sublime-package'
         linux_ssl_hash = u'862d061cbe666777cd1e9cd1cbc7c82f48ad8897dbb68332975f3edf5ce0f38d'
         linux_ssl_priority = u'01'
