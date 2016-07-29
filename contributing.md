@@ -1,6 +1,6 @@
 Are you having trouble using Package Control? Before opening an issue, please
 take the time to perform the following few steps. Properly following directions
-will improve the likelyhood of your issue be quickly resolved.
+will improve the likelihood of your issue be quickly resolved.
 
  1. Check to make sure you are using the latest version of Package Control:
     run the `Package Control: List Packages` command from the command palette
