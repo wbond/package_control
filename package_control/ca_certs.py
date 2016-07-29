@@ -113,6 +113,11 @@ def get_system_ca_bundle_path(settings):
     ca_path = False
 
     if platform == 'win32' or platform == 'darwin':
+        # Remove any file with the old system bundle filename
+        old_ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
+        if os.path.exists(old_ca_path):
+            os.unlink(old_ca_path)
+
         ensure_ca_bundle_dir()
         ca_path, _ = trust_list._ca_path(ca_bundle_dir)
 
