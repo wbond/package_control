@@ -14,7 +14,7 @@ except (ImportError):
     # Python 2
     from httplib import HTTPS_PORT
     from urllib2 import parse_keqv_list, parse_http_list
-    from . import x509
+    from ..deps.asn1crypto import x509
 
 from ..console_write import console_write
 from .debuggable_https_response import DebuggableHTTPSResponse
@@ -325,9 +325,16 @@ try:
                 # we parse the raw DER certificate and grab the info ourself
                 if x509:
                     der_cert = self.sock.getpeercert(True)
-                    parsed_cert = x509.parse(der_cert)
-                    if 'subjectAltName' in parsed_cert:
-                        cert['subjectAltName'] = parsed_cert['subjectAltName']
+                    cert_object = x509.Certificate.load(der_cert)
+                    if cert_object.subject_alt_name_value:
+                        subject_alt_names = []
+                        for general_name in cert_object.subject_alt_name_value:
+                            if general_name.name != 'dns_name':
+                                continue
+                            if 'commonName' not in cert or general_name.native != cert['commonName']:
+                                subject_alt_names.append(('DNS', general_name.native))
+                        if subject_alt_names:
+                            cert['subjectAltName'] = tuple(subject_alt_names)
 
                 if self.debuglevel == -1:
                     subjectMap = {
