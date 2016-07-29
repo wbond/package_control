@@ -117,11 +117,11 @@ else:
                 unless this is fixed.
 
                 On Linux, please reference your distribution's docs for
-                information on properly setting the LANG environmental variable.
-                As a temporary work-around, you can launch Sublime Text from the
-                terminal with:
+                information on properly setting the LANG and LC_CTYPE
+                environmental variables. As a temporary work-around, you can
+                launch Sublime Text from the terminal with:
 
-                LANG=en_US.UTF-8 sublime_text
+                LANG=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 sublime_text
                 '''
             )
             sublime.error_message(message)
