@@ -1,10 +1,14 @@
 import os
 import sys
+import sublime
 import sublime_plugin
 
 if sys.version_info >= (3,):
     import importlib
     import zipimport
+
+
+st_build = int(sublime.version())
 
 
 mod_prefix = 'package_control'
@@ -22,7 +26,7 @@ do_insert = False
 is_zipped = False
 
 commands_name = mod_prefix + '.commands'
-if commands_name in sys.modules and sys.version_info >= (3,):
+if commands_name in sys.modules and sys.version_info >= (3,) and st_build < 3112:
     # Unfortunately with ST3, the ZipLoader does not "properly"
     # implement load_module(), instead loading the code from the zip
     # file when the object is instantiated. This means that calling
@@ -228,7 +232,8 @@ for suffix in mods_load_order:
             reload(sys.modules[mod])
         except (ImportError):
             pass  # Upgrade issues from PC 2.0 -> 3.0
-    if sys.version_info >= (3,):
+
+    if sys.version_info >= (3,) and st_build < 3112:
         bare_mod = bare_mod_prefix + suffix
         if bare_mod in reload_mods:
             bare_module = sys.modules[bare_mod]
