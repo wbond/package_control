@@ -102,6 +102,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
         self.setup_opener(url, timeout)
 
         debug = self.settings.get('debug')
+        tried = tries
         error_string = None
         while tries > 0:
             tries -= 1
@@ -220,6 +221,10 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 continue
 
             break
+
+        if error_string is None:
+            plural = u's' if tried > 1 else u''
+            error_string = u'Unable to download %s after %d attempt%s' % (url, tried, plural)
 
         raise DownloaderException(error_string)
 
