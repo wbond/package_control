@@ -45,6 +45,14 @@ from . import loader, text
 from . import __version__
 
 
+DEFAULT_CHANNEL = 'https://packagecontrol.io/channel_v3.json'
+OLD_DEFAULT_CHANNELS = set([
+    'https://packagecontrol.io/channel.json',
+    'https://sublime.wbond.net/channel.json',
+    'https://sublime.wbond.net/repositories.json'
+])
+
+
 class PackageManager():
 
     """
@@ -346,7 +354,19 @@ class PackageManager():
 
         repositories = self.settings.get('repositories')[:]
         channels = self.settings.get('channels')
+
+        # Update any old default channel URLs users have in their config
+        updated_channels = []
+        found_default = False
         for channel in channels:
+            if channel in OLD_DEFAULT_CHANNELS:
+                if not found_default:
+                    updated_channels.append(DEFAULT_CHANNEL)
+                    found_default = True
+                continue
+            updated_channels.append(channel)
+
+        for channel in updated_channels:
             channel = channel.strip()
 
             # Caches various info from channels for performance
