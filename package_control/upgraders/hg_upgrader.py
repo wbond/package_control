@@ -13,6 +13,8 @@ class HgUpgrader(VcsUpgrader):
 
     cli_name = 'hg'
 
+    ok_returncodes = set([0, 1])
+
     def retrieve_binary(self):
         """
         Returns the path to the hg executable

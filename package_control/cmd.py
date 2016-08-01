@@ -72,6 +72,8 @@ class Cli(object):
 
     cli_name = None
 
+    ok_returncodes = set([0])
+
     def __init__(self, binary_locations, debug):
         self.binary_locations = binary_locations
         self.debug = debug
@@ -169,7 +171,7 @@ class Cli(object):
             output = output.decode(encoding)
             output = output.replace('\r\n', '\n').rstrip(' \n\r')
 
-            if proc.returncode != 0:
+            if proc.returncode not in self.ok_returncodes:
                 if not ignore_errors or re.search(ignore_errors, output) is None:
                     show_error(
                         u'''
