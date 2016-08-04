@@ -98,7 +98,8 @@ class Cli(object):
         :param ignore_errors:
             A regex of errors to ignore
 
-        :return: A string of the executable output
+        :return:
+            A string of the executable output or False on error
         """
 
         startupinfo = None
