@@ -102,6 +102,8 @@ class Cli(object):
             A string of the executable output or False on error
         """
 
+        orig_cwd = cwd
+
         startupinfo = None
         if os.name == 'nt':
             startupinfo = subprocess.STARTUPINFO()
@@ -135,19 +137,29 @@ class Cli(object):
 
             stuck = True
 
+            binary_name = os.path.basename(args[0])
+            if re.search('git', binary_name):
+                is_vcs = True
+            elif re.search('hg', binary_name):
+                is_vcs = True
+
             if sublime:
                 def kill_proc():
                     if not stuck:
                         return
                     # This doesn't actually work!
                     proc.kill()
-                    binary_name = os.path.basename(args[0])
-                    if re.search('git', binary_name):
-                        is_vcs = True
-                    elif re.search('hg', binary_name):
-                        is_vcs = True
 
-                    message = u'The process %s seems to have gotten stuck.' % binary_name
+                    message = text.format(
+                        u'''
+                        The process %s seems to have gotten stuck.
+
+                        Command: %s
+
+                        Working directory: %s
+                        ''',
+                        (binary_name, create_cmd(args), orig_cwd)
+                    )
                     if is_vcs:
                         message += text.format(
                             u'''
@@ -174,17 +186,28 @@ class Cli(object):
 
             if proc.returncode not in self.ok_returncodes:
                 if not ignore_errors or re.search(ignore_errors, output) is None:
-                    show_error(
+                    message = text.format(
                         u'''
                         Error executing: %s
 
-                        %s
+                        Working directory: %s
 
-                        VCS-based packages can be ignored with the
-                        "ignore_vcs_packages" setting.
+                        %s
                         ''',
-                        (create_cmd(args), output)
+                        (create_cmd(args), orig_cwd, output)
                     )
+                    if is_vcs:
+                        message += text.format(
+                            '''
+
+                            VCS-based packages can be ignored by changing the
+                            "ignore_vcs_packages" setting to true.
+
+                            Sublime Text will need to be restarted once the
+                            setting is changed.
+                            '''
+                        )
+                    show_error(message)
                     return False
 
             if meaningful_output and self.debug and len(output) > 0:
