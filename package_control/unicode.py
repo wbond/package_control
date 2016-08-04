@@ -6,6 +6,11 @@ import os
 if sys.platform == 'win32':
     import ctypes
 
+try:
+    str_cls = unicode
+except (NameError):
+    str_cls = str
+
 # Sublime Text on OS X does not seem to report the correct encoding
 # so we hard-code that to UTF-8
 _encoding = 'utf-8' if sys.platform == 'darwin' else locale.getpreferredencoding()
@@ -33,23 +38,23 @@ def unicode_from_os(e):
         if isinstance(e, Exception):
             e = e.args[0]
 
-        if isinstance(e, unicode):
+        if isinstance(e, str_cls):
             return e
 
         if isinstance(e, int):
             e = str(e)
 
-        return unicode(e, _encoding)
+        return str_cls(e, _encoding)
 
     # If the "correct" encoding did not work, try some defaults, and then just
     # obliterate characters that we can't seen to decode properly
     except UnicodeDecodeError:
         for encoding in _fallback_encodings:
             try:
-                return unicode(e, encoding, errors='strict')
+                return str_cls(e, encoding, errors='strict')
             except:
                 pass
-    return unicode(e, errors='replace')
+    return str_cls(e, errors='replace')
 
 
 def tempfile_unicode_patch():

@@ -20,8 +20,7 @@ class DebuggableHTTPConnection(HTTPConnection):
     response_class = DebuggableHTTPResponse
     _debug_protocol = 'HTTP'
 
-    def __init__(self, host, port=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
-            **kwargs):
+    def __init__(self, host, port=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, **kwargs):
         self.passwd = kwargs.get('passwd')
 
         # Python 2.6.1 on OS X 10.6 does not include these

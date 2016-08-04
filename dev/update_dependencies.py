@@ -87,7 +87,19 @@ for fname in REQUIRED_FROM_OSCRYPTO:
     import_prefix = '..' + ('.' * fname.count('/'))
     with open(os.path.join(oscrypto_src, fname), 'r', encoding='utf-8') as sf:
         file_source = sf.read()
-        file_source = re.sub(r'^ *from +(asn1crypto(\.[^ ]+)?\b +import +.+)$', 'from %s\\1' % import_prefix, file_source, 0, re.M)
-        file_source = re.sub(r'^ *import +(asn1crypto\b.*)$', 'from %s import \\1' % import_prefix, file_source, 0, re.M)
+        file_source = re.sub(
+            r'^ *from +(asn1crypto(\.[^ ]+)?\b +import +.+)$',
+            'from %s\\1' % import_prefix,
+            file_source,
+            0,
+            re.M
+        )
+        file_source = re.sub(
+            r'^ *import +(asn1crypto\b.*)$',
+            'from %s import \\1' % import_prefix,
+            file_source,
+            0,
+            re.M
+        )
         with open(dst_path, 'w', encoding='utf-8') as df:
             df.write(file_source)

@@ -7,7 +7,7 @@ try:
 except (ImportError):
     # Python 2
     from urllib import urlencode, quote
-    str_cls = unicode
+    str_cls = unicode  # noqa
 
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient

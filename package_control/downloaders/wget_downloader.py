@@ -82,8 +82,15 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 return cached
 
         self.tmp_file = tempfile.NamedTemporaryFile().name
-        command = [self.wget, '--connect-timeout=' + str_cls(int(timeout)), '-o',
-            self.tmp_file, '-O', '-', '--secure-protocol=TLSv1']
+        command = [
+            self.wget,
+            '--connect-timeout=' + str_cls(int(timeout)),
+            '-o',
+            self.tmp_file,
+            '-O',
+            '-',
+            '--secure-protocol=TLSv1'
+        ]
 
         user_agent = self.settings.get('user_agent')
         if user_agent:
@@ -150,8 +157,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 encoding = headers.get('content-encoding')
                 result = self.decode_response(encoding, result)
 
-                result = self.cache_result('get', url, general['status'],
-                    headers, result)
+                result = self.cache_result('get', url, general['status'], headers, result)
 
                 return result
 
@@ -162,8 +168,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     self.handle_rate_limit(headers, url)
 
                     if general['status'] == 304:
-                        return self.cache_result('get', url, general['status'],
-                            headers, None)
+                        return self.cache_result('get', url, general['status'], headers, None)
 
                     if general['status'] == 503 and tries != 0:
                         # GitHub and BitBucket seem to rate limit via 503

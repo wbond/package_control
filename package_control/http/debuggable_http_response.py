@@ -5,7 +5,7 @@ try:
 except (ImportError):
     # Python 2
     from httplib import HTTPResponse, IncompleteRead
-    str_cls = unicode
+    str_cls = unicode  # noqa
 
 from ..console_write import console_write
 

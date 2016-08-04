@@ -84,11 +84,14 @@ class PackageCreator():
         """
 
         destination = self.get_package_destination()
-        if self.manager.create_package(self.package_name, destination,
-                profile=self.profile):
-            self.window.run_command('open_dir', {"dir":
-                destination, "file": self.package_name +
-                '.sublime-package'})
+        if self.manager.create_package(self.package_name, destination, profile=self.profile):
+            self.window.run_command(
+                'open_dir',
+                {
+                    "dir": destination,
+                    "file": self.package_name + '.sublime-package'
+                }
+            )
 
     def get_package_destination(self):
         """

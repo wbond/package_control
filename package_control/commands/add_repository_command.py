@@ -14,9 +14,13 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        self.window.show_input_panel('GitHub or BitBucket Web URL, or Custom' +
-                ' JSON Repository URL', '', self.on_done,
-            self.on_change, self.on_cancel)
+        self.window.show_input_panel(
+            'GitHub or BitBucket Web URL, or Custom JSON Repository URL',
+            '',
+            self.on_done,
+            self.on_change,
+            self.on_cancel
+        )
 
     def on_done(self, input):
         """
@@ -28,7 +32,7 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
 
         input = input.strip()
 
-        if re.match('https?://', input, re.I) == None:
+        if re.match('https?://', input, re.I) is None:
             show_error(
                 u'''
                 Unable to add the repository "%s" since it does not appear to

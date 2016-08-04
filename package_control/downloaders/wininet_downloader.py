@@ -3,16 +3,8 @@ import ctypes
 import re
 import datetime
 import struct
-import locale  # To prevent import errors in thread with datetime
-
-wininet = windll.wininet
-
-try:
-    # Python 3
-    from urllib.parse import urlparse
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
+# To prevent import errors in thread with datetime
+import locale  # noqa
 
 from ..console_write import console_write
 from ..unicode import unicode_from_os
@@ -24,6 +16,15 @@ from .win_downloader_exception import WinDownloaderException
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
 from .caching_downloader import CachingDownloader
+
+try:
+    # Python 3
+    from urllib.parse import urlparse
+except (ImportError):
+    # Python 2
+    from urlparse import urlparse
+
+wininet = windll.wininet
 
 
 class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
@@ -189,8 +190,12 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             dw_connected_state = wintypes.DWORD(self.INTERNET_STATE_DISCONNECTED_BY_USER)
             dw_flags = wintypes.DWORD(0)
             connected_info = InternetConnectedInfo(dw_connected_state, dw_flags)
-            wininet.InternetSetOptionA(None,
-                self.INTERNET_OPTION_CONNECTED_STATE, ctypes.byref(connected_info), ctypes.sizeof(connected_info))
+            wininet.InternetSetOptionA(
+                None,
+                self.INTERNET_OPTION_CONNECTED_STATE,
+                ctypes.byref(connected_info),
+                ctypes.sizeof(connected_info)
+            )
             changed_state_back = True
 
         if self.debug:
@@ -294,12 +299,21 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 dw_connected_state = wintypes.DWORD(self.INTERNET_STATE_CONNECTED)
                 dw_flags = wintypes.DWORD(0)
                 connected_info = InternetConnectedInfo(dw_connected_state, dw_flags)
-                wininet.InternetSetOptionA(None,
-                    self.INTERNET_OPTION_CONNECTED_STATE, ctypes.byref(connected_info), ctypes.sizeof(connected_info))
+                wininet.InternetSetOptionA(
+                    None,
+                    self.INTERNET_OPTION_CONNECTED_STATE,
+                    ctypes.byref(connected_info),
+                    ctypes.sizeof(connected_info)
+                )
                 changed_to_online = True
 
-            self.network_connection = wininet.InternetOpenW(self.settings.get('user_agent', ''),
-                self.INTERNET_OPEN_TYPE_PRECONFIG, None, None, 0)
+            self.network_connection = wininet.InternetOpenW(
+                self.settings.get('user_agent', ''),
+                self.INTERNET_OPEN_TYPE_PRECONFIG,
+                None,
+                None,
+                0
+            )
 
             if not self.network_connection:
                 error_string = text.format(
@@ -311,22 +325,39 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 raise WinDownloaderException(error_string)
 
             win_timeout = wintypes.DWORD(int(timeout) * 1000)
-            # Apparently INTERNET_OPTION_CONNECT_TIMEOUT just doesn't work, leaving it in hoping they may fix in the future
+            # Apparently INTERNET_OPTION_CONNECT_TIMEOUT just doesn't work,
+            # leaving it in hoping they may fix in the future
             # 2016-07-29: Commented-out due to some Windows 10 users having issues
             # https://github.com/wbond/package_control/issues/1039
-            #wininet.InternetSetOptionA(self.network_connection,
-            #    self.INTERNET_OPTION_CONNECT_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
-            wininet.InternetSetOptionA(self.network_connection,
-                self.INTERNET_OPTION_SEND_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
-            wininet.InternetSetOptionA(self.network_connection,
-                self.INTERNET_OPTION_RECEIVE_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+            # wininet.InternetSetOptionA(self.network_connection,
+            #     self.INTERNET_OPTION_CONNECT_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+            wininet.InternetSetOptionA(
+                self.network_connection,
+                self.INTERNET_OPTION_SEND_TIMEOUT,
+                win_timeout,
+                ctypes.sizeof(win_timeout)
+            )
+            wininet.InternetSetOptionA(
+                self.network_connection,
+                self.INTERNET_OPTION_RECEIVE_TIMEOUT,
+                win_timeout,
+                ctypes.sizeof(win_timeout)
+            )
 
             # Don't allow HTTPS sites to redirect to HTTP sites
-            tcp_flags  = self.INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS
+            tcp_flags = self.INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS
             # Try to re-use an existing connection to the server
             tcp_flags |= self.INTERNET_FLAG_EXISTING_CONNECT
-            self.tcp_connection = wininet.InternetConnectW(self.network_connection,
-                hostname, port, None, None, self.INTERNET_SERVICE_HTTP, tcp_flags, 0)
+            self.tcp_connection = wininet.InternetConnectW(
+                self.network_connection,
+                hostname,
+                port,
+                None,
+                None,
+                self.INTERNET_SERVICE_HTTP,
+                tcp_flags,
+                0
+            )
 
             if not self.tcp_connection:
                 error_string = text.format(
@@ -344,10 +375,18 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             if proxy_username and proxy_password:
                 username = ctypes.c_wchar_p(proxy_username)
                 password = ctypes.c_wchar_p(proxy_password)
-                wininet.InternetSetOptionW(self.tcp_connection,
-                    self.INTERNET_OPTION_PROXY_USERNAME, ctypes.cast(username, ctypes.c_void_p), len(proxy_username))
-                wininet.InternetSetOptionW(self.tcp_connection,
-                    self.INTERNET_OPTION_PROXY_PASSWORD, ctypes.cast(password, ctypes.c_void_p), len(proxy_password))
+                wininet.InternetSetOptionW(
+                    self.tcp_connection,
+                    self.INTERNET_OPTION_PROXY_USERNAME,
+                    ctypes.cast(username, ctypes.c_void_p),
+                    len(proxy_username)
+                )
+                wininet.InternetSetOptionW(
+                    self.tcp_connection,
+                    self.INTERNET_OPTION_PROXY_PASSWORD,
+                    ctypes.cast(password, ctypes.c_void_p),
+                    len(proxy_password)
+                )
 
             self.hostname = hostname
             self.port = port
@@ -375,7 +414,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 http_connection = None
 
                 # Keep-alive for better performance
-                http_flags  = self.INTERNET_FLAG_KEEP_CONNECTION
+                http_flags = self.INTERNET_FLAG_KEEP_CONNECTION
                 # Prevent caching/retrieving from cache
                 http_flags |= self.INTERNET_FLAG_RELOAD
                 http_flags |= self.INTERNET_FLAG_NO_CACHE_WRITE
@@ -384,7 +423,16 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 if self.scheme == 'https':
                     http_flags |= self.INTERNET_FLAG_SECURE
 
-                http_connection = wininet.HttpOpenRequestW(self.tcp_connection, u'GET', path, u'HTTP/1.1', None, None, http_flags, 0)
+                http_connection = wininet.HttpOpenRequestW(
+                    self.tcp_connection,
+                    u'GET',
+                    path,
+                    u'HTTP/1.1',
+                    None,
+                    None,
+                    http_flags,
+                    0
+                )
                 if not http_connection:
                     error_string = text.format(
                         u'''
@@ -399,7 +447,13 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     request_header_lines.append(u"%s: %s" % (header, value))
                 request_header_lines = u"\r\n".join(request_header_lines)
 
-                success = wininet.HttpSendRequestW(http_connection, request_header_lines, len(request_header_lines), None, 0)
+                success = wininet.HttpSendRequestW(
+                    http_connection,
+                    request_header_lines,
+                    len(request_header_lines),
+                    None,
+                    0
+                )
 
                 if not success:
                     error_string = text.format(
@@ -440,7 +494,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                             '''
                         )
                     if self.scheme == 'https':
-                        cert_struct = self.read_option(http_connection, self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT)
+                        cert_struct = self.read_option(
+                            http_connection,
+                            self.INTERNET_OPTION_SECURITY_CERTIFICATE_STRUCT
+                        )
 
                         if cert_struct.lpszIssuerInfo:
                             issuer_info = cert_struct.lpszIssuerInfo.decode('cp1252')
@@ -524,7 +581,13 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     to_read_was_read = wintypes.DWORD(header_buffer_size)
                     headers_buffer = ctypes.create_string_buffer(header_buffer_size)
 
-                    success = wininet.HttpQueryInfoA(http_connection, self.HTTP_QUERY_RAW_HEADERS_CRLF, ctypes.byref(headers_buffer), ctypes.byref(to_read_was_read), None)
+                    success = wininet.HttpQueryInfoA(
+                        http_connection,
+                        self.HTTP_QUERY_RAW_HEADERS_CRLF,
+                        ctypes.byref(headers_buffer),
+                        ctypes.byref(to_read_was_read),
+                        None
+                    )
                     if not success:
                         if ctypes.GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
                             error_string = text.format(
@@ -584,8 +647,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 encoding = headers.get('content-encoding')
                 result = self.decode_response(encoding, result)
 
-                result = self.cache_result('get', url, general['status'],
-                    headers, result)
+                result = self.cache_result('get', url, general['status'], headers, result)
 
                 if general['status'] not in [200, 304]:
                     raise HttpError("HTTP error %s" % general['status'], general['status'])
@@ -633,7 +695,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             A (UTC) datetime object
         """
 
-        hundreds_nano_seconds = struct.unpack('>Q', struct.pack('>LL', filetime.dwHighDateTime, filetime.dwLowDateTime))[0]
+        hundreds_nano_seconds = struct.unpack(
+            '>Q',
+            struct.pack('>LL', filetime.dwHighDateTime, filetime.dwLowDateTime)
+        )[0]
         seconds_since_1601 = hundreds_nano_seconds / 10000000
         epoch_seconds = seconds_since_1601 - 11644473600  # Seconds from Jan 1 1601 to Jan 1 1970
         return datetime.datetime.fromtimestamp(epoch_seconds)

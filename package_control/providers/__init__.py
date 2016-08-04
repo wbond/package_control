@@ -6,7 +6,11 @@ from .repository_provider import RepositoryProvider
 from .channel_provider import ChannelProvider
 
 
-REPOSITORY_PROVIDERS = [BitBucketRepositoryProvider, GitHubRepositoryProvider,
-    GitHubUserProvider, RepositoryProvider]
+REPOSITORY_PROVIDERS = [
+    BitBucketRepositoryProvider,
+    GitHubRepositoryProvider,
+    GitHubUserProvider,
+    RepositoryProvider
+]
 
 CHANNEL_PROVIDERS = [ChannelProvider]

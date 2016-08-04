@@ -55,7 +55,9 @@ try:
 
 except (ImportError) as e:
 
+    import_error = e
+
     class ValidatingHTTPSHandler():
 
         def __init__(self, **kwargs):
-            raise e
+            raise import_error

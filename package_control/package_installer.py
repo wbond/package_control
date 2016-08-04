@@ -25,8 +25,7 @@ class PackageInstaller(PackageDisabler):
         self.old_theme_package = None
         self.old_theme = None
 
-    def make_package_list(self, ignore_actions=[], override_action=None,
-            ignore_packages=[]):
+    def make_package_list(self, ignore_actions=[], override_action=None, ignore_packages=[]):
         """
         Creates a list of packages and what operation would be performed for
         each. Allows filtering by the applicable action or package name.
@@ -109,19 +108,16 @@ class PackageInstaller(PackageDisabler):
                             extra = ''
                     elif not installed_version:
                         action = 'overwrite'
-                        extra = ' %s with %s' % (installed_version_name,
-                            new_version)
+                        extra = ' %s with %s' % (installed_version_name, new_version)
                     else:
                         installed_version = version_comparable(installed_version)
                         new_version_cmp = version_comparable(release['version'])
                         if new_version_cmp > installed_version:
                             action = 'upgrade'
-                            extra = ' to %s from %s' % (new_version,
-                                installed_version_name)
+                            extra = ' to %s from %s' % (new_version, installed_version_name)
                         elif new_version_cmp < installed_version:
                             action = 'downgrade'
-                            extra = ' to %s from %s' % (new_version,
-                                installed_version_name)
+                            extra = ' to %s from %s' % (new_version, installed_version_name)
                         else:
                             action = 'reinstall'
                             extra = ' %s' % new_version
@@ -137,8 +133,7 @@ class PackageInstaller(PackageDisabler):
             if not description:
                 description = 'No description provided'
             package_entry.append(description)
-            package_entry.append(action + extra + ' ' +
-                re.sub('^https?://', '', info['homepage']))
+            package_entry.append(action + extra + ' ' + re.sub('^https?://', '', info['homepage']))
             package_list.append(package_entry)
         return package_list
 
@@ -164,8 +159,11 @@ class PackageInstaller(PackageDisabler):
 
         thread = PackageInstallerThread(self.manager, name, on_complete)
         thread.start()
-        ThreadProgress(thread, 'Installing package %s' % name,
-            'Package %s successfully %s' % (name, self.completion_type))
+        ThreadProgress(
+            thread,
+            'Installing package %s' % name,
+            'Package %s successfully %s' % (name, self.completion_type)
+        )
 
 
 class PackageInstallerThread(threading.Thread):

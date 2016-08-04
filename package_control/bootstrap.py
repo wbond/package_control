@@ -5,7 +5,7 @@ import json
 from os import path
 try:
     from urlparse import urlparse
-    str_cls = unicode
+    str_cls = unicode  # noqa
     from cStringIO import StringIO as BytesIO
     package_control_dir = os.getcwd()
 except (ImportError) as e:

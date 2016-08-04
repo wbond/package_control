@@ -9,8 +9,9 @@ try:
 except (ImportError):
     # Python 2
     from urlparse import urljoin
-    str_cls = unicode
+    str_cls = unicode  # noqa
 
+from .. import text
 from ..console_write import console_write
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
@@ -83,8 +84,7 @@ class ChannelProvider():
 
         if re.match('https?://', self.channel, re.I):
             with downloader(self.channel, self.settings) as manager:
-                channel_json = manager.fetch(self.channel,
-                    'Error downloading channel.')
+                channel_json = manager.fetch(self.channel, 'Error downloading channel.')
 
         # All other channels are expected to be filesystem paths
         else:
@@ -123,7 +123,12 @@ class ChannelProvider():
             raise ProviderException(u'%s the "schema_version" is not a valid number.' % schema_error)
 
         if self.schema_version not in ['1.0', '1.1', '1.2', '2.0', '3.0.0']:
-            raise ProviderException(u'%s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2, 2.0 or 3.0.0.' % schema_error)
+            raise ProviderException(text.format(
+                u'''
+                %s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2, 2.0 or 3.0.0.
+                ''',
+                schema_error
+            ))
 
         version_parts = self.schema_version.split('.')
         self.schema_major_version = int(version_parts[0])
@@ -196,7 +201,13 @@ class ChannelProvider():
         self.fetch()
 
         if 'repositories' not in self.channel_info:
-            raise ProviderException(u'Channel %s does not appear to be a valid channel file because the "repositories" JSON key is missing.' % self.channel)
+            raise ProviderException(text.format(
+                u'''
+                Channel %s does not appear to be a valid channel file because
+                the "repositories" JSON key is missing.
+                ''',
+                self.channel
+            ))
 
         # Determine a relative root so repositories can be defined
         # relative to the location of the channel file.
@@ -279,10 +290,10 @@ class ChannelProvider():
         # stored under in order to be more clear to new users.
         packages_key = 'packages_cache' if self.schema_major_version >= 2 else 'packages'
 
-        if self.channel_info.get(packages_key, False) == False:
+        if self.channel_info.get(packages_key, False) is False:
             return {}
 
-        if self.channel_info[packages_key].get(repo, False) == False:
+        if self.channel_info[packages_key].get(repo, False) is False:
             return {}
 
         output = {}
@@ -361,10 +372,10 @@ class ChannelProvider():
 
         repo = update_url(repo, self.settings.get('debug'))
 
-        if self.channel_info.get('dependencies_cache', False) == False:
+        if self.channel_info.get('dependencies_cache', False) is False:
             return {}
 
-        if self.channel_info['dependencies_cache'].get(repo, False) == False:
+        if self.channel_info['dependencies_cache'].get(repo, False) is False:
             return {}
 
         output = {}

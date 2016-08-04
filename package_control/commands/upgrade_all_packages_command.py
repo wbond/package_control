@@ -56,12 +56,13 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
                     on_complete = functools.partial(self.reenable_package, info[0])
                 else:
                     on_complete = None
-                thread = PackageInstallerThread(self.manager, info[0],
-                    on_complete)
+                thread = PackageInstallerThread(self.manager, info[0], on_complete)
                 thread.start()
-                ThreadProgress(thread, 'Upgrading package %s' % info[0],
-                    'Package %s successfully %s' % (info[0],
-                    self.completion_type))
+                ThreadProgress(
+                    thread,
+                    'Upgrading package %s' % info[0],
+                    'Package %s successfully %s' % (info[0], self.completion_type)
+                )
                 thread.join()
 
         # Disabling a package means changing settings, which can only be done

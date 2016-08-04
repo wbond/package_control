@@ -45,8 +45,7 @@ class GitHubRepositoryProvider():
         """Indicates if this provider can handle the provided repo"""
 
         master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo)
-        branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$',
-            repo)
+        branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$', repo)
         return master is not None or branch is not None
 
     def prefetch(self):

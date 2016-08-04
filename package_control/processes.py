@@ -63,7 +63,12 @@ if os.name == 'nt':
             if process_handle:
                 module = wintypes.HANDLE()
                 needed_bytes = wintypes.LPDWORD()
-                module_res = psapi.EnumProcessModules(process_handle, byref(module), sizeof(module), byref(needed_bytes))
+                module_res = psapi.EnumProcessModules(
+                    process_handle,
+                    byref(module),
+                    sizeof(module),
+                    byref(needed_bytes)
+                )
                 if module_res:
                     length = 260
                     buffer = ctypes.create_unicode_buffer(length)

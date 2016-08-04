@@ -22,7 +22,6 @@ from .package_disabler import PackageDisabler
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
-
 class SwapEvent():
     def __init__(self):
         self._ev = Event()
@@ -327,8 +326,13 @@ def add(priority, name, code=None):
                 if name in installed_packages:
                     installed_packages.remove(name)
 
-            save_list_setting(pc_settings, pc_settings_filename(),
-                'installed_packages', installed_packages, orig_installed_packages)
+            save_list_setting(
+                pc_settings,
+                pc_settings_filename(),
+                'installed_packages',
+                installed_packages,
+                orig_installed_packages
+            )
 
 
 def remove(name):

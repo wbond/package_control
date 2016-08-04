@@ -5,7 +5,7 @@ try:
 except (ImportError):
     # Python 2
     from urlparse import urlparse
-    str_cls = unicode
+    str_cls = unicode  # noqa
 
 from .rate_limit_exception import RateLimitException
 

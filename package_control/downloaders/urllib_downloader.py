@@ -1,18 +1,33 @@
 import re
 import sys
 
-from .. import http  # Monkey patches various Python 2 issues with urllib2
+# Monkey patches various Python 2 issues with urllib2
+from .. import http  # noqa
 
 try:
     # Python 3
     from http.client import HTTPException, BadStatusLine
-    from urllib.request import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, build_opener, Request
+    from urllib.request import (
+        build_opener,
+        HTTPPasswordMgrWithDefaultRealm,
+        ProxyBasicAuthHandler,
+        ProxyDigestAuthHandler,
+        ProxyHandler,
+        Request,
+    )
     from urllib.error import HTTPError, URLError
     import urllib.request as urllib_compat
 except (ImportError):
     # Python 2
     from httplib import HTTPException, BadStatusLine
-    from urllib2 import ProxyHandler, HTTPPasswordMgrWithDefaultRealm, ProxyBasicAuthHandler, ProxyDigestAuthHandler, build_opener, Request
+    from urllib2 import (
+        build_opener,
+        HTTPPasswordMgrWithDefaultRealm,
+        ProxyBasicAuthHandler,
+        ProxyDigestAuthHandler,
+        ProxyHandler,
+        Request,
+    )
     from urllib2 import HTTPError, URLError
     import urllib2 as urllib_compat
 
@@ -131,8 +146,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 encoding = http_file.headers.get('content-encoding')
                 result = self.decode_response(encoding, result)
 
-                return self.cache_result('get', url, http_file.getcode(),
-                    http_file.headers, result)
+                return self.cache_result('get', url, http_file.getcode(), http_file.headers, result)
 
             except (HTTPException) as e:
                 # Since we use keep-alives, it is possible the other end closed
@@ -274,11 +288,9 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             proxy_password = self.settings.get('proxy_password')
             if proxy_username and proxy_password:
                 if http_proxy:
-                    password_manager.add_password(None, http_proxy, proxy_username,
-                        proxy_password)
+                    password_manager.add_password(None, http_proxy, proxy_username, proxy_password)
                 if https_proxy:
-                    password_manager.add_password(None, https_proxy, proxy_username,
-                        proxy_password)
+                    password_manager.add_password(None, https_proxy, proxy_username, proxy_password)
 
             handlers = [proxy_handler]
 
@@ -304,12 +316,14 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             if secure_url_match is not None:
                 bundle_path = get_ca_bundle_path(self.settings)
                 bundle_path = bundle_path.encode(sys.getfilesystemencoding())
-                handlers.append(ValidatingHTTPSHandler(ca_certs=bundle_path,
-                    debug=debug, passwd=password_manager,
-                    user_agent=self.settings.get('user_agent')))
+                handlers.append(ValidatingHTTPSHandler(
+                    ca_certs=bundle_path,
+                    debug=debug,
+                    passwd=password_manager,
+                    user_agent=self.settings.get('user_agent')
+                ))
             else:
-                handlers.append(DebuggableHTTPHandler(debug=debug,
-                    passwd=password_manager))
+                handlers.append(DebuggableHTTPHandler(debug=debug, passwd=password_manager))
             self.opener = build_opener(*handlers)
 
     def supports_ssl(self):

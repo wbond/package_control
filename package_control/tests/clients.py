@@ -28,10 +28,12 @@ class GitHubClientTests(unittest.TestCase):
         self.assertEqual(
             {
                 'name': 'package_control-tester',
-                'description': 'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
+                'description': 'A test of Package Control upgrade messages with '
+                               'explicit versions, but date-based releases.',
                 'homepage': 'https://github.com/packagecontrol-test/package_control-tester',
                 'author': 'packagecontrol-test',
-                'readme': 'https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md',
+                'readme': 'https://raw.githubusercontent.com/packagecontrol-test'
+                          '/package_control-tester/master/readme.md',
                 'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
                 'donate': None
             },
@@ -44,10 +46,12 @@ class GitHubClientTests(unittest.TestCase):
         self.assertEqual(
             [{
                 'name': 'package_control-tester',
-                'description': 'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
+                'description': 'A test of Package Control upgrade messages with '
+                               'explicit versions, but date-based releases.',
                 'homepage': 'https://github.com/packagecontrol-test/package_control-tester',
                 'author': 'packagecontrol-test',
-                'readme': 'https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md',
+                'readme': 'https://raw.githubusercontent.com/packagecontrol-test'
+                          '/package_control-tester/master/readme.md',
                 'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
                 'donate': None
             }],
@@ -59,10 +63,13 @@ class GitHubClientTests(unittest.TestCase):
         self.assertEqual(
             {
                 'filename': 'readme.md',
-                'contents': '# Package Control Tester\n\nThis repo is used to test the various clients and providers that are part of\nPackage Control.\n',
+                'contents': '# Package Control Tester\n\nThis repo is used to test the '
+                            'various clients and providers that are part of\nPackage Control.\n',
                 'format': 'markdown'
             },
-            client.readme_info('https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md')
+            client.readme_info(
+                'https://raw.githubusercontent.com/packagecontrol-test/package_control-tester/master/readme.md'
+            )
         )
 
     def test_github_client_branch_downloads(self):
@@ -134,7 +141,8 @@ class BitBucketClientTests(unittest.TestCase):
         self.assertEqual(
             {
                 'name': 'package_control-tester',
-                'description': 'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
+                'description': 'A test of Package Control upgrade messages with '
+                               'explicit versions, but date-based releases.',
                 'homepage': 'https://bitbucket.org/wbond/package_control-tester',
                 'author': 'wbond',
                 'readme': 'https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md',
@@ -149,7 +157,8 @@ class BitBucketClientTests(unittest.TestCase):
         self.assertEqual(
             {
                 'filename': 'readme.md',
-                'contents': '# Package Control Tester\n\nThis repo is used to test the various clients and providers that are part of\nPackage Control.\n',
+                'contents': '# Package Control Tester\n\nThis repo is used to test the various '
+                            'clients and providers that are part of\nPackage Control.\n',
                 'format': 'markdown'
             },
             client.readme_info('https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md')

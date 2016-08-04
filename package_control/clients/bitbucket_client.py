@@ -249,8 +249,7 @@ class BitBucketClient(JSONApiClient):
 
         for entry in root_dir_info['files']:
             if entry['path'].lower() in _readme_filenames:
-                return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo,
-                    branch, entry['path'])
+                return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
 
         return None
 

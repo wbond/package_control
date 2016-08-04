@@ -97,7 +97,8 @@ class PackageCleanup(threading.Thread):
                 # we removed from the "installed_packages" list - usually by
                 # removing them from another computer and the settings file
                 # being synced.
-                if self.remove_orphaned and package_name not in self.original_installed_packages and package_file_exists(package_name, 'package-metadata.json'):
+                if self.remove_orphaned and package_name not in self.original_installed_packages \
+                        and package_file_exists(package_name, 'package-metadata.json'):
                     # Since Windows locks the .sublime-package files, we must
                     # do a dance where we disable the package first, which has
                     # to be done in the main Sublime Text thread.
@@ -242,7 +243,9 @@ class PackageCleanup(threading.Thread):
                 delete_directory(package_dir)
 
             # Skip over dependencies since we handle them separately
-            if (package_file_exists(package_name, 'dependency-metadata.json') or package_file_exists(package_name, '.sublime-dependency')) and (package_name == loader.loader_package_name or loader.exists(package_name)):
+            if (package_file_exists(package_name, 'dependency-metadata.json')
+                    or package_file_exists(package_name, '.sublime-dependency')) \
+                    and (package_name == loader.loader_package_name or loader.exists(package_name)):
                 found_dependencies.append(package_name)
                 continue
 
@@ -389,8 +392,11 @@ class PackageCleanup(threading.Thread):
         if not isinstance(platforms, list):
             platforms = [platforms]
 
-        platform_selectors = [sublime.platform() + '-' + sublime.arch(),
-            sublime.platform(), '*']
+        platform_selectors = [
+            sublime.platform() + '-' + sublime.arch(),
+            sublime.platform(),
+            '*'
+        ]
 
         for selector in platform_selectors:
             if selector in platforms:
@@ -448,6 +454,11 @@ class PackageCleanup(threading.Thread):
             save_list_setting(settings, filename, 'ignored_packages', new_ignored, ignored)
             save_list_setting(pc_settings, pc_filename, 'in_process_packages', [])
 
-        save_list_setting(pc_settings, pc_filename, 'installed_packages',
-            installed_packages, self.original_installed_packages)
+        save_list_setting(
+            pc_settings,
+            pc_filename,
+            'installed_packages',
+            installed_packages,
+            self.original_installed_packages
+        )
         AutomaticUpgrader(found_packages, found_dependencies).start()

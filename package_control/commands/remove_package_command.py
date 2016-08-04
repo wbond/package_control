@@ -12,8 +12,7 @@ from ..package_disabler import PackageDisabler
 from ..package_manager import PackageManager
 
 
-class RemovePackageCommand(sublime_plugin.WindowCommand,
-        ExistingPackagesCommand, PackageDisabler):
+class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand, PackageDisabler):
 
     """
     A command that presents a list of installed packages, allowing the user to
@@ -60,8 +59,11 @@ class RemovePackageCommand(sublime_plugin.WindowCommand,
 
         thread = RemovePackageThread(self.manager, package)
         thread.start()
-        ThreadProgress(thread, 'Removing package %s' % package,
-            'Package %s successfully removed' % package)
+        ThreadProgress(
+            thread,
+            'Removing package %s' % package,
+            'Package %s successfully removed' % package
+        )
 
 
 class RemovePackageThread(threading.Thread, PackageDisabler):

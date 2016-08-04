@@ -16,7 +16,7 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
         self.settings = sublime.load_settings(pc_settings_filename())
         self.channels = self.settings.get('channels')
         if not self.channels:
-            sublime.message_dialog(test.format(
+            sublime.message_dialog(text.format(
                 u'''
                 Package Control
 

@@ -1,7 +1,8 @@
 import threading
 import os
 import datetime
-import locale  # To prevent import errors in thread with datetime
+# To prevent import errors in thread with datetime
+import locale  # noqa
 import time
 import functools
 
@@ -48,10 +49,8 @@ class AutomaticUpgrader(threading.Thread):
         self.determine_next_run()
 
         # Detect if a package is missing that should be installed
-        self.missing_packages = list(set(self.installed_packages) -
-            set(found_packages))
-        self.missing_dependencies = list(set(self.manager.find_required_dependencies()) -
-            set(found_dependencies))
+        self.missing_packages = list(set(self.installed_packages) - set(found_packages))
+        self.missing_dependencies = list(set(self.manager.find_required_dependencies()) - set(found_dependencies))
 
         if self.auto_upgrade and self.next_run <= time.time():
             self.save_last_run(time.time())
@@ -65,8 +64,7 @@ class AutomaticUpgrader(threading.Thread):
 
         self.last_run = None
 
-        self.last_run_file = os.path.join(sublime.packages_path(), 'User',
-            'Package Control.last-run')
+        self.last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
 
         if os.path.isfile(self.last_run_file):
             with open_compat(self.last_run_file) as fobj:
@@ -248,9 +246,16 @@ class AutomaticUpgrader(threading.Thread):
 
         self.package_renamer.rename_packages(self.installer)
 
-        package_list = self.installer.make_package_list(['install',
-            'reinstall', 'downgrade', 'overwrite', 'none'],
-            ignore_packages=self.auto_upgrade_ignore)
+        package_list = self.installer.make_package_list(
+            [
+                'install',
+                'reinstall',
+                'downgrade',
+                'overwrite',
+                'none'
+            ],
+            ignore_packages=self.auto_upgrade_ignore
+        )
 
         # If Package Control is being upgraded, just do that and restart
         for package in package_list:

@@ -11,7 +11,7 @@ try:
 except (ImportError):
     # Python 2
     from urlparse import urlparse
-    str_cls = unicode
+    str_cls = unicode  # noqa
 
 from . import __version__
 
@@ -207,7 +207,7 @@ class DownloadManager(object):
             The string contents of the URL
         """
 
-        is_ssl = re.search('^https://', url) != None
+        is_ssl = re.search('^https://', url) is not None
 
         url = update_url(url, self.settings.get('debug'))
 
@@ -366,12 +366,12 @@ class DownloadManager(object):
             # the Package Control settings if those are not present. This should
             # hopefully make a seamless fallback for users who run into weird
             # windows errors related to network communication.
-            wininet_proxy          = self.downloader.proxy or ''
+            wininet_proxy = self.downloader.proxy or ''
             wininet_proxy_username = self.downloader.proxy_username or ''
             wininet_proxy_password = self.downloader.proxy_password or ''
 
-            http_proxy     = self.settings.get('http_proxy', '')
-            https_proxy    = self.settings.get('https_proxy', '')
+            http_proxy = self.settings.get('http_proxy', '')
+            https_proxy = self.settings.get('https_proxy', '')
             proxy_username = self.settings.get('proxy_username', '')
             proxy_password = self.settings.get('proxy_password', '')
 

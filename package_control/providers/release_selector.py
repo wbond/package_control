@@ -22,8 +22,11 @@ def filter_releases(package, settings, releases):
         A list of release dicts
     """
 
-    platform_selectors = [sublime.platform() + '-' + sublime.arch(),
-        sublime.platform(), '*']
+    platform_selectors = [
+        sublime.platform() + '-' + sublime.arch(),
+        sublime.platform(),
+        '*'
+    ]
 
     install_prereleases = settings.get('install_prereleases')
     allow_prereleases = install_prereleases is True

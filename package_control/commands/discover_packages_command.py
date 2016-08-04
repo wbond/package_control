@@ -8,5 +8,4 @@ class DiscoverPackagesCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        self.window.run_command('open_url',
-            {'url': 'https://packagecontrol.io/#discover'})
+        self.window.run_command('open_url', {'url': 'https://packagecontrol.io/#discover'})

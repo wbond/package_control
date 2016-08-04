@@ -3,6 +3,11 @@ import subprocess
 import re
 import sys
 
+from .console_write import console_write
+from .unicode import unicode_from_os
+from .show_error import show_error
+from . import text
+
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer
 
@@ -12,11 +17,6 @@ try:
     import sublime
 except (ImportError):
     sublime = None
-
-from .console_write import console_write
-from .unicode import unicode_from_os
-from .show_error import show_error
-from . import text
 
 try:
     # Python 2
@@ -49,7 +49,7 @@ def create_cmd(args, basename_binary=False):
     else:
         escaped_args = []
         for arg in args:
-            if re.search('^[a-zA-Z0-9/_^\\-\\.:=]+$', arg) == None:
+            if re.search('^[a-zA-Z0-9/_^\\-\\.:=]+$', arg) is None:
                 arg = u"'" + arg.replace(u"'", u"'\\''") + u"'"
             escaped_args.append(arg)
         return u' '.join(escaped_args)
@@ -128,9 +128,15 @@ class Cli(object):
         try:
             if sys.platform == 'win32' and sys.version_info < (3,):
                 cwd = cwd.encode('mbcs')
-            proc = subprocess.Popen(args, stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                startupinfo=startupinfo, cwd=cwd, env=os.environ)
+            proc = subprocess.Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                startupinfo=startupinfo,
+                cwd=cwd,
+                env=os.environ
+            )
 
             if input and isinstance(input, str_cls):
                 input = input.encode(encoding)
@@ -257,14 +263,16 @@ class Cli(object):
 
         # Finally look in common locations that may not be in the PATH
         if os.name == 'nt':
-            dirs = ['C:\\Program Files\\Git\\bin',
+            dirs = [
+                'C:\\Program Files\\Git\\bin',
                 'C:\\Program Files (x86)\\Git\\bin',
                 'C:\\Program Files\\TortoiseGit\\bin',
                 'C:\\Program Files\\Mercurial',
                 'C:\\Program Files (x86)\\Mercurial',
                 'C:\\Program Files (x86)\\TortoiseHg',
                 'C:\\Program Files\\TortoiseHg',
-                'C:\\cygwin\\bin']
+                'C:\\cygwin\\bin'
+            ]
         else:
             # ST seems to launch with a minimal set of environmental variables
             # on OS X, so we add some common paths for it

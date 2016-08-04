@@ -249,7 +249,8 @@ for suffix in mods_load_order:
                 else:
                     loader_lookup = os.sep.join(bare_mod.split('.')[0:-1])
                     if loader_lookup not in loaders:
-                        loaders[loader_lookup] = zipimport.zipimporter(os.path.join(pc_package_path, loader_lookup) + os.sep)
+                        zi_path = os.path.join(pc_package_path, loader_lookup) + os.sep
+                        loaders[loader_lookup] = zipimport.zipimporter(zi_path)
                 bare_module.__loader__ = loaders[loader_lookup]
             reload(bare_module)
 

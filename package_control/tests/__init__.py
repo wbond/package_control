@@ -6,7 +6,6 @@ import re
 import sublime
 
 
-
 LAST_COMMIT_TIMESTAMP = '2014-11-28 20:54:15'
 LAST_COMMIT_VERSION = re.sub('[ :\-]', '.', LAST_COMMIT_TIMESTAMP)
 
@@ -67,7 +66,7 @@ def do_run(test_classes, output):
     for test_class in test_classes:
         suite.addTest(loader.loadTestsFromTestCase(test_class))
 
-    result = unittest.TextTestRunner(stream=output, verbosity=1).run(suite)
+    unittest.TextTestRunner(stream=output, verbosity=1).run(suite)
     output.write("\x04")
 
 

@@ -27,7 +27,7 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self, packages=None):
-        is_str   = isinstance(packages, str_cls)
+        is_str = isinstance(packages, str_cls)
         is_bytes = isinstance(packages, bytes_cls)
 
         if packages and (is_str or is_bytes):
@@ -36,8 +36,13 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
         if packages and isinstance(packages, list):
             return self.start(packages)
 
-        self.window.show_input_panel('Packages to Install (Comma-separated)',
-            '', self.on_done, None, None)
+        self.window.show_input_panel(
+            'Packages to Install (Comma-separated)',
+            '',
+            self.on_done,
+            None,
+            None
+        )
 
     def split(self, packages):
         if isinstance(packages, bytes_cls):

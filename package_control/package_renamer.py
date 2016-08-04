@@ -59,18 +59,18 @@ class PackageRenamer(PackageDisabler):
                 continue
 
             # For handling .sublime-package files
-            package_file = os.path.join(sublime.installed_packages_path(),
-                package_name + '.sublime-package')
+            package_file = os.path.join(sublime.installed_packages_path(), package_name + '.sublime-package')
             # For handling unpacked packages
             package_dir = os.path.join(sublime.packages_path(), package_name)
 
             if os.path.exists(package_file):
-                new_package_path = os.path.join(sublime.installed_packages_path(),
-                    new_package_name + '.sublime-package')
+                new_package_path = os.path.join(
+                    sublime.installed_packages_path(),
+                    new_package_name + '.sublime-package'
+                )
                 package_path = package_file
             elif os.path.exists(os.path.join(package_dir, 'package-metadata.json')):
-                new_package_path = os.path.join(sublime.packages_path(),
-                    new_package_name)
+                new_package_path = os.path.join(sublime.packages_path(), new_package_name)
                 package_path = package_dir
             else:
                 continue
@@ -139,5 +139,10 @@ class PackageRenamer(PackageDisabler):
 
         filename = pc_settings_filename()
         settings = sublime.load_settings(filename)
-        save_list_setting(settings, filename, 'installed_packages',
-            installed_packages, self.original_installed_packages)
+        save_list_setting(
+            settings,
+            filename,
+            'installed_packages',
+            installed_packages,
+            self.original_installed_packages
+        )

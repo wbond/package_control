@@ -73,8 +73,7 @@ class CliDownloader(object):
                 create_cmd(args)
             )
 
-        proc = subprocess.Popen(args, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         output = proc.stdout.read()
         self.stderr = proc.stderr.read()

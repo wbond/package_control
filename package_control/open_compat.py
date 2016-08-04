@@ -3,6 +3,11 @@ import sys
 
 from .file_not_found_error import FileNotFoundError
 
+try:
+    str_cls = unicode
+except (NameError):
+    str_cls = str
+
 
 def open_compat(path, mode='r'):
     if mode in ['r', 'rb'] and not os.path.exists(path):
@@ -24,11 +29,11 @@ def read_compat(file_obj):
     if sys.version_info >= (3,):
         return file_obj.read()
     else:
-        return unicode(file_obj.read(), 'utf-8', errors='replace')
+        return str_cls(file_obj.read(), 'utf-8', errors='replace')
 
 
 def write_compat(file_obj, value):
     if sys.version_info >= (3,):
         return file_obj.write(str(value))
     else:
-        return file_obj.write(unicode(value).encode('utf-8'))
+        return file_obj.write(str_cls(value).encode('utf-8'))

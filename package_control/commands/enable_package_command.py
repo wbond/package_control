@@ -43,6 +43,10 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
 
         self.reenable_package(package, 'enable')
 
-        sublime.status_message(('Package %s successfully removed from list ' +
-            'of disabled packages - restarting Sublime Text may be required') %
-            package)
+        sublime.status_message(text.format(
+            '''
+            Package %s successfully removed from list of disabled packages -
+            restarting Sublime Text may be required
+            ''',
+            package
+        ))

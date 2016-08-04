@@ -2,10 +2,15 @@ import sys
 import os
 from os.path import dirname
 
+import sublime
+
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer
 
-import sublime
+try:
+    str_cls = unicode
+except (NameError):
+    str_cls = str
 
 
 if sys.version_info >= (3,):
@@ -25,12 +30,12 @@ if sys.version_info >= (3,):
 
 else:
     def decode(path):
-        if not isinstance(path, unicode):
+        if not isinstance(path, str_cls):
             path = path.decode(sys.getfilesystemencoding())
         return path
 
     def encode(path):
-        if isinstance(path, unicode):
+        if isinstance(path, str_cls):
             path = path.encode(sys.getfilesystemencoding())
         return path
 

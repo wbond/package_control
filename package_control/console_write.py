@@ -34,7 +34,7 @@ def console_write(string, params=None, strip=True, indent=None, prefix=True):
     string = text.format(str_cls(string), params, strip=strip, indent=indent)
 
     if sys.version_info < (3,):
-        if isinstance(string, unicode):
+        if isinstance(string, str_cls):
             string = string.encode('UTF-8')
 
     if prefix:

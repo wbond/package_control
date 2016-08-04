@@ -48,15 +48,12 @@ class ExistingPackagesCommand():
             package_entry.append(description)
 
             version = metadata.get('version')
-            if not version and os.path.exists(os.path.join(package_dir,
-                    '.git')):
+            if not version and os.path.exists(os.path.join(package_dir, '.git')):
                 installed_version = 'git repository'
-            elif not version and os.path.exists(os.path.join(package_dir,
-                    '.hg')):
+            elif not version and os.path.exists(os.path.join(package_dir, '.hg')):
                 installed_version = 'hg repository'
             else:
-                installed_version = 'v' + version if version else \
-                    'unknown version'
+                installed_version = 'v' + version if version else 'unknown version'
 
             url = metadata.get('url')
             if url:

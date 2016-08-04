@@ -13,8 +13,7 @@ try:
             self.retried = 0
 
         if self.retried > 5:
-            raise urllib2.HTTPError(req.get_full_url(), 401, "basic auth failed",
-                headers, None)
+            raise urllib2.HTTPError(req.get_full_url(), 401, "basic auth failed", headers, None)
         else:
             self.retried += 1
 

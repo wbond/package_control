@@ -40,7 +40,7 @@ class GitHubUserProvider():
     def match_url(cls, repo):
         """Indicates if this provider can handle the provided repo"""
 
-        return re.search('^https?://github.com/[^/]+/?$', repo) != None
+        return re.search('^https?://github.com/[^/]+/?$', repo) is not None
 
     def prefetch(self):
         """

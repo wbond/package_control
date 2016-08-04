@@ -130,7 +130,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
         (?:\-(?P<prerelease>(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?))?
         (?:\+(?P<build>(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?))?'''
     _search_regex = re.compile(_base_regex)
-    _match_regex  = re.compile('^%s$' % _base_regex)  # required because of $ anchor
+    _match_regex = re.compile('^%s$' % _base_regex)  # required because of $ anchor
 
     # "Constructor"
     def __new__(cls, *args, **kwargs):
@@ -453,7 +453,7 @@ class SemComparator(object):
             if op == '!':
                 op = '!='
 
-        self.op  = op
+        self.op = op
         self.ver = ver
 
     # Magic methods

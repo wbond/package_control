@@ -74,6 +74,10 @@ class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
 
         loader.add(priority, dependency, code)
 
-        sublime.status_message(('Dependency %s successfully added to ' +
-            'dependency loader - restarting Sublime Text may be required') %
-            dependency)
+        sublime.status_message(text.format(
+            '''
+            Dependency %s successfully added to dependency loader -
+            restarting Sublime Text may be required
+            ''',
+            dependency
+        ))

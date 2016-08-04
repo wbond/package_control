@@ -49,8 +49,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
     def run(self):
         self.package_renamer.rename_packages(self)
 
-        self.package_list = self.make_package_list(['install', 'reinstall',
-            'none'])
+        self.package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
         def show_panel():
             if not self.package_list:
@@ -85,8 +84,10 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         else:
             on_complete = None
 
-        thread = PackageInstallerThread(self.manager, name, on_complete,
-            pause=True)
+        thread = PackageInstallerThread(self.manager, name, on_complete, pause=True)
         thread.start()
-        ThreadProgress(thread, 'Upgrading package %s' % name,
-            'Package %s successfully %s' % (name, self.completion_type))
+        ThreadProgress(
+            thread,
+            'Upgrading package %s' % name,
+            'Package %s successfully %s' % (name, self.completion_type)
+        )

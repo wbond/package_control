@@ -39,8 +39,7 @@ class JSONApiClient():
             url += joiner % params
 
         with downloader(url, self.settings) as manager:
-            content = manager.fetch(url, 'Error downloading repository.',
-                prefer_cached)
+            content = manager.fetch(url, 'Error downloading repository.', prefer_cached)
         return content
 
     def fetch_json(self, url, prefer_cached=False):

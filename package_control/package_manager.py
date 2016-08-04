@@ -7,7 +7,8 @@ import shutil
 from fnmatch import fnmatch
 import datetime
 import tempfile
-import locale  # To prevent import errors in thread with datetime
+# To prevent import errors in thread with datetime
+import locale  # noqa
 
 try:
     # Python 3
@@ -18,7 +19,7 @@ except (ImportError):
     # Python 2
     from urllib import urlencode
     from urlparse import urlparse
-    str_cls = unicode
+    str_cls = unicode  # noqa
 
 import sublime
 
@@ -105,7 +106,7 @@ class PackageManager():
             'user_agent'
         ]
         for setting in setting_names:
-            if settings.get(setting) == None:
+            if settings.get(setting) is None:
                 continue
             self.settings[setting] = settings.get(setting)
 
@@ -114,7 +115,7 @@ class PackageManager():
         no_https_proxy = self.settings.get('https_proxy') in ["", None]
         if no_https_proxy and self.settings.get('http_proxy'):
             self.settings['https_proxy'] = self.settings.get('http_proxy')
-        if self.settings.get('https_proxy') == False:
+        if self.settings.get('https_proxy') is False:
             self.settings['https_proxy'] = ''
 
         # We cache these to prevent IPC calls between plugin_host and the main
@@ -318,8 +319,11 @@ class PackageManager():
             A list of dependency names
         """
 
-        platform_selectors = [self.settings['platform'] + '-' + self.settings['arch'],
-            self.settings['platform'], '*']
+        platform_selectors = [
+            self.settings['platform'] + '-' + self.settings['arch'],
+            self.settings['platform'],
+            '*'
+        ]
 
         for platform_selector in platform_selectors:
             if platform_selector not in dependency_info:
@@ -426,8 +430,22 @@ class PackageManager():
                     renamed_packages = provider.get_renamed_packages()
                     set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)
 
-                    set_cache_under_settings(self, 'unavailable_packages', channel, unavailable_packages, cache_ttl, list_=True)
-                    set_cache_under_settings(self, 'unavailable_dependencies', channel, unavailable_dependencies, cache_ttl, list_=True)
+                    set_cache_under_settings(
+                        self,
+                        'unavailable_packages',
+                        channel,
+                        unavailable_packages,
+                        cache_ttl,
+                        list_=True
+                    )
+                    set_cache_under_settings(
+                        self,
+                        'unavailable_dependencies',
+                        channel,
+                        unavailable_dependencies,
+                        cache_ttl,
+                        list_=True
+                    )
 
                 except (DownloaderException, ClientException, ProviderException) as e:
                     console_write(e)
@@ -562,8 +580,22 @@ class PackageManager():
             renamed_packages = provider.get_renamed_packages()
             set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
 
-            set_cache_under_settings(self, 'unavailable_packages', repo, unavailable_packages, cache_ttl, list_=True)
-            set_cache_under_settings(self, 'unavailable_dependencies', repo, unavailable_dependencies, cache_ttl, list_=True)
+            set_cache_under_settings(
+                self,
+                'unavailable_packages',
+                repo,
+                unavailable_packages,
+                cache_ttl,
+                list_=True
+            )
+            set_cache_under_settings(
+                self,
+                'unavailable_dependencies',
+                repo,
+                unavailable_dependencies,
+                cache_ttl,
+                list_=True
+            )
 
         return (packages, dependencies)
 
@@ -819,8 +851,7 @@ class PackageManager():
             return False
 
         package_filename = package_name + '.sublime-package'
-        package_path = os.path.join(package_destination,
-            package_filename)
+        package_path = os.path.join(package_destination, package_filename)
 
         if not os.path.exists(self.settings['installed_packages_path']):
             os.mkdir(self.settings['installed_packages_path'])
@@ -829,8 +860,7 @@ class PackageManager():
             os.remove(package_path)
 
         try:
-            package_file = zipfile.ZipFile(package_path, "w",
-                compression=zipfile.ZIP_DEFLATED)
+            package_file = zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED)
         except (OSError, IOError) as e:
             show_error(
                 u'''
@@ -973,10 +1003,12 @@ class PackageManager():
             tmp_package_path = os.path.join(tmp_dir, package_filename)
 
             unpacked_package_dir = self.get_package_dir(package_name)
-            package_path = os.path.join(self.settings['installed_packages_path'],
-                package_filename)
-            pristine_package_path = os.path.join(os.path.dirname(
-                self.settings['packages_path']), 'Pristine Packages', package_filename)
+            package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
+            pristine_package_path = os.path.join(
+                os.path.dirname(self.settings['packages_path']),
+                'Pristine Packages',
+                package_filename
+            )
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
@@ -1140,8 +1172,7 @@ class PackageManager():
             # clearing if a package-metadata.json file exists, we should never
             # accidentally delete a user's customizations. However, we still
             # create a backup just in case.
-            unpacked_metadata_file = os.path.join(unpacked_package_dir,
-                metadata_filename)
+            unpacked_metadata_file = os.path.join(unpacked_package_dir, metadata_filename)
             if os.path.exists(unpacked_metadata_file) and not unpack:
                 self.backup_package_dir(package_name)
                 if not clear_directory(unpacked_package_dir):
@@ -1179,8 +1210,7 @@ class PackageManager():
                 os.mkdir(tmp_working_dir)
                 package_dir = tmp_working_dir
 
-            package_metadata_file = os.path.join(package_dir,
-                metadata_filename)
+            package_metadata_file = os.path.join(package_dir, metadata_filename)
 
             if not os.path.exists(package_dir):
                 os.mkdir(package_dir)
@@ -1211,7 +1241,7 @@ class PackageManager():
 
                 if os.name == 'nt':
                     regex = ':|\*|\?|"|<|>|\|'
-                    if re.search(regex, dest) != None:
+                    if re.search(regex, dest) is not None:
                         console_write(
                             u'''
                             Skipping file from package named %s due to an
@@ -1374,8 +1404,7 @@ class PackageManager():
                 try:
                     # Remove the downloaded file since we are going to overwrite it
                     os.remove(tmp_package_path)
-                    package_zip = zipfile.ZipFile(tmp_package_path, "w",
-                        compression=zipfile.ZIP_DEFLATED)
+                    package_zip = zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED)
                 except (OSError, IOError) as e:
                     show_error(
                         u'''
@@ -1497,13 +1526,22 @@ class PackageManager():
             elif not dependency_releases:
                 dependency_write(u'is installed, but there are no available releases; leaving alone')
             elif not available_version:
-                dependency_write(u'is installed, but the latest available release could not be determined; leaving alone')
+                dependency_write(
+                    u'is installed, but the latest available release '
+                    u'could not be determined; leaving alone'
+                )
             elif not installed_version:
                 install_dependency = True
-                dependency_write(u'is installed, but its version is not known; upgrading to latest release {available_version}...')
+                dependency_write(
+                    u'is installed, but its version is not known; '
+                    u'upgrading to latest release {available_version}...'
+                )
             elif installed_version < available_version:
                 install_dependency = True
-                dependency_write(u'is installed, but out of date; upgrading to latest release {available_version} from {installed_version}...')
+                dependency_write(
+                    u'is installed, but out of date; upgrading to latest '
+                    u'release {available_version} from {installed_version}...'
+                )
             else:
                 dependency_write_debug(u'is installed and up to date ({installed_version}); leaving alone')
 
@@ -1789,10 +1827,12 @@ class PackageManager():
         os.chdir(self.settings['packages_path'])
 
         package_filename = package_name + '.sublime-package'
-        installed_package_path = os.path.join(self.settings['installed_packages_path'],
-            package_filename)
-        pristine_package_path = os.path.join(os.path.dirname(
-            self.settings['packages_path']), 'Pristine Packages', package_filename)
+        installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
+        pristine_package_path = os.path.join(
+            os.path.dirname(self.settings['packages_path']),
+            'Pristine Packages',
+            package_filename
+        )
         package_dir = self.get_package_dir(package_name)
 
         version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')

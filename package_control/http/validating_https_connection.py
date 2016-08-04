@@ -40,8 +40,7 @@ try:
         response_class = DebuggableHTTPSResponse
         _debug_protocol = 'HTTPS'
 
-        def __init__(self, host, port=None, key_file=None, cert_file=None,
-                ca_certs=None, **kwargs):
+        def __init__(self, host, port=None, key_file=None, cert_file=None, ca_certs=None, **kwargs):
             passed_args = {}
             if 'timeout' in kwargs:
                 passed_args['timeout'] = kwargs['timeout']
@@ -195,8 +194,7 @@ try:
 
             if code != 200:
                 self.close()
-                raise socket.error("Tunnel connection failed: %d %s" % (code,
-                    message.strip()))
+                raise socket.error("Tunnel connection failed: %d %s" % (code, message.strip()))
 
         def build_digest_response(self, fields, username, password):
             """
@@ -302,9 +300,14 @@ try:
                     self.ca_certs.decode(sys.getfilesystemencoding())
                 )
 
-            self.sock = ssl.wrap_socket(self.sock, keyfile=self.key_file,
-                certfile=self.cert_file, cert_reqs=self.cert_reqs,
-                ca_certs=self.ca_certs, ssl_version=ssl.PROTOCOL_TLSv1)
+            self.sock = ssl.wrap_socket(
+                self.sock,
+                keyfile=self.key_file,
+                certfile=self.cert_file,
+                cert_reqs=self.cert_reqs,
+                ca_certs=self.ca_certs,
+                ssl_version=ssl.PROTOCOL_TLSv1
+            )
 
             if self.debuglevel == -1:
                 cipher_info = self.sock.cipher()
@@ -381,8 +384,7 @@ try:
                     if self.debuglevel == -1:
                         console_write(u'  Certificate INVALID', prefix=False)
 
-                    raise InvalidCertificateException(hostname, cert,
-                        'hostname mismatch')
+                    raise InvalidCertificateException(hostname, cert, 'hostname mismatch')
 
                 if self.debuglevel == -1:
                     console_write(u'  Certificate validated for %s', hostname, prefix=False)

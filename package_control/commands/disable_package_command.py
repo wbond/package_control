@@ -49,6 +49,10 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
 
         self.disable_packages(package, 'disable')
 
-        sublime.status_message(('Package %s successfully added to list of ' +
-            'disabled packages - restarting Sublime Text may be required') %
-            package)
+        sublime.status_message(text.format(
+            '''
+            Package %s successfully added to list of disabled packages -
+            restarting Sublime Text may be required
+            ''',
+            package
+        ))

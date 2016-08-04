@@ -85,14 +85,14 @@ elif st_version == 3 and has_packed and has_unpacked:
 # Normal execution will finish setting up the package
 else:
     if st_version == 3:
-        from .package_control.commands import *
+        from .package_control.commands import *  # noqa
         from .package_control.package_cleanup import PackageCleanup
         from .package_control.unicode import tempfile_unicode_patch
         from .package_control.console_write import console_write
         from .package_control.settings import pc_settings_filename
 
     else:
-        from package_control.commands import *
+        from package_control.commands import *  # noqa
         from package_control.package_cleanup import PackageCleanup
         from package_control.unicode import tempfile_unicode_patch
         from package_control.console_write import console_write
