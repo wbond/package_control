@@ -7,7 +7,7 @@ import zipfile
 import zipimport
 import shutil
 from textwrap import dedent
-from threading import Lock
+from threading import Event, Lock
 
 try:
     str_cls = unicode
@@ -22,10 +22,29 @@ from .package_disabler import PackageDisabler
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
 
 
+
+class SwapEvent():
+    def __init__(self):
+        self._ev = Event()
+        self._ev.set()
+
+    def in_process(self):
+        return not self._ev.is_set()
+
+    def start(self):
+        self._ev.set()
+
+    def end(self):
+        self._ev.clear()
+
+    def wait(self):
+        self._ev.wait()
+
+
 loader_lock = Lock()
-# This variable should only be touched while loader_lock is acquired.
+# These variables should only be touched while loader_lock is acquired
+swap_event = SwapEvent()
 non_local = {
-    'swap_queued': False,
     'loaders': None
 }
 
@@ -72,9 +91,9 @@ def is_swapping():
     """
 
     loader_lock.acquire()
-    queued = non_local['swap_queued']
+    swapping = swap_event.in_process()
     loader_lock.release()
-    return queued
+    return swapping
 
 
 def exists(name):
@@ -85,20 +104,47 @@ def exists(name):
         The dependency to check for a loader for
     """
 
-    if not path.exists(loader_package_path):
-        return False
+    return _existing_info(name, False)[0] is not None
 
-    loader_filename_regex = u'^\\d\\d-%s.pyc?$' % re.escape(name)
+
+def _existing_info(name, return_code):
+    """
+    Returns info about loader for the specified dependency
+
+    :param name:
+        A unicode string of the name of the dependency to check for
+
+    :param return_code:
+        A boolean, if the loader code should be returned also
+
+    :return:
+        A 2-element tuple:
+         - [0]: None if loader does not exist, otherwise unicode string of load_order
+         - [1]: None if loader does not exist or return_code is False, otherwise a unicode string of loader code
+    """
+
+    if not path.exists(loader_package_path):
+        return (None, None)
+
+    loader_filename_regex = u'^(\\d\\d)-%s.pyc?$' % re.escape(name)
+
+    load_order = None
+    code = None
 
     if sys.version_info < (3,):
         for filename in os.listdir(loader_package_path):
-            if re.match(loader_filename_regex, filename):
-                return True
-        return False
+            match = re.match(loader_filename_regex, filename)
+            if match:
+                load_order = match.group(1)
+                if return_code:
+                    loader_path = os.path.join(loader_package_path, filename)
+                    with open(loader_path, 'rb') as f:
+                        code = f.read().decode('utf-8')
+                break
+        return (load_order, code)
 
     # We acquire a lock so that multiple removals don't stomp on each other
     loader_lock.acquire()
-    found = False
 
     try:
         # We cache the list of loaders for performance
@@ -114,13 +160,50 @@ def exists(name):
                 __update_loaders(z)
 
         for filename in non_local['loaders']:
-            if re.match(loader_filename_regex, filename):
-                found = True
+            match = re.match(loader_filename_regex, filename)
+            if match:
+                load_order = match.group(1)
+                if return_code:
+                    with zipfile.ZipFile(loader_path_to_check, 'r') as z:
+                        code = z.read(filename).decode('utf-8')
                 break
     finally:
         loader_lock.release()
 
-    return found
+    return (load_order, code)
+
+
+def add_or_update(priority, name, code=None):
+    """
+    Adds a loader if none exists for a package, or replaces an existing one.
+    May block while waiting for a loader removal to happen.
+
+    :param priority:
+        A two-digit string. If a dep has no dependencies, this can be
+        something like '01'. If it does, use something like '10' leaving
+        space for other entries
+
+    :param name:
+        The name of the dependency as a unicode string
+
+    :param code:
+        Any special loader code, otherwise the default will be used
+    """
+
+    load_order, existing_code = _existing_info(name, True)
+
+    if load_order is not None:
+        if not code:
+            code = _default_loader(name)
+
+        # Everything is up-to-date
+        if load_order == priority and code.strip() == existing_code.strip():
+            return
+
+        remove(name)
+        swap_event.wait()
+
+    add(priority, name, code)
 
 
 def add(priority, name, code=None):
@@ -140,11 +223,7 @@ def add(priority, name, code=None):
     """
 
     if not code:
-        code = """
-            from package_control import sys_path
-            sys_path.add_dependency(%s)
-        """ % repr(name)
-        code = dedent(code).lstrip()
+        code = _default_loader(name)
 
     loader_filename = '%s-%s.py' % (priority, name)
 
@@ -184,7 +263,7 @@ def add(priority, name, code=None):
             # If a swap of the loader .sublime-package was queued because of a
             # file being removed, we need to add the new loader code the the
             # .sublime-package that will be swapped into place shortly.
-            if not non_local['swap_queued']:
+            if not swap_event.in_process():
                 package_to_update = loader_package_path
             else:
                 package_to_update = new_loader_package_path
@@ -200,7 +279,7 @@ def add(priority, name, code=None):
         finally:
             loader_lock.release()
 
-        if not just_created_loader and not non_local['swap_queued']:
+        if not just_created_loader and not swap_event.in_process():
             # Manually execute the loader code because Sublime Text does not
             # detect changes to the zip archive, only if the file is new.
             importer = zipimport.zipimporter(loader_package_path)
@@ -312,7 +391,7 @@ def remove(name):
     # If we did not remove any files and there isn't already a swap queued, that
     # means that nothing in the zip changed, so we do not need to disable the
     # loader package and then re-enable it
-    if not removed and not non_local['swap_queued']:
+    if not removed and not swap_event.in_process():
         os.remove(new_loader_package_path)
         loader_lock.release()
         return
@@ -328,11 +407,11 @@ def remove(name):
 
     # It is possible multiple dependencies will be removed in quick succession,
     # however we pause to let the loader file system lock to be released on
-    # Windows by Sublime Text. The non_local['swap_queued'] variable makes sure
-    # we don't have multiple timeouts set to replace the loader zip with the
-    # new version, thus hitting a race condition where files are overwritten
-    # and rename operations fail because the source file doesn't exist.
-    if not non_local['swap_queued']:
+    # Windows by Sublime Text. The swap_event variable makes sure we don't have
+    # multiple timeouts set to replace the loader zip with the new version, thus
+    # hitting a race condition where files are overwritten and rename operations
+    # fail because the source file doesn't exist.
+    if not swap_event.in_process():
         def do_swap():
             loader_lock.acquire()
 
@@ -341,11 +420,29 @@ def remove(name):
 
             def do_reenable():
                 disabler.reenable_package(loader_package_name, 'loader')
-                non_local['swap_queued'] = False
+                swap_event.end()
                 loader_lock.release()
             sublime.set_timeout(do_reenable, 10)
 
         sublime.set_timeout(do_swap, 700)
-        non_local['swap_queued'] = True
+        swap_event.start()
 
     loader_lock.release()
+
+
+def _default_loader(name):
+    """
+    Generate the default loader code for a dependency
+
+    :param name:
+        A unicode string of the name of the dependency
+
+    :return:
+        A unicode string of the Python code to execute to load the dependency
+    """
+
+    code = """
+        from package_control import sys_path
+        sys_path.add_dependency(%s)
+    """ % repr(name)
+    return dedent(code).lstrip()

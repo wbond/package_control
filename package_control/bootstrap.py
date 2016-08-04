@@ -182,15 +182,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
 
     data_zip.close()
 
-    if loader.exists(package_basename):
-        loader.remove(package_basename)
-        console_write(
-            u'''
-            Removed old loader for bootstrapped dependency %s
-            ''',
-            package_basename
-        )
-    loader.add(priority, package_basename, code)
+    loader.add_or_update(priority, package_basename, code)
 
     console_write(
         u'''
