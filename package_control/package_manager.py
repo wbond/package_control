@@ -436,27 +436,32 @@ class PackageManager():
             repositories.extend(channel_repositories)
         return [repo.strip() for repo in repositories]
 
-    def list_available_packages(self, exclude_dependencies=True):
+    def _list_available(self):
         """
-        Returns a master list of every available package from all sources
-
-        :param exclude_dependencies:
-            If dependencies should be excluded from the list
+        Returns a master list of every available package and dependency from all sources
 
         :return:
-            A dict in the format:
-            {
-                'Package Name': {
-                    # Package details - see example-packages.json for format
+            A 2-element tuple, in the format:
+            (
+                {
+                    'Package Name': {
+                        # Package details - see example-repository.json for format
+                    },
+                    ...
                 },
-                ...
-            }
+                {
+                    'Dependency Name': {
+                        # Dependency details - see example-repository.json for format
+                    },
+                    ...
+                }
+            )
         """
 
         if self.settings.get('debug'):
             console_write(
                 u'''
-                Fetching list of available packages
+                Fetching list of available packages and dependencies
                   Platform: %s-%s
                   Sublime Text Version: %s
                   Package Control Version: %s
@@ -472,6 +477,7 @@ class PackageManager():
         cache_ttl = self.settings.get('cache_length')
         repositories = self.list_repositories()
         packages = {}
+        dependencies = {}
         bg_downloaders = {}
         active = []
         repos_to_download = []
@@ -485,10 +491,10 @@ class PackageManager():
 
             if repository_packages is not None:
                 packages.update(repository_packages)
-                if not exclude_dependencies:
-                    cache_key = repo + '.dependencies'
-                    repository_dependencies = get_cache(cache_key)
-                    packages.update(repository_dependencies)
+
+                cache_key = repo + '.dependencies'
+                repository_dependencies = get_cache(cache_key)
+                dependencies.update(repository_dependencies)
 
             else:
                 domain = urlparse(repo).hostname
@@ -551,8 +557,7 @@ class PackageManager():
 
             cache_key = repo + '.dependencies'
             set_cache(cache_key, repository_dependencies, cache_ttl)
-            if not exclude_dependencies:
-                packages.update(repository_dependencies)
+            dependencies.update(repository_dependencies)
 
             renamed_packages = provider.get_renamed_packages()
             set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
@@ -560,15 +565,44 @@ class PackageManager():
             set_cache_under_settings(self, 'unavailable_packages', repo, unavailable_packages, cache_ttl, list_=True)
             set_cache_under_settings(self, 'unavailable_dependencies', repo, unavailable_dependencies, cache_ttl, list_=True)
 
-        return packages
+        return (packages, dependencies)
 
-    def list_packages(self, unpacked_only=False, exclude_dependencies=True):
+    def list_available_dependencies(self):
+        """
+        Returns a master list of every available dependency from all sources
+
+        :return:
+            A dict in the format:
+            {
+                'Dependency Name': {
+                    # Dependency details - see example-repository.json for format
+                },
+                ...
+            }
+        """
+
+        return self._list_available()[1]
+
+    def list_available_packages(self):
+        """
+        Returns a master list of every available package from all sources
+
+        :return:
+            A dict in the format:
+            {
+                'Package Name': {
+                    # Package details - see example-repository.json for format
+                },
+                ...
+            }
+        """
+
+        return self._list_available()[0]
+
+    def list_packages(self, unpacked_only=False):
         """
         :param unpacked_only:
             Only list packages that are not inside of .sublime-package files
-
-        :param exclude_dependencies:
-            If dependencies should be excluded
 
         :return: A list of all installed, non-default, non-dependency, package names
         """
@@ -579,8 +613,7 @@ class PackageManager():
             packages |= self._list_sublime_package_files(self.settings['installed_packages_path'])
 
         packages -= set(self.list_default_packages())
-        if exclude_dependencies:
-            packages -= set(self.list_dependencies())
+        packages -= set(self.list_dependencies())
         packages -= set(['User', 'Default'])
         return sorted(packages, key=lambda s: s.lower())
 
@@ -618,18 +651,15 @@ class PackageManager():
                 output.append(name)
         return output
 
-    def list_all_packages(self, exclude_dependencies=True):
+    def list_all_packages(self):
         """
         Lists all packages on the machine
-
-        :param exclude_dependencies:
-            If dependencies should be excluded
 
         :return:
             A list of all installed package names, including default packages
         """
 
-        packages = self.list_default_packages() + self.list_packages(exclude_dependencies=exclude_dependencies)
+        packages = self.list_default_packages() + self.list_packages()
         return sorted(packages, key=lambda s: s.lower())
 
     def list_default_packages(self):
@@ -881,8 +911,10 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        exclude_dependencies = not is_dependency
-        packages = self.list_available_packages(exclude_dependencies=exclude_dependencies)
+        if is_dependency:
+            packages = self.list_available_dependencies()
+        else:
+            packages = self.list_available_packages()
 
         is_available = package_name in list(packages.keys())
 
@@ -1418,7 +1450,7 @@ class PackageManager():
 
         debug = self.settings.get('debug')
 
-        packages = self.list_available_packages(exclude_dependencies=False)
+        packages = self.list_available_dependencies()
 
         error = False
         for dependency in dependencies:
@@ -1737,8 +1769,10 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        exclude_dependencies = not is_dependency
-        installed_packages = self.list_packages(exclude_dependencies=exclude_dependencies)
+        if not is_dependency:
+            installed_packages = self.list_packages()
+        else:
+            installed_packages = self.list_dependencies()
 
         package_type = 'package'
         if is_dependency:
