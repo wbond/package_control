@@ -752,8 +752,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         if proxy_struct.lpszProxyBypass:
             self.proxy_bypass = proxy_struct.lpszProxyBypass.decode('cp1252')
 
-        self.proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
-        self.proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
+        # Only try to read proxy username and password if there is a proxy server
+        # Attempting to prevent https://github.com/wbond/package_control/issues/1122
+        if self.proxy:
+            self.proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
+            self.proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
 
     def read_option(self, handle, option):
         """
