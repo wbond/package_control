@@ -44,34 +44,7 @@ class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
             return
         dependency = self.dependency_list[picked]
 
-        dependency_path = self.manager.get_package_dir(dependency)
-        hidden_file_path = os.path.join(dependency_path, '.sublime-dependency')
-        loader_py_path = os.path.join(dependency_path, 'loader.py')
-        loader_code_path = os.path.join(dependency_path, 'loader.code')
-
-        priority = None
-
-        # Look in the .sublime-dependency file to see where in the dependency
-        # load order this dependency should be installed
-        if os.path.exists(hidden_file_path):
-            with open(hidden_file_path, 'rb') as f:
-                data = f.read().decode('utf-8').strip()
-                if data.isdigit():
-                    priority = data
-                    if len(priority) == 1:
-                        priority = '0' + priority
-
-        if priority is None:
-            priority = '50'
-
-        code = None
-        is_py_loader = os.path.exists(loader_py_path)
-        is_code_loader = os.path.exists(loader_code_path)
-        if is_py_loader or is_code_loader:
-            loader_path = loader_code_path if is_code_loader else loader_py_path
-            with open(loader_path, 'rb') as f:
-                code = f.read()
-
+        priority, code = self.manager.get_dependency_priority_code(dependency)
         loader.add(priority, dependency, code)
 
         sublime.status_message(text.format(

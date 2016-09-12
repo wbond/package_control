@@ -217,6 +217,61 @@ class PackageManager():
 
         return []
 
+    def get_dependency_priority_code(self, dependency):
+        """
+        Returns the priority and loader code for a dependency that is already
+        on disk.
+
+        This is primarily only useful when a package author has a
+        dependency they are developing locally and Package Control needs to
+        know how to set up a loader for it.
+
+        :param dependency:
+            A unicode string of the dependency to get the info for
+
+        :return:
+            A 2-element tuple of unicode strings (priority, python code). Return
+            value will be (None, None) if the dependency was not found on disk.
+        """
+
+        dependency_path = self.get_package_dir(dependency)
+        if not os.path.exists(dependency_path):
+            return (None, None)
+
+        dependencies = self.list_available_dependencies()
+
+        hidden_file_path = os.path.join(dependency_path, '.sublime-dependency')
+        loader_py_path = os.path.join(dependency_path, 'loader.py')
+        loader_code_path = os.path.join(dependency_path, 'loader.code')
+
+        priority = None
+
+        if dependency in dependencies:
+            priority = dependencies[dependency].get('load_order')
+
+        # Look in the .sublime-dependency file to see where in the dependency
+        # load order this dependency should be installed
+        elif os.path.exists(hidden_file_path):
+            with open(hidden_file_path, 'rb') as f:
+                data = f.read().decode('utf-8').strip()
+                if data.isdigit():
+                    priority = data
+                    if len(priority) == 1:
+                        priority = '0' + priority
+
+        if priority is None:
+            priority = '50'
+
+        code = None
+        is_py_loader = os.path.exists(loader_py_path)
+        is_code_loader = os.path.exists(loader_code_path)
+        if is_py_loader or is_code_loader:
+            loader_path = loader_code_path if is_code_loader else loader_py_path
+            with open(loader_path, 'rb') as f:
+                code = f.read()
+
+        return (priority, code)
+
     def _is_git_package(self, package):
         """
         :param package:
@@ -1034,7 +1089,13 @@ class PackageManager():
                     )
                     return False
 
-                return upgrader.run()
+                result = upgrader.run()
+
+                if result == True and is_dependency:
+                    load_order, loader_code = self.get_dependency_priority_code(package_name)
+                    loader.add_or_update(load_order, package_name, loader_code)
+
+                return result
 
             old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
             is_upgrade = old_version is not None
