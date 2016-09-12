@@ -113,6 +113,15 @@ def _read_zip_file(package, relative_path, binary=False):
     except (KeyError):
         pass
 
+    except (zipfile.BadZipfile):
+        console_write(
+            u'''
+            Unable to read file from sublime-package file for %s due to the
+            package file being corrupt
+            ''',
+            package
+        )
+
     except (IOError):
         console_write(
             u'''

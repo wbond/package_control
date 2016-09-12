@@ -166,6 +166,10 @@ def _existing_info(name, return_code):
                     with zipfile.ZipFile(loader_path_to_check, 'r') as z:
                         code = z.read(filename).decode('utf-8')
                 break
+    except (zipfile.BadZipfile, OSError):
+        non_local['loaders'] = []
+        return (None, None)
+
     finally:
         loader_lock.release()
 
@@ -267,10 +271,27 @@ def add(priority, name, code=None):
             else:
                 package_to_update = new_loader_package_path
 
-            mode = 'a' if os.path.exists(package_to_update) else 'w'
+            mode = 'w'
+            just_created_loader = True
+
+            # Only append if the file exists and is a valid zip file
+            if os.path.exists(package_to_update):
+                # Even if the loader was invalid, it still won't show up as a
+                # "new" file via filesystem notifications, so we have to
+                # manually load the code.
+                just_created_loader = False
+                try:
+                    with zipfile.ZipFile(package_to_update, 'r') as rz:
+                        # Make sure the zip file can be read
+                        res = rz.testzip()
+                        if res is not None:
+                            raise zipfile.BadZipfile('zip test failed')
+                        mode = 'a'
+                except (zipfile.BadZipfile, OSError):
+                    os.unlink(package_to_update)
+
             with zipfile.ZipFile(package_to_update, mode) as z:
                 if mode == 'w':
-                    just_created_loader = True
                     z.writestr('dependency-metadata.json', loader_metadata_enc)
                 z.writestr(loader_filename, code.encode('utf-8'))
                 __update_loaders(z)
