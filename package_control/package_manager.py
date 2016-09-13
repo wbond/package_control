@@ -1091,7 +1091,7 @@ class PackageManager():
 
                 result = upgrader.run()
 
-                if result == True and is_dependency:
+                if result is True and is_dependency:
                     load_order, loader_code = self.get_dependency_priority_code(package_name)
                     loader.add_or_update(load_order, package_name, loader_code)
 

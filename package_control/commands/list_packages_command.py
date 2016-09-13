@@ -89,7 +89,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
                 if not os.path.exists(os.path.join(package_dir, package_file)):
                     package_file = None
 
-            open_dir_file = { 'dir': package_dir }
+            open_dir_file = {'dir': package_dir}
             if package_file is not None:
                 open_dir_file['file'] = package_file
 

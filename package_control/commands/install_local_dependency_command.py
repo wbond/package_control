@@ -1,8 +1,6 @@
 import sublime
 import sublime_plugin
 
-import os
-
 from .. import text, loader
 from ..show_quick_panel import show_quick_panel
 from ..package_manager import PackageManager
