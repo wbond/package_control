@@ -51,6 +51,9 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
                     Package Control
 
                     There are no packages available for installation
+
+                    Please see https://packagecontrol.io/docs/troubleshooting
+                    for help
                     '''
                 ))
                 return
