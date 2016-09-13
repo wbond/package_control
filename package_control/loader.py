@@ -148,7 +148,7 @@ def _existing_info(name, return_code):
     try:
         # This means we have a new loader waiting to be installed, so we want
         # the source loader zip to be that new one instead of the original
-        if os.path.exists(new_loader_package_path):
+        if swap_event.in_process() and os.path.exists(new_loader_package_path):
             loader_path_to_check = new_loader_package_path
         else:
             loader_path_to_check = loader_package_path
@@ -266,10 +266,10 @@ def add(priority, name, code=None):
             # If a swap of the loader .sublime-package was queued because of a
             # file being removed, we need to add the new loader code the the
             # .sublime-package that will be swapped into place shortly.
-            if not swap_event.in_process():
-                package_to_update = loader_package_path
-            else:
+            if swap_event.in_process() and os.path.exists(new_loader_package_path):
                 package_to_update = new_loader_package_path
+            else:
+                package_to_update = loader_package_path
 
             mode = 'w'
             just_created_loader = True
@@ -383,7 +383,7 @@ def remove(name):
     try:
         # This means we have a new loader waiting to be installed, so we want
         # the source loader zip to be that new one instead of the original
-        if os.path.exists(new_loader_package_path):
+        if swap_event.in_process() and os.path.exists(new_loader_package_path):
             if os.path.exists(intermediate_loader_package_path):
                 os.remove(intermediate_loader_package_path)
             os.rename(new_loader_package_path, intermediate_loader_package_path)
@@ -417,7 +417,8 @@ def remove(name):
     # means that nothing in the zip changed, so we do not need to disable the
     # loader package and then re-enable it
     if not removed and not swap_event.in_process():
-        os.remove(new_loader_package_path)
+        if os.path.exists(new_loader_package_path):
+            os.remove(new_loader_package_path)
         loader_lock.release()
         return
 
