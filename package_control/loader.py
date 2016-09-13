@@ -125,7 +125,7 @@ def _existing_info(name, return_code):
     if not path.exists(loader_package_path):
         return (None, None)
 
-    loader_filename_regex = u'^(\\d\\d)-%s.pyc?$' % re.escape(name)
+    loader_filename_regex = u'^(\\d\\d)-%s.py$' % re.escape(name)
 
     load_order = None
     code = None
