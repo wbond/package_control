@@ -757,6 +757,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         if self.proxy:
             self.proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
             self.proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
+        else:
+            self.proxy_username = u''
+            self.proxy_password = u''
 
     def read_option(self, handle, option):
         """
