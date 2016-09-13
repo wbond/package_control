@@ -25,7 +25,6 @@ __all__ = [
     'errno',
     'FFIEngineError',
     'is_null',
-    'LibraryNotFoundError',
     'native',
     'new',
     'null',
@@ -375,15 +374,6 @@ except (ImportError):
         return getattr(library, signature_type)(func)
 
     engine = 'ctypes'
-
-
-class LibraryNotFoundError(Exception):
-
-    """
-    An exception when trying to find a shared library
-    """
-
-    pass
 
 
 class FFIEngineError(Exception):

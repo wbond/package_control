@@ -8,10 +8,20 @@ import socket
 __all__ = [
     'AsymmetricKeyError',
     'CACertsError',
+    'LibraryNotFoundError',
     'SignatureError',
     'TLSError',
     'TLSVerificationError',
 ]
+
+
+class LibraryNotFoundError(Exception):
+
+    """
+    An exception when trying to find a shared library
+    """
+
+    pass
 
 
 class SignatureError(Exception):

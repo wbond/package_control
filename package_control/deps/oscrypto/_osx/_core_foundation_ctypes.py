@@ -6,7 +6,8 @@ from ctypes import c_void_p, c_long, c_uint32, c_char_p, c_byte, c_ulong, c_bool
 from ctypes import CDLL, string_at, cast, POINTER, byref
 import ctypes
 
-from .._ffi import LibraryNotFoundError, FFIEngineError, buffer_from_bytes, byte_string_from_buffer
+from .._ffi import FFIEngineError, buffer_from_bytes, byte_string_from_buffer
+from ..errors import LibraryNotFoundError
 
 
 __all__ = [
