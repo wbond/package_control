@@ -36,69 +36,73 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import math
 import platform
 
-from ._ffi import (
-    buffer_from_bytes,
-    bytes_from_buffer,
-    FFIEngineError,
-    LibraryNotFoundError,
-    null,
-)
 from .util import int_to_bytes, int_from_bytes
 
 # First try to use ctypes with OpenSSL for better performance
 try:
+    from ._ffi import (
+        buffer_from_bytes,
+        bytes_from_buffer,
+        FFIEngineError,
+        LibraryNotFoundError,
+        null,
+    )
+
     # Some versions of PyPy have segfault issues, so we just punt on PyPy
     if platform.python_implementation() == 'PyPy':
         raise EnvironmentError()
 
-    from ._perf._big_num_ctypes import libcrypto
+    try:
+        from ._perf._big_num_ctypes import libcrypto
 
-    def inverse_mod(a, p):
-        """
-        Compute the modular inverse of a (mod p)
+        def inverse_mod(a, p):
+            """
+            Compute the modular inverse of a (mod p)
 
-        :param a:
-            An integer
+            :param a:
+                An integer
 
-        :param p:
-            An integer
+            :param p:
+                An integer
 
-        :return:
-            An integer
-        """
+            :return:
+                An integer
+            """
 
-        ctx = libcrypto.BN_CTX_new()
+            ctx = libcrypto.BN_CTX_new()
 
-        a_bytes = int_to_bytes(abs(a))
-        p_bytes = int_to_bytes(abs(p))
+            a_bytes = int_to_bytes(abs(a))
+            p_bytes = int_to_bytes(abs(p))
 
-        a_buf = buffer_from_bytes(a_bytes)
-        a_bn = libcrypto.BN_bin2bn(a_buf, len(a_bytes), null())
-        if a < 0:
-            libcrypto.BN_set_negative(a_bn, 1)
+            a_buf = buffer_from_bytes(a_bytes)
+            a_bn = libcrypto.BN_bin2bn(a_buf, len(a_bytes), null())
+            if a < 0:
+                libcrypto.BN_set_negative(a_bn, 1)
 
-        p_buf = buffer_from_bytes(p_bytes)
-        p_bn = libcrypto.BN_bin2bn(p_buf, len(p_bytes), null())
-        if p < 0:
-            libcrypto.BN_set_negative(p_bn, 1)
+            p_buf = buffer_from_bytes(p_bytes)
+            p_bn = libcrypto.BN_bin2bn(p_buf, len(p_bytes), null())
+            if p < 0:
+                libcrypto.BN_set_negative(p_bn, 1)
 
-        r_bn = libcrypto.BN_mod_inverse(null(), a_bn, p_bn, ctx)
-        r_len_bits = libcrypto.BN_num_bits(r_bn)
-        r_len = int(math.ceil(r_len_bits / 8))
-        r_buf = buffer_from_bytes(r_len)
-        libcrypto.BN_bn2bin(r_bn, r_buf)
-        r_bytes = bytes_from_buffer(r_buf, r_len)
-        result = int_from_bytes(r_bytes)
+            r_bn = libcrypto.BN_mod_inverse(null(), a_bn, p_bn, ctx)
+            r_len_bits = libcrypto.BN_num_bits(r_bn)
+            r_len = int(math.ceil(r_len_bits / 8))
+            r_buf = buffer_from_bytes(r_len)
+            libcrypto.BN_bn2bin(r_bn, r_buf)
+            r_bytes = bytes_from_buffer(r_buf, r_len)
+            result = int_from_bytes(r_bytes)
 
-        libcrypto.BN_free(a_bn)
-        libcrypto.BN_free(p_bn)
-        libcrypto.BN_free(r_bn)
-        libcrypto.BN_CTX_free(ctx)
+            libcrypto.BN_free(a_bn)
+            libcrypto.BN_free(p_bn)
+            libcrypto.BN_free(r_bn)
+            libcrypto.BN_CTX_free(ctx)
 
-        return result
+            return result
+    except (LibraryNotFoundError, FFIEngineError):
+        raise EnvironmentError()
 
-# If there was an issue using OpenSSL, we fall back to pure python
-except (LibraryNotFoundError, FFIEngineError, EnvironmentError, ImportError):
+# If there was an issue using ctypes or OpenSSL, we fall back to pure python
+except (EnvironmentError, ImportError):
 
     def inverse_mod(a, p):
         """
