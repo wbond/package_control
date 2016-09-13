@@ -421,7 +421,10 @@ class Asn1Value(object):
         elif hasattr(self, 'chosen'):
             self.chosen.debug(nest_level + 2)
         else:
-            print('%s    Native: %s' % (prefix, self.native))
+            if py2 and isinstance(self.native, byte_cls):
+                print('%s    Native: b%s' % (prefix, repr(self.native)))
+            else:
+                print('%s    Native: %s' % (prefix, self.native))
 
     def dump(self, force=False):
         """
@@ -1616,19 +1619,22 @@ class BitString(Primitive, ValueMap, object):
             ))
 
         if self._map is not None:
-            size = self._size
-            if len(value) > size:
+            if len(value) > self._size:
                 raise ValueError(unwrap(
                     '''
                     %s value must be at most %s bits long, specified was %s long
                     ''',
                     type_name(self),
-                    size,
+                    self._size,
                     len(value)
                 ))
-            value += '0' * (size - len(value))
-        else:
-            size = len(value)
+            # A NamedBitList must have trailing zero bit truncated. See
+            # https://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
+            # section 11.2,
+            # https://tools.ietf.org/html/rfc5280#page-134 and
+            # https://www.ietf.org/mail-archive/web/pkix/current/msg10443.html
+            value = value.rstrip('0')
+        size = len(value)
 
         size_mod = size % 8
         extra_bits = 0
@@ -1982,8 +1988,7 @@ class IntegerOctetString(Primitive):
             ))
 
         self._native = value
-        # Set the unused bits to 0
-        self.contents = int_to_bytes(value, signed=True)
+        self.contents = int_to_bytes(value, signed=False)
         self._header = None
         if self._trailer != b'':
             self._trailer = b''
@@ -2624,8 +2629,10 @@ class Sequence(Asn1Value):
                 # before the OID field, resulting in invalid value object creation.
                 if self._fields:
                     keys = [info[0] for info in self._fields]
+                    unused_keys = set(value.keys())
                 else:
                     keys = value.keys()
+                    unused_keys = set(keys)
 
                 for key in keys:
                     # If we are setting defaults, but a real value has already
@@ -2633,10 +2640,23 @@ class Sequence(Asn1Value):
                     if check_existing:
                         index = self._field_map[key]
                         if index < len(self.children) and self.children[index] is not VOID:
+                            if key in unused_keys:
+                                unused_keys.remove(key)
                             continue
 
                     if key in value:
                         self.__setitem__(key, value[key])
+                        unused_keys.remove(key)
+
+                if len(unused_keys):
+                    raise ValueError(unwrap(
+                        '''
+                        One or more unknown fields was passed to the constructor
+                        of %s: %s
+                        ''',
+                        type_name(self),
+                        ', '.join(sorted(list(unused_keys)))
+                    ))
 
             except (ValueError, TypeError) as e:
                 args = e.args[1:]
@@ -2955,6 +2975,11 @@ class Sequence(Asn1Value):
                     if value_spec is None:
                         value_spec = field_spec
                         spec_override = None
+                # When no field spec is specified, use a single return value as that
+                elif field_spec is None:
+                    field_spec = spec_override
+                    value_spec = field_spec
+                    spec_override = None
                 else:
                     value_spec = spec_override
 

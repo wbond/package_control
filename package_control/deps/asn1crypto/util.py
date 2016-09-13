@@ -92,6 +92,9 @@ if sys.version_info <= (3,):
             An integer
         """
 
+        if value == b'':
+            return 0
+
         num = long(value.encode("hex"), 16)  # noqa
 
         if not signed:

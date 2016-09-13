@@ -43,6 +43,57 @@ class AlgorithmIdentifier(Sequence):
     ]
 
 
+class _ForceNullParameters(object):
+    """
+    Various structures based on AlgorithmIdentifier require that the parameters
+    field be core.Null() for certain OIDs. This mixin ensures that happens.
+    """
+
+    # The following attribute, plus the parameters spec callback and custom
+    # __setitem__ are all to handle a situation where parameters should not be
+    # optional and must be Null for certain OIDs. More info at
+    # https://tools.ietf.org/html/rfc4055#page-15
+    _null_algos = set([
+        '1.2.840.113549.1.1.1',  # rsassa_pkcs1v15 / rsaes_pkcs1v15 / rsa
+        '1.2.840.113549.1.1.11',  # sha256_rsa
+        '1.2.840.113549.1.1.12',  # sha384_rsa
+        '1.2.840.113549.1.1.13',  # sha512_rsa
+        '1.2.840.113549.1.1.14',  # sha224_rsa
+    ])
+
+    def _parameters_spec(self):
+        if self._oid_pair == ('algorithm', 'parameters'):
+            algo = self['algorithm'].native
+            if algo in self._oid_specs:
+                return self._oid_specs[algo]
+
+        if self['algorithm'].dotted in self._null_algos:
+            return Null
+
+        return None
+
+    _spec_callbacks = {
+        'parameters': _parameters_spec
+    }
+
+    # We have to override this since the spec callback uses the value of
+    # algorithm to determine the parameter spec, however default values are
+    # assigned before setting a field, so a default value can't be based on
+    # another field value (unless it is a default also). Thus we have to
+    # manually check to see if the algorithm was set and parameters is unset,
+    # and then fix the value as appropriate.
+    def __setitem__(self, key, value):
+        res = super(_ForceNullParameters, self).__setitem__(key, value)
+        if key != 'algorithm':
+            return res
+        if self['algorithm'].dotted not in self._null_algos:
+            return res
+        if self['parameters'].__class__ != Void:
+            return res
+        self['parameters'] = Null()
+        return res
+
+
 class HmacAlgorithmId(ObjectIdentifier):
     _map = {
         '1.3.14.3.2.10': 'des_mac',
@@ -212,46 +263,16 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
     }
 
 
-class SignedDigestAlgorithm(Sequence):
+class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
     _fields = [
         ('algorithm', SignedDigestAlgorithmId),
         ('parameters', Any, {'optional': True}),
     ]
 
-    # The following attribute, plus the parameters spec callback and custom
-    # __setitem__ are all to handle a situation where parameters should not be
-    # optional and must be Null for certain OIDs. More info at
-    # https://tools.ietf.org/html/rfc4055#page-15
-    _null_algos = set(['sha224_rsa', 'sha256_rsa', 'sha384_rsa', 'sha512_rsa'])
-
-    def _parameters_spec(self):
-        algo = self['algorithm'].native
-        if algo == 'rsassa_pss':
-            return RSASSAPSSParams
-        if algo in self._null_algos:
-            return Null
-        return None
-
-    _spec_callbacks = {
-        'parameters': _parameters_spec
+    _oid_pair = ('algorithm', 'parameters')
+    _oid_specs = {
+        'rsassa_pss': RSASSAPSSParams,
     }
-
-    # We have to override this since the spec callback uses the value of
-    # algorithm to determine the parameter spec, however default values are
-    # assigned before setting a field, so a default value can't be based on
-    # another field value (unless it is a default also). Thus we have to
-    # manually check to see if the algorithm was set and parameters is unset,
-    # and then fix the value as appropriate.
-    def __setitem__(self, key, value):
-        res = super(SignedDigestAlgorithm, self).__setitem__(key, value)
-        if key != 'algorithm':
-            return res
-        if self['algorithm'].native not in self._null_algos:
-            return res
-        if self['parameters'].__class__ != Void:
-            return res
-        self['parameters'] = Null()
-        return res
 
     @property
     def signature_algo(self):
@@ -535,7 +556,7 @@ class EncryptionAlgorithmId(ObjectIdentifier):
     }
 
 
-class EncryptionAlgorithm(Sequence):
+class EncryptionAlgorithm(_ForceNullParameters, Sequence):
     _fields = [
         ('algorithm', EncryptionAlgorithmId),
         ('parameters', Any, {'optional': True}),
