@@ -41,18 +41,22 @@ class PackageCleanup(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
+        # This song and dance is necessary so Package Control doesn't try to clean
+        # itself up, but also get properly marked as installed in the settings
+        installed_packages_at_start = list(self.original_installed_packages)
+
         # Ensure we record the installation of Package Control itself
-        if 'Package Control' not in self.original_installed_packages:
+        if 'Package Control' not in installed_packages_at_start:
             params = {
                 'package': 'Package Control',
                 'operation': 'install',
                 'version': __version__
             }
             self.manager.record_usage(params)
-            self.original_installed_packages.append('Package Control')
+            installed_packages_at_start.append('Package Control')
 
         found_packages = []
-        installed_packages = list(self.original_installed_packages)
+        installed_packages = list(installed_packages_at_start)
 
         found_dependencies = []
         installed_dependencies = self.manager.list_dependencies()
@@ -97,7 +101,7 @@ class PackageCleanup(threading.Thread):
                 # we removed from the "installed_packages" list - usually by
                 # removing them from another computer and the settings file
                 # being synced.
-                if self.remove_orphaned and package_name not in self.original_installed_packages \
+                if self.remove_orphaned and package_name not in installed_packages_at_start \
                         and package_file_exists(package_name, 'package-metadata.json'):
                     # Since Windows locks the .sublime-package files, we must
                     # do a dance where we disable the package first, which has
@@ -198,7 +202,7 @@ class PackageCleanup(threading.Thread):
                 # This adds previously installed packages from old versions of
                 # PC. As of PC 3.0, this should basically never actually be used
                 # since installed_packages was added in late 2011.
-                if not self.original_installed_packages:
+                if not installed_packages_at_start:
                     installed_packages.append(package_name)
                     params = {
                         'package': package_name,
@@ -212,7 +216,7 @@ class PackageCleanup(threading.Thread):
                 # we removed from the "installed_packages" list - usually by
                 # removing them from another computer and the settings file
                 # being synced.
-                elif self.remove_orphaned and package_name not in self.original_installed_packages:
+                elif self.remove_orphaned and package_name not in installed_packages_at_start:
                     self.manager.backup_package_dir(package_name)
                     if delete_directory(package_dir):
                         console_write(
