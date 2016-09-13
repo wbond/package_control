@@ -146,15 +146,15 @@ def _existing_info(name, return_code):
     loader_lock.acquire()
 
     try:
+        # This means we have a new loader waiting to be installed, so we want
+        # the source loader zip to be that new one instead of the original
+        if os.path.exists(new_loader_package_path):
+            loader_path_to_check = new_loader_package_path
+        else:
+            loader_path_to_check = loader_package_path
+
         # We cache the list of loaders for performance
         if non_local['loaders'] is None:
-            # This means we have a new loader waiting to be installed, so we want
-            # the source loader zip to be that new one instead of the original
-            if os.path.exists(new_loader_package_path):
-                loader_path_to_check = new_loader_package_path
-            else:
-                loader_path_to_check = loader_package_path
-
             with zipfile.ZipFile(loader_path_to_check, 'r') as z:
                 __update_loaders(z)
 
