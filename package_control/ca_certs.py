@@ -141,17 +141,17 @@ def get_system_ca_bundle_path(settings):
             if debug:
                 console_write(
                     u'''
-                    Finished generating new CA bundle at %s
+                    Finished generating new CA bundle at %s (%d bytes)
                     ''',
-                    ca_path
+                    (ca_path, os.stat(ca_path).st_size)
                 )
 
         elif debug:
             console_write(
                 u'''
-                Found previously exported CA bundle at %s
+                Found previously exported CA bundle at %s (%d bytes)
                 ''',
-                ca_path
+                (ca_path, os.stat(ca_path).st_size)
             )
 
     # Linux
@@ -177,9 +177,9 @@ def get_system_ca_bundle_path(settings):
         if debug and ca_path:
             console_write(
                 u'''
-                Found system CA bundle at %s
+                Found system CA bundle at %s (%d bytes)
                 ''',
-                ca_path
+                (ca_path, os.stat(ca_path).st_size)
             )
 
     return ca_path
