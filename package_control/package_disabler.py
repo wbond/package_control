@@ -26,6 +26,7 @@ class PackageDisabler():
     old_theme = None
 
     old_syntaxes = None
+    old_color_schemes = None
 
     def get_version(self, package):
         """
@@ -85,8 +86,14 @@ class PackageDisabler():
         pc_settings = sublime.load_settings(pc_settings_filename())
         in_process = load_list_setting(pc_settings, 'in_process_packages')
 
-        self.old_syntaxes = {}
-        self.old_color_schemes = {}
+        PackageDisabler.old_color_scheme_package = None
+        PackageDisabler.old_color_scheme = None
+
+        PackageDisabler.old_theme_package = None
+        PackageDisabler.old_theme = None
+
+        PackageDisabler.old_syntaxes = {}
+        PackageDisabler.old_color_schemes = {}
 
         for package in packages:
             if package not in ignored:
@@ -101,8 +108,8 @@ class PackageDisabler():
 
             global_color_scheme = settings.get('color_scheme')
             if global_color_scheme.find('Packages/' + package + '/') != -1:
-                self.old_color_scheme_package = package
-                self.old_color_scheme = global_color_scheme
+                PackageDisabler.old_color_scheme_package = package
+                PackageDisabler.old_color_scheme = global_color_scheme
                 settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
             for window in sublime.windows():
@@ -110,23 +117,23 @@ class PackageDisabler():
                     view_settings = view.settings()
                     syntax = view_settings.get('syntax')
                     if syntax.find('Packages/' + package + '/') != -1:
-                        if package not in self.old_syntaxes:
-                            self.old_syntaxes[package] = []
-                        self.old_syntaxes[package].append([view, syntax])
+                        if package not in PackageDisabler.old_syntaxes:
+                            PackageDisabler.old_syntaxes[package] = []
+                        PackageDisabler.old_syntaxes[package].append([view, syntax])
                         view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
                     # Handle view-specific color_scheme settings not already taken care
                     # of by resetting the global color_scheme above
                     scheme = view_settings.get('color_scheme')
                     if scheme.find('Packages/' + package + '/') != -1:
-                        if package not in self.old_color_schemes:
-                            self.old_color_schemes[package] = []
-                        self.old_color_schemes[package].append([view, scheme])
+                        if package not in PackageDisabler.old_color_schemes:
+                            PackageDisabler.old_color_schemes[package] = []
+                        PackageDisabler.old_color_schemes[package].append([view, scheme])
                         view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
             # Change the theme before disabling the package containing it
             if package_file_exists(package, settings.get('theme')):
-                self.old_theme_package = package
-                self.old_theme = settings.get('theme')
+                PackageDisabler.old_theme_package = package
+                PackageDisabler.old_theme = settings.get('theme')
                 settings.set('theme', 'Default.sublime-theme')
 
         # We don't mark a package as in-process when disabling it, otherwise
@@ -180,7 +187,7 @@ class PackageDisabler():
 
             corruption_notice = u' You may see some graphical corruption until you restart Sublime Text.'
 
-            if type == 'remove' and self.old_theme_package == package:
+            if type == 'remove' and PackageDisabler.old_theme_package == package:
                 message = u'''
                     Package Control
 
@@ -197,8 +204,8 @@ class PackageDisabler():
                 syntax_errors = set()
                 color_scheme_errors = set()
 
-                if type == 'upgrade' and package in self.old_syntaxes:
-                    for view_syntax in self.old_syntaxes[package]:
+                if type == 'upgrade' and package in PackageDisabler.old_syntaxes:
+                    for view_syntax in PackageDisabler.old_syntaxes[package]:
                         view, syntax = view_syntax
                         if resource_exists(syntax):
                             view.settings().set('syntax', syntax)
@@ -206,11 +213,11 @@ class PackageDisabler():
                             console_write(u'The syntax "%s" no longer exists' % syntax)
                             syntax_errors.add(syntax)
 
-                if type == 'upgrade' and self.old_color_scheme_package == package:
-                    if resource_exists(self.old_color_scheme):
-                        settings.set('color_scheme', self.old_color_scheme)
+                if type == 'upgrade' and PackageDisabler.old_color_scheme_package == package:
+                    if resource_exists(PackageDisabler.old_color_scheme):
+                        settings.set('color_scheme', PackageDisabler.old_color_scheme)
                     else:
-                        color_scheme_errors.add(self.old_color_scheme)
+                        color_scheme_errors.add(PackageDisabler.old_color_scheme)
                         sublime.error_message(text.format(
                             u'''
                             Package Control
@@ -222,8 +229,8 @@ class PackageDisabler():
                             '''
                         ))
 
-                if type == 'upgrade' and package in self.old_color_schemes:
-                    for view_scheme in self.old_color_schemes[package]:
+                if type == 'upgrade' and package in PackageDisabler.old_color_schemes:
+                    for view_scheme in PackageDisabler.old_color_schemes[package]:
                         view, scheme = view_scheme
                         if resource_exists(scheme):
                             view.settings().set('color_scheme', scheme)
@@ -231,9 +238,9 @@ class PackageDisabler():
                             console_write(u'The color scheme "%s" no longer exists' % scheme)
                             color_scheme_errors.add(scheme)
 
-                if type == 'upgrade' and self.old_theme_package == package:
-                    if package_file_exists(package, self.old_theme):
-                        settings.set('theme', self.old_theme)
+                if type == 'upgrade' and PackageDisabler.old_theme_package == package:
+                    if package_file_exists(package, PackageDisabler.old_theme):
+                        settings.set('theme', PackageDisabler.old_theme)
                         message = u'''
                             Package Control
 
