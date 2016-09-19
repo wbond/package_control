@@ -2,9 +2,10 @@ import json
 
 import sublime
 
-from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
-from .package_io import package_file_exists, read_package_file
 from . import text
+from .console_write import console_write
+from .package_io import package_file_exists, read_package_file
+from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 
 # This has to be imported this way for consistency with the public API,
 # otherwise this code and packages will each load a different instance of the
@@ -177,43 +178,82 @@ class PackageDisabler():
             ignored = list(set(ignored) - set([package]))
             save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
+            corruption_notice = u' You may see some graphical corruption until you restart Sublime Text.'
+
             if type == 'remove' and self.old_theme_package == package:
-                sublime.message_dialog(text.format(
-                    u'''
+                message = u'''
                     Package Control
 
-                    Your active theme was just removed and the Default theme was
-                    enabled in its place. You may see some graphical corruption
-                    until you restart Sublime Text.
-                    '''
-                ))
+                    The package containing your active theme was just removed
+                    and the Default theme was enabled in its place.
+                '''
+                if int(sublime.version()) < 3106:
+                    message += corruption_notice
+                sublime.message_dialog(text.format(message))
 
             # By delaying the restore, we give Sublime Text some time to
             # re-enable the package, making errors less likely
             def delayed_settings_restore():
+                syntax_errors = set()
+                color_scheme_errors = set()
+
                 if type == 'upgrade' and package in self.old_syntaxes:
                     for view_syntax in self.old_syntaxes[package]:
                         view, syntax = view_syntax
-                        view.settings().set('syntax', syntax)
+                        if resource_exists(syntax):
+                            view.settings().set('syntax', syntax)
+                        elif syntax not in syntax_errors:
+                            console_write(u'The syntax "%s" no longer exists' % syntax)
+                            syntax_errors.add(syntax)
 
                 if type == 'upgrade' and self.old_color_scheme_package == package:
-                    settings.set('color_scheme', self.old_color_scheme)
+                    if resource_exists(self.old_color_scheme):
+                        settings.set('color_scheme', self.old_color_scheme)
+                    else:
+                        color_scheme_errors.add(self.old_color_scheme)
+                        sublime.error_message(text.format(
+                            u'''
+                            Package Control
+
+                            The package containing your active color scheme was
+                            just upgraded, however the .tmTheme file no longer
+                            exists. Sublime Text has been configured use the
+                            default color scheme instead.
+                            '''
+                        ))
 
                 if type == 'upgrade' and package in self.old_color_schemes:
                     for view_scheme in self.old_color_schemes[package]:
                         view, scheme = view_scheme
-                        view.settings().set('color_scheme', scheme)
+                        if resource_exists(scheme):
+                            view.settings().set('color_scheme', scheme)
+                        elif scheme not in color_scheme_errors:
+                            console_write(u'The color scheme "%s" no longer exists' % scheme)
+                            color_scheme_errors.add(scheme)
 
                 if type == 'upgrade' and self.old_theme_package == package:
-                    settings.set('theme', self.old_theme)
-                    sublime.message_dialog(text.format(
-                        u'''
-                        Package Control
+                    if package_file_exists(package, self.old_theme):
+                        settings.set('theme', self.old_theme)
+                        message = u'''
+                            Package Control
 
-                        Your active theme was just upgraded. You may see some
-                        graphical corruption until you restart Sublime Text.
+                            The package containing your active theme was just
+                            upgraded.
                         '''
-                    ))
+                        if int(sublime.version()) < 3106:
+                            message += corruption_notice
+                        sublime.message_dialog(text.format(message))
+                    else:
+                        sublime.error_message(text.format(
+                            u'''
+                            Package Control
+
+                            The package containing your active theme was just
+                            upgraded, however the .sublime-theme file no longer
+                            exists. Sublime Text has been configured use the
+                            default theme instead.
+                            '''
+                        ))
 
                 sublime.save_settings(preferences_filename())
 
@@ -225,3 +265,25 @@ class PackageDisabler():
         if package in in_process:
             in_process.remove(package)
             save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
+
+
+def resource_exists(path):
+    """
+    Checks to see if a file exists
+
+    :param path:
+        A unicode string of a resource path, e.g. Packages/Package Name/resource_name.ext
+
+    :return:
+        A bool if it exists
+    """
+
+    if not path.startswith('Packages/'):
+        return False
+
+    parts = path[9:].split('/', 1)
+    if len(parts) != 2:
+        return False
+
+    package_name, relative_path = parts
+    return package_file_exists(package_name, relative_path)
