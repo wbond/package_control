@@ -98,6 +98,12 @@ class PackageDisabler():
                 tracker_type = 'pre_upgrade' if type == 'upgrade' else type
                 events.add(tracker_type, package, version)
 
+            global_color_scheme = settings.get('color_scheme')
+            if global_color_scheme.find('Packages/' + package + '/') != -1:
+                self.old_color_scheme_package = package
+                self.old_color_scheme = global_color_scheme
+                settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
+
             for window in sublime.windows():
                 for view in window.views():
                     view_settings = view.settings()
@@ -107,18 +113,14 @@ class PackageDisabler():
                             self.old_syntaxes[package] = []
                         self.old_syntaxes[package].append([view, syntax])
                         view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
+                    # Handle view-specific color_scheme settings not already taken care
+                    # of by resetting the global color_scheme above
                     scheme = view_settings.get('color_scheme')
                     if scheme.find('Packages/' + package + '/') != -1:
                         if package not in self.old_color_schemes:
                             self.old_color_schemes[package] = []
                         self.old_color_schemes[package].append([view, scheme])
                         view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
-
-            # Change the color scheme before disabling the package containing it
-            if settings.get('color_scheme').find('Packages/' + package + '/') != -1:
-                self.old_color_scheme_package = package
-                self.old_color_scheme = settings.get('color_scheme')
-                settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
             # Change the theme before disabling the package containing it
             if package_file_exists(package, settings.get('theme')):
@@ -194,6 +196,9 @@ class PackageDisabler():
                         view, syntax = view_syntax
                         view.settings().set('syntax', syntax)
 
+                if type == 'upgrade' and self.old_color_scheme_package == package:
+                    settings.set('color_scheme', self.old_color_scheme)
+
                 if type == 'upgrade' and package in self.old_color_schemes:
                     for view_scheme in self.old_color_schemes[package]:
                         view, scheme = view_scheme
@@ -209,9 +214,6 @@ class PackageDisabler():
                         graphical corruption until you restart Sublime Text.
                         '''
                     ))
-
-                if type == 'upgrade' and self.old_color_scheme_package == package:
-                    settings.set('color_scheme', self.old_color_scheme)
 
                 sublime.save_settings(preferences_filename())
 
