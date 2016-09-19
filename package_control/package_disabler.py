@@ -188,15 +188,15 @@ class PackageDisabler():
             corruption_notice = u' You may see some graphical corruption until you restart Sublime Text.'
 
             if type == 'remove' and PackageDisabler.old_theme_package == package:
-                message = u'''
+                message = text.format(u'''
                     Package Control
 
                     The package containing your active theme was just removed
                     and the Default theme was enabled in its place.
-                '''
+                ''')
                 if int(sublime.version()) < 3106:
                     message += corruption_notice
-                sublime.message_dialog(text.format(message))
+                sublime.message_dialog(message)
 
             # By delaying the restore, we give Sublime Text some time to
             # re-enable the package, making errors less likely
@@ -241,15 +241,15 @@ class PackageDisabler():
                 if type == 'upgrade' and PackageDisabler.old_theme_package == package:
                     if package_file_exists(package, PackageDisabler.old_theme):
                         settings.set('theme', PackageDisabler.old_theme)
-                        message = u'''
+                        message = text.format(u'''
                             Package Control
 
                             The package containing your active theme was just
                             upgraded.
-                        '''
+                        ''')
                         if int(sublime.version()) < 3106:
                             message += corruption_notice
-                        sublime.message_dialog(text.format(message))
+                        sublime.message_dialog(message)
                     else:
                         sublime.error_message(text.format(
                             u'''
