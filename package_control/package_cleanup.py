@@ -152,6 +152,9 @@ class PackageCleanup(threading.Thread):
 
             clean_old_files(package_dir)
 
+            if os.path.exists(package_dir + '/config.sublime-package-override' ):
+                found = False
+
             # Cleanup packages/dependencies that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
