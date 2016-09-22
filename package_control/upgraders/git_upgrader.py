@@ -83,6 +83,8 @@ class GitUpgrader(VcsUpgrader):
             return False
 
         info = self.get_working_copy_info()
+        if info is False:
+            return False
 
         args = [binary]
         args.extend(self.update_command)
@@ -103,6 +105,8 @@ class GitUpgrader(VcsUpgrader):
             return False
 
         info = self.get_working_copy_info()
+        if info is False:
+            return False
 
         res = self.execute([binary, 'fetch', info['remote']], self.working_copy)
         if res is False:
