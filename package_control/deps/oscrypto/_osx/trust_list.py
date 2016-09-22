@@ -53,12 +53,7 @@ def extract_from_system():
     length = CoreFoundation.CFArrayGetCount(certs_pointer)
     for index in range(0, length):
         cert_pointer = CoreFoundation.CFArrayGetValueAtIndex(certs_pointer, index)
-
-        data_pointer = Security.SecCertificateCopyData(cert_pointer)
-        der_cert = CFHelpers.cf_data_to_bytes(data_pointer)
-        CoreFoundation.CFRelease(data_pointer)
-
-        cert_hash = hashlib.sha1(der_cert).digest()
+        der_cert, cert_hash = _cert_details(cert_pointer)
         certificates[cert_hash] = der_cert
 
     CoreFoundation.CFRelease(certs_pointer)
@@ -78,11 +73,21 @@ def extract_from_system():
 
             trust_settings_pointer_pointer = new(CoreFoundation, 'CFArrayRef *')
             res = Security.SecTrustSettingsCopyTrustSettings(cert_pointer, domain, trust_settings_pointer_pointer)
+
             # In OS X 10.11, this value started being seen. From the comments in
             # the Security Framework Reference, the lack of any settings should
-            # indicate "always strut this certificate"
+            # indicate "always trust this certificate"
             if res == SecurityConst.errSecItemNotFound:
                 continue
+
+            # If the trust settings for a certificate are invalid, we need to
+            # assume the certificate should not be trusted
+            if res == SecurityConst.errSecInvalidTrustSettings:
+                der_cert, cert_hash = _cert_details(cert_pointer)
+                if cert_hash in certificates:
+                    del certificates[cert_hash]
+                continue
+
             handle_sec_error(res)
 
             trust_settings_pointer = unwrap(trust_settings_pointer_pointer)
@@ -110,15 +115,12 @@ def extract_from_system():
                 else:
                     reject_oids.add(policy_oid)
 
-            data_pointer = Security.SecCertificateCopyData(cert_pointer)
-            der_cert = CFHelpers.cf_data_to_bytes(data_pointer)
-            CoreFoundation.CFRelease(data_pointer)
-
-            cert_hash = hashlib.sha1(der_cert).digest()
+            der_cert, cert_hash = _cert_details(cert_pointer)
 
             # If rejected for all purposes, we don't export the certificate
             if all_purposes in reject_oids:
-                del certificates[cert_hash]
+                if cert_hash in certificates:
+                    del certificates[cert_hash]
             else:
                 if all_purposes in trust_oids:
                     trust_oids = set([all_purposes])
@@ -133,3 +135,30 @@ def extract_from_system():
         cert_trust_info = trust_info.get(cert_hash, default_trust)
         output.append((certificates[cert_hash], cert_trust_info[0], cert_trust_info[1]))
     return output
+
+
+def _cert_details(cert_pointer):
+    """
+    Return the certificate and a hash of it
+
+    :param cert_pointer:
+        A SecCertificateRef
+
+    :return:
+        A 2-element tuple:
+         - [0]: A byte string of the SHA1 hash of the cert
+         - [1]: A byte string of the DER-encoded contents of the cert
+    """
+
+    data_pointer = None
+
+    try:
+        data_pointer = Security.SecCertificateCopyData(cert_pointer)
+        der_cert = CFHelpers.cf_data_to_bytes(data_pointer)
+        cert_hash = hashlib.sha1(der_cert).digest()
+
+        return (der_cert, cert_hash)
+
+    finally:
+        if data_pointer is not None:
+            CoreFoundation.CFRelease(data_pointer)

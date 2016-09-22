@@ -87,6 +87,8 @@ class SecurityConst():
     errSSLClosedAbort = -9806
 
     errSSLXCertChainInvalid = -9807
+    errSSLCrypto = -9809
+    errSSLInternal = -9810
     errSSLCertExpired = -9814
     errSSLCertNotYetValid = -9815
     errSSLUnknownRootCert = -9812
@@ -118,6 +120,7 @@ class SecurityConst():
     errSecVerifyFailed = -67808
     errSecNoTrustSettings = -25263
     errSecItemNotFound = -25300
+    errSecInvalidTrustSettings = -25262
 
     kSecPaddingNone = 0
     kSecPaddingPKCS1 = 1
