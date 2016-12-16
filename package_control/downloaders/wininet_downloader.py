@@ -325,22 +325,22 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 raise WinDownloaderException(error_string)
 
             win_timeout = wintypes.DWORD(int(timeout) * 1000)
-            # Apparently INTERNET_OPTION_CONNECT_TIMEOUT just doesn't work,
-            # leaving it in hoping they may fix in the future
-            # 2016-07-29: Commented-out due to some Windows 10 users having issues
-            # https://github.com/wbond/package_control/issues/1039
-            # wininet.InternetSetOptionA(self.network_connection,
-            #     self.INTERNET_OPTION_CONNECT_TIMEOUT, win_timeout, ctypes.sizeof(win_timeout))
+            wininet.InternetSetOptionA(
+                self.network_connection,
+                self.INTERNET_OPTION_CONNECT_TIMEOUT,
+                ctypes.byref(win_timeout),
+                ctypes.sizeof(win_timeout)
+            )
             wininet.InternetSetOptionA(
                 self.network_connection,
                 self.INTERNET_OPTION_SEND_TIMEOUT,
-                win_timeout,
+                ctypes.byref(win_timeout),
                 ctypes.sizeof(win_timeout)
             )
             wininet.InternetSetOptionA(
                 self.network_connection,
                 self.INTERNET_OPTION_RECEIVE_TIMEOUT,
-                win_timeout,
+                ctypes.byref(win_timeout),
                 ctypes.sizeof(win_timeout)
             )
 
