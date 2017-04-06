@@ -282,7 +282,7 @@ class PackageManager():
         """
 
         git_dir = os.path.join(self.get_package_dir(package), '.git')
-        return os.path.exists(git_dir) and os.path.isdir(git_dir)
+        return os.path.exists(git_dir) and (os.path.isdir(git_dir) or os.path.isfile(git_dir))
 
     def _is_hg_package(self, package):
         """
