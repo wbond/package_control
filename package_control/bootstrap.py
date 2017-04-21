@@ -20,8 +20,7 @@ from .clear_directory import clear_directory
 from .download_manager import downloader
 from .downloaders.downloader_exception import DownloaderException
 from .console_write import console_write
-from . import loader
-from .sys_path import st_dir
+from . import loader, sys_path
 from .open_compat import open_compat, read_compat
 from .semver import SemVer
 from .file_not_found_error import FileNotFoundError
@@ -68,10 +67,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     package_filename = path.basename(urlparse(url).path)
     package_basename, _ = path.splitext(package_filename)
 
-    packages_dir = path.join(st_dir, u'Packages')
-    if not packages_dir:
-        return
-    package_dir = path.join(packages_dir, package_basename)
+    package_dir = path.join(sys_path.packages_path, package_basename)
 
     version = SemVer(version)
 

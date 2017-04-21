@@ -12,6 +12,9 @@ try:
 except (NameError):
     str_cls = str
 
+data_dir = None
+packages_path = None
+installed_packages_path = None
 
 if sys.version_info >= (3,):
     def decode(path):
@@ -20,13 +23,55 @@ if sys.version_info >= (3,):
     def encode(path):
         return path
 
+    # Unpacked install of Sublime Text
     if os.path.basename(__file__) == 'sys_path.py':
         pc_package_path = dirname(dirname(__file__))
+        packages_path = dirname(pc_package_path)
+        # For a non-development build, the Installed Packages are next
+        # to the Packages dir
+        _possible_installed_packages_path = os.path.join(dirname(packages_path), 'Installed Packages')
+        if os.path.exists(_possible_installed_packages_path):
+            installed_packages_path = _possible_installed_packages_path
+
     # When loaded as a .sublime-package file, the filename ends up being
     # Package Control.sublime-package/Package Control.package_control.sys_path
     else:
         pc_package_path = dirname(__file__)
+        installed_packages_path = dirname(pc_package_path)
+        # For a non-development build, the Packages are next
+        # to the Installed Packages dir
+        _possible_packages_path = os.path.join(dirname(installed_packages_path), 'Packages')
+        if os.path.exists(_possible_packages_path):
+            packages_path = _possible_packages_path
     st_version = u'3'
+
+    if packages_path is None:
+        import Default.sort
+
+        if os.path.basename(Default.sort.__file__) == 'sort.py':
+            packages_path = dirname(dirname(Default.sort.__file__))
+
+    if installed_packages_path is None:
+        _data_base = None
+        if sys.platform == 'darwin':
+            _data_base = os.path.expanduser('~/Library/Application Support')
+        elif sys.platform == 'win32':
+            _data_base = os.environ.get('APPDATA')
+        else:
+            _data_base = os.environ.get('XDG_CONFIG_HOME')
+            if _data_base is None:
+                _data_base = os.path.expanduser('~/.config')
+
+        if _data_base is not None:
+            _possible_data_dir = os.path.join(_data_base, u'Sublime Text 3 Development')
+            if os.path.exists(_possible_data_dir):
+                data_dir = _possible_data_dir
+                _possible_installed_packages_path = os.path.join(data_dir, 'Installed Packages')
+                if os.path.exists(_possible_installed_packages_path):
+                    installed_packages_path = _possible_installed_packages_path
+
+    if installed_packages_path and data_dir is None:
+        data_dir = dirname(installed_packages_path)
 
 else:
     def decode(path):
@@ -40,10 +85,10 @@ else:
         return path
 
     pc_package_path = decode(os.getcwd())
+    packages_path = dirname(pc_package_path)
+    data_dir = dirname(packages_path)
+    installed_packages_path = os.path.join(data_dir, u'Installed Packages')
     st_version = u'2'
-
-
-st_dir = dirname(dirname(pc_package_path))
 
 
 def add(path, first=False):
@@ -116,8 +161,7 @@ def generate_dependency_paths(name):
          - 'arch'
     """
 
-    packages_dir = os.path.join(st_dir, u'Packages')
-    dependency_dir = os.path.join(packages_dir, name)
+    dependency_dir = os.path.join(packages_path, name)
 
     ver = u'st%s' % st_version
     plat = sublime.platform()

@@ -807,6 +807,8 @@ class PackageManager():
         """
 
         output = set()
+        if not os.path.exists(path):
+            return output
         for filename in os.listdir(path):
             if not re.search('\.sublime-package$', filename):
                 continue

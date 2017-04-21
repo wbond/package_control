@@ -16,7 +16,7 @@ except (NameError):
 
 import sublime
 
-from .sys_path import st_dir
+from . import sys_path
 from .console_write import console_write
 from .package_disabler import PackageDisabler
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
@@ -48,15 +48,13 @@ non_local = {
 }
 
 
-packages_dir = path.join(st_dir, u'Packages')
-installed_packages_dir = path.join(st_dir, u'Installed Packages')
 
 
 loader_package_name = u'0_package_control_loader'
 if sys.version_info < (3,):
-    loader_package_path = path.join(packages_dir, loader_package_name)
+    loader_package_path = path.join(sys_path.packages_path, loader_package_name)
 else:
-    loader_package_path = path.join(installed_packages_dir, u'%s.sublime-package' % loader_package_name)
+    loader_package_path = path.join(sys_path.installed_packages_path, u'%s.sublime-package' % loader_package_name)
 
 # With the zipfile module there is no way to delete a file from a zip, so we
 # must instead copy the other files to a new zipfile and swap the filenames.
@@ -307,8 +305,8 @@ def add(priority, name, code=None):
 
     # Clean things up for people who were tracking the master branch
     if just_created_loader:
-        old_loader_sp = path.join(installed_packages_dir, '0-package_control_loader.sublime-package')
-        old_loader_dir = path.join(packages_dir, '0-package_control_loader')
+        old_loader_sp = path.join(sys_path.installed_packages_path, '0-package_control_loader.sublime-package')
+        old_loader_dir = path.join(sys_path.packages_path, '0-package_control_loader')
 
         removed_old_loader = False
 
@@ -338,7 +336,7 @@ def add(priority, name, code=None):
                 installed_packages.remove('0-package_control_loader')
 
             for name in ['bz2', 'ssl-linux', 'ssl-windows']:
-                dep_dir = path.join(packages_dir, name)
+                dep_dir = path.join(sys_path.packages_path, name)
                 if path.exists(dep_dir):
                     try:
                         shutil.rmtree(dep_dir)

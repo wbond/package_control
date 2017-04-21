@@ -21,11 +21,11 @@ if sys.version_info < (3,):
 if sys.version_info < (3,):
     from package_control.bootstrap import bootstrap_dependency, mark_bootstrapped
     from package_control.package_manager import PackageManager
-    from package_control import loader, text
+    from package_control import loader, text, sys_path
 else:
     from .package_control.bootstrap import bootstrap_dependency, mark_bootstrapped
     from .package_control.package_manager import PackageManager
-    from .package_control import loader, text
+    from .package_control import loader, text, sys_path
 
 
 def plugin_loaded():
@@ -93,6 +93,15 @@ def _background_bootstrap(settings):
             pc_package_path = os.path.join(packages_dir, u'Package Control')
             if os.path.exists(encode(pc_package_path)):
                 found = True
+
+        # Handle the development environment
+        if not found and sys.version_info >= (3,):
+            import Default.sort
+            if os.path.basename(Default.sort.__file__) == 'sort.py':
+                packages_path = dirname(dirname(Default.sort.__file__))
+                pc_package_path = os.path.join(packages_dir, u'Package Control')
+                if os.path.exists(encode(pc_package_path)):
+                    found = True
 
         if found:
             if os.name == 'nt':

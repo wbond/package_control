@@ -11,8 +11,8 @@ if st_version == 3:
 
     installed_dir, _ = __name__.split('.')
 
-    package_path = os.path.join(sys_path.st_dir, 'Installed Packages', 'Package Control.sublime-package')
-    pc_python_path = os.path.join(sys_path.st_dir, 'Packages', 'Package Control', 'Package Control.py')
+    package_path = os.path.join(sys_path.installed_packages_path, 'Package Control.sublime-package')
+    pc_python_path = os.path.join(sys_path.packages_path, 'Package Control', 'Package Control.py')
     has_packed = os.path.exists(package_path)
     has_unpacked = os.path.exists(pc_python_path)
 
@@ -43,7 +43,7 @@ if installed_dir != 'Package Control':
     )
 
     # If installed unpacked
-    if os.path.exists(os.path.join(sys_path.st_dir, 'Packages', installed_dir)):
+    if os.path.exists(os.path.join(sys_path.packages_path, installed_dir)):
         message += text.format(
             u'''
             3. Rename the folder "%s" to "Package Control"
