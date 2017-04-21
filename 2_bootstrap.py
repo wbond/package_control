@@ -98,7 +98,7 @@ def _background_bootstrap(settings):
         if not found and sys.version_info >= (3,):
             import Default.sort
             if os.path.basename(Default.sort.__file__) == 'sort.py':
-                packages_path = dirname(dirname(Default.sort.__file__))
+                packages_dir = dirname(dirname(Default.sort.__file__))
                 pc_package_path = os.path.join(packages_dir, u'Package Control')
                 if os.path.exists(encode(pc_package_path)):
                     found = True
