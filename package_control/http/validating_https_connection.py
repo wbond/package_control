@@ -40,6 +40,9 @@ try:
         response_class = DebuggableHTTPSResponse
         _debug_protocol = 'HTTPS'
 
+        # The ssl.SSLContext() for the connection - Python 3 only
+        ctx = None
+
         def __init__(self, host, port=None, key_file=None, cert_file=None, ca_certs=None, **kwargs):
             passed_args = {}
             if 'timeout' in kwargs:
@@ -300,14 +303,38 @@ try:
                     self.ca_certs.decode(sys.getfilesystemencoding())
                 )
 
-            self.sock = ssl.wrap_socket(
-                self.sock,
-                keyfile=self.key_file,
-                certfile=self.cert_file,
-                cert_reqs=self.cert_reqs,
-                ca_certs=self.ca_certs,
-                ssl_version=ssl.PROTOCOL_TLSv1
-            )
+            hostname = self.host.split(':', 0)[0]
+
+            # Python 3 supports SNI when using an SSLContext
+            if sys.version_info >= (3,):
+                self.ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+                self.ctx.verify_mode = self.cert_reqs
+                self.ctx.load_verify_locations(self.ca_certs)
+                # We don't call load_cert_chain() with self.key_file and self.cert_file
+                # since that is for servers, and this code only supports client mode
+                if self.debuglevel == -1:
+                    console_write(
+                        u'''
+                          Using hostname "%s" for TLS SNI extension
+                        ''',
+                        hostname,
+                        indent='  ',
+                        prefix=False
+                    )
+                self.sock = self.ctx.wrap_socket(
+                    self.sock,
+                    server_hostname=hostname
+                )
+
+            else:
+                self.sock = ssl.wrap_socket(
+                    self.sock,
+                    keyfile=self.key_file,
+                    certfile=self.cert_file,
+                    cert_reqs=self.cert_reqs,
+                    ca_certs=self.ca_certs,
+                    ssl_version=ssl.PROTOCOL_TLSv1
+                )
 
             if self.debuglevel == -1:
                 cipher_info = self.sock.cipher()
@@ -377,8 +404,6 @@ try:
                         console_write(u'    subject alt name: %s', alt_names, prefix=False)
                     if 'notAfter' in cert:
                         console_write(u'    expire date: %s', cert['notAfter'], prefix=False)
-
-                hostname = self.host.split(':', 0)[0]
 
                 if not self.validate_cert_host(cert, hostname):
                     if self.debuglevel == -1:
