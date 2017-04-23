@@ -158,8 +158,8 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 headers = {}
                 for header in headers_str.splitlines():
                     if header[0:5] == 'HTTP/':
-                        message = re.sub('^HTTP/\d\.\d\s+\d+\s*', '', header)
-                        status = int(re.sub('^HTTP/\d\.\d\s+(\d+)(\s+.*)?$', '\\1', header))
+                        message = re.sub('^HTTP/\d(?:\.\d)?\s+\d+\s*', '', header)
+                        status = int(re.sub('^HTTP/\d(?:\.\d)?\s+(\d+)(\s+.*)?$', '\\1', header))
                         continue
                     if header.strip() == '':
                         continue
