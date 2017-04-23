@@ -53,14 +53,29 @@ def iri_to_uri(value):
             type_name(value)
         ))
 
-    parsed = urlsplit(value)
+    scheme = None
+    # Python 2.6 doesn't split properly is the URL doesn't start with http:// or https://
+    if sys.version_info < (2, 7) and not value.startswith('http://') and not value.startswith('https://'):
+        real_prefix = None
+        prefix_match = re.match('^[^:]*://', value)
+        if prefix_match:
+            real_prefix = prefix_match.group(0)
+            value = 'http://' + value[len(real_prefix):]
+        parsed = urlsplit(value)
+        if real_prefix:
+            value = real_prefix + value[7:]
+            scheme = _urlquote(real_prefix[:-3])
+    else:
+        parsed = urlsplit(value)
 
-    scheme = _urlquote(parsed.scheme)
+    if scheme is None:
+        scheme = _urlquote(parsed.scheme)
     hostname = parsed.hostname
     if hostname is not None:
         hostname = hostname.encode('idna')
-    username = _urlquote(parsed.username)
-    password = _urlquote(parsed.password)
+    # RFC 3986 allows userinfo to contain sub-delims
+    username = _urlquote(parsed.username, safe='!$&\'()*+,;=')
+    password = _urlquote(parsed.password, safe='!$&\'()*+,;=')
     port = parsed.port
     if port is not None:
         port = str_cls(port).encode('ascii')
@@ -79,9 +94,12 @@ def iri_to_uri(value):
         if not default_http and not default_https:
             netloc += b':' + port
 
-    path = _urlquote(parsed.path, safe='/')
-    query = _urlquote(parsed.query, safe='&=')
-    fragment = _urlquote(parsed.fragment)
+    # RFC 3986 allows a path to contain sub-delims, plus "@" and ":"
+    path = _urlquote(parsed.path, safe='/!$&\'()*+,;=@:')
+    # RFC 3986 allows the query to contain sub-delims, plus "@", ":" , "/" and "?"
+    query = _urlquote(parsed.query, safe='/?!$&\'()*+,;=@:')
+    # RFC 3986 allows the fragment to contain sub-delims, plus "@", ":" , "/" and "?"
+    fragment = _urlquote(parsed.fragment, safe='/?!$&\'()*+,;=@:')
 
     if query is None and fragment is None and path == b'/':
         path = None
@@ -244,7 +262,8 @@ def _urlunquote(byte_string, remap=None, preserve=None):
     if byte_string is None:
         return byte_string
 
-    byte_string = unquote_to_bytes(byte_string)
+    if byte_string == b'':
+        return ''
 
     if preserve:
         replacements = ['\x1A', '\x1C', '\x1D', '\x1E', '\x1F']
@@ -253,6 +272,8 @@ def _urlunquote(byte_string, remap=None, preserve=None):
             replacement = replacements.pop(0)
             preserve_unmap[replacement] = char
             byte_string = byte_string.replace(char.encode('ascii'), replacement.encode('ascii'))
+
+    byte_string = unquote_to_bytes(byte_string)
 
     if remap:
         for char in remap:

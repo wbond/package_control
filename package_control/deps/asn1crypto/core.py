@@ -3,6 +3,7 @@
 """
 ASN.1 type classes for universal types. Exports the following items:
 
+ - load()
  - Any()
  - Asn1Value()
  - BitString()
@@ -57,25 +58,20 @@ import sys
 from . import _teletex_codec
 from ._errors import unwrap
 from ._ordereddict import OrderedDict
-from ._types import type_name, str_cls, byte_cls, int_types
-from .util import int_to_bytes, int_from_bytes, timezone
+from ._types import type_name, str_cls, byte_cls, int_types, chr_cls
+from .parser import _parse, _dump_header
+from .util import int_to_bytes, int_from_bytes, timezone, extended_datetime
 
-# Python 2
 if sys.version_info <= (3,):
     from cStringIO import StringIO as BytesIO
 
     range = xrange  # noqa
-    py2 = True
-    chr_cls = chr
+    _PY2 = True
 
-# Python 3
 else:
     from io import BytesIO
 
-    py2 = False
-
-    def chr_cls(num):
-        return bytes([num])
+    _PY2 = False
 
 
 _teletex_codec.register()
@@ -105,7 +101,7 @@ METHOD_NUM_TO_NAME_MAP = {
 }
 
 
-_OID_RE = re.compile('^\d+(\.\d+)*$')
+_OID_RE = re.compile(r'^\d+(\.\d+)*$')
 
 
 # A global tracker to ensure that _setup() is called for every class, even
@@ -113,6 +109,60 @@ _OID_RE = re.compile('^\d+(\.\d+)*$')
 # definitions for child classes. Without such a construct, the child classes
 # would just see the parent class attributes and would use them.
 _SETUP_CLASSES = {}
+
+
+def load(encoded_data, strict=False):
+    """
+    Loads a BER/DER-encoded byte string and construct a universal object based
+    on the tag value:
+
+     - 1: Boolean
+     - 2: Integer
+     - 3: BitString
+     - 4: OctetString
+     - 5: Null
+     - 6: ObjectIdentifier
+     - 7: ObjectDescriptor
+     - 8: InstanceOf
+     - 9: Real
+     - 10: Enumerated
+     - 11: EmbeddedPdv
+     - 12: UTF8String
+     - 13: RelativeOid
+     - 16: Sequence,
+     - 17: Set
+     - 18: NumericString
+     - 19: PrintableString
+     - 20: TeletexString
+     - 21: VideotexString
+     - 22: IA5String
+     - 23: UTCTime
+     - 24: GeneralizedTime
+     - 25: GraphicString
+     - 26: VisibleString
+     - 27: GeneralString
+     - 28: UniversalString
+     - 29: CharacterString
+     - 30: BMPString
+
+    :param encoded_data:
+        A byte string of BER or DER-encoded data
+
+    :param strict:
+        A boolean indicating if trailing data should be forbidden - if so, a
+        ValueError will be raised when trailing data exists
+
+    :raises:
+        ValueError - when strict is True and trailing data is present
+        ValueError - when the encoded value tag a tag other than listed above
+        ValueError - when the ASN.1 header length is longer than the data
+        TypeError - when encoded_data is not a byte string
+
+    :return:
+        An instance of the one of the universal classes
+    """
+
+    return Asn1Value.load(encoded_data, strict=strict)
 
 
 class Asn1Value(object):
@@ -150,26 +200,34 @@ class Asn1Value(object):
     # The BER/DER trailer bytes
     _trailer = b''
 
-    # The native python representation of the value
+    # The native python representation of the value - this is not used by
+    # some classes since they utilize _bytes or _unicode
     _native = None
 
     @classmethod
-    def load(cls, encoded_data, **kwargs):
+    def load(cls, encoded_data, strict=False, **kwargs):
         """
         Loads a BER/DER-encoded byte string using the current class as the spec
 
         :param encoded_data:
-            A byte string of BER or DER encoded data
+            A byte string of BER or DER-encoded data
+
+        :param strict:
+            A boolean indicating if trailing data should be forbidden - if so, a
+            ValueError will be raised when trailing data exists
 
         :return:
-            A instance of the current class
+            An instance of the current class
         """
+
+        if not isinstance(encoded_data, byte_cls):
+            raise TypeError('encoded_data must be a byte string, not %s' % type_name(encoded_data))
 
         spec = None
         if cls.tag is not None:
             spec = cls
 
-        value, _ = _parse_build(encoded_data, spec=spec, spec_params=kwargs)
+        value, _ = _parse_build(encoded_data, spec=spec, spec_params=kwargs, strict=strict)
         return value
 
     def __init__(self, tag_type=None, class_=None, tag=None, optional=None, default=None, contents=None):
@@ -286,7 +344,7 @@ class Asn1Value(object):
             A unicode string
         """
 
-        if py2:
+        if _PY2:
             return self.__bytes__()
         else:
             return self.__unicode__()
@@ -297,7 +355,30 @@ class Asn1Value(object):
             A unicode string
         """
 
-        return '<%s %s %s>' % (type_name(self), id(self), repr(self.contents or b''))
+        if _PY2:
+            return '<%s %s b%s>' % (type_name(self), id(self), repr(self.dump()))
+        else:
+            return '<%s %s %s>' % (type_name(self), id(self), repr(self.dump()))
+
+    def __bytes__(self):
+        """
+        A fall-back method for print() in Python 2
+
+        :return:
+            A byte string of the output of repr()
+        """
+
+        return self.__repr__().encode('utf-8')
+
+    def __unicode__(self):
+        """
+        A fall-back method for print() in Python 3
+
+        :return:
+            A unicode string of the output of repr()
+        """
+
+        return self.__repr__()
 
     def _new_instance(self):
         """
@@ -406,8 +487,6 @@ class Asn1Value(object):
 
         self.contents = other.contents
         self._native = copy_func(other._native)
-        if hasattr(other, '_parsed'):
-            self._parsed = copy_func(other._parsed)
 
     def debug(self, nest_level=1):
         """
@@ -415,13 +494,18 @@ class Asn1Value(object):
         """
 
         prefix = '  ' * nest_level
+
+        # This interacts with Any and moves the tag, tag_type, _header, contents, _footer
+        # to the parsed value so duplicate data isn't present
+        has_parsed = hasattr(self, 'parsed')
+
         _basic_debug(prefix, self)
-        if hasattr(self, 'parsed'):
+        if has_parsed:
             self.parsed.debug(nest_level + 2)
         elif hasattr(self, 'chosen'):
             self.chosen.debug(nest_level + 2)
         else:
-            if py2 and isinstance(self.native, byte_cls):
+            if _PY2 and isinstance(self.native, byte_cls):
                 print('%s    Native: b%s' % (prefix, repr(self.native)))
             else:
                 print('%s    Native: %s' % (prefix, self.native))
@@ -440,7 +524,10 @@ class Asn1Value(object):
 
         contents = self.contents
 
-        if self._header is None:
+        if self._header is None or force:
+            if isinstance(self, Constructable) and self._indefinite:
+                self.method = 0
+
             header = _dump_header(self.class_, self.method, self.tag, self.contents)
             trailer = b''
 
@@ -486,6 +573,122 @@ class ValueMap():
         cls._reverse_map = {}
         for key, value in cls._map.items():
             cls._reverse_map[value] = key
+
+
+class Castable(object):
+    """
+    A mixin to handle converting an object between different classes that
+    represent the same encoded value, but with different rules for converting
+    to and from native Python values
+    """
+
+    def cast(self, other_class):
+        """
+        Converts the current object into an object of a different class. The
+        new class must use the ASN.1 encoding for the value.
+
+        :param other_class:
+            The class to instantiate the new object from
+
+        :return:
+            An instance of the type other_class
+        """
+
+        if other_class.tag != self.__class__.tag:
+            raise TypeError(unwrap(
+                '''
+                Can not covert a value from %s object to %s object since they
+                use different tags: %d versus %d
+                ''',
+                type_name(other_class),
+                type_name(self),
+                other_class.tag,
+                self.__class__.tag
+            ))
+
+        new_obj = other_class()
+        new_obj.tag_type = self.tag_type
+        new_obj.class_ = self.class_
+        new_obj.explicit_class = self.explicit_class
+        new_obj.explicit_tag = self.explicit_tag
+        new_obj._header = self._header
+        new_obj.contents = self.contents
+        new_obj._trailer = self._trailer
+        if isinstance(self, Constructable):
+            new_obj.method = self.method
+            new_obj._indefinite = self._indefinite
+        return new_obj
+
+
+class Constructable(object):
+    """
+    A mixin to handle string types that may be constructed from chunks
+    contained within an indefinite length BER-encoded container
+    """
+
+    # Instance attribute indicating if an object was indefinite
+    # length when parsed – affects parsing and dumping
+    _indefinite = False
+
+    # Class attribute that indicates the offset into self.contents
+    # that contains the chunks of data to merge
+    _chunks_offset = 0
+
+    def _merge_chunks(self):
+        """
+        :return:
+            A concatenation of the native values of the contained chunks
+        """
+
+        if not self._indefinite:
+            return self._as_chunk()
+
+        pointer = self._chunks_offset
+        contents_len = len(self.contents)
+        output = None
+
+        while pointer < contents_len:
+            # We pass the current class as the spec so content semantics are preserved
+            sub_value, pointer = _parse_build(self.contents, pointer, spec=self.__class__)
+            if output is None:
+                output = sub_value._merge_chunks()
+            else:
+                output += sub_value._merge_chunks()
+
+        if output is None:
+            return self._as_chunk()
+
+        return output
+
+    def _as_chunk(self):
+        """
+        A method to return a chunk of data that can be combined for
+        constructed method values
+
+        :return:
+            A native Python value that can be added together. Examples include
+            byte strings, unicode strings or tuples.
+        """
+
+        if self._chunks_offset == 0:
+            return self.contents
+        return self.contents[self._chunks_offset:]
+
+    def _copy(self, other, copy_func):
+        """
+        Copies the contents of another Constructable object to itself
+
+        :param object:
+            Another instance of the same class
+
+        :param copy_func:
+            An reference of copy.copy() or copy.deepcopy() to use when copying
+            lists, dicts and objects
+        """
+
+        super(Constructable, self)._copy(other, copy_func)
+        self.method = other.method
+        self._indefinite = other._indefinite
 
 
 class Void(Asn1Value):
@@ -636,18 +839,43 @@ class Any(Asn1Value):
                 if self.tag_type == 'explicit':
                     passed_params = {} if not spec_params else spec_params.copy()
                     passed_params['tag_type'] = self.tag_type
-                    passed_params['tag'] = self.tag
+                    passed_params['tag'] = self.explicit_tag
+                contents = self._header + self.contents + self._trailer
                 parsed_value, _ = _parse_build(
-                    self._header + self.contents + self._trailer,
+                    contents,
                     spec=spec,
                     spec_params=passed_params
                 )
                 self._parsed = (parsed_value, spec, spec_params)
+
+                # Once we've parsed the Any value, clear any attributes from this object
+                # since they are now duplicate
+                self.tag_type = None
+                self.tag = None
+                self._header = b''
+                self.contents = contents
+                self._trailer = b''
+
             except (ValueError, TypeError) as e:
                 args = e.args[1:]
                 e.args = (e.args[0] + '\n    while parsing %s' % type_name(self),) + args
                 raise e
         return self._parsed[0]
+
+    def _copy(self, other, copy_func):
+        """
+        Copies the contents of another Any object to itself
+
+        :param object:
+            Another instance of the same class
+
+        :param copy_func:
+            An reference of copy.copy() or copy.deepcopy() to use when copying
+            lists, dicts and objects
+        """
+
+        super(Any, self)._copy(other, copy_func)
+        self._parsed = copy_func(other._parsed)
 
     def dump(self, force=False):
         """
@@ -699,18 +927,25 @@ class Choice(Asn1Value):
     _name_map = None
 
     @classmethod
-    def load(cls, encoded_data, **kwargs):
+    def load(cls, encoded_data, strict=False, **kwargs):
         """
         Loads a BER/DER-encoded byte string using the current class as the spec
 
         :param encoded_data:
             A byte string of BER or DER encoded data
 
+        :param strict:
+            A boolean indicating if trailing data should be forbidden - if so, a
+            ValueError will be raised when trailing data exists
+
         :return:
             A instance of the current class
         """
 
-        value, _ = _parse_build(encoded_data, spec=cls, spec_params=kwargs)
+        if not isinstance(encoded_data, byte_cls):
+            raise TypeError('encoded_data must be a byte string, not %s' % type_name(encoded_data))
+
+        value, _ = _parse_build(encoded_data, spec=cls, spec_params=kwargs, strict=strict)
         return value
 
     def _setup(self):
@@ -735,7 +970,10 @@ class Choice(Asn1Value):
         incompatible with Choice, then forwards on to Asn1Value.__init__()
 
         :param name:
-            The name of the alternative to be set - used with value
+            The name of the alternative to be set - used with value.
+            Alternatively this may be a dict with a single key being the name
+            and the value being the value, or a two-element tuple of the the
+            name and the value.
 
         :param value:
             The alternative value to set - used with name
@@ -761,6 +999,33 @@ class Choice(Asn1Value):
                 ))
 
             if name is not None:
+                if isinstance(name, dict):
+                    if len(name) != 1:
+                        raise ValueError(unwrap(
+                            '''
+                            When passing a dict as the "name" argument to %s,
+                            it must have a single key/value - however %d were
+                            present
+                            ''',
+                            type_name(self),
+                            len(name)
+                        ))
+                    name, value = list(name.items())[0]
+
+                if isinstance(name, tuple):
+                    if len(name) != 2:
+                        raise ValueError(unwrap(
+                            '''
+                            When passing a tuple as the "name" argument to %s,
+                            it must have two elements, the name and value -
+                            however %d were present
+                            ''',
+                            type_name(self),
+                            len(name)
+                        ))
+                    value = name[1]
+                    name = name[0]
+
                 if name not in self._name_map:
                     raise ValueError(unwrap(
                         '''
@@ -908,7 +1173,7 @@ class Choice(Asn1Value):
 
     def _copy(self, other, copy_func):
         """
-        Copies the contents of another Asn1Value object to itself
+        Copies the contents of another Choice object to itself
 
         :param object:
             Another instance of the same class
@@ -918,17 +1183,7 @@ class Choice(Asn1Value):
             lists, dicts and objects
         """
 
-        if self.__class__ != other.__class__:
-            raise TypeError(unwrap(
-                '''
-                Can not copy values from %s object to %s object
-                ''',
-                type_name(other),
-                type_name(self)
-            ))
-
-        self.contents = other.contents
-        self._native = copy_func(other._native)
+        super(Choice, self)._copy(other, copy_func)
         self._choice = other._choice
         self._name = other._name
         self._parsed = copy_func(other._parsed)
@@ -946,7 +1201,7 @@ class Choice(Asn1Value):
         """
 
         self.contents = self.chosen.dump(force=force)
-        if self._header is None:
+        if self._header is None or force:
             if self.tag_type == 'explicit':
                 self._header = _dump_header(self.explicit_class, 1, self.explicit_tag, self.contents)
             else:
@@ -968,26 +1223,34 @@ class Concat(object):
     _children = None
 
     @classmethod
-    def load(cls, encoded_data):
+    def load(cls, encoded_data, strict=False):
         """
         Loads a BER/DER-encoded byte string using the current class as the spec
 
         :param encoded_data:
             A byte string of BER or DER encoded data
 
+        :param strict:
+            A boolean indicating if trailing data should be forbidden - if so, a
+            ValueError will be raised when trailing data exists
+
         :return:
             A Concat object
         """
 
-        return cls(contents=encoded_data)
+        return cls(contents=encoded_data, strict=strict)
 
-    def __init__(self, value=None, contents=None):
+    def __init__(self, value=None, contents=None, strict=False):
         """
         :param value:
             A native Python datatype to initialize the object value with
 
         :param contents:
             A byte string of the encoded contents of the value
+
+        :param strict:
+            A boolean indicating if trailing data should be forbidden - if so, a
+            ValueError will be raised when trailing data exists in contents
 
         :raises:
             ValueError - when an error occurs with one of the children
@@ -1006,6 +1269,10 @@ class Concat(object):
                     else:
                         child_value = spec()
                     self._children.append(child_value)
+
+                if strict and offset != contents_len:
+                    extra_bytes = contents_len - offset
+                    raise ValueError('Extra data - %d bytes of trailing data were provided' % extra_bytes)
 
             except (ValueError, TypeError) as e:
                 args = e.args[1:]
@@ -1027,7 +1294,7 @@ class Concat(object):
             A unicode string
         """
 
-        if py2:
+        if _PY2:
             return self.__bytes__()
         else:
             return self.__unicode__()
@@ -1354,7 +1621,7 @@ class Primitive(Asn1Value):
         return self.dump() == other.dump()
 
 
-class AbstractString(Primitive):
+class AbstractString(Constructable, Primitive):
     """
     A base class for all strings that have a known encoding. In general, we do
     not worry ourselves with confirming that the decoded values match a specific
@@ -1363,6 +1630,9 @@ class AbstractString(Primitive):
 
     # The Python encoding name to use when decoding or encoded the contents
     _encoding = 'latin1'
+
+    # Instance attribute of (possibly-merged) unicode string
+    _unicode = None
 
     def set(self, value):
         """
@@ -1381,9 +1651,12 @@ class AbstractString(Primitive):
                 type_name(value)
             ))
 
-        self._native = value
+        self._unicode = value
         self.contents = value.encode(self._encoding)
         self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
         if self._trailer != b'':
             self._trailer = b''
 
@@ -1393,7 +1666,26 @@ class AbstractString(Primitive):
             A unicode string
         """
 
-        return self.contents.decode(self._encoding)
+        if self.contents is None:
+            return ''
+        if self._unicode is None:
+            self._unicode = self._merge_chunks().decode(self._encoding)
+        return self._unicode
+
+    def _copy(self, other, copy_func):
+        """
+        Copies the contents of another AbstractString object to itself
+
+        :param object:
+            Another instance of the same class
+
+        :param copy_func:
+            An reference of copy.copy() or copy.deepcopy() to use when copying
+            lists, dicts and objects
+        """
+
+        super(AbstractString, self)._copy(other, copy_func)
+        self._unicode = other._unicode
 
     @property
     def native(self):
@@ -1407,9 +1699,7 @@ class AbstractString(Primitive):
         if self.contents is None:
             return None
 
-        if self._native is None:
-            self._native = self.__unicode__()
-        return self._native
+        return self.__unicode__()
 
 
 class Boolean(Primitive):
@@ -1546,7 +1836,7 @@ class Integer(Primitive, ValueMap):
         return self._native
 
 
-class BitString(Primitive, ValueMap, object):
+class BitString(Constructable, Castable, Primitive, ValueMap, object):
     """
     Represents a bit string from ASN.1 as a Python tuple of 1s and 0s
     """
@@ -1554,6 +1844,10 @@ class BitString(Primitive, ValueMap, object):
     tag = 3
 
     _size = None
+
+    # Used with _as_chunk() from Constructable
+    _chunk = None
+    _chunks_offset = 1
 
     def _setup(self):
         """
@@ -1618,6 +1912,8 @@ class BitString(Primitive, ValueMap, object):
                 type_name(value)
             ))
 
+        self._chunk = None
+
         if self._map is not None:
             if len(value) > self._size:
                 raise ValueError(unwrap(
@@ -1658,6 +1954,9 @@ class BitString(Primitive, ValueMap, object):
 
         self.contents = extra_bits_byte + value_bytes
         self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
         if self._trailer != b'':
             self._trailer = b''
 
@@ -1765,6 +2064,36 @@ class BitString(Primitive, ValueMap, object):
 
         self.set(self._native)
 
+    def _as_chunk(self):
+        """
+        Allows reconstructing indefinite length values
+
+        :return:
+            A tuple of integers
+        """
+
+        extra_bits = int_from_bytes(self.contents[0:1])
+        bit_string = '{0:b}'.format(int_from_bytes(self.contents[1:]))
+        byte_len = len(self.contents[1:])
+        bit_len = len(bit_string)
+
+        # Left-pad the bit string to a byte multiple to ensure we didn't
+        # lose any zero bits on the left
+        mod_bit_len = bit_len % 8
+        if mod_bit_len != 0:
+            bit_string = ('0' * (8 - mod_bit_len)) + bit_string
+            bit_len = len(bit_string)
+
+        if bit_len // 8 < byte_len:
+            missing_bytes = byte_len - (bit_len // 8)
+            bit_string = ('0' * (8 * missing_bytes)) + bit_string
+
+        # Trim off the extra bits on the right used to fill the last byte
+        if extra_bits > 0:
+            bit_string = bit_string[0:0 - extra_bits]
+
+        return tuple(map(int, tuple(bit_string)))
+
     @property
     def native(self):
         """
@@ -1783,20 +2112,7 @@ class BitString(Primitive, ValueMap, object):
                 self.set(set())
 
         if self._native is None:
-            extra_bits = int_from_bytes(self.contents[0:1])
-            bit_string = '{0:b}'.format(int_from_bytes(self.contents[1:]))
-
-            # Left-pad the bit string to a byte multiple to ensure we didn't
-            # lose any zero bits on the left
-            mod_bit_len = len(bit_string) % 8
-            if mod_bit_len != 0:
-                bit_string = ('0' * (8 - mod_bit_len)) + bit_string
-
-            # Trim off the extra bits on the right used to fill the last byte
-            if extra_bits > 0:
-                bit_string = bit_string[0:0 - extra_bits]
-
-            bits = tuple(map(int, tuple(bit_string)))
+            bits = self._merge_chunks()
             if self._map:
                 self._native = set()
                 for index, bit in enumerate(bits):
@@ -1808,12 +2124,21 @@ class BitString(Primitive, ValueMap, object):
         return self._native
 
 
-class OctetBitString(Primitive):
+class OctetBitString(Constructable, Castable, Primitive):
     """
     Represents a bit string in ASN.1 as a Python byte string
     """
 
     tag = 3
+
+    # Whenever dealing with octet-based bit strings, we really want the
+    # bytes, so we just ignore the unused bits portion since it isn't
+    # applicable to the current use case
+    # unused_bits = struct.unpack('>B', self.contents[0:1])[0]
+    _chunks_offset = 1
+
+    # Instance attribute of (possibly-merged) byte string
+    _bytes = None
 
     def set(self, value):
         """
@@ -1835,10 +2160,13 @@ class OctetBitString(Primitive):
                 type_name(value)
             ))
 
-        self._native = value
+        self._bytes = value
         # Set the unused bits to 0
         self.contents = b'\x00' + value
         self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
         if self._trailer != b'':
             self._trailer = b''
 
@@ -1848,11 +2176,26 @@ class OctetBitString(Primitive):
             A byte string
         """
 
-        # Whenever dealing with octet-based bit strings, we really want the
-        # bytes, so we just ignore the unused bits portion since it isn't
-        # applicable to the current use case
-        # unused_bits = struct.unpack('>B', self.contents[0:1])[0]
-        return self.contents[1:]
+        if self.contents is None:
+            return b''
+        if self._bytes is None:
+            self._bytes = self._merge_chunks()
+        return self._bytes
+
+    def _copy(self, other, copy_func):
+        """
+        Copies the contents of another OctetBitString object to itself
+
+        :param object:
+            Another instance of the same class
+
+        :param copy_func:
+            An reference of copy.copy() or copy.deepcopy() to use when copying
+            lists, dicts and objects
+        """
+
+        super(OctetBitString, self)._copy(other, copy_func)
+        self._bytes = other._bytes
 
     @property
     def native(self):
@@ -1866,17 +2209,17 @@ class OctetBitString(Primitive):
         if self.contents is None:
             return None
 
-        if self._native is None:
-            self._native = self.__bytes__()
-        return self._native
+        return self.__bytes__()
 
 
-class IntegerBitString(Primitive):
+class IntegerBitString(Constructable, Castable, Primitive):
     """
     Represents a bit string in ASN.1 as a Python integer
     """
 
     tag = 3
+
+    _chunks_offset = 1
 
     def set(self, value):
         """
@@ -1902,8 +2245,32 @@ class IntegerBitString(Primitive):
         # Set the unused bits to 0
         self.contents = b'\x00' + int_to_bytes(value, signed=True)
         self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
         if self._trailer != b'':
             self._trailer = b''
+
+    def _as_chunk(self):
+        """
+        Allows reconstructing indefinite length values
+
+        :return:
+            A unicode string of bits – 1s and 0s
+        """
+
+        extra_bits = int_from_bytes(self.contents[0:1])
+        bit_string = '{0:b}'.format(int_from_bytes(self.contents[1:]))
+
+        # Ensure we have leading zeros since these chunks may be concatenated together
+        mod_bit_len = len(bit_string) % 8
+        if mod_bit_len != 0:
+            bit_string = ('0' * (8 - mod_bit_len)) + bit_string
+
+        if extra_bits > 0:
+            return bit_string[0:0 - extra_bits]
+
+        return bit_string
 
     @property
     def native(self):
@@ -1919,21 +2286,51 @@ class IntegerBitString(Primitive):
 
         if self._native is None:
             extra_bits = int_from_bytes(self.contents[0:1])
-            if extra_bits > 0:
-                bit_string = '{0:b}'.format(int_from_bytes(self.contents[1:]))
-                bit_string = bit_string[0:0 - extra_bits]
-                self._native = int(bit_string, 2)
-            else:
+            # Fast path
+            if not self._indefinite and extra_bits == 0:
                 self._native = int_from_bytes(self.contents[1:])
+            else:
+                if self._indefinite and extra_bits > 0:
+                    raise ValueError('Constructed bit string has extra bits on indefinite container')
+                self._native = int(self._merge_chunks(), 2)
         return self._native
 
 
-class OctetString(Primitive):
+class OctetString(Constructable, Castable, Primitive):
     """
     Represents a byte string in both ASN.1 and Python
     """
 
     tag = 4
+
+    # Instance attribute of (possibly-merged) byte string
+    _bytes = None
+
+    def set(self, value):
+        """
+        Sets the value of the object
+
+        :param value:
+            A byte string
+        """
+
+        if not isinstance(value, byte_cls):
+            raise TypeError(unwrap(
+                '''
+                %s value must be a byte string, not %s
+                ''',
+                type_name(self),
+                type_name(value)
+            ))
+
+        self._bytes = value
+        self.contents = value
+        self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
+        if self._trailer != b'':
+            self._trailer = b''
 
     def __bytes__(self):
         """
@@ -1941,7 +2338,26 @@ class OctetString(Primitive):
             A byte string
         """
 
-        return self.contents
+        if self.contents is None:
+            return b''
+        if self._bytes is None:
+            self._bytes = self._merge_chunks()
+        return self._bytes
+
+    def _copy(self, other, copy_func):
+        """
+        Copies the contents of another OctetString object to itself
+
+        :param object:
+            Another instance of the same class
+
+        :param copy_func:
+            An reference of copy.copy() or copy.deepcopy() to use when copying
+            lists, dicts and objects
+        """
+
+        super(OctetString, self)._copy(other, copy_func)
+        self._bytes = other._bytes
 
     @property
     def native(self):
@@ -1955,12 +2371,10 @@ class OctetString(Primitive):
         if self.contents is None:
             return None
 
-        if self._native is None:
-            self._native = self.__bytes__()
-        return self._native
+        return self.__bytes__()
 
 
-class IntegerOctetString(Primitive):
+class IntegerOctetString(Constructable, Castable, Primitive):
     """
     Represents a byte string in ASN.1 as a Python integer
     """
@@ -1990,6 +2404,9 @@ class IntegerOctetString(Primitive):
         self._native = value
         self.contents = int_to_bytes(value, signed=False)
         self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
         if self._trailer != b'':
             self._trailer = b''
 
@@ -2006,15 +2423,18 @@ class IntegerOctetString(Primitive):
             return None
 
         if self._native is None:
-            self._native = int_from_bytes(self.contents)
+            self._native = int_from_bytes(self._merge_chunks())
         return self._native
 
 
-class ParsableOctetString(Primitive):
+class ParsableOctetString(Constructable, Castable, Primitive):
 
     tag = 4
 
     _parsed = None
+
+    # Instance attribute of (possibly-merged) byte string
+    _bytes = None
 
     def __init__(self, value=None, parsed=None, **kwargs):
         """
@@ -2039,7 +2459,32 @@ class ParsableOctetString(Primitive):
 
         if set_parsed:
             self._parsed = (parsed, parsed.__class__, None)
-            self._native = parsed.native
+
+    def set(self, value):
+        """
+        Sets the value of the object
+
+        :param value:
+            A byte string
+        """
+
+        if not isinstance(value, byte_cls):
+            raise TypeError(unwrap(
+                '''
+                %s value must be a byte string, not %s
+                ''',
+                type_name(self),
+                type_name(value)
+            ))
+
+        self._bytes = value
+        self.contents = value
+        self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
+        if self._trailer != b'':
+            self._trailer = b''
 
     def parse(self, spec=None, spec_params=None):
         """
@@ -2060,7 +2505,7 @@ class ParsableOctetString(Primitive):
         """
 
         if self._parsed is None or self._parsed[1:3] != (spec, spec_params):
-            parsed_value, _ = _parse_build(byte_cls(self), spec=spec, spec_params=spec_params)
+            parsed_value, _ = _parse_build(self.__bytes__(), spec=spec, spec_params=spec_params)
             self._parsed = (parsed_value, spec, spec_params)
         return self._parsed[0]
 
@@ -2070,7 +2515,27 @@ class ParsableOctetString(Primitive):
             A byte string
         """
 
-        return self.contents
+        if self.contents is None:
+            return b''
+        if self._bytes is None:
+            self._bytes = self._merge_chunks()
+        return self._bytes
+
+    def _copy(self, other, copy_func):
+        """
+        Copies the contents of another ParsableOctetString object to itself
+
+        :param object:
+            Another instance of the same class
+
+        :param copy_func:
+            An reference of copy.copy() or copy.deepcopy() to use when copying
+            lists, dicts and objects
+        """
+
+        super(ParsableOctetString, self)._copy(other, copy_func)
+        self._bytes = other._bytes
+        self._parsed = copy_func(other._parsed)
 
     @property
     def native(self):
@@ -2084,12 +2549,10 @@ class ParsableOctetString(Primitive):
         if self.contents is None:
             return None
 
-        if self._native is None:
-            if self._parsed is not None:
-                self._native = self._parsed[0].native
-            else:
-                self._native = self.__bytes__()
-        return self._native
+        if self._parsed is not None:
+            return self._parsed[0].native
+        else:
+            return self.__bytes__()
 
     @property
     def parsed(self):
@@ -2104,31 +2567,6 @@ class ParsableOctetString(Primitive):
             self.parse()
 
         return self._parsed[0]
-
-    def _copy(self, other, copy_func):
-        """
-        Copies the contents of another ParsableOctetString object to itself
-
-        :param object:
-            Another instance of the same class
-
-        :param copy_func:
-            An reference of copy.copy() or copy.deepcopy() to use when copying
-            lists, dicts and objects
-        """
-
-        if self.__class__ != other.__class__:
-            raise TypeError(unwrap(
-                '''
-                Can not copy values from %s object to %s object
-                ''',
-                type_name(other),
-                type_name(self)
-            ))
-
-        self.contents = other.contents
-        self._native = copy_func(other._native)
-        self._parsed = copy_func(other._parsed)
 
     def dump(self, force=False):
         """
@@ -2157,6 +2595,12 @@ class ParsableOctetBitString(ParsableOctetString):
 
     tag = 3
 
+    # Whenever dealing with octet-based bit strings, we really want the
+    # bytes, so we just ignore the unused bits portion since it isn't
+    # applicable to the current use case
+    # unused_bits = struct.unpack('>B', self.contents[0:1])[0]
+    _chunks_offset = 1
+
     def set(self, value):
         """
         Sets the value of the object
@@ -2177,24 +2621,15 @@ class ParsableOctetBitString(ParsableOctetString):
                 type_name(value)
             ))
 
-        self._native = value
+        self._bytes = value
         # Set the unused bits to 0
         self.contents = b'\x00' + value
         self._header = None
+        if self._indefinite:
+            self._indefinite = False
+            self.method = 0
         if self._trailer != b'':
             self._trailer = b''
-
-    def __bytes__(self):
-        """
-        :return:
-            A byte string
-        """
-
-        # Whenever dealing with octet-based bit strings, we really want the
-        # bytes, so we just ignore the unused bits portion since it isn't
-        # applicable to the current use case
-        # unused_bits = struct.unpack('>B', self.contents[0:1])[0]
-        return self.contents[1:]
 
 
 class Null(Primitive):
@@ -2394,7 +2829,7 @@ class ObjectIdentifier(Primitive, ValueMap):
 
             part = 0
             for byte in self.contents:
-                if py2:
+                if _PY2:
                     byte = ord(byte)
                 part = part * 128
                 part += byte & 127
@@ -3273,7 +3708,7 @@ class Sequence(Asn1Value):
 
     def _copy(self, other, copy_func):
         """
-        Copies the contents of another Asn1Value object to itself
+        Copies the contents of another Sequence object to itself
 
         :param object:
             Another instance of the same class
@@ -3283,17 +3718,7 @@ class Sequence(Asn1Value):
             lists, dicts and objects
         """
 
-        if self.__class__ != other.__class__:
-            raise TypeError(unwrap(
-                '''
-                Can not copy values from %s object to %s object
-                ''',
-                type_name(other),
-                type_name(self)
-            ))
-
-        self.contents = other.contents
-        self._native = copy_func(other._native)
+        super(Sequence, self)._copy(other, copy_func)
         if self.children is not None:
             self.children = []
             for child in other.children:
@@ -3739,7 +4164,7 @@ class SequenceOf(Asn1Value):
 
     def _copy(self, other, copy_func):
         """
-        Copies the contents of another Asn1Value object to itself
+        Copies the contents of another SequenceOf object to itself
 
         :param object:
             Another instance of the same class
@@ -3749,17 +4174,7 @@ class SequenceOf(Asn1Value):
             lists, dicts and objects
         """
 
-        if self.__class__ != other.__class__:
-            raise TypeError(unwrap(
-                '''
-                Can not copy values from %s object to %s object
-                ''',
-                type_name(other),
-                type_name(self)
-            ))
-
-        self.contents = other.contents
-        self._native = copy_func(other._native)
+        super(SequenceOf, self)._copy(other, copy_func)
         if self.children is not None:
             self.children = []
             for child in other.children:
@@ -4136,7 +4551,7 @@ class UTCTime(AbstractTime):
 
         if isinstance(value, datetime):
             value = value.strftime('%y%m%d%H%M%SZ')
-            if py2:
+            if _PY2:
                 value = value.decode('ascii')
 
         AbstractString.set(self, value)
@@ -4175,7 +4590,7 @@ class UTCTime(AbstractTime):
 class GeneralizedTime(AbstractTime):
     """
     Represents a generalized time from ASN.1 as a Python datetime.datetime
-    object in UTC
+    object or asn1crypto.util.extended_datetime object in UTC
     """
 
     tag = 24
@@ -4185,15 +4600,16 @@ class GeneralizedTime(AbstractTime):
         Sets the value of the object
 
         :param value:
-            A unicode string or a datetime.datetime object
+            A unicode string, a datetime.datetime object or an
+            asn1crypto.util.extended_datetime object
 
         :raises:
             ValueError - when an invalid value is passed
         """
 
-        if isinstance(value, datetime):
+        if isinstance(value, (datetime, extended_datetime)):
             value = value.strftime('%Y%m%d%H%M%SZ')
-            if py2:
+            if _PY2:
                 value = value.decode('ascii')
 
         AbstractString.set(self, value)
@@ -4209,22 +4625,37 @@ class GeneralizedTime(AbstractTime):
             A unicode string to parse
 
         :return:
-            A datetime.datetime object or a unicode string
+            A datetime.datetime object, asn1crypto.util.extended_datetime object or
+            a unicode string
         """
 
         strlen = len(string)
 
+        date_format = None
         if strlen == 10:
-            return datetime.strptime(string, '%Y%m%d%H')
+            date_format = '%Y%m%d%H'
+        elif strlen == 12:
+            date_format = '%Y%m%d%H%M'
+        elif strlen == 14:
+            date_format = '%Y%m%d%H%M%S'
+        elif strlen == 18:
+            date_format = '%Y%m%d%H%M%S.%f'
 
-        if strlen == 12:
-            return datetime.strptime(string, '%Y%m%d%H%M')
-
-        if strlen == 14:
-            return datetime.strptime(string, '%Y%m%d%H%M%S')
-
-        if strlen == 18:
-            return datetime.strptime(string, '%Y%m%d%H%M%S.%f')
+        if date_format:
+            if len(string) >= 4 and string[0:4] == '0000':
+                # Year 2000 shares a calendar with year 0, and is supported natively
+                t = datetime.strptime('2000' + string[4:], date_format)
+                return extended_datetime(
+                    0,
+                    t.month,
+                    t.day,
+                    t.hour,
+                    t.minute,
+                    t.second,
+                    t.microsecond,
+                    t.tzinfo
+                )
+            return datetime.strptime(string, date_format)
 
         return string
 
@@ -4367,35 +4798,6 @@ def _fix_tagging(value, params):
     return value
 
 
-def _dump_header(class_, method, tag, contents):
-    header = b''
-
-    id_num = 0
-    id_num |= class_ << 6
-    id_num |= method << 5
-
-    tag = tag
-
-    if tag >= 31:
-        header += chr_cls(id_num | 31)
-        while tag > 0:
-            continuation_bit = 0x80 if tag > 0x7F else 0
-            header += chr_cls(continuation_bit | (tag & 0x7F))
-            tag = tag >> 7
-    else:
-        header += chr_cls(id_num | tag)
-
-    length = len(contents)
-    if length <= 127:
-        header += chr_cls(length)
-    else:
-        length_bytes = int_to_bytes(length)
-        header += chr_cls(0x80 | len(length_bytes))
-        header += length_bytes
-
-    return header
-
-
 def _build_id_tuple(params, spec):
     """
     Builds a 2-element tuple used to identify fields by grabbing the class_
@@ -4504,6 +4906,8 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
     if header is None:
         return VOID
 
+    header_set = False
+
     # If an explicit specification was passed in, make sure it matches
     if spec is not None:
         if spec_params:
@@ -4548,11 +4952,12 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
             original_value = value
             info, _ = _parse(contents, len(contents))
             value = _build(*info, spec=spec)
-            value._header = header + info[3]
+            value._header = header + value._header
             value._trailer += trailer or b''
             value.tag_type = 'explicit'
             value.explicit_class = original_value.explicit_class
             value.explicit_tag = original_value.explicit_tag
+            header_set = True
 
         elif isinstance(value, Choice):
             value.validate(class_, tag, contents)
@@ -4578,14 +4983,21 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
                     CLASS_NUM_TO_NAME_MAP.get(class_, class_)
                 ))
             if method != value.method:
-                raise ValueError(unwrap(
-                    '''
-                    Error parsing %s - method should have been %s, but %s was found
-                    ''',
-                    type_name(value),
-                    METHOD_NUM_TO_NAME_MAP.get(value.method),
-                    METHOD_NUM_TO_NAME_MAP.get(method, method)
-                ))
+                # Allow parsing a primitive method as constructed if the value
+                # is indefinite length. This is to allow parsing BER.
+                ber_indef = method == 1 and value.method == 0 and trailer == b'\x00\x00'
+                if not ber_indef or not isinstance(value, Constructable):
+                    raise ValueError(unwrap(
+                        '''
+                        Error parsing %s - method should have been %s, but %s was found
+                        ''',
+                        type_name(value),
+                        METHOD_NUM_TO_NAME_MAP.get(value.method),
+                        METHOD_NUM_TO_NAME_MAP.get(method, method)
+                    ))
+                else:
+                    value.method = method
+                    value._indefinite = True
             if tag != value.tag and tag != value._bad_tag:
                 raise ValueError(unwrap(
                     '''
@@ -4603,11 +5015,12 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
         original_value = Asn1Value(contents=contents, **spec_params)
         info, _ = _parse(contents, len(contents))
         value = _build(*info, spec=spec)
-        value._header = header + info[3]
+        value._header = header + value._header
         value._trailer += trailer or b''
         value.tag_type = 'explicit'
         value.explicit_class = original_value.explicit_class
         value.explicit_tag = original_value.explicit_tag
+        header_set = True
 
     # If no spec was specified, allow anything and just process what
     # is in the input data
@@ -4625,9 +5038,14 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
         spec = _UNIVERSAL_SPECS[tag]
 
         value = spec(contents=contents, class_=class_)
+        ber_indef = method == 1 and value.method == 0 and trailer == b'\x00\x00'
+        if ber_indef and isinstance(value, Constructable):
+            value._indefinite = True
+        value.method = method
 
-    value._header = header
-    value._trailer = trailer or b''
+    if not header_set:
+        value._header = header
+        value._trailer = trailer or b''
 
     # Destroy any default value that our contents have overwritten
     value._native = None
@@ -4643,122 +5061,7 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
     return value
 
 
-_MEMOIZED_PARSINGS = {}
-
-
-def _parse(encoded_data, data_len, pointer=0, lengths_only=False):
-    """
-    Parses a byte string into component parts
-
-    :param encoded_data:
-        A byte string that contains BER-encoded data
-
-    :param data_len:
-        The integer length of the encoded data
-
-    :param pointer:
-        The index in the byte string to parse from
-
-    :param lengths_only:
-        A boolean to cause the call to return a 2-element tuple of the integer
-        number of bytes in the header and the integer number of bytes in the
-        contents. Internal use only.
-
-    :return:
-        A 2-element tuple:
-         - 0: A tuple of (class_, method, tag, header, content, trailer)
-         - 1: An integer indicating how many bytes were consumed
-    """
-
-    if data_len == 0:
-        return ((None, None, None, None, None, None), pointer)
-
-    start = pointer
-    first_octet = ord(encoded_data[pointer]) if py2 else encoded_data[pointer]
-    pointer += 1
-
-    tag = first_octet & 31
-    # Base 128 length using 8th bit as continuation indicator
-    if tag == 31:
-        tag = 0
-        while True:
-            num = ord(encoded_data[pointer]) if py2 else encoded_data[pointer]
-            pointer += 1
-            tag *= 128
-            tag += num & 127
-            if num >> 7 == 0:
-                break
-
-    length_octet = ord(encoded_data[pointer]) if py2 else encoded_data[pointer]
-    pointer += 1
-
-    if length_octet >> 7 == 0:
-        if lengths_only:
-            return (pointer, pointer + (length_octet & 127))
-        contents_end = pointer + (length_octet & 127)
-
-    else:
-        length_octets = length_octet & 127
-        if length_octets:
-            pointer += length_octets
-            contents_end = pointer + int_from_bytes(encoded_data[pointer - length_octets:pointer], signed=False)
-            if lengths_only:
-                return (pointer, contents_end)
-
-        else:
-            # To properly parse indefinite length values, we need to scan forward
-            # parsing headers until we find a value with a length of zero. If we
-            # just scanned looking for \x00\x00, nested indefinite length values
-            # would not work.
-            contents_end = pointer
-            while contents_end < data_len:
-                sub_header_end, contents_end = _parse(encoded_data, data_len, contents_end, lengths_only=True)
-                if contents_end == sub_header_end:
-                    break
-            if lengths_only:
-                return (pointer, contents_end)
-            if contents_end > data_len:
-                raise ValueError(unwrap(
-                    '''
-                    Insufficient data - %s bytes requested but only %s available
-                    ''',
-                    contents_end,
-                    data_len
-                ))
-            return (
-                (
-                    first_octet >> 6,
-                    (first_octet >> 5) & 1,
-                    tag,
-                    encoded_data[start:pointer],
-                    encoded_data[pointer:contents_end - 2],
-                    b'\x00\x00'
-                ),
-                contents_end
-            )
-
-    if contents_end > data_len:
-        raise ValueError(unwrap(
-            '''
-            Insufficient data - %s bytes requested but only %s available
-            ''',
-            contents_end,
-            data_len
-        ))
-    return (
-        (
-            first_octet >> 6,
-            (first_octet >> 5) & 1,
-            tag,
-            encoded_data[start:pointer],
-            encoded_data[pointer:contents_end],
-            b''
-        ),
-        contents_end
-    )
-
-
-def _parse_build(encoded_data, pointer=0, spec=None, spec_params=None):
+def _parse_build(encoded_data, pointer=0, spec=None, spec_params=None, strict=False):
     """
     Parses a byte string generically, or using a spec with optional params
 
@@ -4778,11 +5081,19 @@ def _parse_build(encoded_data, pointer=0, spec=None, spec_params=None):
     :param spec_params:
         A dict of params to pass to the spec object
 
+    :param strict:
+        A boolean indicating if trailing data should be forbidden - if so, a
+        ValueError will be raised when trailing data exists
+
     :return:
         A 2-element tuple:
          - 0: An object of the type spec, or if not specified, a child of Asn1Value
          - 1: An integer indicating how many bytes were consumed
     """
 
-    info, new_pointer = _parse(encoded_data, len(encoded_data), pointer)
+    encoded_len = len(encoded_data)
+    info, new_pointer = _parse(encoded_data, encoded_len, pointer)
+    if strict and new_pointer != pointer + encoded_len:
+        extra_bytes = pointer + encoded_len - new_pointer
+        raise ValueError('Extra data - %d bytes of trailing data were provided' % extra_bytes)
     return (_build(*info, spec=spec, spec_params=spec_params), new_pointer)

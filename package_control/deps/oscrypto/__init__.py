@@ -2,15 +2,22 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import os
+import platform
 import sys
 import threading
 
 from ._types import str_cls, type_name
 from .errors import LibraryNotFoundError
+from .version import __version__, __version_info__
 
 
-__version__ = '0.17.2'
-__version_info__ = (0, 17, 2)
+__all__ = [
+    '__version__',
+    '__version_info__',
+    'backend',
+    'use_openssl',
+    'use_winlegacy',
+]
 
 
 _backend_lock = threading.Lock()
@@ -23,7 +30,8 @@ _module_values = {
 def backend():
     """
     :return:
-        A unicode string of the backend being used: "openssl", "osx", "win"
+        A unicode string of the backend being used: "openssl", "osx", "win",
+        "winlegacy"
     """
 
     if _module_values['backend'] is not None:
@@ -34,7 +42,11 @@ def backend():
             return _module_values['backend']
 
         if sys.platform == 'win32':
-            _module_values['backend'] = 'win'
+            # Windows XP was major version 5, Vista was 6
+            if sys.getwindowsversion()[0] < 6:
+                _module_values['backend'] = 'winlegacy'
+            else:
+                _module_values['backend'] = 'win'
         elif sys.platform == 'darwin':
             _module_values['backend'] = 'osx'
         else:
@@ -125,3 +137,31 @@ def use_openssl(libcrypto_path, libssl_path, trust_list_path=None):
             'libssl_path': libssl_path,
             'trust_list_path': trust_list_path,
         }
+
+
+def use_winlegacy():
+    """
+    Forces use of the legacy Windows CryptoAPI. This should only be used on
+    Windows XP or for testing. It is less full-featured than the Cryptography
+    Next Generation (CNG) API, and as a result the elliptic curve and PSS
+    padding features are implemented in pure Python. This isn't ideal, but it
+    a shim for end-user client code. No one is going to run a server on Windows
+    XP anyway, right?!
+
+    :raises:
+        EnvironmentError - when this function is called on an operating system other than Windows
+        RuntimeError - when this function is called after another part of oscrypto has been imported
+    """
+
+    if sys.platform != 'win32':
+        plat = platform.system() or sys.platform
+        if plat == 'Darwin':
+            plat = 'OS X'
+        raise EnvironmentError('The winlegacy backend can only be used on Windows, not %s' % plat)
+
+    with _backend_lock:
+        if _module_values['backend'] is not None:
+            raise RuntimeError(
+                'Another part of oscrypto has already been imported, unable to force use of Windows legacy CryptoAPI'
+            )
+        _module_values['backend'] = 'winlegacy'

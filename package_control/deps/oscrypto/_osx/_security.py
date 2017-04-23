@@ -54,6 +54,7 @@ def _extract_policy_properties(value):
     properties_dict = Security.SecPolicyCopyProperties(value)
     return CFHelpers.cf_dictionary_to_dict(properties_dict)
 
+
 CFHelpers.register_native_mapping(
     Security.SecPolicyGetTypeID(),
     _extract_policy_properties

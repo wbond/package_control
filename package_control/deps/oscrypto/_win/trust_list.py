@@ -33,9 +33,15 @@ def system_path():
     return None
 
 
-def extract_from_system():
+def extract_from_system(cert_callback=None):
     """
     Extracts trusted CA certificates from the Windows certificate store
+
+    :param cert_callback:
+        A callback that is called once for each certificate in the trust store.
+        It should accept two parameters: an asn1crypto.x509.Certificate object,
+        and a reason. The reason will be None if the certificate is being
+        exported, otherwise it will be a unicode string of the reason it won't.
 
     :raises:
         OSError - when an error is returned by the OS crypto library
@@ -50,6 +56,7 @@ def extract_from_system():
     """
 
     certificates = {}
+    processed = {}
 
     now = datetime.datetime.utcnow()
 
@@ -57,116 +64,132 @@ def extract_from_system():
         store_handle = crypt32.CertOpenSystemStoreW(null(), store)
         handle_error(store_handle)
 
-        context_pointer = crypt32.CertEnumCertificatesInStore(store_handle, null())
-        while not is_null(context_pointer):
+        context_pointer = null()
+        while True:
+            context_pointer = crypt32.CertEnumCertificatesInStore(store_handle, context_pointer)
+            if is_null(context_pointer):
+                break
             context = unwrap(context_pointer)
 
-            skip = False
             trust_all = False
+            data = None
+            digest = None
 
             if context.dwCertEncodingType != Crypt32Const.X509_ASN_ENCODING:
-                skip = True
+                continue
 
-            if not skip:
-                cert_info = unwrap(context.pCertInfo)
+            data = bytes_from_buffer(context.pbCertEncoded, int(context.cbCertEncoded))
+            digest = hashlib.sha1(data).digest()
+            if digest in processed:
+                continue
 
-                not_before_seconds = _convert_filetime_to_timestamp(cert_info.NotBefore)
-                try:
-                    not_before = datetime.datetime.fromtimestamp(not_before_seconds)
-                    if not_before > now:
-                        skip = True
-                except (ValueError, OSError) as e:
-                    # If there is an error converting the not before timestamp,
-                    # it is almost certainly because it is from too long ago,
-                    # which means the cert is definitely valid by now.
-                    pass
+            processed[digest] = True
+            cert_info = unwrap(context.pCertInfo)
 
-                not_after_seconds = _convert_filetime_to_timestamp(cert_info.NotAfter)
-                try:
-                    not_after = datetime.datetime.fromtimestamp(not_after_seconds)
-                    if not_after < now:
-                        skip = True
-                except (ValueError, OSError) as e:
-                    # The only reason we would get an exception here is if the
-                    # expiration time is so far in the future that it can't be
-                    # used as a timestamp, or it is before 0. If it is very far
-                    # in the future, the cert is still valid, so we only raise
-                    # an exception if the timestamp is less than zero.
-                    if not_after_seconds < 0:
-                        message = e.args[0] + ' - ' + str_cls(not_after_seconds)
-                        e.args = (message,) + e.args[1:]
-                        raise e
+            not_before_seconds = _convert_filetime_to_timestamp(cert_info.NotBefore)
+            try:
+                not_before = datetime.datetime.fromtimestamp(not_before_seconds)
+                if not_before > now:
+                    if cert_callback:
+                        cert_callback(Certificate.load(data), 'not yet valid')
+                    continue
+            except (ValueError, OSError) as e:
+                # If there is an error converting the not before timestamp,
+                # it is almost certainly because it is from too long ago,
+                # which means the cert is definitely valid by now.
+                pass
 
-            if not skip:
-                trust_oids = set()
-                reject_oids = set()
+            not_after_seconds = _convert_filetime_to_timestamp(cert_info.NotAfter)
+            try:
+                not_after = datetime.datetime.fromtimestamp(not_after_seconds)
+                if not_after < now:
+                    if cert_callback:
+                        cert_callback(Certificate.load(data), 'no longer valid')
+                    continue
+            except (ValueError, OSError) as e:
+                # The only reason we would get an exception here is if the
+                # expiration time is so far in the future that it can't be
+                # used as a timestamp, or it is before 0. If it is very far
+                # in the future, the cert is still valid, so we only raise
+                # an exception if the timestamp is less than zero.
+                if not_after_seconds < 0:
+                    message = e.args[0] + ' - ' + str_cls(not_after_seconds)
+                    e.args = (message,) + e.args[1:]
+                    raise e
 
-                # Here we grab the extended key usage properties that Windows
-                # layers on top of the extended key usage extension that is
-                # part of the certificate itself. For highest security, users
-                # should only use certificates for the intersection of the two
-                # lists of purposes. However, many seen to treat the OS trust
-                # list as an override.
-                to_read = new(crypt32, 'DWORD *', 0)
+            trust_oids = set()
+            reject_oids = set()
+
+            # Here we grab the extended key usage properties that Windows
+            # layers on top of the extended key usage extension that is
+            # part of the certificate itself. For highest security, users
+            # should only use certificates for the intersection of the two
+            # lists of purposes. However, many seen to treat the OS trust
+            # list as an override.
+            to_read = new(crypt32, 'DWORD *', 0)
+            res = crypt32.CertGetEnhancedKeyUsage(
+                context_pointer,
+                Crypt32Const.CERT_FIND_PROP_ONLY_ENHKEY_USAGE_FLAG,
+                null(),
+                to_read
+            )
+
+            # Per the Microsoft documentation, if CRYPT_E_NOT_FOUND is returned
+            # from get_error(), it means the certificate is valid for all purposes
+            error_code, _ = get_error()
+            if not res and error_code != Crypt32Const.CRYPT_E_NOT_FOUND:
+                handle_error(res)
+
+            if error_code == Crypt32Const.CRYPT_E_NOT_FOUND:
+                trust_all = True
+            else:
+                usage_buffer = buffer_from_bytes(deref(to_read))
                 res = crypt32.CertGetEnhancedKeyUsage(
                     context_pointer,
                     Crypt32Const.CERT_FIND_PROP_ONLY_ENHKEY_USAGE_FLAG,
-                    null(),
+                    cast(crypt32, 'CERT_ENHKEY_USAGE *', usage_buffer),
                     to_read
                 )
+                handle_error(res)
 
-                # Per the Microsoft documentation, if CRYPT_E_NOT_FOUND is returned
-                # from get_error(), it means the certificate is valid for all purposes
-                error_code, _ = get_error()
-                if not res and error_code != Crypt32Const.CRYPT_E_NOT_FOUND:
-                    handle_error(res)
+                key_usage_pointer = struct_from_buffer(crypt32, 'CERT_ENHKEY_USAGE', usage_buffer)
+                key_usage = unwrap(key_usage_pointer)
 
-                if error_code == Crypt32Const.CRYPT_E_NOT_FOUND:
-                    trust_all = True
-                else:
-                    usage_buffer = buffer_from_bytes(deref(to_read))
-                    res = crypt32.CertGetEnhancedKeyUsage(
-                        context_pointer,
-                        Crypt32Const.CERT_FIND_PROP_ONLY_ENHKEY_USAGE_FLAG,
-                        cast(crypt32, 'CERT_ENHKEY_USAGE *', usage_buffer),
-                        to_read
-                    )
-                    handle_error(res)
+                # Having no enhanced usage properties means a cert is distrusted
+                if key_usage.cUsageIdentifier == 0:
+                    if cert_callback:
+                        cert_callback(Certificate.load(data), 'explicitly distrusted')
+                    continue
 
-                    key_usage_pointer = struct_from_buffer(crypt32, 'CERT_ENHKEY_USAGE', usage_buffer)
-                    key_usage = unwrap(key_usage_pointer)
+                oids = array_from_pointer(
+                    crypt32,
+                    'LPCSTR',
+                    key_usage.rgpszUsageIdentifier,
+                    key_usage.cUsageIdentifier
+                )
+                for oid in oids:
+                    trust_oids.add(oid.decode('ascii'))
 
-                    # Having no enhanced usage properties means a cert is distrusted
-                    if key_usage.cUsageIdentifier == 0:
-                        skip = True
-                    else:
-                        oids = array_from_pointer(
-                            crypt32,
-                            'LPCSTR',
-                            key_usage.rgpszUsageIdentifier,
-                            key_usage.cUsageIdentifier
-                        )
-                        for oid in oids:
-                            trust_oids.add(oid.decode('ascii'))
+            cert = None
 
-            if not skip:
-                data = bytes_from_buffer(context.pbCertEncoded, int(context.cbCertEncoded))
+            # If the certificate is not under blanket trust, we have to
+            # determine what purposes it is rejected for by diffing the
+            # set of OIDs from the certificate with the OIDs that are
+            # trusted.
+            if not trust_all:
+                cert = Certificate.load(data)
+                if cert.extended_key_usage_value:
+                    for cert_oid in cert.extended_key_usage_value:
+                        oid = cert_oid.dotted
+                        if oid not in trust_oids:
+                            reject_oids.add(oid)
 
-                # If the certificate is not under blanket trust, we have to
-                # determine what purposes it is rejected for by diffing the
-                # set of OIDs from the certificate with the OIDs that are
-                # trusted.
-                if not trust_all:
+            if cert_callback:
+                if cert is None:
                     cert = Certificate.load(data)
-                    if cert.extended_key_usage_value:
-                        for cert_oid in cert.extended_key_usage_value:
-                            oid = cert_oid.dotted
-                            if oid not in trust_oids:
-                                reject_oids.add(oid)
+                cert_callback(cert, None)
 
-                certificates[hashlib.sha1(data).digest()] = (data, trust_oids, reject_oids)
-
-            context_pointer = crypt32.CertEnumCertificatesInStore(store_handle, context_pointer)
+            certificates[digest] = (data, trust_oids, reject_oids)
 
         result = crypt32.CertCloseStore(store_handle, 0)
         handle_error(result)

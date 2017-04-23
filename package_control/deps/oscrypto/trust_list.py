@@ -64,7 +64,7 @@ _oid_map = {
 }
 
 
-def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True):
+def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True, cert_callback=None):
     """
     Get the filesystem path to a file that contains OpenSSL-compatible CA certs.
 
@@ -96,6 +96,13 @@ def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True):
          - 1.2.840.113635.100.1.20 (apple_time_stamping) -> 1.3.6.1.5.5.7.3.8 (time_stamping)
          - 1.3.6.1.4.1.311.10.3.2 (microsoft_time_stamp_signing) -> 1.3.6.1.5.5.7.3.8 (time_stamping)
 
+    :param cert_callback:
+        A callback that is called once for each certificate in the trust store.
+        It should accept two parameters: an asn1crypto.x509.Certificate object,
+        and a reason. The reason will be None if the certificate is being
+        exported, otherwise it will be a unicode string of the reason it won't.
+        This is only called on Windows and OS X when passed to this function.
+
     :raises:
         oscrypto.errors.CACertsError - when an error occurs exporting/locating certs
 
@@ -112,7 +119,7 @@ def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True):
         with path_lock:
             if _cached_path_needs_update(ca_path, cache_length):
                 with open(ca_path, 'wb') as f:
-                    for cert, trust_oids, reject_oids in extract_from_system():
+                    for cert, trust_oids, reject_oids in extract_from_system(cert_callback):
                         if trust_oids == empty_set and reject_oids == empty_set:
                             f.write(armor('CERTIFICATE', cert))
                         else:
@@ -136,7 +143,7 @@ def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True):
     return ca_path
 
 
-def get_list(cache_length=24, map_vendor_oids=True):
+def get_list(cache_length=24, map_vendor_oids=True, cert_callback=None):
     """
     Retrieves (and caches in memory) the list of CA certs from the OS. Includes
     trust information from the OS - purposes the certificate should be trusted
@@ -173,6 +180,12 @@ def get_list(cache_length=24, map_vendor_oids=True):
          - 1.2.840.113635.100.1.20 (apple_time_stamping) -> 1.3.6.1.5.5.7.3.8 (time_stamping)
          - 1.3.6.1.4.1.311.10.3.2 (microsoft_time_stamp_signing) -> 1.3.6.1.5.5.7.3.8 (time_stamping)
 
+    :param cert_callback:
+        A callback that is called once for each certificate in the trust store.
+        It should accept two parameters: an asn1crypto.x509.Certificate object,
+        and a reason. The reason will be None if the certificate is being
+        exported, otherwise it will be a unicode string of the reason it won't.
+
     :raises:
         oscrypto.errors.CACertsError - when an error occurs exporting/locating certs
 
@@ -188,7 +201,7 @@ def get_list(cache_length=24, map_vendor_oids=True):
         with memory_lock:
             if not _in_memory_up_to_date(cache_length):
                 certs = []
-                for cert_bytes, trust_oids, reject_oids in extract_from_system():
+                for cert_bytes, trust_oids, reject_oids in extract_from_system(cert_callback):
                     if map_vendor_oids:
                         trust_oids = _map_oids(trust_oids)
                         reject_oids = _map_oids(reject_oids)

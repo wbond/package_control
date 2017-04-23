@@ -7,6 +7,7 @@ key cryptography. Exports the following items:
  - AlgorithmIdentifier()
  - DigestAlgorithm()
  - DigestInfo()
+ - DSASignature()
  - EncryptionAlgorithm()
  - HmacAlgorithm()
  - KdfAlgorithm()
@@ -19,6 +20,8 @@ Other type classes are defined that help compose the types listed above.
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 from ._errors import unwrap
+from ._int import fill_width
+from .util import int_from_bytes, int_to_bytes
 from .core import (
     Any,
     Choice,
@@ -52,13 +55,19 @@ class _ForceNullParameters(object):
     # The following attribute, plus the parameters spec callback and custom
     # __setitem__ are all to handle a situation where parameters should not be
     # optional and must be Null for certain OIDs. More info at
-    # https://tools.ietf.org/html/rfc4055#page-15
+    # https://tools.ietf.org/html/rfc4055#page-15 and
+    # https://tools.ietf.org/html/rfc4055#section-2.1
     _null_algos = set([
-        '1.2.840.113549.1.1.1',  # rsassa_pkcs1v15 / rsaes_pkcs1v15 / rsa
-        '1.2.840.113549.1.1.11',  # sha256_rsa
-        '1.2.840.113549.1.1.12',  # sha384_rsa
-        '1.2.840.113549.1.1.13',  # sha512_rsa
-        '1.2.840.113549.1.1.14',  # sha224_rsa
+        '1.2.840.113549.1.1.1',    # rsassa_pkcs1v15 / rsaes_pkcs1v15 / rsa
+        '1.2.840.113549.1.1.11',   # sha256_rsa
+        '1.2.840.113549.1.1.12',   # sha384_rsa
+        '1.2.840.113549.1.1.13',   # sha512_rsa
+        '1.2.840.113549.1.1.14',   # sha224_rsa
+        '1.3.14.3.2.26',           # sha1
+        '2.16.840.1.101.3.4.2.4',  # sha224
+        '2.16.840.1.101.3.4.2.1',  # sha256
+        '2.16.840.1.101.3.4.2.2',  # sha384
+        '2.16.840.1.101.3.4.2.3',  # sha512
     ])
 
     def _parameters_spec(self):
@@ -128,7 +137,7 @@ class DigestAlgorithmId(ObjectIdentifier):
     }
 
 
-class DigestAlgorithm(Sequence):
+class DigestAlgorithm(_ForceNullParameters, Sequence):
     _fields = [
         ('algorithm', DigestAlgorithmId),
         ('parameters', Any, {'optional': True}),
@@ -502,6 +511,57 @@ class RSAESOAEPParams(Sequence):
             }
         ),
     ]
+
+
+class DSASignature(Sequence):
+    """
+    An ASN.1 class for translating between the OS crypto library's
+    representation of an (EC)DSA signature and the ASN.1 structure that is part
+    of various RFCs.
+
+    Original Name: DSS-Sig-Value
+    Source: https://tools.ietf.org/html/rfc3279#section-2.2.2
+    """
+
+    _fields = [
+        ('r', Integer),
+        ('s', Integer),
+    ]
+
+    @classmethod
+    def from_p1363(cls, data):
+        """
+        Reads a signature from a byte string encoding accordint to IEEE P1363,
+        which is used by Microsoft's BCryptSignHash() function.
+
+        :param data:
+            A byte string from BCryptSignHash()
+
+        :return:
+            A DSASignature object
+        """
+
+        r = int_from_bytes(data[0:len(data) // 2])
+        s = int_from_bytes(data[len(data) // 2:])
+        return cls({'r': r, 's': s})
+
+    def to_p1363(self):
+        """
+        Dumps a signature to a byte string compatible with Microsoft's
+        BCryptVerifySignature() function.
+
+        :return:
+            A byte string compatible with BCryptVerifySignature()
+        """
+
+        r_bytes = int_to_bytes(self['r'].native)
+        s_bytes = int_to_bytes(self['s'].native)
+
+        int_byte_length = max(len(r_bytes), len(s_bytes))
+        r_bytes = fill_width(r_bytes, int_byte_length)
+        s_bytes = fill_width(s_bytes, int_byte_length)
+
+        return r_bytes + s_bytes
 
 
 class EncryptionAlgorithmId(ObjectIdentifier):

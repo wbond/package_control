@@ -38,8 +38,10 @@ REQUIRED_FROM_ASN1 = [
     'algos.py',
     'core.py',
     'keys.py',
+    'parser.py',
     'pem.py',
     'util.py',
+    'version.py',
     'x509.py',
 ]
 
@@ -65,6 +67,7 @@ REQUIRED_FROM_OSCRYPTO = [
     '_types.py',
     'errors.py',
     'trust_list.py',
+    'version.py',
 ]
 
 deps_path = os.path.join(os.path.dirname(__file__), '..', 'package_control', 'deps')

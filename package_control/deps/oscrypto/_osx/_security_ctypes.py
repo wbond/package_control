@@ -82,6 +82,7 @@ class CSSM_DATA(Structure):  # noqa
         ('Data', c_char_p)
     ]
 
+
 CSSM_OID = CSSM_DATA
 
 

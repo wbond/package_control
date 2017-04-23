@@ -1,6 +1,9 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
+from .version import __version__, __version_info__
 
-__version__ = '0.18.5'
-__version_info__ = (0, 18, 5)
+__all__ = [
+    '__version__',
+    '__version_info__',
+]

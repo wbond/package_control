@@ -88,7 +88,35 @@ class DNSName(IA5String):
         if not isinstance(other, DNSName):
             return False
 
-        return self.contents.lower() == other.contents.lower()
+        return self.__unicode__().lower() == other.__unicode__().lower()
+
+    def set(self, value):
+        """
+        Sets the value of the DNS name
+
+        :param value:
+            A unicode string
+        """
+
+        if not isinstance(value, str_cls):
+            raise TypeError(unwrap(
+                '''
+                %s value must be a unicode string, not %s
+                ''',
+                type_name(self),
+                type_name(value)
+            ))
+
+        if value.startswith('.'):
+            encoded_value = b'.' + value[1:].encode(self._encoding)
+        else:
+            encoded_value = value.encode(self._encoding)
+
+        self._unicode = value
+        self.contents = encoded_value
+        self._header = None
+        if self._trailer != b'':
+            self._trailer = b''
 
 
 class URI(IA5String):
@@ -110,8 +138,7 @@ class URI(IA5String):
                 type_name(value)
             ))
 
-        self._normalized = True
-        self._native = value
+        self._unicode = value
         self.contents = iri_to_uri(value)
         self._header = None
         if self._trailer != b'':
@@ -142,7 +169,11 @@ class URI(IA5String):
             A unicode string
         """
 
-        return uri_to_iri(self.contents)
+        if self.contents is None:
+            return ''
+        if self._unicode is None:
+            self._unicode = uri_to_iri(self._merge_chunks())
+        return self._unicode
 
 
 class EmailAddress(IA5String):
@@ -194,7 +225,8 @@ class EmailAddress(IA5String):
         else:
             encoded_value = value.encode('ascii')
 
-        self._native = value
+        self._normalized = True
+        self._unicode = value
         self.contents = encoded_value
         self._header = None
         if self._trailer != b'':
@@ -206,12 +238,14 @@ class EmailAddress(IA5String):
             A unicode string
         """
 
-        if self.contents.find(b'@') == -1:
-            return self.contents.decode('ascii')
-
-        mailbox, hostname = self.contents.rsplit(b'@', 1)
-
-        return mailbox.decode('ascii') + '@' + hostname.decode('idna')
+        if self._unicode is None:
+            contents = self._merge_chunks()
+            if contents.find(b'@') == -1:
+                self._unicode = contents.decode('ascii')
+            else:
+                mailbox, hostname = contents.rsplit(b'@', 1)
+                self._unicode = mailbox.decode('ascii') + '@' + hostname.decode('idna')
+        return self._unicode
 
     def __ne__(self, other):
         return not self == other
@@ -328,6 +362,7 @@ class IPAddress(OctetString):
 
         self._native = original_value
         self.contents = inet_pton(family, value) + cidr_bytes
+        self._bytes = self.contents
         self._header = None
         if self._trailer != b'':
             self._trailer = b''
@@ -378,7 +413,7 @@ class IPAddress(OctetString):
         if not isinstance(other, IPAddress):
             return False
 
-        return self.contents == other.contents
+        return self.__bytes__() == other.__bytes__()
 
 
 class Attribute(Sequence):
@@ -444,6 +479,7 @@ class NameType(ObjectIdentifier):
         '2.5.4.42': 'given_name',
         '2.5.4.43': 'initials',
         '2.5.4.44': 'generation_qualifier',
+        '2.5.4.45': 'unique_identifier',
         '2.5.4.46': 'dn_qualifier',
         '2.5.4.65': 'pseudonym',
         '2.5.4.97': 'organization_identifier',
@@ -491,6 +527,26 @@ class NameType(ObjectIdentifier):
         'organization_identifier',
     ]
 
+    @classmethod
+    def preferred_ordinal(cls, attr_name):
+        """
+        Returns an ordering value for a particular attribute key.
+
+        Unrecognized attributes and OIDs will be sorted lexically at the end.
+
+        :return:
+            An orderable value.
+
+        """
+
+        attr_name = cls.map(attr_name)
+        if attr_name in cls.preferred_order:
+            ordinal = cls.preferred_order.index(attr_name)
+        else:
+            ordinal = len(cls.preferred_order)
+
+        return (ordinal, attr_name)
+
     @property
     def human_friendly(self):
         """
@@ -516,6 +572,7 @@ class NameType(ObjectIdentifier):
             'given_name': 'Given Name',
             'initials': 'Initials',
             'generation_qualifier': 'Generation Qualifier',
+            'unique_identifier': 'Unique Identifier',
             'dn_qualifier': 'DN Qualifier',
             'pseudonym': 'Pseudonym',
             'email_address': 'Email Address',
@@ -553,6 +610,7 @@ class NameTypeAndValue(Sequence):
         'given_name': DirectoryString,
         'initials': DirectoryString,
         'generation_qualifier': DirectoryString,
+        'unique_identifier': OctetBitString,
         'dn_qualifier': DirectoryString,
         'pseudonym': DirectoryString,
         # https://tools.ietf.org/html/rfc2985#page-26
@@ -876,23 +934,29 @@ class Name(Choice):
             encoding_name = 'printable_string'
             encoding_class = PrintableString
 
-        for attribute_name in NameType.preferred_order:
-            if attribute_name not in name_dict:
-                continue
+        # Sort the attributes according to NameType.preferred_order
+        name_dict = OrderedDict(
+            sorted(
+                name_dict.items(),
+                key=lambda item: NameType.preferred_ordinal(item[0])
+            )
+        )
 
+        for attribute_name, attribute_value in name_dict.items():
+            attribute_name = NameType.map(attribute_name)
             if attribute_name == 'email_address':
-                value = EmailAddress(name_dict[attribute_name])
+                value = EmailAddress(attribute_value)
             elif attribute_name == 'domain_component':
-                value = DNSName(name_dict[attribute_name])
+                value = DNSName(attribute_value)
             elif attribute_name in set(['dn_qualifier', 'country_name', 'serial_number']):
                 value = DirectoryString(
                     name='printable_string',
-                    value=PrintableString(name_dict[attribute_name])
+                    value=PrintableString(attribute_value)
                 )
             else:
                 value = DirectoryString(
                     name=encoding_name,
-                    value=encoding_class(name_dict[attribute_name])
+                    value=encoding_class(attribute_value)
                 )
 
             rdns.append(RelativeDistinguishedName([
@@ -936,8 +1000,6 @@ class Name(Choice):
 
     @property
     def native(self):
-        if self.contents is None:
-            return None
         if self._native is None:
             self._native = OrderedDict()
             for rdn in self.chosen.native:
