@@ -107,7 +107,7 @@ class PackageDisabler():
                 events.add(tracker_type, package, version)
 
             global_color_scheme = settings.get('color_scheme')
-            if global_color_scheme.find('Packages/' + package + '/') != -1:
+            if global_color_scheme is not None and global_color_scheme.find('Packages/' + package + '/') != -1:
                 PackageDisabler.old_color_scheme_package = package
                 PackageDisabler.old_color_scheme = global_color_scheme
                 settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
@@ -116,7 +116,7 @@ class PackageDisabler():
                 for view in window.views():
                     view_settings = view.settings()
                     syntax = view_settings.get('syntax')
-                    if syntax.find('Packages/' + package + '/') != -1:
+                    if syntax is not None and syntax.find('Packages/' + package + '/') != -1:
                         if package not in PackageDisabler.old_syntaxes:
                             PackageDisabler.old_syntaxes[package] = []
                         PackageDisabler.old_syntaxes[package].append([view, syntax])
@@ -124,7 +124,7 @@ class PackageDisabler():
                     # Handle view-specific color_scheme settings not already taken care
                     # of by resetting the global color_scheme above
                     scheme = view_settings.get('color_scheme')
-                    if scheme.find('Packages/' + package + '/') != -1:
+                    if scheme is not None and scheme.find('Packages/' + package + '/') != -1:
                         if package not in PackageDisabler.old_color_schemes:
                             PackageDisabler.old_color_schemes[package] = []
                         PackageDisabler.old_color_schemes[package].append([view, scheme])
