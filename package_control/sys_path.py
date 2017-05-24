@@ -63,7 +63,10 @@ if sys.version_info >= (3,):
                 _data_base = os.path.expanduser('~/.config')
 
         if _data_base is not None:
-            _possible_data_dir = os.path.join(_data_base, u'Sublime Text 3 Development')
+            _config_leaf = u'Sublime Text 3 Development'
+            if sys.platform not in set(['win32', 'darwin']):
+                _config_leaf = u'sublime-text-3-development'
+            _possible_data_dir = os.path.join(_data_base, _config_leaf)
             if os.path.exists(_possible_data_dir):
                 data_dir = _possible_data_dir
                 _possible_installed_packages_path = os.path.join(data_dir, 'Installed Packages')
