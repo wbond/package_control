@@ -90,7 +90,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
             new_view = sublime.active_window().new_file()
             package_count = 0
             prefix_indent = "     "
-            package_string = ""
+            package_string_list = []
 
             new_view.set_scratch(True)
             new_view.set_name("Packages List")
@@ -100,12 +100,14 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
             for package in self.package_list:
                 package_count += 1;
                 wrapper = textwrap.TextWrapper(initial_indent=prefix_indent, width=80, subsequent_indent=prefix_indent)
-                package_string += "%3d: <%s>\n" % ( package_count, package[0] )
-                package_string += wrapper.fill(package[1]) + "\n" + prefix_indent + "[" + package[2] + "]\n\n"
+
+                # Efficient String Concatenation in Python - https://waymoot.org/home/python_string/
+                package_string_list.append( "%3d: <%s>\n" % ( package_count, package[0] ) )
+                package_string_list.append( wrapper.fill(package[1]) + "\n" + prefix_indent + "[" + package[2] + "]\n\n" )
 
             # https://forum.sublimetext.com/t/how-to-insert-text-on-view-with-no-indentation/28496
             new_view.run_command("append", {"characters": "Packages list within %d entries:\n\n" % (len(self.package_list))})
-            new_view.run_command("append", {"characters": package_string})
+            new_view.run_command("append", {"characters": "".join( package_string_list )})
 
             new_view.sel().clear()
             initial_region = sublime.Region(0,0)
