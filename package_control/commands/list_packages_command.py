@@ -1,3 +1,4 @@
+import textwrap
 import threading
 import os
 
@@ -10,6 +11,8 @@ from ..package_manager import PackageManager
 from .existing_packages_command import ExistingPackagesCommand
 
 
+# print( "Reloading `Package Control\package_control\commands\list_packages_command.py`" )
+
 class ListPackagesCommand(sublime_plugin.WindowCommand):
 
     """
@@ -20,13 +23,23 @@ class ListPackagesCommand(sublime_plugin.WindowCommand):
         ListPackagesThread(self.window).start()
 
 
+class ListPackagesOnViewCommand(sublime_plugin.WindowCommand):
+
+    """
+    A command that shows a list of all installed packages in a new view
+    """
+
+    def run(self):
+        ListPackagesThread(self.window, on_view=True).start()
+
+
 class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
     """
     A thread to prevent the listing of existing packages from freezing the UI
     """
 
-    def __init__(self, window, filter_function=None):
+    def __init__(self, window, filter_function=None, on_view=False):
         """
         :param window:
             An instance of :class:`sublime.Window` that represents the Sublime
@@ -44,6 +57,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         """
 
         self.window = window
+        self.on_view = on_view
         self.filter_function = filter_function
         self.manager = PackageManager()
         threading.Thread.__init__(self)
@@ -53,18 +67,55 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         if self.filter_function:
             self.package_list = list(filter(self.filter_function, self.package_list))
 
+        def show_no_packages():
+            sublime.message_dialog(text.format(
+                u'''
+                Package Control
+
+                There are no packages to list
+                '''
+            ))
+
         def show_panel():
             if not self.package_list:
-                sublime.message_dialog(text.format(
-                    u'''
-                    Package Control
-
-                    There are no packages to list
-                    '''
-                ))
+                show_no_packages()
                 return
             show_quick_panel(self.window, self.package_list, self.on_done)
-        sublime.set_timeout(show_panel, 10)
+
+        def show_view():
+            if not self.package_list:
+                show_no_packages()
+                return
+
+            new_view = sublime.active_window().new_file()
+            package_count = 0
+            prefix_indent = "     "
+            package_string = ""
+
+            new_view.set_scratch(True)
+            new_view.set_name("Packages List")
+            new_view.set_syntax_file("Packages/Text/Plain text.tmLanguage")
+            new_view.settings().set('tab_size', 8)
+
+            for package in self.package_list:
+                package_count += 1;
+                wrapper = textwrap.TextWrapper(initial_indent=prefix_indent, width=80, subsequent_indent=prefix_indent)
+                package_string += "%3d: <%s>\n" % ( package_count, package[0] )
+                package_string += wrapper.fill(package[1]) + "\n" + prefix_indent + "[" + package[2] + "]\n\n"
+
+            # https://forum.sublimetext.com/t/how-to-insert-text-on-view-with-no-indentation/28496
+            new_view.run_command("append", {"characters": "Packages list within %d entries:\n\n" % (len(self.package_list))})
+            new_view.run_command("append", {"characters": package_string})
+
+            new_view.sel().clear()
+            initial_region = sublime.Region(0,0)
+            new_view.sel().add(initial_region)
+            new_view.show_at_center(initial_region)
+
+        if self.on_view:
+            sublime.set_timeout(show_view, 10)
+        else:
+            sublime.set_timeout(show_panel, 10)
 
     def on_done(self, picked):
         """
@@ -95,3 +146,4 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
             self.window.run_command('open_dir', open_dir_file)
         sublime.set_timeout(open_dir, 10)
+

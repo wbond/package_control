@@ -8,6 +8,7 @@ from .enable_package_command import EnablePackageCommand
 from .install_local_dependency_command import InstallLocalDependencyCommand
 from .install_package_command import InstallPackageCommand
 from .list_packages_command import ListPackagesCommand
+from .list_packages_command import ListPackagesOnViewCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
 from .remove_package_command import RemovePackageCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
@@ -30,6 +31,7 @@ __all__ = [
     'InstallLocalDependencyCommand',
     'InstallPackageCommand',
     'ListPackagesCommand',
+    'ListPackagesOnViewCommand',
     'ListUnmanagedPackagesCommand',
     'RemovePackageCommand',
     'UpgradeAllPackagesCommand',

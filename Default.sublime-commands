@@ -44,6 +44,10 @@
         "command": "list_packages"
     },
     {
+        "caption": "Package Control: List Packages on View",
+        "command": "list_packages_on_view"
+    },
+    {
         "caption": "Package Control: Remove Channel",
         "command": "remove_channel"
     },
