@@ -12,7 +12,7 @@
 		"https://github.com/SublimeText"
 	],
 
-	// The "packages_cache" is completely optional, but allows the
+	// The "packages_cache" is required and allows the
 	// channel to cache and deliver package data from multiple
 	// repositories in a single HTTP request, allowing for significantly
 	// improved performance.
