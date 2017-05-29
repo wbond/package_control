@@ -1050,7 +1050,7 @@ class PackageManager():
         url = release['url']
         package_filename = package_name + '.sublime-package'
 
-        tmp_dir = tempfile.mkdtemp(u'')
+        tmp_dir = tempfile.mkdtemp().decode(sys.getfilesystemencoding())
 
         try:
             # This is refers to the zipfile later on, so we define it here so we can
