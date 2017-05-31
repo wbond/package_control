@@ -223,4 +223,9 @@ def ensure_ca_bundle_dir():
     if not ca_bundle_dir:
         ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
     if not os.path.exists(ca_bundle_dir):
-        os.mkdir(ca_bundle_dir)
+        try:
+            os.mkdir(ca_bundle_dir)
+        except PermissionError:
+            ca_bundle_dir = '/var/tmp/package_control'
+            if not os.path.exists(ca_bundle_dir):
+                 os.mkdir(ca_bundle_dir)
