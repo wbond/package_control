@@ -90,7 +90,7 @@ class GitHubClient(JSONApiClient):
         output = []
         if tags_match:
             user_repo = tags_match.group(1)
-            tags_url = self._make_api_url(user_repo, '/tags')
+            tags_url = self._make_api_url(user_repo, '/tags?per_page=100')
             tags_list = self.fetch_json(tags_url)
             tags = [tag['name'] for tag in tags_list]
             tag_info = version_process(tags, tag_prefix)
