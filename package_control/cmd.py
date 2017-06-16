@@ -152,7 +152,7 @@ class Cli(object):
             if sublime:
                 def kill_proc():
                     if not stuck:
-                        return
+                        return False
                     # This doesn't actually work!
                     proc.kill()
 
