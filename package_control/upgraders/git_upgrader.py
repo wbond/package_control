@@ -2,7 +2,6 @@ import os
 
 from ..cache import set_cache, get_cache
 from ..show_error import show_error
-from ..console_write import console_write
 from ..processes import list_process_names
 from .vcs_upgrader import VcsUpgrader
 
@@ -57,8 +56,7 @@ class GitUpgrader(VcsUpgrader):
 
         # Get the current branch name
         res = self.execute([binary, 'symbolic-ref', '-q', 'HEAD'], self.working_copy)
-        if isinstance(res, int):
-            console_write(u''' get_working_copy_info refs/heads/ return %s''', str(res))
+        if res is False:
             return res
         branch = res.replace('refs/heads/', '')
 
