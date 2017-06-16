@@ -152,7 +152,7 @@ class Cli(object):
             if sublime:
                 def kill_proc():
                     if not stuck:
-                        return
+                        return False
                     # This doesn't actually work!
                     proc.kill()
 
@@ -203,6 +203,18 @@ class Cli(object):
                         (create_cmd(args), orig_cwd, output)
                     )
                     if is_vcs:
+                        if len( output ) < 1:
+                            message += text.format(
+                                '''
+                                Could not update the git unpacked package due its
+                                HEAD not being checkout on a branch. Please, open
+                                package with a git shell and run:
+                                git checkout main_branch_name
+
+                                For reference see the issue:
+                                https://github.com/wbond/package_control/issues/1233
+                                '''
+                            )
                         message += text.format(
                             '''
 
@@ -213,6 +225,9 @@ class Cli(object):
                             setting is changed.
                             '''
                         )
+                        if len( output ) < 1:
+                            console_write( message )
+                            return False
                     show_error(message)
                     return False
 
