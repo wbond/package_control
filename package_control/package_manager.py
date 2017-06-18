@@ -268,7 +268,7 @@ class PackageManager():
         if is_py_loader or is_code_loader:
             loader_path = loader_code_path if is_code_loader else loader_py_path
             with open(loader_path, 'rb') as f:
-                code = f.read()
+                code = f.read().decode('utf-8')
 
         return (priority, code)
 
