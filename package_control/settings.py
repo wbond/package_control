@@ -41,10 +41,18 @@ def load_list_setting(settings, name):
 
     value = settings.get(name)
     if not value:
-        value = []
+        return []
     if isinstance(value, str_cls):
         value = [value]
-    return value
+    if not isinstance(value, list):
+        return []
+
+    filtered_value = []
+    for v in value:
+        if not isinstance(v, str_cls):
+            continue
+        filtered_value.append(v)
+    return sorted(filtered_value, key=lambda s: s.lower())
 
 
 def save_list_setting(settings, filename, name, new_value, old_value=None):
