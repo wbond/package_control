@@ -262,11 +262,12 @@ class AutomaticUpgrader(threading.Thread):
             if package[0] != 'Package Control':
                 continue
 
-            def reset_last_run():
-                # Re-save the last run time so it runs again after PC has
-                # been updated
-                self.save_last_run(self.last_run)
-            sublime.set_timeout(reset_last_run, 1)
+            if self.last_run:
+                def reset_last_run():
+                    # Re-save the last run time so it runs again after PC has
+                    # been updated
+                    self.save_last_run(self.last_run)
+                sublime.set_timeout(reset_last_run, 1)
             package_list = [package]
             break
 
