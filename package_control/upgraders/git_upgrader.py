@@ -56,6 +56,9 @@ class GitUpgrader(VcsUpgrader):
 
         # Get the current branch name
         res = self.execute([binary, 'symbolic-ref', '-q', 'HEAD'], self.working_copy)
+        # Handle the detached head state
+        if not res:
+            return False
         branch = res.replace('refs/heads/', '')
 
         # Figure out the remote and the branch name on the remote
