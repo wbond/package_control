@@ -204,6 +204,11 @@ class PackageDisabler():
                 syntax_errors = set()
                 color_scheme_errors = set()
 
+                if PackageDisabler.old_syntaxes is None:
+                    PackageDisabler.old_syntaxes = {}
+                if PackageDisabler.old_color_schemes is None:
+                    PackageDisabler.old_color_schemes = {}
+
                 if type == 'upgrade' and package in PackageDisabler.old_syntaxes:
                     for view_syntax in PackageDisabler.old_syntaxes[package]:
                         view, syntax = view_syntax
