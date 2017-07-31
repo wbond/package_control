@@ -1,4 +1,10 @@
-import sublime
+
+try:
+    # Allow using this file on the website where the sublime
+    # module is unavailable
+    import sublime
+except (ImportError):
+    sublime = None
 
 from . import text
 from .console_write import console_write
@@ -31,22 +37,27 @@ def show_error(string, params=None, strip=True, indent=None):
     global is_error_recentely_displayed
     string = text.format(string, params, strip=strip, indent=indent)
 
-    if is_error_recentely_displayed:
-        console_write( string )
+    if sublime:
+
+        if is_error_recentely_displayed:
+            console_write( string )
+        else:
+            sublime.error_message(u'Package Control\n\n%s\n%s' % (
+                string,
+                u'''
+                    If there will be new error messages on the next seconds,
+                    they will be show on the Sublime Text console
+                '''
+                ) )
+
+            is_error_recentely_displayed = True
+
+            # Enable the message dialog after x.x seconds
+            thread = Timer(60.0, _restart_error_messages)
+            thread.start()
+
     else:
-        sublime.error_message(u'Package Control\n\n%s\n%s' % (
-            string,
-            u'''
-                If there will be new error messages on the next seconds,
-                they will be show on the Sublime Text console
-            '''
-            ) )
-
-        is_error_recentely_displayed = True
-
-        # Enable the message dialog after x.x seconds
-        thread = Timer(60.0, _restart_error_messages)
-        thread.start()
+        console_write( string )
 
 def _restart_error_messages():
     global is_error_recentely_displayed
