@@ -1,6 +1,9 @@
 import sublime
 
-from . import text
+try:
+    from . import text
+except:
+    import text
 
 
 def show_error(string, params=None, strip=True, indent=None):
