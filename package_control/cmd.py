@@ -3,10 +3,16 @@ import subprocess
 import re
 import sys
 
-from .console_write import console_write
-from .unicode import unicode_from_os
-from .show_error import show_error
-from . import text
+try:
+    from .console_write import console_write
+    from .unicode import unicode_from_os
+    from .show_error import show_error
+    from . import text
+except:
+    from console_write import console_write
+    from unicode import unicode_from_os
+    from show_error import show_error
+    import text
 
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer

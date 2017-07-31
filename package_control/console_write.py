@@ -7,8 +7,10 @@ except (NameError):
     # Python 3
     str_cls = str
 
-from . import text
-
+try:
+    from . import text
+except:
+    import text
 
 def console_write(string, params=None, strip=True, indent=None, prefix=True):
     """
