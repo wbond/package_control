@@ -11,6 +11,7 @@ try:
     str_cls = unicode
 except (NameError):
     str_cls = str
+    from zipimport import zipimporter
 
 data_dir = None
 packages_path = None
@@ -24,7 +25,7 @@ if sys.version_info >= (3,):
         return path
 
     # Unpacked install of Sublime Text
-    if os.path.basename(__file__) == 'sys_path.py':
+    if not isinstance(__loader__, zipimporter):
         pc_package_path = dirname(dirname(__file__))
         packages_path = dirname(pc_package_path)
         # For a non-development build, the Installed Packages are next
@@ -48,7 +49,7 @@ if sys.version_info >= (3,):
     if packages_path is None:
         import Default.sort
 
-        if os.path.basename(Default.sort.__file__) == 'sort.py':
+        if not isinstance(Default.sort.__loader__, zipimporter):
             packages_path = dirname(dirname(Default.sort.__file__))
 
     if installed_packages_path is None:
