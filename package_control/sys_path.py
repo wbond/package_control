@@ -30,7 +30,7 @@ if sys.version_info >= (3,):
         packages_path = dirname(pc_package_path)
         # For a non-development build, the Installed Packages are next
         # to the Packages dir
-        _possible_installed_packages_path = os.path.join(dirname(packages_path), 'Installed Packages')
+        _possible_installed_packages_path = os.path.join(dirname(packages_path), u'Installed Packages')
         if os.path.exists(_possible_installed_packages_path):
             installed_packages_path = _possible_installed_packages_path
 
@@ -41,7 +41,7 @@ if sys.version_info >= (3,):
         installed_packages_path = dirname(pc_package_path)
         # For a non-development build, the Packages are next
         # to the Installed Packages dir
-        _possible_packages_path = os.path.join(dirname(installed_packages_path), 'Packages')
+        _possible_packages_path = os.path.join(dirname(installed_packages_path), u'Packages')
         if os.path.exists(_possible_packages_path):
             packages_path = _possible_packages_path
     st_version = u'3'
@@ -55,11 +55,11 @@ if sys.version_info >= (3,):
     if installed_packages_path is None:
         _data_base = None
         if sys.platform == 'darwin':
-            _data_base = os.path.expanduser('~/Library/Application Support')
+            _data_base = os.path.expanduser(u'~/Library/Application Support')
         elif sys.platform == 'win32':
-            _data_base = os.environ.get('APPDATA')
+            _data_base = os.environ.get(u'APPDATA')
         else:
-            _data_base = os.environ.get('XDG_CONFIG_HOME')
+            _data_base = os.environ.get(u'XDG_CONFIG_HOME')
             if _data_base is None:
                 _data_base = os.path.expanduser('~/.config')
 
@@ -70,7 +70,7 @@ if sys.version_info >= (3,):
             _possible_data_dir = os.path.join(_data_base, _config_leaf)
             if os.path.exists(_possible_data_dir):
                 data_dir = _possible_data_dir
-                _possible_installed_packages_path = os.path.join(data_dir, 'Installed Packages')
+                _possible_installed_packages_path = os.path.join(data_dir, u'Installed Packages')
                 if os.path.exists(_possible_installed_packages_path):
                     installed_packages_path = _possible_installed_packages_path
 
@@ -172,7 +172,7 @@ def generate_dependency_paths(name):
     arch = sublime.arch()
 
     return {
-        'all': os.path.join(dependency_dir, 'all'),
+        'all': os.path.join(dependency_dir, u'all'),
         'ver': os.path.join(dependency_dir, ver),
         'plat': os.path.join(dependency_dir, u'%s_%s' % (ver, plat)),
         'arch': os.path.join(dependency_dir, u'%s_%s_%s' % (ver, plat, arch))
