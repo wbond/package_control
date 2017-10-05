@@ -248,8 +248,24 @@ class PackageCleanup(threading.Thread):
 
             # Skip over dependencies since we handle them separately
             if (package_file_exists(package_name, 'dependency-metadata.json')
-                    or package_file_exists(package_name, '.sublime-dependency')) \
-                    and (package_name == loader.loader_package_name or loader.exists(package_name)):
+                    or package_file_exists(package_name, '.sublime-dependency')):
+
+                if package_name == loader.loader_package_name:
+                    continue
+
+                # If the file exists on the system, but it is not on the loader? Just add them. This
+                # happens when you develop the dependency on you computer and the dependency is
+                # installed by git.
+                if not loader.exists(package_name):
+                    console_write(
+                        u'''
+                        Adding missing dependency loader for the package: %s
+                        ''',
+                        package_name
+                    )
+                    load_order, loader_code = self.manager.get_dependency_priority_code(package_name)
+                    loader.add_or_update(load_order, package_name, loader_code)
+
                 found_dependencies.append(package_name)
                 continue
 
