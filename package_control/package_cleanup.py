@@ -1,7 +1,6 @@
 import threading
 import os
 import functools
-import sys
 
 import sublime
 
