@@ -1,6 +1,7 @@
 import threading
 import os
 import functools
+import sys
 
 import sublime
 
@@ -148,6 +149,11 @@ class PackageCleanup(threading.Thread):
 
             package_dir = os.path.join(sublime.packages_path(), package_name)
             if not os.path.isdir(package_dir):
+                continue
+
+            # Skipping user package
+            if package_name == "User":
+                console_write("Skip cleanup " + package_dir)
                 continue
 
             clean_old_files(package_dir)
