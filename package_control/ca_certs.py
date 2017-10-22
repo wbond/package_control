@@ -221,7 +221,11 @@ def ensure_ca_bundle_dir():
     global ca_bundle_dir
 
     if not ca_bundle_dir:
-        ca_bundle_dir = os.path.join(sublime.cache_path(), 'Package Control')
+        if int(sublime.version()) < 3000:
+            ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
+        else:
+            ca_bundle_dir = os.path.join(sublime.cache_path(), 'Package Control')
+
     if not os.path.isdir(ca_bundle_dir):
         try:
             os.mkdir(ca_bundle_dir)

@@ -13,8 +13,15 @@ class HttpCache(object):
     """
 
     def __init__(self, ttl):
-        self.base_path = sublime.cache_path()
-        for folder in ('Package Control', 'http'):
+        if int(sublime.version()) < 3000:
+            # ST2 doesn't know about cache_path()
+            self.base_path = sublime.packages_path()
+            folders = ('User', 'Package Control.cache')
+        else:
+            self.base_path = sublime.cache_path()
+            folders = ('Package Control', 'http')
+
+        for folder in folders:
             self.base_path = os.path.join(self.base_path, folder)
             if not os.path.isdir(self.base_path):
                 os.mkdir(self.base_path)

@@ -64,11 +64,15 @@ class AutomaticUpgrader(threading.Thread):
 
         self.last_run = None
 
-        cache_path = os.path.join(sublime.cache_path(), 'Package Control')
+        if int(sublime.version()) < 3000:
+            cache_path = os.path.join(sublime.packages_path(), 'User')
+        else:
+            cache_path = os.path.join(sublime.cache_path(), 'Package Control')
+
         if not os.path.isdir(cache_path):
             os.mkdir(cache_path)
 
-        self.last_run_file = os.path.join(cache_path, 'last-run')
+        self.last_run_file = os.path.join(cache_path, 'Package Control.last-run')
 
         if os.path.isfile(self.last_run_file):
             with open_compat(self.last_run_file) as fobj:
