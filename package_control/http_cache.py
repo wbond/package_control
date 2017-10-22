@@ -13,9 +13,11 @@ class HttpCache(object):
     """
 
     def __init__(self, ttl):
-        self.base_path = os.path.join(sublime.packages_path(), 'User', 'Package Control.cache')
-        if not os.path.exists(self.base_path):
-            os.mkdir(self.base_path)
+        self.base_path = sublime.cache_path()
+        for folder in ('Package Control', 'http'):
+            self.base_path = os.path.join(self.base_path, folder)
+            if not os.path.isdir(self.base_path):
+                os.mkdir(self.base_path)
         self.clear(int(ttl))
 
     def clear(self, ttl):

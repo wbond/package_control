@@ -213,19 +213,19 @@ def get_system_ca_bundle_path(settings):
 
 def ensure_ca_bundle_dir():
     """
-    Make sure we have a placed to save the merged-ca-bundle and system-ca-bundle
+    Make sure we have a place to save the merged-ca-bundle and system-ca-bundle
     """
 
     # If the sublime module is available, we bind this value at run time
-    # since the sublime.packages_path() is not available at import time
+    # since the sublime.cache_path() is not available at import time
     global ca_bundle_dir
 
     if not ca_bundle_dir:
-        ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
-    if not os.path.exists(ca_bundle_dir):
+        ca_bundle_dir = os.path.join(sublime.cache_path(), 'Package Control')
+    if not os.path.isdir(ca_bundle_dir):
         try:
             os.mkdir(ca_bundle_dir)
         except PermissionError:
             ca_bundle_dir = '/var/tmp/package_control'
             if not os.path.exists(ca_bundle_dir):
-                 os.mkdir(ca_bundle_dir)
+                os.mkdir(ca_bundle_dir)
