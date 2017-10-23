@@ -1183,9 +1183,11 @@ class PackageManager():
 
             dependencies_path = 'dependencies.json'
             no_package_file_zip_path = '.no-sublime-package'
+            on_package_file_zip_path = '.on-sublime-package'
             if skip_root_dir:
                 dependencies_path = root_level_paths[0] + dependencies_path
                 no_package_file_zip_path = root_level_paths[0] + no_package_file_zip_path
+                on_package_file_zip_path = root_level_paths[0] + on_package_file_zip_path
 
             # If we should extract unpacked or as a .sublime-package file
             unpack = True
@@ -1207,6 +1209,13 @@ class PackageManager():
             # of being split out.
             if is_dependency:
                 unpack = True
+
+            # If it is a dependency and package maintainer doesn't want a .sublime-package
+            try:
+                package_zip.getinfo(on_package_file_zip_path)
+                unpack = False
+            except (KeyError):
+                pass
 
             # If dependencies were not in the channel, try the package
             if not is_dependency and not have_installed_dependencies:
