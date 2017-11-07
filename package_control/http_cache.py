@@ -3,6 +3,7 @@ import time
 
 import sublime
 
+from .file_not_found_error import FileNotFoundError
 from .open_compat import open_compat, read_compat
 
 
@@ -48,13 +49,12 @@ class HttpCache(object):
         :return:
             The (binary) cached value, or False
         """
-
-        cache_file = os.path.join(self.base_path, key)
-        if not os.path.exists(cache_file):
+        try:
+            cache_file = os.path.join(self.base_path, key)
+            with open_compat(cache_file, 'rb') as f:
+                return read_compat(f)
+        except FileNotFoundError:
             return False
-
-        with open_compat(cache_file, 'rb') as f:
-            return read_compat(f)
 
     def has(self, key):
         cache_file = os.path.join(self.base_path, key)

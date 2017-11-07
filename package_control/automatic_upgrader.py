@@ -12,6 +12,7 @@ from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
+from .file_not_found_error import FileNotFoundError
 from .open_compat import open_compat, read_compat, write_compat
 from .settings import pc_settings_filename, load_list_setting
 
@@ -66,12 +67,11 @@ class AutomaticUpgrader(threading.Thread):
 
         self.last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
 
-        if os.path.isfile(self.last_run_file):
+        try:
             with open_compat(self.last_run_file) as fobj:
-                try:
-                    self.last_run = int(read_compat(fobj))
-                except ValueError:
-                    pass
+                self.last_run = int(read_compat(fobj))
+        except (FileNotFoundError, ValueError):
+            pass
 
     def determine_next_run(self):
         """
