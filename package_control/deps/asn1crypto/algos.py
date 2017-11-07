@@ -182,8 +182,7 @@ class RSASSAPSSParams(Sequence):
             'hash_algorithm',
             DigestAlgorithm,
             {
-                'tag_type': 'explicit',
-                'tag': 0,
+                'explicit': 0,
                 'default': {'algorithm': 'sha1'},
             }
         ),
@@ -191,8 +190,7 @@ class RSASSAPSSParams(Sequence):
             'mask_gen_algorithm',
             MaskGenAlgorithm,
             {
-                'tag_type': 'explicit',
-                'tag': 1,
+                'explicit': 1,
                 'default': {
                     'algorithm': 'mgf1',
                     'parameters': {'algorithm': 'sha1'},
@@ -203,8 +201,7 @@ class RSASSAPSSParams(Sequence):
             'salt_length',
             Integer,
             {
-                'tag_type': 'explicit',
-                'tag': 2,
+                'explicit': 2,
                 'default': 20,
             }
         ),
@@ -212,8 +209,7 @@ class RSASSAPSSParams(Sequence):
             'trailer_field',
             TrailerField,
             {
-                'tag_type': 'explicit',
-                'tag': 3,
+                'explicit': 3,
                 'default': 'trailer_field_bc',
             }
         ),
@@ -481,8 +477,7 @@ class RSAESOAEPParams(Sequence):
             'hash_algorithm',
             DigestAlgorithm,
             {
-                'tag_type': 'explicit',
-                'tag': 0,
+                'explicit': 0,
                 'default': {'algorithm': 'sha1'}
             }
         ),
@@ -490,8 +485,7 @@ class RSAESOAEPParams(Sequence):
             'mask_gen_algorithm',
             MaskGenAlgorithm,
             {
-                'tag_type': 'explicit',
-                'tag': 1,
+                'explicit': 1,
                 'default': {
                     'algorithm': 'mgf1',
                     'parameters': {'algorithm': 'sha1'}
@@ -502,8 +496,7 @@ class RSAESOAEPParams(Sequence):
             'p_source_algorithm',
             PSourceAlgorithm,
             {
-                'tag_type': 'explicit',
-                'tag': 2,
+                'explicit': 2,
                 'default': {
                     'algorithm': 'p_specified',
                     'parameters': b''

@@ -10,7 +10,7 @@ from ._types import byte_cls, bytes_to_list, str_cls, type_name
 
 def inet_ntop(address_family, packed_ip):
     """
-    Windows compatiblity shim for socket.inet_ntop().
+    Windows compatibility shim for socket.inet_ntop().
 
     :param address_family:
         socket.AF_INET for IPv4 or socket.AF_INET6 for IPv6
@@ -83,7 +83,7 @@ def inet_ntop(address_family, packed_ip):
 
 def inet_pton(address_family, ip_string):
     """
-    Windows compatiblity shim for socket.inet_ntop().
+    Windows compatibility shim for socket.inet_ntop().
 
     :param address_family:
         socket.AF_INET for IPv4 or socket.AF_INET6 for IPv6
