@@ -98,7 +98,7 @@ try:
     class CERT_ENHKEY_USAGE(Structure):  # noqa
         _fields_ = [
             ('cUsageIdentifier', DWORD),
-            ('rgpszUsageIdentifier', POINTER(wintypes.BYTE)),
+            ('rgpszUsageIdentifier', POINTER(POINTER(wintypes.BYTE))),
         ]
 
     PCERT_ENHKEY_USAGE = POINTER(CERT_ENHKEY_USAGE)
