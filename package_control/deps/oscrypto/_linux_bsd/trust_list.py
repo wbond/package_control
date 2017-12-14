@@ -59,7 +59,7 @@ def system_path():
     return ca_path
 
 
-def extract_from_system(cert_callback=None):
+def extract_from_system(cert_callback=None, callback_only_on_failure=False):
     """
     Extracts trusted CA certs from the system CA cert bundle
 
@@ -68,6 +68,10 @@ def extract_from_system(cert_callback=None):
         It should accept two parameters: an asn1crypto.x509.Certificate object,
         and a reason. The reason will be None if the certificate is being
         exported, otherwise it will be a unicode string of the reason it won't.
+
+    :param callback_only_on_failure:
+        A boolean - if the callback should only be called when a certificate is
+        not exported.
 
     :return:
         A list of 3-element tuples:
@@ -111,7 +115,7 @@ def extract_from_system(cert_callback=None):
                     if cert_callback:
                         cert_callback(cert, 'explicitly distrusted')
                     continue
-                if cert_callback:
+                if cert_callback and not callback_only_on_failure:
                     cert_callback(cert, None)
                 output.append((cert.dump(), trust_oids, reject_oids))
 

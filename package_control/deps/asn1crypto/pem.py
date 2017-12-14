@@ -16,7 +16,7 @@ import re
 import sys
 
 from ._errors import unwrap
-from ._types import type_name, str_cls, byte_cls
+from ._types import type_name as _type_name, str_cls, byte_cls
 
 if sys.version_info < (3,):
     from cStringIO import StringIO as BytesIO
@@ -41,7 +41,7 @@ def detect(byte_string):
             '''
             byte_string must be a byte string, not %s
             ''',
-            type_name(byte_string)
+            _type_name(byte_string)
         ))
 
     return byte_string.find(b'-----BEGIN') != -1 or byte_string.find(b'---- BEGIN') != -1
@@ -51,14 +51,14 @@ def armor(type_name, der_bytes, headers=None):
     """
     Armors a DER-encoded byte string in PEM
 
-    :param der_bytes:
-        A byte string to be armored
-
     :param type_name:
         A unicode string that will be capitalized and placed in the header
         and footer of the block. E.g. "CERTIFICATE", "PRIVATE KEY", etc. This
         will appear as "-----BEGIN CERTIFICATE-----" and
         "-----END CERTIFICATE-----".
+
+    :param der_bytes:
+        A byte string to be armored
 
     :param headers:
         An OrderedDict of the header lines to write after the BEGIN line
@@ -71,7 +71,7 @@ def armor(type_name, der_bytes, headers=None):
         raise TypeError(unwrap(
             '''
             der_bytes must be a byte string, not %s
-            ''' % type_name(der_bytes)
+            ''' % _type_name(der_bytes)
         ))
 
     if not isinstance(type_name, str_cls):
@@ -79,7 +79,7 @@ def armor(type_name, der_bytes, headers=None):
             '''
             type_name must be a unicode string, not %s
             ''',
-            type_name(type_name)
+            _type_name(type_name)
         ))
 
     type_name = type_name.upper().encode('ascii')
@@ -132,7 +132,7 @@ def _unarmor(pem_bytes):
             '''
             pem_bytes must be a byte string, not %s
             ''',
-            type_name(pem_bytes)
+            _type_name(pem_bytes)
         ))
 
     # Valid states include: "trash", "headers", "body"

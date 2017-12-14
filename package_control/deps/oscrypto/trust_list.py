@@ -8,7 +8,7 @@ import tempfile
 import threading
 
 from ..asn1crypto.pem import armor
-from ..asn1crypto.x509 import Certificate, TrustedCertificate, CertificateAux
+from ..asn1crypto.x509 import Certificate
 
 from ._errors import pretty_message
 from .errors import CACertsError
@@ -64,7 +64,7 @@ _oid_map = {
 }
 
 
-def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True, cert_callback=None):
+def get_path(temp_dir=None, cache_length=24, cert_callback=None):
     """
     Get the filesystem path to a file that contains OpenSSL-compatible CA certs.
 
@@ -79,22 +79,6 @@ def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True, cert_callback
 
     :param cache_length:
         The number of hours to cache the CA certs on OS X and Windows
-
-    :param map_vendor_oids:
-        A bool indicating if the following mapping of OIDs should happen for
-        trust information from the OS trust list:
-         - 1.2.840.113635.100.1.3 (apple_ssl) -> 1.3.6.1.5.5.7.3.1 (server_auth)
-         - 1.2.840.113635.100.1.3 (apple_ssl) -> 1.3.6.1.5.5.7.3.2 (client_auth)
-         - 1.2.840.113635.100.1.8 (apple_smime) -> 1.3.6.1.5.5.7.3.4 (email_protection)
-         - 1.2.840.113635.100.1.9 (apple_eap) -> 1.3.6.1.5.5.7.3.13 (eap_over_ppp)
-         - 1.2.840.113635.100.1.9 (apple_eap) -> 1.3.6.1.5.5.7.3.14 (eap_over_lan)
-         - 1.2.840.113635.100.1.11 (apple_ipsec) -> 1.3.6.1.5.5.7.3.5 (ipsec_end_system)
-         - 1.2.840.113635.100.1.11 (apple_ipsec) -> 1.3.6.1.5.5.7.3.6 (ipsec_tunnel)
-         - 1.2.840.113635.100.1.11 (apple_ipsec) -> 1.3.6.1.5.5.7.3.7 (ipsec_user)
-         - 1.2.840.113635.100.1.11 (apple_ipsec) -> 1.3.6.1.5.5.7.3.17 (ipsec_ike)
-         - 1.2.840.113635.100.1.16 (apple_code_signing) -> 1.3.6.1.5.5.7.3.3 (code_signing)
-         - 1.2.840.113635.100.1.20 (apple_time_stamping) -> 1.3.6.1.5.5.7.3.8 (time_stamping)
-         - 1.3.6.1.4.1.311.10.3.2 (microsoft_time_stamp_signing) -> 1.3.6.1.5.5.7.3.8 (time_stamping)
 
     :param cert_callback:
         A callback that is called once for each certificate in the trust store.
@@ -116,26 +100,39 @@ def get_path(temp_dir=None, cache_length=24, map_vendor_oids=True, cert_callback
     if temp and _cached_path_needs_update(ca_path, cache_length):
         empty_set = set()
 
+        any_purpose = '2.5.29.37.0'
+        apple_ssl = '1.2.840.113635.100.1.3'
+        win_server_auth = '1.3.6.1.5.5.7.3.1'
+
         with path_lock:
             if _cached_path_needs_update(ca_path, cache_length):
                 with open(ca_path, 'wb') as f:
-                    for cert, trust_oids, reject_oids in extract_from_system(cert_callback):
-                        if trust_oids == empty_set and reject_oids == empty_set:
-                            f.write(armor('CERTIFICATE', cert))
-                        else:
-                            if map_vendor_oids:
-                                trust_oids = _map_oids(trust_oids)
-                                reject_oids = _map_oids(reject_oids)
-                            f.write(armor(
-                                'TRUSTED CERTIFICATE',
-                                TrustedCertificate([
-                                    Certificate.load(cert),
-                                    CertificateAux({
-                                        'trust': trust_oids,
-                                        'reject': reject_oids,
-                                    })
-                                ]).dump()
-                            ))
+                    for cert, trust_oids, reject_oids in extract_from_system(cert_callback, True):
+                        if sys.platform == 'darwin':
+                            if trust_oids != empty_set and any_purpose not in trust_oids \
+                                    and apple_ssl not in trust_oids:
+                                if cert_callback:
+                                    cert_callback(Certificate.load(cert), 'implicitly distrusted for TLS')
+                                continue
+                            if reject_oids != empty_set and (apple_ssl in reject_oids
+                                                             or any_purpose in reject_oids):
+                                if cert_callback:
+                                    cert_callback(Certificate.load(cert), 'explicitly distrusted for TLS')
+                                continue
+                        elif sys.platform == 'win32':
+                            if trust_oids != empty_set and any_purpose not in trust_oids \
+                                    and win_server_auth not in trust_oids:
+                                if cert_callback:
+                                    cert_callback(Certificate.load(cert), 'implicitly distrusted for TLS')
+                                continue
+                            if reject_oids != empty_set and (win_server_auth in reject_oids
+                                                             or any_purpose in reject_oids):
+                                if cert_callback:
+                                    cert_callback(Certificate.load(cert), 'explicitly distrusted for TLS')
+                                continue
+                        if cert_callback:
+                            cert_callback(Certificate.load(cert), None)
+                        f.write(armor('CERTIFICATE', cert))
 
     if not ca_path:
         raise CACertsError('No CA certs found')

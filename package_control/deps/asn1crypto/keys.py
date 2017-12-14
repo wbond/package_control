@@ -30,7 +30,7 @@ from ._elliptic_curve import (
 )
 from ._errors import unwrap
 from ._types import type_name, str_cls, byte_cls
-from .algos import _ForceNullParameters, DigestAlgorithm, EncryptionAlgorithm
+from .algos import _ForceNullParameters, DigestAlgorithm, EncryptionAlgorithm, RSAESOAEPParams
 from .core import (
     Any,
     Asn1Value,
@@ -930,6 +930,8 @@ class PublicKeyAlgorithmId(ObjectIdentifier):
     _map = {
         # https://tools.ietf.org/html/rfc3279#page-19
         '1.2.840.113549.1.1.1': 'rsa',
+        # https://tools.ietf.org/html/rfc3447#page-47
+        '1.2.840.113549.1.1.7': 'rsaes_oaep',
         # https://tools.ietf.org/html/rfc3279#page-18
         '1.2.840.10040.4.1': 'dsa',
         # https://tools.ietf.org/html/rfc3279#page-13
@@ -955,6 +957,7 @@ class PublicKeyAlgorithm(_ForceNullParameters, Sequence):
         'dsa': DSAParams,
         'ec': ECDomainParameters,
         'dh': DomainParameters,
+        'rsaes_oaep': RSAESOAEPParams,
     }
 
 
@@ -973,6 +976,7 @@ class PublicKeyInfo(Sequence):
         algorithm = self['algorithm']['algorithm'].native
         return {
             'rsa': RSAPublicKey,
+            'rsaes_oaep': RSAPublicKey,
             'dsa': Integer,
             # We override the field spec with ECPoint so that users can easily
             # decompose the byte string into the constituent X and Y coords

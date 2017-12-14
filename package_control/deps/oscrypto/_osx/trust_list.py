@@ -24,7 +24,7 @@ def system_path():
     return None
 
 
-def extract_from_system(cert_callback=None):
+def extract_from_system(cert_callback=None, callback_only_on_failure=False):
     """
     Extracts trusted CA certificates from the OS X trusted root keychain.
 
@@ -33,6 +33,10 @@ def extract_from_system(cert_callback=None):
         It should accept two parameters: an asn1crypto.x509.Certificate object,
         and a reason. The reason will be None if the certificate is being
         exported, otherwise it will be a unicode string of the reason it won't.
+
+    :param callback_only_on_failure:
+        A boolean - if the callback should only be called when a certificate is
+        not exported.
 
     :raises:
         OSError - when an error is returned by the OS crypto library
@@ -150,7 +154,8 @@ def extract_from_system(cert_callback=None):
 
     output = []
     for cert_hash in certificates:
-        _cert_callback(cert_callback, certificates[cert_hash], None)
+        if not callback_only_on_failure:
+            _cert_callback(cert_callback, certificates[cert_hash], None)
         cert_trust_info = trust_info.get(cert_hash, default_trust)
         output.append((certificates[cert_hash], cert_trust_info[0], cert_trust_info[1]))
     return output

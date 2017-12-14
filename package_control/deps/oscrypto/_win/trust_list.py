@@ -33,7 +33,7 @@ def system_path():
     return None
 
 
-def extract_from_system(cert_callback=None):
+def extract_from_system(cert_callback=None, callback_only_on_failure=False):
     """
     Extracts trusted CA certificates from the Windows certificate store
 
@@ -42,6 +42,10 @@ def extract_from_system(cert_callback=None):
         It should accept two parameters: an asn1crypto.x509.Certificate object,
         and a reason. The reason will be None if the certificate is being
         exported, otherwise it will be a unicode string of the reason it won't.
+
+    :param callback_only_on_failure:
+        A boolean - if the callback should only be called when a certificate is
+        not exported.
 
     :raises:
         OSError - when an error is returned by the OS crypto library
@@ -184,7 +188,7 @@ def extract_from_system(cert_callback=None):
                         if oid not in trust_oids:
                             reject_oids.add(oid)
 
-            if cert_callback:
+            if cert_callback and not callback_only_on_failure:
                 if cert is None:
                     cert = Certificate.load(data)
                 cert_callback(cert, None)

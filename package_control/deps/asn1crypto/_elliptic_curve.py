@@ -160,10 +160,10 @@ class PrimePoint():
 
         p = self.curve.p
 
-        l = ((other.y - self.y) * inverse_mod(other.x - self.x, p)) % p
+        l_ = ((other.y - self.y) * inverse_mod(other.x - self.x, p)) % p
 
-        x3 = (l * l - self.x - other.x) % p
-        y3 = (l * (self.x - x3) - self.y) % p
+        x3 = (l_ * l_ - self.x - other.x) % p
+        y3 = (l_ * (self.x - x3) - self.y) % p
 
         return PrimePoint(self.curve, x3, y3)
 
@@ -232,10 +232,10 @@ class PrimePoint():
         p = self.curve.p
         a = self.curve.a
 
-        l = ((3 * self.x * self.x + a) * inverse_mod(2 * self.y, p)) % p
+        l_ = ((3 * self.x * self.x + a) * inverse_mod(2 * self.y, p)) % p
 
-        x3 = (l * l - 2 * self.x) % p
-        y3 = (l * (self.x - x3) - self.y) % p
+        x3 = (l_ * l_ - 2 * self.x) % p
+        y3 = (l_ * (self.x - x3) - self.y) % p
 
         return PrimePoint(self.curve, x3, y3)
 

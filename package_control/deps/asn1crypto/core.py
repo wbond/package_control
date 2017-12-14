@@ -5029,15 +5029,14 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
 
     # If an explicit specification was passed in, make sure it matches
     if spec is not None:
-        if spec_params:
-            value = spec(contents=contents, **spec_params)
-        else:
-            value = spec(contents=contents)
-
-        if spec is Any:
-            pass
-
-        elif value.explicit:
+        # If there is explicit tagging and contents, we have to split
+        # the header and trailer off before we do the parsing
+        no_explicit = spec_params and 'no_explicit' in spec_params
+        if not no_explicit and (spec.explicit or (spec_params and 'explicit' in spec_params)):
+            if spec_params:
+                value = spec(**spec_params)
+            else:
+                value = spec()
             original_explicit = value.explicit
             explicit_info = reversed(original_explicit)
             parsed_class = class_
@@ -5081,60 +5080,69 @@ def _build(class_, method, tag, header, contents, trailer, spec=None, spec_param
                 parsed_class, parsed_method, parsed_tag, parsed_header, to_parse, parsed_trailer = info
                 explicit_header += parsed_header
                 explicit_trailer = parsed_trailer + explicit_trailer
+
             value = _build(*info, spec=spec, spec_params={'no_explicit': True})
             value._header = explicit_header
             value._trailer = explicit_trailer
             value.explicit = original_explicit
             header_set = True
-
-        elif isinstance(value, Choice):
-            value.validate(class_, tag, contents)
-            try:
-                # Force parsing the Choice now
-                value.contents = header + value.contents
-                header = b''
-                value.parse()
-            except (ValueError, TypeError) as e:
-                args = e.args[1:]
-                e.args = (e.args[0] + '\n    while parsing %s' % type_name(value),) + args
-                raise e
-
         else:
-            if class_ != value.class_:
-                raise ValueError(unwrap(
-                    '''
-                    Error parsing %s - class should have been %s, but %s was
-                    found
-                    ''',
-                    type_name(value),
-                    CLASS_NUM_TO_NAME_MAP.get(value.class_),
-                    CLASS_NUM_TO_NAME_MAP.get(class_, class_)
-                ))
-            if method != value.method:
-                # Allow parsing a primitive method as constructed if the value
-                # is indefinite length. This is to allow parsing BER.
-                ber_indef = method == 1 and value.method == 0 and trailer == b'\x00\x00'
-                if not ber_indef or not isinstance(value, Constructable):
+            if spec_params:
+                value = spec(contents=contents, **spec_params)
+            else:
+                value = spec(contents=contents)
+
+            if spec is Any:
+                pass
+
+            elif isinstance(value, Choice):
+                value.validate(class_, tag, contents)
+                try:
+                    # Force parsing the Choice now
+                    value.contents = header + value.contents
+                    header = b''
+                    value.parse()
+                except (ValueError, TypeError) as e:
+                    args = e.args[1:]
+                    e.args = (e.args[0] + '\n    while parsing %s' % type_name(value),) + args
+                    raise e
+
+            else:
+                if class_ != value.class_:
                     raise ValueError(unwrap(
                         '''
-                        Error parsing %s - method should have been %s, but %s was found
+                        Error parsing %s - class should have been %s, but %s was
+                        found
                         ''',
                         type_name(value),
-                        METHOD_NUM_TO_NAME_MAP.get(value.method),
-                        METHOD_NUM_TO_NAME_MAP.get(method, method)
+                        CLASS_NUM_TO_NAME_MAP.get(value.class_),
+                        CLASS_NUM_TO_NAME_MAP.get(class_, class_)
                     ))
-                else:
-                    value.method = method
-                    value._indefinite = True
-            if tag != value.tag and tag != value._bad_tag:
-                raise ValueError(unwrap(
-                    '''
-                    Error parsing %s - tag should have been %s, but %s was found
-                    ''',
-                    type_name(value),
-                    value.tag,
-                    tag
-                ))
+                if method != value.method:
+                    # Allow parsing a primitive method as constructed if the value
+                    # is indefinite length. This is to allow parsing BER.
+                    ber_indef = method == 1 and value.method == 0 and trailer == b'\x00\x00'
+                    if not ber_indef or not isinstance(value, Constructable):
+                        raise ValueError(unwrap(
+                            '''
+                            Error parsing %s - method should have been %s, but %s was found
+                            ''',
+                            type_name(value),
+                            METHOD_NUM_TO_NAME_MAP.get(value.method),
+                            METHOD_NUM_TO_NAME_MAP.get(method, method)
+                        ))
+                    else:
+                        value.method = method
+                        value._indefinite = True
+                if tag != value.tag and tag != value._bad_tag:
+                    raise ValueError(unwrap(
+                        '''
+                        Error parsing %s - tag should have been %s, but %s was found
+                        ''',
+                        type_name(value),
+                        value.tag,
+                        tag
+                    ))
 
     # For explicitly tagged, un-speced parsings, we use a generic container
     # since we will be parsing the contents and discarding the outer object
