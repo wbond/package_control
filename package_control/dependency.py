@@ -68,8 +68,8 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
 
     di_wheel_path = os.path.join(dist_info_path, 'WHEEL')
     wf_contents = wheel.generate_wheel_file('3.3', plat_specific)
-    with open(di_wheel_path, 'wb') as f:
-        f.write(wf_contents.encode('utf-8'))
+    with open(di_wheel_path, 'w', encoding='utf-8') as fobj:
+        fobj.write(wf_contents)
 
     di_metadata_path = os.path.join(dist_info_path, 'METADATA')
     mf_contents = wheel.generate_metadata_file(
@@ -78,13 +78,13 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
         description,
         url
     )
-    with open(di_metadata_path, 'wb') as f:
-        f.write(mf_contents.encode('utf-8'))
+    with open(di_metadata_path, 'w', encoding='utf-8') as fobj:
+        fobj.write(mf_contents)
 
     di_installer_path = os.path.join(dist_info_path, 'INSTALLER')
     if_contents = wheel.generate_installer()
-    with open(di_installer_path, 'wb') as f:
-        f.write(if_contents.encode('utf-8'))
+    with open(di_installer_path, 'w', encoding='utf-8') as fobj:
+        fobj.write(if_contents)
 
     package_dir_names = []
     for dname, source in package_dirs:
@@ -101,13 +101,13 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
 
     di_record_path = os.path.join(dist_info_path, 'RECORD')
     # Create an empty file so it shows up in its own file list
-    with open(di_record_path, 'wb') as f:
-        f.write(b'')
+    with open(di_record_path, 'w', encoding='utf-8') as fobj:
+        fobj.write('')
     rf_contents = wheel.generate_record(
         dest_root,
         dist_info_dirname,
         package_dir_names,
         package_file_names
     )
-    with open(di_record_path, 'wb') as f:
-        f.write(rf_contents.encode('utf-8'))
+    with open(di_record_path, 'w', encoding='utf-8') as fobj:
+        fobj.write(rf_contents)

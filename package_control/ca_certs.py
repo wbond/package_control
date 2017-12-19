@@ -3,7 +3,6 @@ import time
 import sys
 
 from .console_write import console_write
-from .open_compat import open_compat, read_compat
 from .sys_path import pc_cache_dir, user_config_dir
 
 from .deps.oscrypto import use_ctypes
@@ -42,19 +41,19 @@ def get_ca_bundle_path(settings):
         regenerate = regenerate or os.path.getmtime(user_ca_bundle_path) > os.path.getmtime(merged_ca_bundle_path)
 
     if regenerate:
-        with open(merged_ca_bundle_path, 'wb') as merged:
+        with open(merged_ca_bundle_path, 'w', encoding='utf-8') as merged:
             if system_ca_bundle_path:
-                with open_compat(system_ca_bundle_path, 'r') as system:
-                    system_certs = read_compat(system).strip()
-                    merged.write(system_certs.encode('utf-8'))
+                with open(system_ca_bundle_path, 'r', encoding='utf-8', errors='replace') as system:
+                    system_certs = system.read().strip()
+                    merged.write(system_certs)
                     if len(system_certs) > 0:
-                        merged.write(b'\n')
+                        merged.write('\n')
             if os.path.exists(user_ca_bundle_path):
-                with open_compat(user_ca_bundle_path, 'r') as user:
-                    user_certs = read_compat(user).strip()
-                    merged.write(user_certs.encode('utf-8'))
+                with open(user_ca_bundle_path, 'r', encoding='utf-8', errors='replace') as user:
+                    user_certs = user.read().strip()
+                    merged.write(user_certs)
                     if len(user_certs) > 0:
-                        merged.write(b'\n')
+                        merged.write('\n')
         if settings.get('debug'):
             console_write(
                 '''

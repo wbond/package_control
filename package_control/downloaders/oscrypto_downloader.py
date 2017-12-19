@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 from urllib.request import parse_keqv_list, parse_http_list
 
 from ..console_write import console_write
-from ..open_compat import open_compat, read_compat
 from .downloader_exception import DownloaderException
 from .oscrypto_downloader_exception import OscryptoDownloaderException
 from ..ca_certs import get_user_ca_bundle_path
@@ -346,8 +345,8 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
         user_ca_bundle_path = get_user_ca_bundle_path(self.settings)
         if os.path.exists(user_ca_bundle_path):
             try:
-                with open_compat(user_ca_bundle_path, 'rb') as f:
-                    file_data = read_compat(f)
+                with open(user_ca_bundle_path, 'rb') as fobj:
+                    file_data = fobj.read()
                 if len(file_data) > 0:
                     for type_name, headers, der_bytes in pem.unarmor(file_data, multiple=True):
                         extra_trust_roots.append(x509.Certificate.load(der_bytes))

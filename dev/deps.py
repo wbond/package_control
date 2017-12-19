@@ -292,8 +292,8 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
                     dst_dir = os.path.dirname(dst_path)
                     if not os.path.exists(dst_dir):
                         os.makedirs(dst_dir)
-                    with open(dst_path, 'wb') as f:
-                        f.write(data)
+                    with open(dst_path, 'wb') as fobj:
+                        fobj.write(data)
         finally:
             if zf:
                 zf.close()
@@ -338,8 +338,8 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
                 dst_dir = os.path.dirname(dst_path)
                 if not os.path.exists(dst_dir):
                     os.makedirs(dst_dir)
-                with open(dst_path, 'wb') as f:
-                    f.write(info_data)
+                with open(dst_path, 'wb') as fobj:
+                    fobj.write(info_data)
 
         setup_dir = staging_dir
         if pkg_dir:
@@ -550,8 +550,8 @@ def _stage_requirements(deps_dir, path):
         else:
             pypi_json_url = 'https://pypi.org/pypi/%s/json' % pkg
             json_dest = _download(pypi_json_url, deps_dir)
-            with open(json_dest, 'rb') as f:
-                pkg_info = json.loads(f.read().decode('utf-8'))
+            with open(json_dest, 'r', encoding='utf-8') as fobj:
+                pkg_info = json.load(fobj)
             if os.path.exists(json_dest):
                 os.remove(json_dest)
 
@@ -602,8 +602,8 @@ def _parse_requires(path):
 
     packages = []
 
-    with open(path, 'rb') as f:
-        contents = f.read().decode('utf-8')
+    with open(path, 'r', encoding='utf-8') as fobj:
+        contents = fobj.read()
 
     for line in re.split(r'\r?\n', contents):
         line = line.strip()

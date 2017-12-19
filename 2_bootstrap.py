@@ -82,8 +82,8 @@ def _migrate_loaders(settings):
                 json_path = os.path.join(dep_path, 'dependency-metadata.json')
 
                 try:
-                    with open(json_path, 'rb') as j:
-                        metadata = json.loads(j.read().decode('utf-8'))
+                    with open(json_path, 'r', encoding='utf-8') as fobj:
+                        metadata = json.load(fobj)
                 except (OSError, ValueError) as e:
                     console_write('Error loading dependency metadata during migration - %s' % e)
                     continue
@@ -213,16 +213,16 @@ def _install_injectors(settings):
     injector_path_33 = os.path.join(sys_path.data_dir, 'Lib', 'python33', 'package_control.py')
     try:
         if not os.path.exists(injector_path_33):
-            with open(injector_path_33, 'wb') as f:
-                f.write(injector_code.encode('utf-8'))
+            with open(injector_path_33, 'w', encoding='utf-8') as fobj:
+                fobj.write(injector_code)
     except (OSError) as e:
         console_write('Unable to write injector to "%s" - %s' % (injector_path_33, e))
 
     injector_path_38 = os.path.join(sys_path.data_dir, 'Lib', 'python38', 'package_control.py')
     try:
         if not os.path.exists(injector_path_38):
-            with open(injector_path_38, 'wb') as f:
-                f.write(injector_code.encode('utf-8'))
+            with open(injector_path_38, 'w', encoding='utf-8') as fobj:
+                fobj.write(injector_code)
     except (OSError) as e:
         console_write('Unable to write injector to "%s" - %s' % (injector_path_38, e))
 

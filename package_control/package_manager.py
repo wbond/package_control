@@ -16,8 +16,6 @@ import sublime
 
 from .show_error import show_error
 from .console_write import console_write
-from .open_compat import open_compat, read_compat
-from .file_not_found_error import FileNotFoundError
 from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
@@ -242,8 +240,8 @@ class PackageManager():
         # Look in the .sublime-dependency file to see where in the dependency
         # load order this dependency should be installed
         elif os.path.exists(hidden_file_path):
-            with open(hidden_file_path, 'rb') as f:
-                data = f.read().decode('utf-8').strip()
+            with open(hidden_file_path, 'r', encoding='utf-8') as fobj:
+                data = fobj.read().strip()
                 if data.isdigit():
                     priority = data
                     if len(priority) == 1:
@@ -257,8 +255,8 @@ class PackageManager():
         is_code_loader = os.path.exists(loader_code_path)
         if is_py_loader or is_code_loader:
             loader_path = loader_code_path if is_code_loader else loader_py_path
-            with open(loader_path, 'rb') as f:
-                code = f.read().decode('utf-8')
+            with open(loader_path, 'r', encoding='utf-8') as fobj:
+                code = fobj.read()
 
         return (priority, code)
 
@@ -1113,7 +1111,7 @@ class PackageManager():
                 )
                 return False
 
-            with open_compat(tmp_package_path, "wb") as package_file:
+            with open(tmp_package_path, "wb") as package_file:
                 package_file.write(package_bytes)
 
             # Try to open it as a zip file
@@ -1240,7 +1238,7 @@ class PackageManager():
                     # If deleting failed, queue the package to upgrade upon next start
                     # where it will be disabled
                     reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
-                    open_compat(reinstall_file, 'w').close()
+                    open(reinstall_file, 'wb').close()
 
                     # Don't delete the metadata file, that way we have it
                     # when the reinstall happens, and the appropriate
@@ -1357,8 +1355,8 @@ class PackageManager():
                     add_extracted_dirs(dest_dir)
                     extracted_paths.add(dest)
                     try:
-                        with open_compat(dest, 'wb') as f:
-                            f.write(package_zip.read(path))
+                        with open(dest, 'wb') as fobj:
+                            fobj.write(package_zip.read(path))
                     except (IOError) as e:
                         message = str(e)
                         if re.search('[Ee]rrno 13', message):
@@ -1387,7 +1385,7 @@ class PackageManager():
             # If upgrading failed, queue the package to upgrade upon next start
             if overwrite_failed:
                 reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
-                open_compat(reinstall_file, 'w').close()
+                open(reinstall_file, 'wb').close()
 
                 # Don't delete the metadata file, that way we have it
                 # when the reinstall happens, and the appropriate
@@ -1416,7 +1414,7 @@ class PackageManager():
 
             self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 
-            with open_compat(package_metadata_file, 'w') as f:
+            with open(package_metadata_file, 'w', encoding='utf-8') as fobj:
                 if is_dependency:
                     url = packages[package_name]['issues']
                 else:
@@ -1430,7 +1428,7 @@ class PackageManager():
                 }
                 if not is_dependency:
                     metadata['dependencies'] = release.get('dependencies', [])
-                json.dump(metadata, f)
+                json.dump(metadata, fobj)
 
             # Submit install and upgrade info
             if is_upgrade:
@@ -1735,8 +1733,8 @@ class PackageManager():
 
         try:
             messages_file = os.path.join(package_dir, 'messages.json')
-            with open_compat(messages_file, 'r') as f:
-                message_info = json.loads(read_compat(f))
+            with open(messages_file, 'r', encoding='utf-8') as fobj:
+                message_info = json.load(fobj)
         except (FileNotFoundError):
             return
         except (ValueError):
@@ -1749,9 +1747,8 @@ class PackageManager():
             return
 
         def read_message(message_path):
-            with open_compat(message_path, 'r') as f:
-                lines = read_compat(f).rstrip().split('\n')
-                return '\n' + '\n'.join('  ' + s if s else '' for s in lines)
+            with open(message_path, 'r', encoding='utf-8', errors='replace') as fobj:
+                return '\n  %s\n' % fobj.read().rstrip().replace('\n', '\n  ')
 
         output = ''
         if not is_upgrade and message_info.get('install'):
@@ -1936,7 +1933,7 @@ class PackageManager():
             elif not clear_directory(package_dir):
                 # If there is an error deleting now, we will mark it for
                 # cleanup the next time Sublime Text starts
-                open_compat(os.path.join(package_dir, 'package-control.cleanup'), 'w').close()
+                open(os.path.join(package_dir, 'package-control.cleanup'), 'wb').close()
                 cleanup_complete = False
                 can_delete_dir = False
 
