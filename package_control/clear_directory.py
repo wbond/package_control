@@ -2,7 +2,6 @@ import os
 import stat
 import shutil
 from .console_write import console_write
-from .unicode import unicode_from_os
 
 
 def clean_old_files(directory):
@@ -25,7 +24,7 @@ def clean_old_files(directory):
                         u'''
                         Error removing old file "%s": %s
                         ''',
-                        (path, unicode_from_os(e))
+                        (path, str(e))
                     )
 
 

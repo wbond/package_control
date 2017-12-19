@@ -72,7 +72,6 @@ mods_load_order = [
     '.open_compat',
     '.http_cache',
     '.console_write',
-    '.unicode',
     '.clear_directory',
     '.show_error',
     '.cmd',

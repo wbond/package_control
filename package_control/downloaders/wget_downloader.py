@@ -10,7 +10,6 @@ except (NameError):
     str_cls = str
 
 from ..console_write import console_write
-from ..unicode import unicode_from_os
 from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
@@ -185,7 +184,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                 except (NonHttpError) as e:
 
-                    download_error = unicode_from_os(e)
+                    download_error = str(e)
 
                     # GitHub and BitBucket seem to time out a lot
                     if download_error.find('timed out') != -1:

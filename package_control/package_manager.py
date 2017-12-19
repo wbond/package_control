@@ -27,7 +27,6 @@ from .show_error import show_error
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .file_not_found_error import FileNotFoundError
-from .unicode import unicode_from_os
 from .clear_directory import clear_directory, delete_directory
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
@@ -928,7 +927,7 @@ class PackageManager():
 
                 %s
                 ''',
-                (package_filename, package_destination, unicode_from_os(e))
+                (package_filename, package_destination, str(e))
             )
             return False
 
@@ -1355,7 +1354,7 @@ class PackageManager():
                         with open_compat(dest, 'wb') as f:
                             f.write(package_zip.read(path))
                     except (IOError) as e:
-                        message = unicode_from_os(e)
+                        message = str(e)
                         if re.search('[Ee]rrno 13', message):
                             overwrite_failed = True
                             break
@@ -1469,7 +1468,7 @@ class PackageManager():
 
                         %s
                         ''',
-                        (package_filename, tmp_dir, unicode_from_os(e))
+                        (package_filename, tmp_dir, str(e))
                     )
                     return False
 
@@ -1690,7 +1689,7 @@ class PackageManager():
 
                 %s
                 ''',
-                (package_name, unicode_from_os(e))
+                (package_name, str(e))
             )
             try:
                 if os.path.exists(package_backup_dir):
@@ -1910,7 +1909,7 @@ class PackageManager():
 
                 %s
                 ''',
-                (package_name, unicode_from_os(e))
+                (package_name, str(e))
             )
             return False
 

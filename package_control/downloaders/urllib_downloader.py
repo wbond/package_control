@@ -39,7 +39,6 @@ except (ImportError):
     from socket import error as ConnectionError
 
 from ..console_write import console_write
-from ..unicode import unicode_from_os
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
 from .downloader_exception import DownloaderException
@@ -164,7 +163,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     u'''
                     %s HTTP exception %s (%s) downloading %s.
                     ''',
-                    (error_message, exception_type, unicode_from_os(e), url)
+                    (error_message, exception_type, str(e), url)
                 )
 
             except (HTTPError) as e:
@@ -176,11 +175,11 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 self.handle_rate_limit(e.headers, url)
 
                 # Handle cached responses
-                if unicode_from_os(e.code) == '304':
+                if str(e.code) == '304':
                     return self.cache_result('get', url, int(e.code), e.headers, b'')
 
                 # Bitbucket and Github return 503 a decent amount
-                if unicode_from_os(e.code) == '503' and tries != 0:
+                if str(e.code) == '503' and tries != 0:
                     if tries and debug:
                         console_write(
                             u'''
@@ -194,14 +193,14 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     u'''
                     %s HTTP error %s downloading %s.
                     ''',
-                    (error_message, unicode_from_os(e.code), url)
+                    (error_message, str(e.code), url)
                 )
 
             except (URLError) as e:
 
                 # Bitbucket and Github timeout a decent amount
-                if unicode_from_os(e.reason) == 'The read operation timed out' \
-                        or unicode_from_os(e.reason) == 'timed out':
+                if str(e.reason) == 'The read operation timed out' \
+                        or str(e.reason) == 'timed out':
                     if tries and debug:
                         console_write(
                             u'''
@@ -215,7 +214,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     u'''
                     %s URL error %s downloading %s.
                     ''',
-                    (error_message, unicode_from_os(e.reason), url)
+                    (error_message, str(e.reason), url)
                 )
 
             except (ConnectionError):

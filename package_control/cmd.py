@@ -4,7 +4,6 @@ import re
 import sys
 
 from .console_write import console_write
-from .unicode import unicode_from_os
 from .show_error import show_error
 from . import text
 
@@ -230,7 +229,7 @@ class Cli(object):
 
                 Try checking your "%s_binary" setting?
                 ''',
-                (create_cmd(args), unicode_from_os(e), self.cli_name)
+                (create_cmd(args), str(e), self.cli_name)
             )
             return False
 

@@ -18,7 +18,6 @@ from . import __version__
 from .show_error import show_error
 from .console_write import console_write
 from .cache import set_cache, get_cache
-from .unicode import unicode_from_os
 from . import text
 
 from .downloaders import DOWNLOADERS
@@ -306,7 +305,7 @@ class DownloadManager(object):
             try:
                 ip = socket.gethostbyname(hostname)
             except (socket.gaierror) as e:
-                ip = unicode_from_os(e)
+                ip = str(e)
             except (TypeError) as e:
                 ip = None
 

@@ -7,7 +7,6 @@ import struct
 import locale  # noqa
 
 from ..console_write import console_write
-from ..unicode import unicode_from_os
 from .. import text
 from .non_http_error import NonHttpError
 from .http_error import HttpError
@@ -657,7 +656,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             except (NonHttpError, HttpError) as e:
 
                 # GitHub and BitBucket seem to time out a lot
-                if unicode_from_os(e).find('timed out') != -1:
+                if str(e).find('timed out') != -1:
                     if tries and self.debug:
                         console_write(
                             u'''
@@ -671,7 +670,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     u'''
                     %s %s downloading %s.
                     ''',
-                    (error_message, unicode_from_os(e), url)
+                    (error_message, str(e), url)
                 )
 
             finally:
@@ -714,7 +713,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         error_num = ctypes.GetLastError()
         raw_error_string = ctypes.FormatError(error_num)
 
-        error_string = unicode_from_os(raw_error_string)
+        error_string = str(raw_error_string)
 
         # Try to fill in some known errors
         if error_string == u"<no description>":
