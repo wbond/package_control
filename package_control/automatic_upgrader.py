@@ -12,8 +12,6 @@ from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
-from .file_not_found_error import FileNotFoundError
-from .open_compat import open_compat, read_compat, write_compat
 from .settings import pc_settings_filename, load_list_setting
 
 
@@ -68,8 +66,8 @@ class AutomaticUpgrader(threading.Thread):
         self.last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
 
         try:
-            with open_compat(self.last_run_file) as fobj:
-                self.last_run = int(read_compat(fobj))
+            with open(self.last_run_file) as f:
+                self.last_run = int(f.read())
         except (FileNotFoundError, ValueError):
             pass
 
@@ -95,8 +93,8 @@ class AutomaticUpgrader(threading.Thread):
             The unix timestamp of when to record the last run as
         """
 
-        with open_compat(self.last_run_file, 'w') as fobj:
-            write_compat(fobj, int(last_run))
+        with open(self.last_run_file, 'w') as f:
+            f.write(str(last_run))
 
     def load_settings(self):
         """

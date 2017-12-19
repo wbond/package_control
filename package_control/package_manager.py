@@ -25,8 +25,6 @@ import sublime
 
 from .show_error import show_error
 from .console_write import console_write
-from .open_compat import open_compat, read_compat
-from .file_not_found_error import FileNotFoundError
 from .clear_directory import clear_directory, delete_directory
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
@@ -1112,7 +1110,7 @@ class PackageManager():
                 )
                 return False
 
-            with open_compat(tmp_package_path, "wb") as package_file:
+            with open(tmp_package_path, "wb") as package_file:
                 package_file.write(package_bytes)
 
             # Try to open it as a zip file
@@ -1237,7 +1235,7 @@ class PackageManager():
                     # If deleting failed, queue the package to upgrade upon next start
                     # where it will be disabled
                     reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
-                    open_compat(reinstall_file, 'w').close()
+                    open(reinstall_file, 'w').close()
 
                     # Don't delete the metadata file, that way we have it
                     # when the reinstall happens, and the appropriate
@@ -1351,7 +1349,7 @@ class PackageManager():
                     add_extracted_dirs(dest_dir)
                     extracted_paths.append(dest)
                     try:
-                        with open_compat(dest, 'wb') as f:
+                        with open(dest, 'wb') as f:
                             f.write(package_zip.read(path))
                     except (IOError) as e:
                         message = str(e)
@@ -1381,7 +1379,7 @@ class PackageManager():
             # If upgrading failed, queue the package to upgrade upon next start
             if overwrite_failed:
                 reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
-                open_compat(reinstall_file, 'w').close()
+                open(reinstall_file, 'wb').close()
 
                 # Don't delete the metadata file, that way we have it
                 # when the reinstall happens, and the appropriate
@@ -1406,7 +1404,7 @@ class PackageManager():
 
             self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 
-            with open_compat(package_metadata_file, 'w') as f:
+            with open(package_metadata_file, 'w', encoding='utf-8') as f:
                 if is_dependency:
                     url = packages[package_name]['issues']
                 else:
@@ -1724,8 +1722,8 @@ class PackageManager():
 
         try:
             messages_file = os.path.join(package_dir, 'messages.json')
-            with open_compat(messages_file, 'r') as f:
-                message_info = json.loads(read_compat(f))
+            with open(messages_file, 'r', encoding='utf-8') as f:
+                message_info = json.loads(f.read())
         except (FileNotFoundError):
             return
         except (ValueError):
@@ -1738,8 +1736,8 @@ class PackageManager():
             return
 
         def read_message(message_path):
-            with open_compat(message_path, 'r') as f:
-                return '\n  %s\n' % read_compat(f).rstrip().replace('\n', '\n  ')
+            with open(message_path, 'r', encoding='utf-8', errors='replace') as f:
+                return '\n  %s\n' % f.read().rstrip().replace('\n', '\n  ')
 
         output = ''
         if not is_upgrade and message_info.get('install'):
@@ -1920,7 +1918,7 @@ class PackageManager():
             if not clear_directory(package_dir):
                 # If there is an error deleting now, we will mark it for
                 # cleanup the next time Sublime Text starts
-                open_compat(os.path.join(package_dir, 'package-control.cleanup'), 'w').close()
+                open(os.path.join(package_dir, 'package-control.cleanup'), 'wb').close()
                 cleanup_complete = False
                 can_delete_dir = False
 

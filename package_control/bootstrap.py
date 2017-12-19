@@ -21,9 +21,7 @@ from .download_manager import downloader
 from .downloaders.downloader_exception import DownloaderException
 from .console_write import console_write
 from . import loader, sys_path
-from .open_compat import open_compat, read_compat
 from .semver import SemVer
-from .file_not_found_error import FileNotFoundError
 from .settings import pc_settings_filename
 
 
@@ -76,8 +74,8 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     if path.exists(package_dir) and loader.exists(package_basename):
         try:
             dep_metadata_path = path.join(package_dir, 'dependency-metadata.json')
-            with open_compat(dep_metadata_path, 'r') as f:
-                metadata = json.loads(read_compat(f))
+            with open(dep_metadata_path, 'r', encoding='utf-8') as f:
+                metadata = json.loads(f.read())
             old_version = SemVer(metadata['version'])
             if version <= old_version:
                 sublime.set_timeout(mark_bootstrapped, 10)

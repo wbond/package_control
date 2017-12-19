@@ -10,7 +10,6 @@ except (NameError):
     str_cls = str
 
 from ..console_write import console_write
-from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
 from .downloader_exception import DownloaderException
@@ -149,8 +148,8 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             try:
                 output = self.execute(command)
 
-                with open_compat(self.tmp_file, 'r') as f:
-                    headers_str = read_compat(f)
+                with open(self.tmp_file, 'r', encoding='utf-8', errors='replace') as f:
+                    headers_str = f.read()
                 self.clean_tmp_file()
 
                 message = 'OK'

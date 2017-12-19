@@ -68,8 +68,6 @@ mods_load_order = [
     '.sys_path',
     '.text',
     '.cache',
-    '.file_not_found_error',
-    '.open_compat',
     '.http_cache',
     '.console_write',
     '.clear_directory',

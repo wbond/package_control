@@ -10,7 +10,6 @@ except (NameError):
     str_cls = str
 
 from ..console_write import console_write
-from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
 from .non_clean_exit_error import NonCleanExitError
@@ -232,8 +231,8 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             HTTP header names.
         """
 
-        with open_compat(self.tmp_file, 'r') as f:
-            output = read_compat(f).splitlines()
+        with open(self.tmp_file, 'r', encoding='utf-8', errors='replace') as f:
+            output = f.read().splitlines()
         self.clean_tmp_file()
 
         error = None
