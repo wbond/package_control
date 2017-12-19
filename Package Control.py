@@ -1,102 +1,90 @@
-import sublime
-import sys
 import os
+import sublime
 
+try:
+    if int(sublime.version()) < 3000:
+        from package_control import text
+        message = text.format(
+            '''
+            Package Control
 
-st_version = 2 if sys.version_info < (3,) else 3
+            Sublime Text 3 is required.
 
+            To fix the issue, please install the latest stable Sublime Text version.
+            '''
+        )
+        raise ImportError(message)
 
-if st_version == 3:
-    from .package_control import text, sys_path
+    from .package_control import sys_path
+    from .package_control import text
 
-    installed_dir, _ = __name__.split('.')
+    # Ensure the user has installed Package Control properly
+    if __package__ != 'Package Control':
+        message = text.format(
+            '''
+            Package Control
 
-    package_path = os.path.join(sys_path.installed_packages_path, 'Package Control.sublime-package')
-    pc_python_path = os.path.join(sys_path.packages_path, 'Package Control', 'Package Control.py')
-    has_packed = os.path.exists(package_path)
-    has_unpacked = os.path.exists(pc_python_path)
+            This package appears to be installed incorrectly.
 
-elif st_version == 2:
-    from package_control import text, sys_path
+            It should be installed as "Package Control",
+            but seems to be installed as "%s".
 
-    installed_dir = os.path.basename(os.getcwd())
+            To fix the issue, please:
 
+            1. Open the "Preferences" menu
+            2. Select "Browse Packages\u2026"
+            ''',
+            __package__,
+            strip=False
+        )
+        # If installed unpacked
+        if os.path.exists(os.path.join(sys_path.packages_path, __package__)):
+            message += text.format(
+                '''
+                3. Rename the folder "%s" to "Package Control"
+                4. Restart Sublime Text
+                ''',
+                __package__
+            )
+        # If installed as a .sublime-package file
+        else:
+            message += text.format(
+                '''
+                3. Browse up a folder
+                4. Browse into the "Installed Packages/" folder
+                5. Rename "%s.sublime-package" to "Package Control.sublime-package"
+                6. Restart Sublime Text
+                ''',
+                __package__
+            )
+        raise ImportError(message)
 
-# Ensure the user has installed Package Control properly
-if installed_dir != 'Package Control':
-    message = text.format(
-        u'''
-        Package Control
+    has_packed = os.path.exists(os.path.join(
+        sys_path.installed_packages_path, 'Package Control.sublime-package'))
+    has_unpacked = os.path.exists(os.path.join(
+        sys_path.packages_path, 'Package Control', 'Package Control.py'))
+    if has_packed and has_unpacked:
+        message = text.format(
+            '''
+            Package Control
 
-        This package appears to be installed incorrectly.
+            It appears you have Package Control installed as both a
+            .sublime-package file and a directory inside of the Packages folder.
 
-        It should be installed as "Package Control", but seems to be installed
-        as "%s".
+            To fix this issue, please:
 
-        To fix the issue, please:
-
-        1. Open the "Preferences" menu
-        2. Select "Browse Packages\u2026"
-        ''',
-        installed_dir,
-        strip=False
-    )
-
-    # If installed unpacked
-    if os.path.exists(os.path.join(sys_path.packages_path, installed_dir)):
-        message += text.format(
-            u'''
-            3. Rename the folder "%s" to "Package Control"
+            1. Open the "Preferences" menu
+            2. Select "Browse Packages\u2026"
+            3. Delete the folder "Package Control"
             4. Restart Sublime Text
-            ''',
-            installed_dir
+            '''
         )
-    # If installed as a .sublime-package file
-    else:
-        message += text.format(
-            u'''
-            3. Browse up a folder
-            4. Browse into the "Installed Packages/" folder
-            5. Rename "%s.sublime-package" to "Package Control.sublime-package"
-            6. Restart Sublime Text
-            ''',
-            installed_dir
-        )
-    sublime.error_message(message)
+        raise ImportError(message)
 
-elif st_version == 3 and has_packed and has_unpacked:
-    message = text.format(
-        u'''
-        Package Control
-
-        It appears you have Package Control installed as both a
-        .sublime-package file and a directory inside of the Packages folder.
-
-        To fix this issue, please:
-
-        1. Open the "Preferences" menu
-        2. Select "Browse Packages\u2026"
-        3. Delete the folder "Package Control"
-        4. Restart Sublime Text
-        '''
-    )
-    sublime.error_message(message)
-
-# Normal execution will finish setting up the package
-else:
-    if st_version == 3:
-        from .package_control.commands import *  # noqa
-        from .package_control.package_cleanup import PackageCleanup
-        from .package_control.unicode import tempfile_unicode_patch
-        from .package_control.console_write import console_write
-        from .package_control.settings import pc_settings_filename
-
-    else:
-        from package_control.commands import *  # noqa
-        from package_control.package_cleanup import PackageCleanup
-        from package_control.unicode import tempfile_unicode_patch
-        from package_control.console_write import console_write
-        from package_control.settings import pc_settings_filename
+    # Normal execution will finish setting up the package
+    from .package_control.commands import *  # noqa
+    from .package_control.package_cleanup import PackageCleanup
+    from .package_control.settings import pc_settings_filename
 
     def plugin_loaded():
         # Make sure the user's locale can handle non-ASCII. A whole bunch of
@@ -106,10 +94,10 @@ else:
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
         try:
-            os.path.exists(os.path.join(sublime.packages_path(), u"fran\u00e7ais"))
-        except (UnicodeEncodeError):
+            os.path.exists(os.path.join(sublime.packages_path(), "fran\u00e7ais"))
+        except UnicodeEncodeError:
             message = text.format(
-                u'''
+                '''
                 Package Control
 
                 Your system's locale is set to a value that can not handle
@@ -127,21 +115,16 @@ else:
             sublime.error_message(message)
             return
 
-        # This handles fixing unicode issues with tempdirs on ST2 for Windows
-        tempfile_unicode_patch()
-
         pc_settings = sublime.load_settings(pc_settings_filename())
-
         if not pc_settings.get('bootstrapped'):
-            console_write(
-                u'''
-                Not running package cleanup since bootstrapping is not yet complete
-                '''
-            )
-        else:
-            # Start shortly after Sublime starts so package renames don't cause errors
-            # with keybindings, settings, etc disappearing in the middle of parsing
-            sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
+            print("Not running package cleanup since bootstrapping is not yet complete.")
+            return
 
-    if st_version == 2:
-        plugin_loaded()
+        # Start shortly after Sublime starts so package renames don't cause errors
+        # with keybindings, settings, etc disappearing in the middle of parsing
+        sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
+
+# Display the import errors generated during the import run of this module.
+# The error box is delayed because ST2 wouldn't start otherwise.
+except ImportError as error:
+    sublime.set_timeout(lambda: sublime.error_message(str(error)), 2000)
