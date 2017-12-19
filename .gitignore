@@ -1,4 +1,13 @@
+# some linter cache directories
+.mypy_cache/
+.ropeproject/
+
+# python cache
+__pycache__/
 *.pyc
+*.pyo
+
+# Sublime Text files
 *.sublime-project
 *.thTheme.cache
 *.sublime-workspace

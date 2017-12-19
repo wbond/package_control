@@ -1,0 +1,8 @@
+## git
+.github/ export-ignore
+.git export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+
+## linter settings
+tox.ini export-ignore
