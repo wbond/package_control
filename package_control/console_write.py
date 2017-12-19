@@ -1,12 +1,3 @@
-import sys
-
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
-
 from . import text
 
 
@@ -30,14 +21,8 @@ def console_write(string, params=None, strip=True, indent=None, prefix=True):
     :param prefix:
         If the string "Package Control: " should be prefixed to the string
     """
-
-    string = text.format(str_cls(string), params, strip=strip, indent=indent)
-
-    if sys.version_info < (3,):
-        if isinstance(string, str_cls):
-            string = string.encode('UTF-8')
-
+    string = text.format(string, params, strip=strip, indent=indent)
     if prefix:
-        sys.stdout.write('Package Control: ')
-
-    print(string)
+        print('Package Control:', string)
+    else:
+        print(string)

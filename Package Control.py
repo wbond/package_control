@@ -83,6 +83,7 @@ try:
 
     # Normal execution will finish setting up the package
     from .package_control.commands import *  # noqa
+    from .package_control.console_write import console_write
     from .package_control.package_cleanup import PackageCleanup
     from .package_control.settings import pc_settings_filename
 
@@ -117,7 +118,7 @@ try:
 
         pc_settings = sublime.load_settings(pc_settings_filename())
         if not pc_settings.get('bootstrapped'):
-            print("Not running package cleanup since bootstrapping is not yet complete.")
+            console_write('Not running package cleanup since bootstrapping is not yet complete.')
             return
 
         # Start shortly after Sublime starts so package renames don't cause errors
