@@ -8,8 +8,7 @@ _channel_repository_cache = {}
 
 
 def clear_cache():
-    global _channel_repository_cache
-    _channel_repository_cache = {}
+    _channel_repository_cache.clear()
 
 
 def get_cache(key, default=None):
@@ -50,7 +49,7 @@ def merge_cache_over_settings(destination, setting, key_prefix):
     """
 
     existing = destination.settings.get(setting, {})
-    value = get_cache(key_prefix + '.' + setting, {})
+    value = get_cache(key_prefix + '.' + setting)
     if value:
         existing.update(value)
         destination.settings[setting] = existing
@@ -75,14 +74,13 @@ def merge_cache_under_settings(destination, setting, key_prefix, list_=False):
         If a list should be used instead of a dict
     """
 
-    default = {} if not list_ else []
-    existing = destination.settings.get(setting)
-    value = get_cache(key_prefix + '.' + setting, default)
+    value = get_cache(key_prefix + '.' + setting)
     if value:
+        existing = destination.settings.get(setting)
         if existing:
             if list_:
                 # Prevent duplicate values
-                base = dict(zip(value, [None]*len(value)))
+                base = dict(zip(value, [None] * len(value)))
                 for val in existing:
                     if val in base:
                         continue
@@ -162,12 +160,12 @@ def set_cache_under_settings(destination, setting, key_prefix, value, ttl, list_
         The cache ttl to use
     """
 
-    default = {} if not list_ else []
-    existing = destination.settings.get(setting, default)
     if value:
         if list_:
+            existing = destination.settings.get(setting, [])
             value.extend(existing)
         else:
+            existing = destination.settings.get(setting, {})
             value.update(existing)
         set_cache(key_prefix + '.' + setting, value, ttl)
         destination.settings[setting] = value
