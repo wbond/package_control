@@ -1,17 +1,10 @@
 import re
 
-try:
-    # Python 3
-    from urllib.parse import urlencode, quote
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urllib import urlencode, quote
-    str_cls = unicode  # noqa
+from urllib.parse import quote, urlencode
 
+from ..downloaders.downloader_exception import DownloaderException
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
-from ..downloaders.downloader_exception import DownloaderException
 
 
 class GitHubClient(JSONApiClient):
@@ -28,7 +21,7 @@ class GitHubClient(JSONApiClient):
             The tags URL if repo was a GitHub repo, otherwise False
         """
 
-        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo)
+        match = re.match(r'https?://github.com/([^/]+/[^/]+)/?$', repo)
         if not match:
             return False
 
@@ -49,7 +42,7 @@ class GitHubClient(JSONApiClient):
             The branch URL if repo was a GitHub repo, otherwise False
         """
 
-        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo)
+        match = re.match(r'https?://github.com/([^/]+/[^/]+)/?$', repo)
         if not match:
             return False
 
@@ -82,7 +75,7 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
+        tags_match = re.match(r'https?://github.com/([^/]+/[^/]+)/tags/?$', url)
 
         version = None
         url_pattern = 'https://codeload.github.com/%s/zip/%s'
@@ -123,13 +116,13 @@ class GitHubClient(JSONApiClient):
 
         for release in output:
             query_string = urlencode({'sha': release['commit'], 'per_page': 1})
-            commit_url = self._make_api_url(user_repo, '/commits?%s' % query_string)
+            commit_url = self._make_api_url(user_repo, '/commits?' + query_string)
             commit_info = self.fetch_json(commit_url)
 
             timestamp = commit_info[0]['commit']['committer']['date'][0:19].replace('T', ' ')
 
             if 'version' not in release:
-                release['version'] = re.sub('[\-: ]', '.', timestamp)
+                release['version'] = re.sub(r'[\-: ]', '.', timestamp)
             release['date'] = timestamp
 
             del release['commit']
@@ -203,7 +196,7 @@ class GitHubClient(JSONApiClient):
               `donate` - URL of a donate page
         """
 
-        user_match = re.match('https?://github.com/([^/]+)/?$', url)
+        user_match = re.match(r'https?://github.com/([^/]+)/?$', url)
         if user_match is None:
             return None
 
@@ -245,7 +238,7 @@ class GitHubClient(JSONApiClient):
               `donate` - URL of a donate page
         """
 
-        issues_url = u'https://github.com/%s/%s/issues' % (result['owner']['login'], result['name'])
+        issues_url = 'https://github.com/%s/%s/issues' % (result['owner']['login'], result['name'])
 
         return {
             'name': result['name'],
@@ -294,11 +287,11 @@ class GitHubClient(JSONApiClient):
         """
 
         query_string = urlencode({'ref': branch})
-        readme_url = self._make_api_url(user_repo, '/readme?%s' % query_string)
+        readme_url = self._make_api_url(user_repo, '/readme?' + query_string)
         try:
             return self.fetch_json(readme_url, prefer_cached)
-        except (DownloaderException) as e:
-            if str_cls(e).find('HTTP error 404') != -1:
+        except DownloaderException as e:
+            if 'HTTP error 404' in str(e):
                 return None
             raise
 
@@ -315,14 +308,9 @@ class GitHubClient(JSONApiClient):
             A tuple of (user/repo, branch name) or (None, None) if no match
         """
 
-        branch = 'master'
-        branch_match = re.match('https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', url)
-        if branch_match is not None:
-            branch = branch_match.group(1)
+        matches = re.match(r'https?://github.com/([^/]+/[^/]+)(?:/tree/([^/]+))?/?$', url)
+        if not matches:
+            return None, None
 
-        repo_match = re.match('https?://github.com/([^/]+/[^/]+)($|/.*$)', url)
-        if repo_match is None:
-            return (None, None)
-
-        user_repo = repo_match.group(1)
-        return (user_repo, branch)
+        user_repo, branch = matches.groups()
+        return user_repo, branch or 'master'

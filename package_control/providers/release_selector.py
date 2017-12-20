@@ -66,11 +66,11 @@ def is_compatible_version(version_range):
     if version_range == '*':
         return True
 
-    gt_match = re.match('>(\d+)$', version_range)
-    ge_match = re.match('>=(\d+)$', version_range)
-    lt_match = re.match('<(\d+)$', version_range)
-    le_match = re.match('<=(\d+)$', version_range)
-    range_match = re.match('(\d+) - (\d+)$', version_range)
+    gt_match = re.match(r'>(\d+)$', version_range)
+    ge_match = re.match(r'>=(\d+)$', version_range)
+    lt_match = re.match(r'<(\d+)$', version_range)
+    le_match = re.match(r'<=(\d+)$', version_range)
+    range_match = re.match(r'(\d+) - (\d+)$', version_range)
 
     if gt_match:
         min_version = int(gt_match.group(1)) + 1

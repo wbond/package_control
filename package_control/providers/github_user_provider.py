@@ -1,8 +1,8 @@
 import re
 
+from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..downloaders.downloader_exception import DownloaderException
-from ..clients.client_exception import ClientException
 from .provider_exception import ProviderException
 
 
@@ -38,9 +38,11 @@ class GitHubUserProvider():
 
     @classmethod
     def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
+        """
+        Indicates if this provider can handle the provided repo
+        """
 
-        return re.search('^https?://github.com/[^/]+/?$', repo) is not None
+        return re.search(r'^https?://github.com/[^/]+/?$', repo) is not None
 
     def prefetch(self):
         """
@@ -78,7 +80,9 @@ class GitHubUserProvider():
         return {}.items()
 
     def get_dependencies(self, ):
-        "For API-compatibility with RepositoryProvider"
+        """
+        For API-compatibility with RepositoryProvider
+        """
 
         return {}.items()
 
@@ -187,6 +191,8 @@ class GitHubUserProvider():
         return [self.repo]
 
     def get_renamed_packages(self):
-        """For API-compatibility with RepositoryProvider"""
+        """
+        For API-compatibility with RepositoryProvider
+        """
 
         return {}

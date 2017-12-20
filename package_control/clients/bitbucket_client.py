@@ -1,16 +1,13 @@
 import re
 
+from urllib.parse import quote
+
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
 
-try:
-    from urllib import quote
-except (ImportError):
-    from urllib.parse import quote
-
 
 # A predefined list of readme filenames to look for
-_readme_filenames = [
+_README_FILENAMES = (
     'readme',
     'readme.txt',
     'readme.md',
@@ -20,7 +17,7 @@ _readme_filenames = [
     'readme.textile',
     'readme.creole',
     'readme.rst'
-]
+)
 
 
 class BitBucketClient(JSONApiClient):
@@ -37,7 +34,7 @@ class BitBucketClient(JSONApiClient):
             The tags URL if repo was a BitBucket repo, otherwise False
         """
 
-        match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
+        match = re.match(r'https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
         if not match:
             return False
 
@@ -58,7 +55,7 @@ class BitBucketClient(JSONApiClient):
             The branch URL if repo was a BitBucket repo, otherwise False
         """
 
-        match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
+        match = re.match(r'https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
         if not match:
             return False
 
@@ -91,7 +88,7 @@ class BitBucketClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
+        tags_match = re.match(r'https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
 
         version = None
         url_pattern = 'https://bitbucket.org/%s/get/%s.zip'
@@ -136,7 +133,7 @@ class BitBucketClient(JSONApiClient):
             timestamp = commit_info['utctimestamp'][0:19]
 
             if 'version' not in release:
-                release['version'] = re.sub('[\-: ]', '.', timestamp)
+                release['version'] = re.sub(r'[\-: ]', '.', timestamp)
             release['date'] = timestamp
 
             del release['commit']
@@ -175,7 +172,7 @@ class BitBucketClient(JSONApiClient):
 
         info = self.fetch_json(api_url)
 
-        issues_url = u'https://bitbucket.org/%s/issues' % user_repo
+        issues_url = 'https://bitbucket.org/%s/issues' % user_repo
 
         return {
             'name': info['name'],
@@ -248,7 +245,7 @@ class BitBucketClient(JSONApiClient):
         root_dir_info = self.fetch_json(listing_url, prefer_cached)
 
         for entry in root_dir_info['files']:
-            if entry['path'].lower() in _readme_filenames:
+            if entry['path'].lower() in _README_FILENAMES:
                 return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
 
         return None
@@ -270,18 +267,9 @@ class BitBucketClient(JSONApiClient):
             A tuple of (user/repo, branch name) or (None, None) if not matching
         """
 
-        repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
-        branch_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/src/([^/]+)/?$', url)
+        matches = re.match(r'https?://bitbucket.org/([^/]+/[^/]+)(?:/src/([^/]+))?/?$', url)
+        if not matches:
+            return None, None
 
-        if repo_match:
-            user_repo = repo_match.group(1)
-            branch = self._main_branch_name(user_repo)
-
-        elif branch_match:
-            user_repo = branch_match.group(1)
-            branch = branch_match.group(2)
-
-        else:
-            return (None, None)
-
-        return (user_repo, branch)
+        user_repo, branch = matches.groups()
+        return user_repo, branch or self._main_branch_name(user_repo)

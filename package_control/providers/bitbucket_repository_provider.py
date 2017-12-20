@@ -1,8 +1,8 @@
 import re
 
 from ..clients.bitbucket_client import BitBucketClient
-from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
+from ..downloaders.downloader_exception import DownloaderException
 from .provider_exception import ProviderException
 
 
@@ -39,9 +39,11 @@ class BitBucketRepositoryProvider():
 
     @classmethod
     def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
+        """
+        Indicates if this provider can handle the provided repo
+        """
 
-        return re.search('^https?://bitbucket.org/([^/]+/[^/]+)/?$', repo) is not None
+        return re.search(r'^https?://bitbucket.org/[^/]+/[^/]+/?$', repo) is not None
 
     def prefetch(self):
         """
@@ -79,7 +81,9 @@ class BitBucketRepositoryProvider():
         return {}.items()
 
     def get_dependencies(self, ):
-        "For API-compatibility with RepositoryProvider"
+        """
+        For API-compatibility with RepositoryProvider
+        """
 
         return {}.items()
 
@@ -179,6 +183,8 @@ class BitBucketRepositoryProvider():
         return [self.repo]
 
     def get_renamed_packages(self):
-        """For API-compatibility with RepositoryProvider"""
+        """
+        For API-compatibility with RepositoryProvider
+        """
 
         return {}

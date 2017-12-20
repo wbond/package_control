@@ -1,15 +1,9 @@
 import json
 
-try:
-    # Python 3
-    from urllib.parse import urlencode, urlparse
-except (ImportError):
-    # Python 2
-    from urllib import urlencode
-    from urlparse import urlparse
+from urllib.parse import urlencode, urlparse
 
-from .client_exception import ClientException
 from ..download_manager import downloader
+from .client_exception import ClientException
 
 
 class JSONApiClient():
@@ -34,9 +28,7 @@ class JSONApiClient():
         extra_params = self.settings.get('query_string_params')
         domain_name = urlparse(url).netloc
         if extra_params and domain_name in extra_params:
-            params = urlencode(extra_params[domain_name])
-            joiner = '?%s' if url.find('?') == -1 else '&%s'
-            url += joiner % params
+            url += ('&' if '?' in url else '?') + urlencode(extra_params[domain_name])
 
         with downloader(url, self.settings) as manager:
             content = manager.fetch(url, 'Error downloading repository.', prefer_cached)
@@ -59,6 +51,5 @@ class JSONApiClient():
 
         try:
             return json.loads(repository_json.decode('utf-8'))
-        except (ValueError):
-            error_string = u'Error parsing JSON from URL %s.' % url
-            raise ClientException(error_string)
+        except ValueError:
+            raise ClientException('Error parsing JSON from URL %s.' % url)

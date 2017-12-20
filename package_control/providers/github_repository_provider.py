@@ -1,8 +1,8 @@
 import re
 
+from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..downloaders.downloader_exception import DownloaderException
-from ..clients.client_exception import ClientException
 from .provider_exception import ProviderException
 
 
@@ -36,17 +36,17 @@ class GitHubRepositoryProvider():
     def __init__(self, repo, settings):
         self.cache = {}
         # Clean off the trailing .git to be more forgiving
-        self.repo = re.sub('\.git$', '', repo)
+        self.repo = re.sub(r'\.git$', '', repo)
         self.settings = settings
         self.failed_sources = {}
 
     @classmethod
     def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
+        """
+        Indicates if this provider can handle the provided repo
+        """
 
-        master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo)
-        branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$', repo)
-        return master is not None or branch is not None
+        return re.search(r'^https?://github.com/[^/]+/[^/]+(?:/tree/[^/]+)?/?$', repo) is not None
 
     def prefetch(self):
         """
@@ -84,7 +84,9 @@ class GitHubRepositoryProvider():
         return {}.items()
 
     def get_dependencies(self, ):
-        "For API-compatibility with RepositoryProvider"
+        """
+        For API-compatibility with RepositoryProvider
+        """
 
         return {}.items()
 
@@ -184,6 +186,8 @@ class GitHubRepositoryProvider():
         return [self.repo]
 
     def get_renamed_packages(self):
-        """For API-compatibility with RepositoryProvider"""
+        """
+        For API-compatibility with RepositoryProvider
+        """
 
         return {}
