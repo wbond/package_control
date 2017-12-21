@@ -129,7 +129,7 @@ class AutomaticUpgrader(threading.Thread):
             total_missing_dependencies = len(self.missing_dependencies)
             dependency_s = 'ies' if total_missing_dependencies != 1 else 'y'
             console_write(
-                u'''
+                '''
                 Installing %s missing dependenc%s
                 ''',
                 (total_missing_dependencies, dependency_s)
@@ -139,14 +139,14 @@ class AutomaticUpgrader(threading.Thread):
 
             for dependency in self.missing_dependencies:
                 if self.installer.manager.install_package(dependency, is_dependency=True):
-                    console_write(u'Installed missing dependency %s', dependency)
+                    console_write('Installed missing dependency %s', dependency)
                     dependencies_installed += 1
 
             if dependencies_installed:
                 def notify_restart():
                     dependency_was = 'ies were' if dependencies_installed != 1 else 'y was'
                     show_error(
-                        u'''
+                        '''
                         %s missing dependenc%s just installed. Sublime Text
                         should be restarted, otherwise one or more of the
                         installed packages may not function properly.
@@ -164,7 +164,7 @@ class AutomaticUpgrader(threading.Thread):
         if total_missing_packages > 0:
             package_s = 's' if total_missing_packages != 1 else ''
             console_write(
-                u'''
+                '''
                 Installing %s missing package%s
                 ''',
                 (total_missing_packages, package_s)
@@ -210,7 +210,7 @@ class AutomaticUpgrader(threading.Thread):
                     sublime.set_timeout(on_complete, 700)
 
                 console_write(
-                    u'''
+                    '''
                     Installed missing package %s
                     ''',
                     package
@@ -227,7 +227,7 @@ class AutomaticUpgrader(threading.Thread):
         next_run = datetime.datetime.fromtimestamp(self.next_run)
         date_format = '%Y-%m-%d %H:%M:%S'
         console_write(
-            u'''
+            '''
             Skipping automatic upgrade, last run at %s, next run at %s or after
             ''',
             (last_run.strftime(date_format), next_run.strftime(date_format))
@@ -271,14 +271,14 @@ class AutomaticUpgrader(threading.Thread):
 
         if not package_list:
             console_write(
-                u'''
+                '''
                 No updated packages
                 '''
             )
             return
 
         console_write(
-            u'''
+            '''
             Installing %s upgrades
             ''',
             len(package_list)
@@ -309,7 +309,7 @@ class AutomaticUpgrader(threading.Thread):
 
                 version = self.installer.manager.get_version(package_name)
                 console_write(
-                    u'''
+                    '''
                     Upgraded %s to %s
                     ''',
                     (package_name, version)
