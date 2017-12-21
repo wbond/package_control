@@ -1,26 +1,19 @@
-import zipfile
-import os
 import hashlib
 import json
-from os import path
-try:
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
-    from cStringIO import StringIO as BytesIO
-    package_control_dir = os.getcwd()
-except (ImportError) as e:
-    from urllib.parse import urlparse
-    str_cls = str
-    from io import BytesIO
-    package_control_dir = path.dirname(path.dirname(__file__))
+import os
+import zipfile
+
+from io import BytesIO
+from urllib.parse import urlparse
 
 import sublime
 
+from . import loader
+from . import sys_path
 from .clear_directory import clear_directory
+from .console_write import console_write
 from .download_manager import downloader
 from .downloaders.exceptions import DownloaderException
-from .console_write import console_write
-from . import loader, sys_path
 from .semver import SemVer
 from .settings import pc_settings_filename
 
@@ -62,27 +55,27 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         A callback to be run in the main Sublime thread, so it can use the API
     """
 
-    package_filename = path.basename(urlparse(url).path)
-    package_basename, _ = path.splitext(package_filename)
+    package_filename = os.path.basename(urlparse(url).path)
+    package_basename, _ = os.path.splitext(package_filename)
 
-    package_dir = path.join(sys_path.packages_path, package_basename)
+    package_dir = os.path.join(sys_path.packages_path, package_basename)
 
     version = SemVer(version)
 
     # The package has already been installed. Don't reinstall unless we have
     # a newer version.
-    if path.exists(package_dir) and loader.exists(package_basename):
+    if os.path.exists(package_dir) and loader.exists(package_basename):
         try:
-            dep_metadata_path = path.join(package_dir, 'dependency-metadata.json')
+            dep_metadata_path = os.path.join(package_dir, 'dependency-metadata.json')
             with open(dep_metadata_path, 'r', encoding='utf-8') as f:
                 metadata = json.loads(f.read())
             old_version = SemVer(metadata['version'])
             if version <= old_version:
-                sublime.set_timeout(mark_bootstrapped, 10)
+                mark_bootstrapped()
                 return
 
             console_write(
-                u'''
+                '''
                 Upgrading bootstrapped dependency %s to %s from %s
                 ''',
                 (package_basename, version, old_version)
@@ -95,14 +88,14 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     with downloader(url, settings) as manager:
         try:
             console_write(
-                u'''
+                '''
                 Downloading bootstrapped dependency %s
                 ''',
                 package_basename
             )
             data = manager.fetch(url, 'Error downloading bootstrapped dependency %s.' % package_basename)
             console_write(
-                u'''
+                '''
                 Successfully downloaded bootstraped dependency %s
                 ''',
                 package_basename
@@ -116,7 +109,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     data_hash = hashlib.sha256(data).hexdigest()
     if data_hash != hash_:
         console_write(
-            u'''
+            '''
             Error validating bootstrapped dependency %s (got %s instead of %s)
             ''',
             (package_basename, data_hash, hash_)
@@ -127,14 +120,14 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         data_zip = zipfile.ZipFile(data_io, 'r')
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             Error unzipping bootstrapped dependency %s
             ''',
             package_filename
         )
         return
 
-    if not path.exists(package_dir):
+    if not os.path.exists(package_dir):
         os.makedirs(package_dir, 0o755)
     else:
         clear_directory(package_dir)
@@ -143,7 +136,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     for zip_path in data_zip.namelist():
         dest = zip_path
 
-        if not isinstance(dest, str_cls):
+        if not isinstance(dest, str):
             dest = dest.decode('utf-8', 'strict')
 
         dest = dest.replace('\\', '/')
@@ -156,17 +149,17 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         # conflict and there will be errors when Sublime Text tries to
         # initialize plugins. By using loader.code, developers can git clone a
         # dependency into their Packages folder without issue.
-        if dest in set([u'loader.py', u'loader.code']):
+        if dest in set(('loader.py', 'loader.code')):
             code = data_zip.read(zip_path).decode('utf-8')
-            if dest == u'loader.py':
+            if dest == 'loader.py':
                 continue
 
-        dest = path.join(package_dir, dest)
+        dest = os.path.join(package_dir, dest)
 
         if dest[-1] == '/':
             os.makedirs(dest, 0o755, True)
         else:
-            dest_dir = path.dirname(dest)
+            dest_dir = os.path.dirname(dest)
             os.makedirs(dest_dir, 0o755, True)
 
             with open(dest, 'wb') as f:
@@ -177,12 +170,12 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     loader.add_or_update(priority, package_basename, code)
 
     console_write(
-        u'''
+        '''
         Successfully installed bootstrapped dependency %s
         ''',
         package_basename
     )
 
-    sublime.set_timeout(mark_bootstrapped, 10)
+    mark_bootstrapped()
     if on_complete:
         sublime.set_timeout(on_complete, 100)
