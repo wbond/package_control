@@ -26,17 +26,10 @@ def read_package_file(package, relative_path, binary=False):
     if relative_path is None:
         return False
 
-    package_dir = _get_package_dir(package)
-
-    if os.path.exists(package_dir) and _regular_file_exists(package, relative_path):
+    try:
         return _read_regular_file(package, relative_path, binary)
-
-    if int(sublime.version()) >= 3000:
-        result = _read_zip_file(package, relative_path, binary)
-        if result is not False:
-            return result
-
-    return False
+    except FileNotFoundError:
+        return _read_zip_file(package, relative_path, binary)
 
 
 def package_file_exists(package, relative_path):
@@ -57,28 +50,11 @@ def package_file_exists(package, relative_path):
     if relative_path is None:
         return False
 
-    package_dir = _get_package_dir(package)
-
-    if os.path.exists(package_dir):
-        result = _regular_file_exists(package, relative_path)
-        if result:
-            return result
-
-    if int(sublime.version()) >= 3000:
-        return _zip_file_exists(package, relative_path)
-
-    return False
-
-
-def _get_package_dir(package):
-    """:return: The full filesystem path to the package directory"""
-
-    return os.path.join(sublime.packages_path(), package)
+    return _regular_file_exists(package, relative_path) or _zip_file_exists(package, relative_path)
 
 
 def _read_regular_file(package, relative_path, binary=False):
-    package_dir = _get_package_dir(package)
-    file_path = os.path.join(package_dir, relative_path)
+    file_path = os.path.join(sublime.packages_path(), package, relative_path)
 
     mode, encoding = ('rb', None) if binary else ('r', 'utf-8')
     with open(file_path, mode=mode, encoding=encoding) as f:
@@ -88,17 +64,16 @@ def _read_regular_file(package, relative_path, binary=False):
 def _read_zip_file(package, relative_path, binary=False):
     zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
 
-    if not os.path.exists(zip_path):
-        return False
-
     try:
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
+    except (FileNotFoundError):
+        return False
+
     except (zipfile.BadZipfile):
         console_write(
-            u'''
-            An error occurred while trying to unzip the sublime-package file
-            for %s.
+            '''
+            An error occurred while trying to unzip the sublime-package file for %s.
             ''',
             package
         )
@@ -115,27 +90,27 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to the
-            package file being corrupt
+            package file being corrupt.
             ''',
             package
         )
 
     except (IOError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
-            invalid filename
+            invalid filename.
             ''',
             package
         )
 
     except (UnicodeDecodeError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
-            invalid filename or character encoding issue
+            invalid filename or character encoding issue.
             ''',
             package
         )
@@ -144,25 +119,23 @@ def _read_zip_file(package, relative_path, binary=False):
 
 
 def _regular_file_exists(package, relative_path):
-    package_dir = _get_package_dir(package)
-    file_path = os.path.join(package_dir, relative_path)
+    file_path = os.path.join(sublime.packages_path(), package, relative_path)
     return os.path.exists(file_path)
 
 
 def _zip_file_exists(package, relative_path):
     zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
 
-    if not os.path.exists(zip_path):
-        return False
-
     try:
         package_zip = zipfile.ZipFile(zip_path, 'r')
 
+    except (FileNotFoundError):
+        return False
+
     except (zipfile.BadZipfile):
         console_write(
-            u'''
-            An error occurred while trying to unzip the sublime-package file
-            for %s.
+            '''
+            An error occurred while trying to unzip the sublime-package file for %s.
             ''',
             package
         )
