@@ -3,6 +3,8 @@ import socket
 import sys
 
 from contextlib import contextmanager
+from http.client import HTTP_PORT
+from http.client import HTTPS_PORT
 from threading import Lock
 from threading import Timer
 from urllib.parse import urlparse
@@ -284,7 +286,7 @@ class DownloadManager(object):
 
         if debug:
             try:
-                port = 443 if is_ssl else 80
+                port = HTTPS_PORT if is_ssl else HTTP_PORT
                 ipv6_info = socket.getaddrinfo(hostname, port, socket.AF_INET6)
                 if ipv6_info:
                     ipv6 = ipv6_info[0][4][0]

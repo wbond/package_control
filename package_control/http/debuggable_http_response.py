@@ -1,11 +1,5 @@
-try:
-    # Python 3
-    from http.client import HTTPResponse, IncompleteRead
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from httplib import HTTPResponse, IncompleteRead
-    str_cls = unicode  # noqa
+from http.client import HTTPResponse
+from http.client import IncompleteRead
 
 from ..console_write import console_write
 
@@ -29,26 +23,19 @@ class DebuggableHTTPResponse(HTTPResponse):
     def begin(self):
         return_value = HTTPResponse.begin(self)
         if self.debuglevel == -1:
-            # Python 2
-            if hasattr(self.msg, 'headers'):
-                headers = [line.rstrip() for line in self.msg.headers]
-            # Python 3
-            else:
-                headers = []
-                for header in self.msg:
-                    headers.append("%s: %s" % (header, self.msg[header]))
+            headers = ["%s: %s" % (header, self.msg[header]) for header in self.msg]
 
             versions = {
-                9: u'HTTP/0.9',
-                10: u'HTTP/1.0',
-                11: u'HTTP/1.1'
+                9: 'HTTP/0.9',
+                10: 'HTTP/1.0',
+                11: 'HTTP/1.1'
             }
-            status_line = u'%s %s %s' % (versions[self.version], str_cls(self.status), self.reason)
+            status_line = '%s %s %s' % (versions[self.version], self.status, self.reason)
             headers.insert(0, status_line)
 
-            indented_headers = u'\n  '.join(headers)
+            indented_headers = '\n  '.join(headers)
             console_write(
-                u'''
+                '''
                 Urllib %s Debug Read
                   %s
                 ''',
@@ -58,15 +45,7 @@ class DebuggableHTTPResponse(HTTPResponse):
         return return_value
 
     def is_keep_alive(self):
-        # Python 2
-        if hasattr(self.msg, 'headers'):
-            connection = self.msg.getheader('connection')
-        # Python 3
-        else:
-            connection = self.msg['connection']
-        if connection and connection.lower() == 'keep-alive':
-            return True
-        return False
+        return self.msg.get('connection', '').lower() == 'keep-alive'
 
     def read(self, *args):
         try:

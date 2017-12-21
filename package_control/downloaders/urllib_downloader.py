@@ -11,16 +11,12 @@ from urllib.request import ProxyDigestAuthHandler
 from urllib.request import ProxyHandler
 from urllib.request import Request
 
-try:
-    from urllib.request import HTTPSHandler
-except:
-    HTTPSHandler = None
-
 from .. import text
 from ..ca_certs import get_ca_bundle_path
 from ..console_write import console_write
-from ..http.debuggable_http_handler import DebuggableHTTPHandler
-from ..http.validating_https_handler import ValidatingHTTPSHandler
+from ..http import HAVE_SSL_SUPPORT
+from ..http import DebuggableHTTPHandler
+from ..http import ValidatingHTTPSHandler
 from .caching_downloader import CachingDownloader
 from .decoding_downloader import DecodingDownloader
 from .exceptions import DownloaderException
@@ -228,7 +224,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             return None
 
         for handler in self.opener.handlers:
-            if isinstance(handler, ValidatingHTTPSHandler) or isinstance(handler, DebuggableHTTPHandler):
+            if isinstance(handler, (ValidatingHTTPSHandler, DebuggableHTTPHandler)):
                 return handler
 
     def setup_opener(self, url, timeout):
@@ -309,4 +305,4 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
         :return:
             If the object supports HTTPS requests
         """
-        return 'ssl' in sys.modules and HTTPSHandler is not None
+        return HAVE_SSL_SUPPORT

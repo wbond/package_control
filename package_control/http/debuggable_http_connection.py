@@ -1,11 +1,6 @@
 import socket
 
-try:
-    # Python 3
-    from http.client import HTTPConnection
-except (ImportError):
-    # Python 2
-    from httplib import HTTPConnection
+from http.client import HTTPConnection
 
 from ..console_write import console_write
 from .debuggable_http_response import DebuggableHTTPResponse
@@ -22,12 +17,7 @@ class DebuggableHTTPConnection(HTTPConnection):
 
     def __init__(self, host, port=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, **kwargs):
         self.passwd = kwargs.get('passwd')
-
-        # Python 2.6.1 on OS X 10.6 does not include these
-        self._tunnel_host = None
-        self._tunnel_port = None
-        self._tunnel_headers = {}
-        if 'debug' in kwargs and kwargs['debug']:
+        if kwargs.get('debug'):
             self.debuglevel = 5
         elif 'debuglevel' in kwargs:
             self.debuglevel = kwargs['debuglevel']
@@ -37,7 +27,7 @@ class DebuggableHTTPConnection(HTTPConnection):
     def connect(self):
         if self.debuglevel == -1:
             console_write(
-                u'''
+                '''
                 Urllib %s Debug General
                   Connecting to %s on port %s
                 ''',
@@ -45,7 +35,7 @@ class DebuggableHTTPConnection(HTTPConnection):
             )
         HTTPConnection.connect(self)
 
-    def send(self, string):
+    def send(self, data):
         # We have to use a positive debuglevel to get it passed to the
         # HTTPResponse object, however we don't want to use it because by
         # default debugging prints to the stdout and we can't capture it, so
@@ -54,13 +44,14 @@ class DebuggableHTTPConnection(HTTPConnection):
         if self.debuglevel == 5:
             reset_debug = 5
             self.debuglevel = -1
-        HTTPConnection.send(self, string)
+        HTTPConnection.send(self, data)
         if reset_debug or self.debuglevel == -1:
-            if len(string.strip()) > 0:
-                unicode_string = string.strip().decode('iso-8859-1')
-                indented_headers = u'\n  '.join(unicode_string.splitlines())
+            data = data.strip()
+            if data:
+                string = data.decode('iso-8859-1')
+                indented_headers = '\n  '.join(string.splitlines())
                 console_write(
-                    u'''
+                    '''
                     Urllib %s Debug Write
                       %s
                     ''',
