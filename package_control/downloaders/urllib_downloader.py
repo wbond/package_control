@@ -16,15 +16,15 @@ try:
 except:
     HTTPSHandler = None
 
-from ..console_write import console_write
-from ..http.validating_https_handler import ValidatingHTTPSHandler
-from ..http.debuggable_http_handler import DebuggableHTTPHandler
-from .downloader_exception import DownloaderException
-from ..ca_certs import get_ca_bundle_path
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
-from .caching_downloader import CachingDownloader
 from .. import text
+from ..ca_certs import get_ca_bundle_path
+from ..console_write import console_write
+from ..http.debuggable_http_handler import DebuggableHTTPHandler
+from ..http.validating_https_handler import ValidatingHTTPSHandler
+from .caching_downloader import CachingDownloader
+from .decoding_downloader import DecodingDownloader
+from .downloader_exception import DownloaderException
+from .limiting_downloader import LimitingDownloader
 
 
 class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):

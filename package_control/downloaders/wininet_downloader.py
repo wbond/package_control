@@ -1,23 +1,23 @@
 import ctypes
-import re
 import datetime
-import struct
 # To prevent import errors in thread with datetime
 import locale  # noqa
+import re
+import struct
 
 from ctypes import windll
 from ctypes import wintypes
 from urllib.parse import urlparse
 
-from ..console_write import console_write
 from .. import text
-from .non_http_error import NonHttpError
-from .http_error import HttpError
-from .downloader_exception import DownloaderException
-from .win_downloader_exception import WinDownloaderException
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
+from ..console_write import console_write
 from .caching_downloader import CachingDownloader
+from .decoding_downloader import DecodingDownloader
+from .downloader_exception import DownloaderException
+from .http_error import HttpError
+from .limiting_downloader import LimitingDownloader
+from .non_http_error import NonHttpError
+from .win_downloader_exception import WinDownloaderException
 
 wininet = windll.wininet
 

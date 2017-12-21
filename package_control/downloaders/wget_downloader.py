@@ -1,16 +1,16 @@
-import tempfile
-import re
 import os
+import re
+import tempfile
 
-from ..console_write import console_write
-from .cli_downloader import CliDownloader
-from .non_http_error import NonHttpError
-from .non_clean_exit_error import NonCleanExitError
-from .downloader_exception import DownloaderException
 from ..ca_certs import get_ca_bundle_path
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
+from ..console_write import console_write
 from .caching_downloader import CachingDownloader
+from .cli_downloader import CliDownloader
+from .decoding_downloader import DecodingDownloader
+from .downloader_exception import DownloaderException
+from .limiting_downloader import LimitingDownloader
+from .non_clean_exit_error import NonCleanExitError
+from .non_http_error import NonHttpError
 
 
 class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader):

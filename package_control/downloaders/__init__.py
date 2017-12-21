@@ -1,7 +1,7 @@
 import os
 
-from .urllib_downloader import UrlLibDownloader
 from .curl_downloader import CurlDownloader
+from .urllib_downloader import UrlLibDownloader
 from .wget_downloader import WgetDownloader
 
 DOWNLOADERS = {
