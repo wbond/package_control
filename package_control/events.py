@@ -35,10 +35,8 @@ def add(type, package, version):
     :param version:
         The version of the package the event is for
     """
-
-    _lock.acquire()
-    _tracker[type][package] = version
-    _lock.release()
+    with _lock:
+        _tracker[type][package] = version
 
 
 def clear(type, package, future=False):
@@ -59,9 +57,8 @@ def clear(type, package, future=False):
     """
 
     def do_clear():
-        _lock.acquire()
-        del _tracker[type][package]
-        _lock.release()
+        with _lock:
+            del _tracker[type][package]
     if future:
         sublime.set_timeout(do_clear, 5000)
     else:
