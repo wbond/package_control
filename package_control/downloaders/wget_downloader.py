@@ -2,13 +2,6 @@ import tempfile
 import re
 import os
 
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
-
 from ..console_write import console_write
 from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
@@ -82,7 +75,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [
             self.wget,
-            '--connect-timeout=' + str_cls(int(timeout)),
+            '--connect-timeout=' + str(int(timeout)),
             '-o',
             self.tmp_file,
             '-O',
@@ -106,10 +99,9 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         for name, value in request_headers.items():
             command.extend(['--header', "%s: %s" % (name, value)])
 
-        secure_url_match = re.match('^https://([^/]+)', url)
-        if secure_url_match is not None:
+        if url.startswith('https://'):
             bundle_path = get_ca_bundle_path(self.settings)
-            command.append(u'--ca-certificate=' + bundle_path)
+            command.append('--ca-certificate=' + bundle_path)
 
         if self.debug:
             command.append('-d')
@@ -122,13 +114,13 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         proxy_password = self.settings.get('proxy_password')
 
         if proxy_username:
-            command.append(u"--proxy-user=%s" % proxy_username)
+            command.append("--proxy-user=%s" % proxy_username)
         if proxy_password:
-            command.append(u"--proxy-password=%s" % proxy_password)
+            command.append("--proxy-password=%s" % proxy_password)
 
         if self.debug:
             console_write(
-                u'''
+                '''
                 Wget Debug Proxy
                   http_proxy: %s
                   https_proxy: %s
@@ -172,7 +164,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                         # GitHub and BitBucket seem to rate limit via 503
                         if tries and self.debug:
                             console_write(
-                                u'''
+                                '''
                                 Downloading %s was rate limited, trying again
                                 ''',
                                 url
@@ -186,17 +178,17 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     download_error = str(e)
 
                     # GitHub and BitBucket seem to time out a lot
-                    if download_error.find('timed out') != -1:
+                    if 'timed out' in download_error:
                         if tries and self.debug:
                             console_write(
-                                u'''
+                                '''
                                 Downloading %s timed out, trying again
                                 ''',
                                 url
                             )
                         continue
 
-                error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
+                error_string = '%s %s downloading %s.' % (error_message, download_error, url)
 
             break
 
@@ -269,12 +261,12 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     continue
 
                 if section != last_section:
-                    console_write(u'Wget HTTP Debug %s', section)
+                    console_write('Wget HTTP Debug %s', section)
 
                 if section == 'Read':
                     header_lines.append(line)
 
-                console_write(u'  %s', line, prefix=False)
+                console_write('  %s', line, prefix=False)
                 last_section = section
 
         else:
@@ -283,8 +275,8 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     continue
 
                 # Check the resolving and connecting to lines for errors
-                if re.match('(Resolving |Connecting to )', line):
-                    failed_match = re.search(' failed: (.*)$', line)
+                if re.match(r'(?:Resolving|Connecting to) ', line):
+                    failed_match = re.search(r' failed: (.*)$', line)
                     if failed_match:
                         error = failed_match.group(1).strip()
 
@@ -315,18 +307,18 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         """
 
         # Skip date lines
-        if re.match('--\d{4}-\d{2}-\d{2}', line):
+        if re.match(r'--\d{4}-\d{2}-\d{2}', line):
             return True
-        if re.match('\d{4}-\d{2}-\d{2}', line):
+        if re.match(r'\d{4}-\d{2}-\d{2}', line):
             return True
         # Skip HTTP status code lines since we already have that info
-        if re.match('\d{3} ', line):
+        if re.match(r'\d{3} ', line):
             return True
         # Skip Saving to and progress lines
-        if re.match('(Saving to:|\s*\d+K)', line):
+        if re.match(r'(?:Saving to:|\s*\d+K)', line):
             return True
         # Skip notice about ignoring body on HTTP error
-        if re.match('Skipping \d+ byte', line):
+        if re.match(r'Skipping \d+ byte', line):
             return True
 
     def parse_headers(self, output):
@@ -347,7 +339,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         general = {
             'version': '0.9',
-            'status':  200,
+            'status': 200,
             'message': 'OK'
         }
         headers = {}
@@ -356,8 +348,8 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             # additionally, valid headers won't have spaces, so this is always
             # a safe operation to perform
             line = line.lstrip()
-            if line.find('HTTP/') == 0:
-                match = re.match('HTTP/(\d\.\d)\s+(\d+)(?:\s+(.*))?$', line)
+            if line.startswith('HTTP/'):
+                match = re.match(r'HTTP/(\d\.\d)\s+(\d+)(?:\s+(.*))?$', line)
                 general['version'] = match.group(1)
                 general['status'] = int(match.group(2))
                 general['message'] = match.group(3) or ''

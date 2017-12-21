@@ -2,13 +2,6 @@ import tempfile
 import re
 import os
 
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
-
 from ..console_write import console_write
 from .cli_downloader import CliDownloader
 from .non_clean_exit_error import NonCleanExitError
@@ -81,7 +74,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         command = [
             self.curl,
             '--connect-timeout',
-            str_cls(int(timeout)),
+            str(int(timeout)),
             '-sSL',
             '--tlsv1',
             # We have to capture the headers to check for rate limit info
@@ -103,8 +96,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         for name, value in request_headers.items():
             command.extend(['--header', "%s: %s" % (name, value)])
 
-        secure_url_match = re.match('^https://([^/]+)', url)
-        if secure_url_match is not None:
+        if url.startswith('https://'):
             bundle_path = get_ca_bundle_path(self.settings)
             command.extend(['--cacert', bundle_path])
 
@@ -119,7 +111,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         if debug:
             console_write(
-                u'''
+                '''
                 Curl Debug Proxy
                   http_proxy: %s
                   https_proxy: %s
@@ -133,7 +125,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             command.append('--proxy-anyauth')
 
         if proxy_username or proxy_password:
-            command.extend(['-U', u"%s:%s" % (proxy_username, proxy_password)])
+            command.extend(['-U', "%s:%s" % (proxy_username, proxy_password)])
 
         if http_proxy:
             os.putenv('http_proxy', http_proxy)
@@ -157,8 +149,8 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 headers = {}
                 for header in headers_str.splitlines():
                     if header[0:5] == 'HTTP/':
-                        message = re.sub('^HTTP/\d(?:\.\d)?\s+\d+\s*', '', header)
-                        status = int(re.sub('^HTTP/\d(?:\.\d)?\s+(\d+)(\s+.*)?$', '\\1', header))
+                        message = re.sub(r'^HTTP/\d(?:\.\d)?\s+\d+\s*', '', header)
+                        status = int(re.sub(r'^HTTP/\d(?:\.\d)?\s+(\d+)(\s+.*)?$', '\\1', header))
                         continue
                     if header.strip() == '':
                         continue
@@ -199,35 +191,35 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 download_error = e.stderr.rstrip()
 
                 if e.returncode == 22:
-                    code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
+                    code = re.sub(r'^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
                     if code == '503' and tries != 0:
                         # GitHub and BitBucket seem to rate limit via 503
                         if tries and debug:
                             console_write(
-                                u'''
+                                '''
                                 Downloading %s was rate limited, trying again
                                 ''',
                                 url
                             )
                         continue
 
-                    download_error = u'HTTP error ' + code
+                    download_error = 'HTTP error ' + code
 
                 elif e.returncode == 7:
                     # If the user could not connect, check for ipv6 errors and
                     # if so, force curl to use ipv4. Apparently some users have
                     # network configuration where curl will try ipv6 and resolve
                     # it, but their ISP won't actually route it.
-                    full_debug = u"\n".join([section['contents'] for section in debug_sections])
+                    full_debug = "\n".join([section['contents'] for section in debug_sections])
                     ipv6_error = re.search(
-                        '^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable',
+                        r'^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable',
                         full_debug,
                         re.I | re.M
                     )
                     if ipv6_error and tries != 0:
                         if debug:
                             console_write(
-                                u'''
+                                '''
                                 Downloading %s failed because the ipv6 address
                                 %s was not reachable, retrying using ipv4
                                 ''',
@@ -237,20 +229,20 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                         continue
 
                 elif e.returncode == 6:
-                    download_error = u'URL error host not found'
+                    download_error = 'URL error host not found'
 
                 elif e.returncode == 28:
                     # GitHub and BitBucket seem to time out a lot
                     if tries and debug:
                         console_write(
-                            u'''
+                            '''
                             Downloading %s timed out, trying again
                             ''',
                             url
                         )
                     continue
 
-                error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
+                error_string = '%s %s downloading %s.' % (error_message, download_error, url)
 
             break
 
@@ -265,14 +257,12 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         """
 
         for section in sections:
-            type = section['type']
-            indented_contents = section['contents'].replace(u"\n", u"\n  ")
             console_write(
-                u'''
+                '''
                 Curl HTTP Debug %s
                   %s
                 ''',
-                (type, indented_contents)
+                (section['type'], section['contents'].replace("\n", "\n  "))
             )
 
     def supports_ssl(self):
@@ -301,53 +291,56 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         section = 'General'
         last_section = None
 
-        stderr = u''
+        stderr = ''
         debug_sections = []
-        debug_section = u''
+        debug_section = ''
 
         for line in string.splitlines():
             # Placeholder for body of request
-            if line and line[0:2] == u'{ ':
+            if line and line[0:2] == '{ ':
                 continue
-            if line and line[0:18] == u'} [data not shown]':
+            if line and line[0:18] == '} [data not shown]':
                 continue
 
             if len(line) > 1:
                 subtract = 0
-                if line[0:2] == u'* ':
-                    section = u'General'
+                if line[0:2] == '* ':
+                    section = 'General'
                     subtract = 2
-                elif line[0:2] == u'> ':
-                    section = u'Write'
+                elif line[0:2] == '> ':
+                    section = 'Write'
                     subtract = 2
-                elif line[0:2] == u'< ':
-                    section = u'Read'
+                elif line[0:2] == '< ':
+                    section = 'Read'
                     subtract = 2
                 line = line[subtract:]
 
                 # If the line does not start with "* ", "< ", "> " or "  "
                 # then it is a real stderr message
-                if subtract == 0 and line[0:2] != u'  ':
-                    stderr += line.rstrip() + u' '
+                if subtract == 0 and line[0:2] != '  ':
+                    stderr += line.rstrip() + ' '
                     continue
 
             if line.strip() == '':
                 continue
 
-            if section != last_section and len(debug_section.rstrip()) > 0:
-                debug_sections.append({
-                    'type': section,
-                    'contents': debug_section.rstrip()
-                })
-                debug_section = u''
+            if section != last_section:
+                debug_section = debug_section.rstrip()
+                if debug_section:
+                    debug_sections.append({
+                        'type': section,
+                        'contents': debug_section
+                    })
+                    debug_section = ''
 
-            debug_section += u"%s\n" % line
+            debug_section += line + "\n"
             last_section = section
 
-        if len(debug_section.rstrip()) > 0:
+        debug_section = debug_section.rstrip()
+        if debug_section:
             debug_sections.append({
                 'type': section,
-                'contents': debug_section.rstrip()
+                'contents': debug_section
             })
 
-        return (stderr.rstrip(), debug_sections)
+        return stderr.rstrip(), debug_sections

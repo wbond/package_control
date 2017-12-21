@@ -1,42 +1,20 @@
-import re
 import sys
 
-# Monkey patches various Python 2 issues with urllib2
-from .. import http  # noqa
+from http.client import BadStatusLine
+from http.client import HTTPException
+from urllib.error import HTTPError
+from urllib.error import URLError
+from urllib.request import build_opener
+from urllib.request import HTTPPasswordMgrWithDefaultRealm
+from urllib.request import ProxyBasicAuthHandler
+from urllib.request import ProxyDigestAuthHandler
+from urllib.request import ProxyHandler
+from urllib.request import Request
 
 try:
-    # Python 3
-    from http.client import HTTPException, BadStatusLine
-    from urllib.request import (
-        build_opener,
-        HTTPPasswordMgrWithDefaultRealm,
-        ProxyBasicAuthHandler,
-        ProxyDigestAuthHandler,
-        ProxyHandler,
-        Request,
-    )
-    from urllib.error import HTTPError, URLError
-    import urllib.request as urllib_compat
-except (ImportError):
-    # Python 2
-    from httplib import HTTPException, BadStatusLine
-    from urllib2 import (
-        build_opener,
-        HTTPPasswordMgrWithDefaultRealm,
-        ProxyBasicAuthHandler,
-        ProxyDigestAuthHandler,
-        ProxyHandler,
-        Request,
-    )
-    from urllib2 import HTTPError, URLError
-    import urllib2 as urllib_compat
-
-try:
-    # Python 3.3
-    import ConnectionError
-except (ImportError):
-    # Python 2.6-3.2
-    from socket import error as ConnectionError
+    from urllib.request import HTTPSHandler
+except:
+    HTTPSHandler = None
 
 from ..console_write import console_write
 from ..http.validating_https_handler import ValidatingHTTPSHandler
@@ -160,7 +138,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
 
                 exception_type = e.__class__.__name__
                 error_string = text.format(
-                    u'''
+                    '''
                     %s HTTP exception %s (%s) downloading %s.
                     ''',
                     (error_message, exception_type, str(e), url)
@@ -182,7 +160,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 if str(e.code) == '503' and tries != 0:
                     if tries and debug:
                         console_write(
-                            u'''
+                            '''
                             Downloading %s was rate limited, trying again
                             ''',
                             url
@@ -190,7 +168,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     continue
 
                 error_string = text.format(
-                    u'''
+                    '''
                     %s HTTP error %s downloading %s.
                     ''',
                     (error_message, str(e.code), url)
@@ -203,7 +181,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                         or str(e.reason) == 'timed out':
                     if tries and debug:
                         console_write(
-                            u'''
+                            '''
                             Downloading %s timed out, trying again
                             ''',
                             url
@@ -211,7 +189,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     continue
 
                 error_string = text.format(
-                    u'''
+                    '''
                     %s URL error %s downloading %s.
                     ''',
                     (error_message, str(e.reason), url)
@@ -222,7 +200,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 # thus getting new handlers and a new connection
                 if debug:
                     console_write(
-                        u'''
+                        '''
                         Connection went away while trying to download %s, trying again
                         ''',
                         url
@@ -236,8 +214,8 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             break
 
         if error_string is None:
-            plural = u's' if tried > 1 else u''
-            error_string = u'Unable to download %s after %d attempt%s' % (url, tried, plural)
+            plural = 's' if tried > 1 else ''
+            error_string = 'Unable to download %s after %d attempt%s' % (url, tried, plural)
 
         raise DownloaderException(error_string)
 
@@ -301,7 +279,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
 
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Urllib Debug Proxy
                       http_proxy: %s
                       https_proxy: %s
@@ -311,8 +289,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     (http_proxy, https_proxy, proxy_username, proxy_password)
                 )
 
-            secure_url_match = re.match('^https://([^/]+)', url)
-            if secure_url_match is not None:
+            if url.startswith('https://'):
                 bundle_path = get_ca_bundle_path(self.settings)
                 bundle_path = bundle_path.encode(sys.getfilesystemencoding())
                 handlers.append(ValidatingHTTPSHandler(
@@ -332,4 +309,4 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
         :return:
             If the object supports HTTPS requests
         """
-        return 'ssl' in sys.modules and hasattr(urllib_compat, 'HTTPSHandler')
+        return 'ssl' in sys.modules and HTTPSHandler is not None

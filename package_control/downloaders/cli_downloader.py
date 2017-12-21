@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 from ..console_write import console_write
@@ -19,9 +20,10 @@ class CliDownloader(object):
 
     def __init__(self, settings):
         self.settings = settings
+        self.stderr = b''
 
     def clean_tmp_file(self):
-        if os.path.exists(self.tmp_file):
+        if self.tmp_file and os.path.exists(self.tmp_file):
             os.remove(self.tmp_file)
 
     def find_binary(self, name):
@@ -38,18 +40,16 @@ class CliDownloader(object):
             BinaryNotFoundError when the executable can not be found
         """
 
-        dirs = os.environ['PATH'].split(os.pathsep)
+        dirs = os.environ['PATH']
         if os.name != 'nt':
             # This is mostly for OS X, which seems to launch ST with a
             # minimal set of environmental variables
-            dirs.append('/usr/local/bin')
+            dirs += os.pathsep + '/usr/local/bin'
 
-        for dir_ in dirs:
-            path = os.path.join(dir_, name)
-            if os.path.exists(path):
-                return path
-
-        raise BinaryNotFoundError('The binary %s could not be located' % name)
+        path = shutil.which(name, path=dirs)
+        if not path:
+            raise BinaryNotFoundError('The binary %s could not be located' % name)
+        return path
 
     def execute(self, args):
         """
@@ -67,19 +67,28 @@ class CliDownloader(object):
 
         if self.settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Trying to execute command %s
                 ''',
                 create_cmd(args)
             )
 
-        proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-        output = proc.stdout.read()
-        self.stderr = proc.stderr.read()
-        returncode = proc.wait()
-        if returncode != 0:
-            error = NonCleanExitError(returncode)
+        proc = subprocess.Popen(
+            args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            startupinfo=startupinfo
+        )
+
+        output, self.stderr = proc.communicate()
+        if proc.returncode != 0:
+            error = NonCleanExitError(proc.returncode)
             error.stderr = self.stderr
             error.stdout = output
             raise error

@@ -4,13 +4,6 @@ import hashlib
 
 from ..console_write import console_write
 
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
-
 
 class CachingDownloader(object):
 
@@ -89,7 +82,7 @@ class CachingDownloader(object):
         if not cache:
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Skipping cache since there is no cache object
                     '''
                 )
@@ -98,7 +91,7 @@ class CachingDownloader(object):
         if method.lower() != 'get':
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Skipping cache since the HTTP method != GET
                     '''
                 )
@@ -110,7 +103,7 @@ class CachingDownloader(object):
         if status not in (200, 304):
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Skipping cache since the HTTP status code not one of: 200, 304
                     '''
                 )
@@ -123,7 +116,7 @@ class CachingDownloader(object):
             if cached_content:
                 if debug:
                     console_write(
-                        u'''
+                        '''
                         Using cached content for %s from %s
                         ''',
                         (url, cache.path(key))
@@ -148,7 +141,7 @@ class CachingDownloader(object):
         if headers.get('content-type') in ('application/zip', 'application/octet-stream'):
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Skipping cache since the response is a zip file
                     '''
                 )
@@ -166,7 +159,7 @@ class CachingDownloader(object):
         info_key = self.generate_key(url, '.info')
         if debug:
             console_write(
-                u'''
+                '''
                 Caching %s in %s
                 ''',
                 (url, cache.path(key))
@@ -191,7 +184,7 @@ class CachingDownloader(object):
             A string key for the URL
         """
 
-        if isinstance(url, str_cls):
+        if isinstance(url, str):
             url = url.encode('utf-8')
 
         key = hashlib.md5(url).hexdigest()
@@ -214,7 +207,7 @@ class CachingDownloader(object):
         if not cache:
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Skipping cache since there is no cache object
                     '''
                 )
@@ -225,7 +218,7 @@ class CachingDownloader(object):
         cached_content = cache.get(key)
         if cached_content and debug:
             console_write(
-                u'''
+                '''
                 Using cached content for %s from %s
                 ''',
                 (url, cache.path(key))

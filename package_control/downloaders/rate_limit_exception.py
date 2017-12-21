@@ -10,5 +10,5 @@ class RateLimitException(DownloaderException):
     def __init__(self, domain, limit):
         self.domain = domain
         self.limit = limit
-        message = u'Rate limit of %s exceeded for %s' % (limit, domain)
+        message = 'Rate limit of %s exceeded for %s' % (limit, domain)
         super(RateLimitException, self).__init__(message)

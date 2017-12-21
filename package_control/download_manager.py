@@ -4,14 +4,7 @@ from threading import Lock, Timer
 from contextlib import contextmanager
 import sys
 
-try:
-    # Python 3
-    from urllib.parse import urlparse
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
+from urllib.parse import urlparse
 
 from . import __version__
 
@@ -65,7 +58,7 @@ def _grab(url, settings):
 
         parsed = urlparse(url)
         if not parsed or not parsed.hostname:
-            raise DownloaderException(u'The URL "%s" is malformed' % url)
+            raise DownloaderException('The URL "%s" is malformed' % url)
         hostname = parsed.hostname.lower()
         if hostname not in _managers:
             _managers[hostname] = []
@@ -148,16 +141,16 @@ def update_url(url, debug):
     original_url = url
     url = url.replace('://raw.github.com/', '://raw.githubusercontent.com/')
     url = url.replace('://nodeload.github.com/', '://codeload.github.com/')
-    url = re.sub('^(https://codeload.github.com/[^/]+/[^/]+/)zipball(/.*)$', '\\1zip\\2', url)
+    url = re.sub(r'^(https://codeload.github.com/[^/]+/[^/]+/)zipball(/.*)$', r'\1zip\2', url)
 
     # Fix URLs from old versions of Package Control since we are going to
     # remove all packages but Package Control from them to force upgrades
-    if url == 'https://sublime.wbond.net/repositories.json' or url == 'https://sublime.wbond.net/channel.json':
+    if url in ('https://sublime.wbond.net/repositories.json', 'https://sublime.wbond.net/channel.json'):
         url = 'https://packagecontrol.io/channel_v3.json'
 
     if debug and url != original_url:
         console_write(
-            u'''
+            '''
             Fixed URL from %s to %s
             ''',
             (original_url, url)
@@ -173,7 +166,7 @@ class DownloadManager(object):
         self.downloader = None
 
         user_agent = settings.get('user_agent')
-        if user_agent and user_agent.find('%s') != -1:
+        if user_agent and '%s' in user_agent:
             settings['user_agent'] = user_agent % __version__
 
         self.settings = settings
@@ -206,9 +199,10 @@ class DownloadManager(object):
             The string contents of the URL
         """
 
-        is_ssl = re.search('^https://', url) is not None
+        debug = self.settings.get('debug')
+        is_ssl = url.startswith('https://')
 
-        url = update_url(url, self.settings.get('debug'))
+        url = update_url(url, debug)
 
         # We don't use sublime.platform() here since this is used for
         # the crawler on packagecontrol.io also
@@ -229,9 +223,9 @@ class DownloadManager(object):
         )
         downloader_list = downloader_precedence.get(platform, [])
 
-        if not isinstance(downloader_list, list) or len(downloader_list) == 0:
+        if not downloader_list or not isinstance(downloader_list, list):
             error_string = text.format(
-                u'''
+                '''
                 No list of preferred downloaders specified in the
                 "downloader_precedence" setting for the platform "%s"
                 ''',
@@ -246,7 +240,7 @@ class DownloadManager(object):
 
                 if downloader_name not in DOWNLOADERS:
                     error_string = text.format(
-                        u'''
+                        '''
                         The downloader "%s" from the "downloader_precedence"
                         setting for the platform "%s" is invalid
                         ''',
@@ -257,16 +251,15 @@ class DownloadManager(object):
 
                 try:
                     downloader = DOWNLOADERS[downloader_name](self.settings)
-                    if is_ssl and not downloader.supports_ssl():
-                        continue
-                    self.downloader = downloader
-                    break
+                    if not is_ssl or downloader.supports_ssl():
+                        self.downloader = downloader
+                        break
                 except (BinaryNotFoundError):
                     pass
 
         if not self.downloader:
             error_string = text.format(
-                u'''
+                '''
                 None of the preferred downloaders can download %s.
 
                 This is usually either because the ssl module is unavailable
@@ -289,7 +282,7 @@ class DownloadManager(object):
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
 
-        if self.settings.get('debug'):
+        if debug:
             try:
                 port = 443 if is_ssl else 80
                 ipv6_info = socket.getaddrinfo(hostname, port, socket.AF_INET6)
@@ -310,26 +303,26 @@ class DownloadManager(object):
                 ip = None
 
             console_write(
-                u'''
+                '''
                 Download Debug
                   URL: %s
-                  Timeout: %s
+                  Timeout: %d
                   Resolved IP: %s
                 ''',
-                (url, str_cls(timeout), ip)
+                (url, timeout, ip)
             )
             if ipv6:
                 console_write(
-                    u'  Resolved IPv6: %s',
+                    '  Resolved IPv6: %s',
                     ipv6,
                     prefix=False
                 )
 
         if hostname in rate_limited_domains:
-            error_string = u'Skipping due to hitting rate limit for %s' % hostname
-            if self.settings.get('debug'):
+            error_string = 'Skipping due to hitting rate limit for %s' % hostname
+            if debug:
                 console_write(
-                    u'  %s',
+                    '  %s',
                     error_string,
                     prefix=False
                 )
@@ -344,7 +337,7 @@ class DownloadManager(object):
             set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
 
             console_write(
-                u'''
+                '''
                 Hit rate limit of %s for %s. Skipping all futher download
                 requests for this domain.
                 ''',
@@ -355,7 +348,7 @@ class DownloadManager(object):
         except (WinDownloaderException) as e:
 
             console_write(
-                u'''
+                '''
                 Attempting to use Urllib downloader due to WinINet error: %s
                 ''',
                 e
