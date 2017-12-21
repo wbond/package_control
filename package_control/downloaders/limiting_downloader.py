@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 
-from .rate_limit_exception import RateLimitException
+from .exceptions import RateLimitException
 
 
 class LimitingDownloader(object):

@@ -29,7 +29,7 @@ from .clear_directory import clear_directory, delete_directory
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
-from .downloaders.downloader_exception import DownloaderException
+from .downloaders.exceptions import DownloaderException
 from .providers.provider_exception import ProviderException
 from .clients.client_exception import ClientException
 from .download_manager import downloader

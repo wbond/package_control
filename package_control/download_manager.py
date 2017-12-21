@@ -13,11 +13,11 @@ from .cache import get_cache
 from .cache import set_cache
 from .console_write import console_write
 from .downloaders import DOWNLOADERS
-from .downloaders.urllib_downloader import UrlLibDownloader
-from .downloaders.binary_not_found_error import BinaryNotFoundError
-from .downloaders.rate_limit_exception import RateLimitException
-from .downloaders.downloader_exception import DownloaderException
-from .downloaders.win_downloader_exception import WinDownloaderException
+from .downloaders import UrlLibDownloader
+from .downloaders.exceptions import BinaryNotFoundError
+from .downloaders.exceptions import DownloaderException
+from .downloaders.exceptions import RateLimitException
+from .downloaders.exceptions import WinDownloaderException
 from .http_cache import HttpCache
 from .show_error import show_error
 

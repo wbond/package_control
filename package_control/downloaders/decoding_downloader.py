@@ -8,7 +8,7 @@ try:
 except ImportError:
     bz2 = None
 
-from .downloader_exception import DownloaderException
+from .exceptions import DownloaderException
 
 
 class DecodingDownloader(object):

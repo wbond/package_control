@@ -7,9 +7,9 @@ from ..console_write import console_write
 from .caching_downloader import CachingDownloader
 from .cli_downloader import CliDownloader
 from .decoding_downloader import DecodingDownloader
-from .downloader_exception import DownloaderException
+from .exceptions import DownloaderException
+from .exceptions import NonCleanExitError
 from .limiting_downloader import LimitingDownloader
-from .non_clean_exit_error import NonCleanExitError
 
 
 class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader):

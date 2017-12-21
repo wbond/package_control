@@ -2,7 +2,7 @@ import re
 
 from urllib.parse import quote, urlencode
 
-from ..downloaders.downloader_exception import DownloaderException
+from ..downloaders.exceptions import DownloaderException
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
 

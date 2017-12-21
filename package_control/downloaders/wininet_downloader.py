@@ -13,11 +13,11 @@ from .. import text
 from ..console_write import console_write
 from .caching_downloader import CachingDownloader
 from .decoding_downloader import DecodingDownloader
-from .downloader_exception import DownloaderException
-from .http_error import HttpError
+from .exceptions import DownloaderException
+from .exceptions import HttpError
+from .exceptions import NonHttpError
+from .exceptions import WinDownloaderException
 from .limiting_downloader import LimitingDownloader
-from .non_http_error import NonHttpError
-from .win_downloader_exception import WinDownloaderException
 
 wininet = windll.wininet
 

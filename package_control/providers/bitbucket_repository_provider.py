@@ -2,7 +2,7 @@ import re
 
 from ..clients.bitbucket_client import BitBucketClient
 from ..clients.client_exception import ClientException
-from ..downloaders.downloader_exception import DownloaderException
+from ..downloaders.exceptions import DownloaderException
 from .provider_exception import ProviderException
 
 

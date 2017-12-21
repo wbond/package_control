@@ -18,7 +18,7 @@ import sublime
 
 from .clear_directory import clear_directory
 from .download_manager import downloader
-from .downloaders.downloader_exception import DownloaderException
+from .downloaders.exceptions import DownloaderException
 from .console_write import console_write
 from . import loader, sys_path
 from .semver import SemVer

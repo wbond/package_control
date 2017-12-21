@@ -132,11 +132,7 @@ mods_load_order = [
 
     '.ca_certs',
 
-    '.downloaders.downloader_exception',
-    '.downloaders.rate_limit_exception',
-    '.downloaders.binary_not_found_error',
-    '.downloaders.non_clean_exit_error',
-    '.downloaders.non_http_error',
+    '.downloaders.exceptions',
     '.downloaders.caching_downloader',
     '.downloaders.decoding_downloader',
     '.downloaders.limiting_downloader',

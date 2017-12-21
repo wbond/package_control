@@ -11,7 +11,7 @@ from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..console_write import console_write
 from ..download_manager import downloader, update_url
-from ..downloaders.downloader_exception import DownloaderException
+from ..downloaders.exceptions import DownloaderException
 from ..versions import version_sort
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases

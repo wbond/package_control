@@ -23,7 +23,7 @@ from ..http.debuggable_http_handler import DebuggableHTTPHandler
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from .caching_downloader import CachingDownloader
 from .decoding_downloader import DecodingDownloader
-from .downloader_exception import DownloaderException
+from .exceptions import DownloaderException
 from .limiting_downloader import LimitingDownloader
 
 

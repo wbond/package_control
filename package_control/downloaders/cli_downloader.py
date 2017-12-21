@@ -4,8 +4,8 @@ import subprocess
 
 from ..cmd import create_cmd
 from ..console_write import console_write
-from .binary_not_found_error import BinaryNotFoundError
-from .non_clean_exit_error import NonCleanExitError
+from .exceptions import BinaryNotFoundError
+from .exceptions import NonCleanExitError
 
 
 class CliDownloader(object):

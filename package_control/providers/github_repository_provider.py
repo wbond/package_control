@@ -2,7 +2,7 @@ import re
 
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
-from ..downloaders.downloader_exception import DownloaderException
+from ..downloaders.exceptions import DownloaderException
 from .provider_exception import ProviderException
 
 
