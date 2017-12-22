@@ -331,12 +331,12 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         if re.match('Skipping \d+ byte', line):
             return True
 
-    def parse_headers(self, output=None):
+    def parse_headers(self, output):
         """
         Parses HTTP headers into two dict objects
 
         :param output:
-            An array of header lines, if None, loads from temp output file
+            An array of header lines
 
         :return:
             A tuple of (general, headers) where general is a dict with the keys:
@@ -346,11 +346,6 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             And headers is a dict with the keys being lower-case version of the
             HTTP header names.
         """
-
-        if not output:
-            with open_compat(self.tmp_file, 'r') as f:
-                output = read_compat(f).splitlines()
-            self.clean_tmp_file()
 
         general = {
             'version': '0.9',
