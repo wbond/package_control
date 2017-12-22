@@ -1,6 +1,6 @@
 import os
-import time
 import sys
+import time
 
 from .console_write import console_write
 from .deps.oscrypto import trust_list
@@ -55,7 +55,7 @@ def get_ca_bundle_path(settings):
                     merged.write('\n')
         if settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Regenerated the merged CA bundle from the system and user CA bundles
                 '''
             )
@@ -80,7 +80,7 @@ def get_user_ca_bundle_path(settings):
     if not os.path.exists(user_ca_bundle_path):
         if settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Created blank user CA bundle
                 '''
             )
@@ -101,14 +101,14 @@ def print_cert_subject(cert, reason):
 
     if reason is None:
         console_write(
-            u'''
+            '''
             Exported certificate: %s
             ''',
             cert.subject.human_friendly
         )
     else:
         console_write(
-            u'''
+            '''
             Skipped certificate: %s - reason %s
             ''',
             (cert.subject.human_friendly, reason)
@@ -158,14 +158,14 @@ def get_system_ca_bundle_path(settings):
         if not exists or is_empty or is_old:
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Generating new CA bundle from system keychain
                     '''
                 )
             trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback=print_cert_subject)
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Finished generating new CA bundle at %s (%d bytes)
                     ''',
                     (ca_path, os.stat(ca_path).st_size)
@@ -173,7 +173,7 @@ def get_system_ca_bundle_path(settings):
 
         elif debug:
             console_write(
-                u'''
+                '''
                 Found previously exported CA bundle at %s (%d bytes)
                 ''',
                 (ca_path, os.stat(ca_path).st_size)
@@ -201,7 +201,7 @@ def get_system_ca_bundle_path(settings):
 
         if debug and ca_path:
             console_write(
-                u'''
+                '''
                 Found system CA bundle at %s (%d bytes)
                 ''',
                 (ca_path, os.stat(ca_path).st_size)
