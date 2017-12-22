@@ -1,23 +1,16 @@
+import imp
 import os
 import sys
+import zipimport
+
 import sublime
 import sublime_plugin
 
-if sys.version_info >= (3,):
-    import importlib
-    import zipimport
-
-
 st_build = int(sublime.version())
 
-
-mod_prefix = 'package_control'
-
 # ST3 loads each package as a module, so it needs an extra prefix
-if sys.version_info >= (3,):
-    bare_mod_prefix = mod_prefix
-    mod_prefix = 'Package Control.' + mod_prefix
-    from imp import reload
+bare_mod_prefix = 'package_control'
+mod_prefix = 'Package Control.' + bare_mod_prefix
 
 # When reloading the package, we also need to reload the base "package_control"
 # module in ST3. This flag inidicates we should re-add the PC package path
@@ -25,8 +18,14 @@ if sys.version_info >= (3,):
 do_insert = False
 is_zipped = False
 
+if st_build > 3000:
+    # Always invalidate caches before reloading modules.
+    # Avoid ImportErrors if user runs the Package with ST2.
+    import importlib
+    importlib.invalidate_caches()
+
 commands_name = mod_prefix + '.commands'
-if commands_name in sys.modules and sys.version_info >= (3,) and st_build < 3112:
+if st_build < 3112 and commands_name in sys.modules:
     # Unfortunately with ST3, the ZipLoader does not "properly"
     # implement load_module(), instead loading the code from the zip
     # file when the object is instantiated. This means that calling
@@ -44,9 +43,7 @@ if commands_name in sys.modules and sys.version_info >= (3,) and st_build < 3112
             del zipimport._zip_directory_cache[pc_package_path]
         is_zipped = True
 
-    importlib.invalidate_caches()
     do_insert = True
-
 
 # Python allows reloading modules on the fly, which allows us to do live upgrades.
 # The only caveat to this is that you have to reload in the dependency order.
@@ -57,10 +54,13 @@ if commands_name in sys.modules and sys.version_info >= (3,) and st_build < 3112
 #
 # There are solutions for doing this all programatically, but this is much easier
 # to understand.
-reload_mods = []
-for mod in sys.modules:
-    if mod[0:15] in set(['package_control', 'Package Control']) and sys.modules[mod] is not None:
-        reload_mods.append(mod)
+#
+# Modules located in the package root path are reloaded by ST. The list therefore
+# only containhandles modules located in 'Package Control.package_control'.
+reload_mods = [
+    mod for mod in sys.modules
+    if mod.startswith(mod_prefix) and sys.modules[mod] is not None
+]
 
 mods_load_order = [
     '',
@@ -216,8 +216,7 @@ if do_insert:
         # of "bad local file header". To work around this, we construct
         # new zipimporter instances and attach them to the in-memory
         # modules using the .__loader__ attribute.
-        loaders = {}
-        loaders[''] = zipimport.zipimporter(pc_package_path)
+        loaders = {'': zipimport.zipimporter(pc_package_path)}
     else:
         sys.path.insert(0, pc_package_path)
 
@@ -225,11 +224,11 @@ for suffix in mods_load_order:
     mod = mod_prefix + suffix
     if mod in reload_mods:
         try:
-            reload(sys.modules[mod])
+            imp.reload(sys.modules[mod])
         except (ImportError):
             pass  # Upgrade issues from PC 2.0 -> 3.0
 
-    if sys.version_info >= (3,) and st_build < 3112:
+    if st_build < 3112:
         bare_mod = bare_mod_prefix + suffix
         if bare_mod in reload_mods:
             bare_module = sys.modules[bare_mod]
@@ -237,7 +236,7 @@ for suffix in mods_load_order:
                 # See the command above near "if is_zipped:" to understand why
                 # we are replacing the .__loader__ attribute of the modules with
                 # a fresh zipimporter object.
-                if bare_mod.find('.') == -1:
+                if '.' not in bare_mod:
                     loader_lookup = ''
                 else:
                     loader_lookup = os.sep.join(bare_mod.split('.')[0:-1])
@@ -245,7 +244,7 @@ for suffix in mods_load_order:
                         zi_path = os.path.join(pc_package_path, loader_lookup) + os.sep
                         loaders[loader_lookup] = zipimport.zipimporter(zi_path)
                 bare_module.__loader__ = loaders[loader_lookup]
-            reload(bare_module)
+            imp.reload(bare_module)
 
 if do_insert and not is_zipped:
     sys.path.remove(pc_package_path)
