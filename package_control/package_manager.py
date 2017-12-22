@@ -1355,13 +1355,11 @@ class PackageManager():
                             break
 
                 if path.endswith('/'):
-                    if not os.path.exists(dest):
-                        os.makedirs(dest)
+                    os.makedirs(dest, exist_ok=True)
                     add_extracted_dirs(dest)
                 else:
                     dest_dir = os.path.dirname(dest)
-                    if not os.path.exists(dest_dir):
-                        os.makedirs(dest_dir)
+                    os.makedirs(dest_dir, exist_ok=True)
                     add_extracted_dirs(dest_dir)
                     extracted_paths.append(dest)
                     try:
@@ -1683,8 +1681,7 @@ class PackageManager():
             backup_dir = os.path.join(os.path.dirname(
                 self.settings['packages_path']), 'Backup',
                 datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-            if not os.path.exists(backup_dir):
-                os.makedirs(backup_dir)
+            os.makedirs(backup_dir, exist_ok=True)
             package_backup_dir = os.path.join(backup_dir, package_name)
             if os.path.exists(package_backup_dir):
                 console_write(
