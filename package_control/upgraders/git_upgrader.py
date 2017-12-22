@@ -28,7 +28,7 @@ class GitUpgrader(VcsUpgrader):
 
         if not binary:
             show_error(
-                u'''
+                '''
                 Unable to find %s.
 
                 Please set the "git_binary" setting by accessing the
@@ -44,7 +44,7 @@ class GitUpgrader(VcsUpgrader):
 
         if os.name == 'nt':
             tortoise_plink = self.find_binary('TortoisePlink.exe')
-            if tortoise_plink and u'pageant.exe' in list_process_names():
+            if tortoise_plink and 'pageant.exe' in list_process_names():
                 os.environ.setdefault('GIT_SSH', tortoise_plink)
 
         return binary

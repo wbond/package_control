@@ -29,7 +29,7 @@ class HgUpgrader(VcsUpgrader):
 
         if not binary:
             show_error(
-                u'''
+                '''
                 Unable to find %s.
 
                 Please set the "hg_binary" setting by accessing the
