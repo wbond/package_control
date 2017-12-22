@@ -1,6 +1,7 @@
 import os
-import stat
 import shutil
+import stat
+
 from .console_write import console_write
 
 
@@ -21,7 +22,7 @@ def clean_old_files(directory):
                     os.remove(path)
                 except (OSError) as e:
                     console_write(
-                        u'''
+                        '''
                         Error removing old file "%s": %s
                         ''',
                         (path, str(e))
