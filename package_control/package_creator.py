@@ -2,9 +2,9 @@ import os
 
 import sublime
 
+from .package_manager import PackageManager
 from .show_error import show_error
 from .show_quick_panel import show_quick_panel
-from .package_manager import PackageManager
 
 
 class PackageCreator():
@@ -22,7 +22,7 @@ class PackageCreator():
         self.packages = self.manager.list_packages(unpacked_only=True)
         if not self.packages:
             show_error(
-                u'''
+                '''
                 There are no packages available to be packaged
                 '''
             )

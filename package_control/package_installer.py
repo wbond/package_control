@@ -4,9 +4,9 @@ import time
 
 import sublime
 
-from .thread_progress import ThreadProgress
-from .package_manager import PackageManager
 from .package_disabler import PackageDisabler
+from .package_manager import PackageManager
+from .thread_progress import ThreadProgress
 from .versions import version_comparable
 
 

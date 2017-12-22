@@ -1,46 +1,47 @@
-import sys
-import os
-import re
-import json
-import zipfile
-import shutil
-from fnmatch import fnmatch
+import compileall
 import datetime
-import tempfile
+import json
 # To prevent import errors in thread with datetime
 import locale  # noqa
+import os
+import re
+import shutil
+import tempfile
+import zipfile
 
-try:
-    # Python 3
-    from urllib.parse import urlencode, urlparse
-    import compileall
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urllib import urlencode
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
+from fnmatch import fnmatch
+from urllib.parse import urlencode, urlparse
 
 import sublime
 
-from .show_error import show_error
+from . import __version__
+from . import loader, text
+from .cache import clear_cache
+from .cache import get_cache
+from .cache import merge_cache_under_settings
+from .cache import set_cache
+from .cache import set_cache_under_settings
+from .clear_directory import clear_directory
+from .clear_directory import delete_directory
+from .clients.client_exception import ClientException
 from .console_write import console_write
-from .clear_directory import clear_directory, delete_directory
-from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
-from .versions import version_comparable, version_sort
+from .download_manager import downloader
 from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.exceptions import DownloaderException
+from .package_io import read_package_file
+from .providers import CHANNEL_PROVIDERS
+from .providers import REPOSITORY_PROVIDERS
 from .providers.provider_exception import ProviderException
-from .clients.client_exception import ClientException
-from .download_manager import downloader
-from .providers.release_selector import filter_releases, is_compatible_version
+from .providers.release_selector import filter_releases
+from .providers.release_selector import is_compatible_version
+from .settings import load_list_setting
+from .settings import pc_settings_filename
+from .settings import save_list_setting
+from .show_error import show_error
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
-from .package_io import read_package_file, package_file_exists
-from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
-from .settings import pc_settings_filename, load_list_setting, save_list_setting
-from . import loader, text
-from . import __version__
+from .versions import version_comparable
+from .versions import version_sort
 
 
 DEFAULT_CHANNEL = 'https://packagecontrol.io/channel_v3.json'
@@ -137,7 +138,7 @@ class PackageManager():
 
         if filtered_settings != previous_settings and previous_settings != {}:
             console_write(
-                u'''
+                '''
                 Settings change detected, clearing cache
                 '''
             )
@@ -415,7 +416,7 @@ class PackageManager():
         updated_channels = []
         found_default = False
         for channel in channels:
-            if re.match('https?://([^.]+\.)*package-control.io', channel):
+            if re.match(r'https?://([^.]+\.)*package-control.io', channel):
                 console_write('Removed malicious channel %s' % channel)
                 continue
             if channel in OLD_DEFAULT_CHANNELS:
@@ -533,7 +534,7 @@ class PackageManager():
 
         if self.settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Fetching list of available packages and dependencies
                   Platform: %s-%s
                   Sublime Text Version: %s
@@ -559,7 +560,7 @@ class PackageManager():
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
         for repo in repositories[::-1]:
-            if re.match('https?://([^.]+\.)*package-control.io', repo):
+            if re.match(r'https?://([^.]+\.)*package-control.io', repo):
                 console_write('Removed malicious repository %s' % repo)
                 continue
 
@@ -637,7 +638,13 @@ class PackageManager():
             dependencies.update(repository_dependencies)
 
             renamed_packages = provider.get_renamed_packages()
-            set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
+            set_cache_under_settings(
+                self,
+                'renamed_packages',
+                repo,
+                renamed_packages,
+                cache_ttl
+            )
 
             set_cache_under_settings(
                 self,
@@ -700,7 +707,7 @@ class PackageManager():
 
         packages = self._list_visible_dirs(self.settings['packages_path'])
 
-        if self.settings['version'] > 3000 and unpacked_only is False:
+        if not unpacked_only:
             packages |= self._list_sublime_package_files(self.settings['installed_packages_path'])
 
         packages -= set(self.list_default_packages())
@@ -713,11 +720,7 @@ class PackageManager():
         :return: A list of all installed dependency names
         """
 
-        output = []
-
-        # This is seeded since it is in a .sublime-package with ST3
-        if sys.version_info >= (3,):
-            output.append('0_package_control_loader')
+        output = ['0_package_control_loader']
 
         for name in self._list_visible_dirs(self.settings['packages_path']):
             if not self._is_dependency(name):
@@ -756,22 +759,9 @@ class PackageManager():
     def list_default_packages(self):
         """ :return: A list of all default package names"""
 
-        if self.settings['version'] > 3000:
-            app_dir = os.path.dirname(sublime.executable_path())
-            packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
-
-        else:
-            config_dir = os.path.dirname(self.settings['packages_path'])
-
-            pristine_dir = os.path.join(config_dir, 'Pristine Packages')
-            pristine_files = self._list_sublime_package_files(pristine_dir)
-
-            installed_dir = self.settings['installed_packages_path']
-            installed_files = self._list_sublime_package_files(installed_dir)
-
-            packages = pristine_files - installed_files
-
-        packages -= set(['User', 'Default'])
+        app_dir = os.path.dirname(sublime.executable_path())
+        packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
+        packages -= set(('User', 'Default'))
         return sorted(packages, key=lambda s: s.lower())
 
     def _list_visible_dirs(self, path):
@@ -903,7 +893,7 @@ class PackageManager():
 
         if not os.path.exists(package_dir):
             show_error(
-                u'''
+                '''
                 The folder for the package name specified, %s,
                 does not exists in %s
                 ''',
@@ -920,7 +910,7 @@ class PackageManager():
             package_file = zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED)
         except (OSError, IOError) as e:
             show_error(
-                u'''
+                '''
                 An error occurred creating the package file %s in %s.
 
                 %s
@@ -929,8 +919,7 @@ class PackageManager():
             )
             return False
 
-        if self.settings['version'] >= 3000:
-            compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
+        compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
 
         if profile:
             profile_settings = self.settings.get('package_profiles').get(profile)
@@ -1009,7 +998,7 @@ class PackageManager():
 
         if is_unavailable and not is_available:
             console_write(
-                u'''
+                '''
                 The %s "%s" is either not available on this platform or for
                 this version of Sublime Text
                 ''',
@@ -1022,7 +1011,7 @@ class PackageManager():
             return False
 
         if not is_available:
-            message = u"The %s '%s' is not available"
+            message = "The %s '%s' is not available"
             params = (package_type, package_name)
             if is_dependency:
                 console_write(message, params)
@@ -1043,7 +1032,7 @@ class PackageManager():
         url = release['url']
         package_filename = package_name + '.sublime-package'
 
-        tmp_dir = tempfile.mkdtemp(u'')
+        tmp_dir = tempfile.mkdtemp('')
 
         try:
             # This is refers to the zipfile later on, so we define it here so we can
@@ -1054,11 +1043,6 @@ class PackageManager():
 
             unpacked_package_dir = self.get_package_dir(package_name)
             package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
-            pristine_package_path = os.path.join(
-                os.path.dirname(self.settings['packages_path']),
-                'Pristine Packages',
-                package_filename
-            )
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
@@ -1066,7 +1050,7 @@ class PackageManager():
 
                 if to_ignore is True:
                     show_error(
-                        u'''
+                        '''
                         Skipping %s package %s since the setting
                         "ignore_vcs_packages" is set to true
                         ''',
@@ -1076,7 +1060,7 @@ class PackageManager():
 
                 if isinstance(to_ignore, list) and package_name in to_ignore:
                     show_error(
-                        u'''
+                        '''
                         Skipping %s package %s since it is listed in the
                         "ignore_vcs_packages" setting
                         ''',
@@ -1102,7 +1086,7 @@ class PackageManager():
             except (DownloaderException) as e:
                 console_write(e)
                 show_error(
-                    u'''
+                    '''
                     Unable to download %s. Please view the console for
                     more details.
                     ''',
@@ -1118,7 +1102,7 @@ class PackageManager():
                 package_zip = zipfile.ZipFile(tmp_package_path, 'r')
             except (zipfile.BadZipfile):
                 show_error(
-                    u'''
+                    '''
                     An error occurred while trying to unzip the package file
                     for %s. Please try installing the package again.
                     ''',
@@ -1130,18 +1114,6 @@ class PackageManager():
             root_level_paths = []
             last_path = None
             for path in package_zip.namelist():
-                try:
-                    if not isinstance(path, str_cls):
-                        path = path.decode('utf-8', 'strict')
-                except (UnicodeDecodeError):
-                    console_write(
-                        u'''
-                        One or more of the zip file entries in %s is not
-                        encoded using UTF-8, aborting
-                        ''',
-                        package_name
-                    )
-                    return False
 
                 last_path = path
 
@@ -1150,7 +1122,7 @@ class PackageManager():
                 # Make sure there are no paths that look like security vulnerabilities
                 if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
                     show_error(
-                        u'''
+                        '''
                         The package specified, %s, contains files outside of
                         the package dir and cannot be safely installed.
                         ''',
@@ -1161,7 +1133,7 @@ class PackageManager():
             if last_path and len(root_level_paths) == 0:
                 root_level_paths.append(last_path[0:last_path.find('/') + 1])
 
-            # If there is only a single directory at the top leve, the file
+            # If there is only a single directory at the top level, the file
             # is most likely a zip from BitBucket or GitHub and we need
             # to skip the top-level dir when extracting
             skip_root_dir = len(root_level_paths) == 1 and \
@@ -1173,26 +1145,18 @@ class PackageManager():
                 dependencies_path = root_level_paths[0] + dependencies_path
                 no_package_file_zip_path = root_level_paths[0] + no_package_file_zip_path
 
-            # If we should extract unpacked or as a .sublime-package file
-            unpack = True
-
-            # By default, ST3 prefers .sublime-package files since this allows
-            # overriding files in the Packages/{package_name}/ folder
-            if self.settings['version'] >= 3000:
-                unpack = False
-
-            # If the package maintainer doesn't want a .sublime-package
-            try:
-                package_zip.getinfo(no_package_file_zip_path)
-                unpack = True
-            except (KeyError):
-                pass
-
             # Dependencies are always unpacked. If it doesn't need to be
             # unpacked, it probably should just be part of a package instead
             # of being split out.
             if is_dependency:
                 unpack = True
+            else:
+                # If the package maintainer doesn't want a .sublime-package
+                try:
+                    package_zip.getinfo(no_package_file_zip_path)
+                    unpack = True
+                except (KeyError):
+                    unpack = False
 
             # If dependencies were not in the channel, try the package
             if not is_dependency and not have_installed_dependencies:
@@ -1202,7 +1166,7 @@ class PackageManager():
                         dep_info = json.loads(dep_info_json.decode('utf-8'))
                     except (ValueError):
                         console_write(
-                            u'''
+                            '''
                             An error occurred while trying to parse the
                             dependencies.json for %s.
                             ''',
@@ -1243,7 +1207,7 @@ class PackageManager():
                     clear_directory(unpacked_package_dir, [reinstall_file, unpacked_metadata_file])
 
                     show_error(
-                        u'''
+                        '''
                         An error occurred while trying to upgrade %s. Please
                         restart Sublime Text to finish the upgrade.
                         ''',
@@ -1282,24 +1246,11 @@ class PackageManager():
             for path in package_zip.namelist():
                 dest = path
 
-                try:
-                    if not isinstance(dest, str_cls):
-                        dest = dest.decode('utf-8', 'strict')
-                except (UnicodeDecodeError):
-                    console_write(
-                        u'''
-                        One or more of the zip file entries in %s is not
-                        encoded using UTF-8, aborting
-                        ''',
-                        package_name
-                    )
-                    return False
-
                 if os.name == 'nt':
-                    regex = ':|\*|\?|"|<|>|\|'
+                    regex = r':|\*|\?|"|<|>|\|'
                     if re.search(regex, dest) is not None:
                         console_write(
-                            u'''
+                            '''
                             Skipping file from package named %s due to an
                             invalid filename
                             ''',
@@ -1353,11 +1304,11 @@ class PackageManager():
                             f.write(package_zip.read(path))
                     except (IOError) as e:
                         message = str(e)
-                        if re.search('[Ee]rrno 13', message):
+                        if re.search(r'[Ee]rrno 13', message):
                             overwrite_failed = True
                             break
                         console_write(
-                            u'''
+                            '''
                             Skipping file from package named %s due to an
                             invalid filename
                             ''',
@@ -1366,7 +1317,7 @@ class PackageManager():
 
                     except (UnicodeDecodeError):
                         console_write(
-                            u'''
+                            '''
                             Skipping file from package named %s due to an
                             invalid filename
                             ''',
@@ -1387,7 +1338,7 @@ class PackageManager():
                 clear_directory(package_dir, [reinstall_file, package_metadata_file])
 
                 show_error(
-                    u'''
+                    '''
                     An error occurred while trying to upgrade %s. Please restart
                     Sublime Text to finish the upgrade.
                     ''',
@@ -1439,14 +1390,12 @@ class PackageManager():
             if not is_dependency:
                 # Record the install in the settings file so that you can move
                 # settings across computers and have the same packages installed
-                def save_names():
-                    settings = sublime.load_settings(pc_settings_filename())
-                    original_names = load_list_setting(settings, 'installed_packages')
-                    names = list(original_names)
-                    if package_name not in names:
-                        names.append(package_name)
-                    save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
-                sublime.set_timeout(save_names, 1)
+                settings = sublime.load_settings(pc_settings_filename())
+                original_names = load_list_setting(settings, 'installed_packages')
+                names = list(original_names)
+                if package_name not in names:
+                    names.append(package_name)
+                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
 
             else:
                 load_order = packages[package_name]['load_order']
@@ -1461,7 +1410,7 @@ class PackageManager():
                     package_zip = zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED)
                 except (OSError, IOError) as e:
                     show_error(
-                        u'''
+                        '''
                         An error occurred creating the package file %s in %s.
 
                         %s
@@ -1492,18 +1441,13 @@ class PackageManager():
                     new_package_path = package_path.replace('.sublime-package', '.sublime-package-new')
                     shutil.move(tmp_package_path, new_package_path)
                     show_error(
-                        u'''
+                        '''
                         An error occurred while trying to upgrade %s. Please restart
                         Sublime Text to finish the upgrade.
                         ''',
                         package_name
                     )
                     return None
-
-            # We have to remove the pristine package too or else Sublime Text 2
-            # will silently delete the package
-            if os.path.exists(pristine_package_path):
-                os.remove(pristine_package_path)
 
             os.chdir(self.settings['packages_path'])
             return True
@@ -1555,7 +1499,7 @@ class PackageManager():
             available_version = version_comparable(available_version) if available_version else None
 
             def dependency_write(msg):
-                msg = u"The dependency '{dependency}' " + msg
+                msg = "The dependency '{dependency}' " + msg
                 msg = msg.format(
                     dependency=dependency,
                     installed_version=installed_version,
@@ -1570,44 +1514,44 @@ class PackageManager():
             install_dependency = False
             if not os.path.exists(dependency_dir):
                 install_dependency = True
-                dependency_write(u'is not currently installed; installing...')
+                dependency_write('is not currently installed; installing...')
             elif os.path.exists(dependency_git_dir):
-                dependency_write_debug(u'is installed via git; leaving alone')
+                dependency_write_debug('is installed via git; leaving alone')
             elif os.path.exists(dependency_hg_dir):
-                dependency_write_debug(u'is installed via hg; leaving alone')
+                dependency_write_debug('is installed via hg; leaving alone')
             elif not dependency_metadata:
-                dependency_write_debug(u'appears to be installed, but is missing metadata; leaving alone')
+                dependency_write_debug('appears to be installed, but is missing metadata; leaving alone')
             elif not dependency_releases:
-                dependency_write(u'is installed, but there are no available releases; leaving alone')
+                dependency_write('is installed, but there are no available releases; leaving alone')
             elif not available_version:
                 dependency_write(
-                    u'is installed, but the latest available release '
-                    u'could not be determined; leaving alone'
+                    'is installed, but the latest available release '
+                    'could not be determined; leaving alone'
                 )
             elif not installed_version:
                 install_dependency = True
                 dependency_write(
-                    u'is installed, but its version is not known; '
-                    u'upgrading to latest release {available_version}...'
+                    'is installed, but its version is not known; '
+                    'upgrading to latest release {available_version}...'
                 )
             elif installed_version < available_version:
                 install_dependency = True
                 dependency_write(
-                    u'is installed, but out of date; upgrading to latest '
-                    u'release {available_version} from {installed_version}...'
+                    'is installed, but out of date; upgrading to latest '
+                    'release {available_version} from {installed_version}...'
                 )
             else:
-                dependency_write_debug(u'is installed and up to date ({installed_version}); leaving alone')
+                dependency_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
             if install_dependency:
                 dependency_result = self.install_package(dependency, True)
                 if not dependency_result:
-                    dependency_write(u'could not be installed or updated')
+                    dependency_write('could not be installed or updated')
                     if fail_early:
                         return False
                     error = True
                 else:
-                    dependency_write(u'has successfully been installed or updated')
+                    dependency_write('has successfully been installed or updated')
 
         return not error
 
@@ -1638,7 +1582,7 @@ class PackageManager():
         for dependency in orphaned_dependencies:
             if self.remove_package(dependency, is_dependency=True):
                 console_write(
-                    u'''
+                    '''
                     The orphaned dependency %s has been removed
                     ''',
                     dependency
@@ -1671,7 +1615,7 @@ class PackageManager():
             package_backup_dir = os.path.join(backup_dir, package_name)
             if os.path.exists(package_backup_dir):
                 console_write(
-                    u'''
+                    '''
                     Backup folder "%s" already exists!
                     ''',
                     package_backup_dir
@@ -1681,7 +1625,7 @@ class PackageManager():
 
         except (OSError, IOError) as e:
             show_error(
-                u'''
+                '''
                 An error occurred while trying to backup the package directory
                 for %s.
 
@@ -1728,7 +1672,7 @@ class PackageManager():
             return
         except (ValueError):
             console_write(
-                u'''
+                '''
                 Error parsing messages.json for %s
                 ''',
                 package
@@ -1747,7 +1691,7 @@ class PackageManager():
                 output += read_message(install_path)
             except (FileNotFoundError):
                 console_write(
-                    u'''
+                    '''
                     Error opening install message for %s from %s
                     ''',
                     (package, install_file)
@@ -1774,7 +1718,7 @@ class PackageManager():
                     output += read_message(upgrade_path)
                 except (FileNotFoundError):
                     console_write(
-                        u'''
+                        '''
                         Error opening %s message for %s from %s
                         ''',
                         (version, package, upgrade_file)
@@ -1819,7 +1763,7 @@ class PackageManager():
 
             if not view.size():
                 write(text.format(
-                    u'''
+                    '''
                     Package Control Messages
                     ========================
                     '''
@@ -1868,7 +1812,7 @@ class PackageManager():
 
         if package_name not in installed_packages:
             show_error(
-                u'''
+                '''
                 The %s specified, %s, is not installed
                 ''',
                 (package_type, package_name)
@@ -1879,11 +1823,6 @@ class PackageManager():
 
         package_filename = package_name + '.sublime-package'
         installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
-        pristine_package_path = os.path.join(
-            os.path.dirname(self.settings['packages_path']),
-            'Pristine Packages',
-            package_filename
-        )
         package_dir = self.get_package_dir(package_name)
 
         version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
@@ -1895,21 +1834,6 @@ class PackageManager():
                 os.remove(installed_package_path)
         except (OSError, IOError) as e:
             cleanup_complete = False
-
-        try:
-            if os.path.exists(pristine_package_path):
-                os.remove(pristine_package_path)
-        except (OSError, IOError) as e:
-            show_error(
-                u'''
-                An error occurred while trying to remove the pristine package
-                file for %s.
-
-                %s
-                ''',
-                (package_name, str(e))
-            )
-            return False
 
         if os.path.exists(package_dir):
             # We don't delete the actual package dir immediately due to a bug
@@ -1930,14 +1854,12 @@ class PackageManager():
         self.record_usage(params)
 
         if not is_dependency:
-            def save_names():
-                settings = sublime.load_settings(pc_settings_filename())
-                original_names = load_list_setting(settings, 'installed_packages')
-                names = list(original_names)
-                if package_name in names:
-                    names.remove(package_name)
-                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
-            sublime.set_timeout(save_names, 1)
+            settings = sublime.load_settings(pc_settings_filename())
+            original_names = load_list_setting(settings, 'installed_packages')
+            names = list(original_names)
+            if package_name in names:
+                names.remove(package_name)
+            save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
 
         if os.path.exists(package_dir) and can_delete_dir:
             os.rmdir(package_dir)
@@ -1946,9 +1868,9 @@ class PackageManager():
             loader.remove(package_name)
 
         else:
-            message = u'The package %s has been removed' % package_name
+            message = 'The package %s has been removed' % package_name
             if not cleanup_complete:
-                message += u' and will be cleaned up on the next restart'
+                message += ' and will be cleaned up on the next restart'
             console_write(message)
 
             # Remove dependencies that are no longer needed
@@ -1969,15 +1891,9 @@ class PackageManager():
 
         if not self.settings.get('submit_usage'):
             return
-        params['package_control_version'] = \
-            self.get_metadata('Package Control').get('version')
+        params['package_control_version'] = self.get_metadata('Package Control').get('version')
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
-
-        # For Python 2, we need to explicitly encoding the params
-        for param in params:
-            if isinstance(params[param], str_cls):
-                params[param] = params[param].encode('utf-8')
 
         url = self.settings.get('submit_url') + '?' + urlencode(params)
 
@@ -1994,7 +1910,7 @@ class PackageManager():
                 raise ValueError()
         except (ValueError):
             console_write(
-                u'''
+                '''
                 Error submitting usage information for %s
                 ''',
                 params['package']

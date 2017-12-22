@@ -99,7 +99,7 @@ class PackageRenamer(PackageDisabler):
                 installed_packages.append(new_package_name)
 
                 console_write(
-                    u'''
+                    '''
                     Renamed %s to %s
                     ''',
                     (package_name, new_package_name)
@@ -111,7 +111,7 @@ class PackageRenamer(PackageDisabler):
                 remove_result = installer.manager.remove_package(package_name)
 
                 console_write(
-                    u'''
+                    '''
                     Removed %s since package with new name (%s) already exists
                     ''',
                     (package_name, new_package_name)
