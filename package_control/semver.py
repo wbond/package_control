@@ -56,18 +56,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import re
-import sys
 from collections import namedtuple  # Python >=2.6
 
 
 __all__ = ('SemVer', 'SemSel', 'SelParseError')
 
 
-if sys.version_info[0] == 3:
-    basestring = str
-
-    def cmp(a, b):
-        return (a > b) - (a < b)
+def cmp(a, b):
+    return (a > b) - (a < b)
 
 
 # @functools.total_ordering would be nice here but was added in 2.7, __cmp__ is not Py3
@@ -205,7 +201,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
             if kw or any(comps[i] is None for i in range(3)):
                 inv()
 
-            typecheck = (int,) * 3 + (basestring,) * 2
+            typecheck = (int,) * 3 + (str,) * 2
             for i, (v, t) in enumerate(zip(comps, typecheck)):
                 if v is None:
                     continue
@@ -213,7 +209,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
                     try:
                         if i < 3:
                             v = typecheck[i](v)
-                        else:  # The real `basestring` can not be instatiated (Py2)
+                        else:  # The real `str` can not be instatiated (Py2)
                             v = str(v)
                     except ValueError as e:
                         # Modify the exception message. I can't believe this actually works
@@ -222,7 +218,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
                         raise
                     else:
                         comps[i] = v
-                if t is basestring and not re.match(r"^[0-9A-Za-z.-]*$", v):
+                if t is str and not re.match(r"^[0-9A-Za-z.-]*$", v):
                     raise ValueError("Build and pre-release strings must match '^[0-9A-Za-z.-]*$'")
 
         # Final adjustments
@@ -297,7 +293,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
         Returns:
             * bool: `True` if it is valid, `False` otherwise.
         """
-        if not isinstance(ver, basestring):
+        if not isinstance(ver, str):
             raise TypeError("%r is not a string" % ver)
 
         if cls._match_regex.match(ver):
@@ -321,7 +317,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
             * str:  The stripped version string. Only the first version is matched.
             * None: No version found in the string.
         """
-        if not isinstance(vers, basestring):
+        if not isinstance(vers, str):
             raise TypeError("%r is not a string" % vers)
         m = cls._search_regex.search(vers)
         if m:
@@ -334,7 +330,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
     def _parse(cls, ver):
         """Private. Do not touch. Classmethod.
         """
-        if not isinstance(ver, basestring):
+        if not isinstance(ver, str):
             raise TypeError("%r is not a string" % ver)
 
         match = cls._match_regex.match(ver)
@@ -706,7 +702,7 @@ class SemSel(tuple):
 
         Raises:
             * TypeError
-                A version is not an instance of str (basestring) or SemVer.
+                A version is not an instance of str (str) or SemVer.
             * ValueError
                 A string version could not be parsed as a SemVer.
 
@@ -744,7 +740,7 @@ class SemSel(tuple):
 
         Raises TypeError, ValueError or SelParseError.
         """
-        if not isinstance(sel, basestring):
+        if not isinstance(sel, str):
             raise TypeError("Selector must be a string")
         if not sel:
             raise ValueError("String must not be empty")

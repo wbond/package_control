@@ -1,7 +1,7 @@
 import re
 
-from .semver import SemVer
 from .console_write import console_write
+from .semver import SemVer
 
 
 def semver_compat(v):
@@ -17,7 +17,6 @@ def semver_compat(v):
     """
 
     if isinstance(v, SemVer):
-        # SemVer only defined __str__, not __unicode__, so we always use str()
         return str(v)
 
     # Allowing passing in a dict containing info about a package
@@ -38,20 +37,20 @@ def semver_compat(v):
     # minor and patch, and then the rest as a numeric build version
     # with four different parts. The result looks like:
     # 0.2012.11+10.31.23.59
-    date_match = re.match('(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
+    date_match = re.match(r'(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
     if date_match:
         v = '0.0.1+%s.%s.%s.%s.%s.%s' % date_match.groups()
 
     # This handles version that were valid pre-semver with 4+ dotted
     # groups, such as 1.6.9.0
-    four_plus_match = re.match('(\d+\.\d+\.\d+)[T\.](\d+(\.\d+)*)$', v)
+    four_plus_match = re.match(r'(\d+\.\d+\.\d+)[T\.](\d+(\.\d+)*)$', v)
     if four_plus_match:
         v = '%s+%s' % (four_plus_match.group(1), four_plus_match.group(2))
 
     # Semver must have major, minor, patch
-    elif re.match('^\d+$', v):
+    elif re.match(r'^\d+$', v):
         v += '.0.0'
-    elif re.match('^\d+\.\d+$', v):
+    elif re.match(r'^\d+\.\d+$', v):
         v += '.0'
     return v
 
@@ -70,13 +69,7 @@ def version_exclude_prerelease(versions):
     :return:
         The list of versions with pre-releases removed
     """
-
-    output = []
-    for version in versions:
-        if SemVer(semver_compat(version)).prerelease is not None:
-            continue
-        output.append(version)
-    return output
+    return [v for v in versions if SemVer(semver_compat(v)).prerelease is None]
 
 
 def version_process(versions, filter_prefix):
@@ -149,7 +142,7 @@ def version_sort(sortable, *fields, **kwargs):
         return sorted(sortable, key=_version_sort_key, **kwargs)
     except (ValueError) as e:
         console_write(
-            u'''
+            '''
             Error sorting versions - %s
             ''',
             e
