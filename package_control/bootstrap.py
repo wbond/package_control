@@ -166,12 +166,10 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         dest = path.join(package_dir, dest)
 
         if dest[-1] == '/':
-            if not path.exists(dest):
-                os.makedirs(dest, 0o755)
+            os.makedirs(dest, 0o755, True)
         else:
             dest_dir = path.dirname(dest)
-            if not path.exists(dest_dir):
-                os.makedirs(dest_dir, 0o755)
+            os.makedirs(dest_dir, 0o755, True)
 
             with open(dest, 'wb') as f:
                 f.write(data_zip.read(zip_path))
