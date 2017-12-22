@@ -1,8 +1,6 @@
 import os
 import stat
 import shutil
-from fnmatch import fnmatch
-
 from .console_write import console_write
 from .unicode import unicode_from_os
 
@@ -18,7 +16,7 @@ def clean_old_files(directory):
 
     for root, dirs, files in os.walk(directory, topdown=False):
         for f in files:
-            if fnmatch(f, '*.package-control-old'):
+            if f.endswith('.package-control-old'):
                 path = os.path.join(root, f)
                 try:
                     os.remove(path)
@@ -70,7 +68,7 @@ def clear_directory(directory, ignore_paths=None):
                     except OSError:
                         # try to rename file to reduce chance that
                         # file is in use on next start
-                        if path[-20:] != '.package-control-old':
+                        if not path.endswith('.package-control-old'):
                             os.rename(path, path + '.package-control-old')
                         raise
             except (OSError, IOError):
@@ -107,7 +105,7 @@ def _on_error(function, path, excinfo):
         # python file that imports the .dll may never get deleted, meaning that
         # the package can never be cleanly removed.
         try:
-            if not os.path.isdir(path) and path[-20:] != '.package-control-old':
+            if not os.path.isdir(path) and not path.endswith('.package-control-old'):
                 os.rename(path, path + '.package-control-old')
         except (OSError):
             pass
