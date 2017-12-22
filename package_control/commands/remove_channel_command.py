@@ -1,9 +1,9 @@
 import sublime
 import sublime_plugin
 
-from ..show_quick_panel import show_quick_panel
-from ..settings import pc_settings_filename
 from .. import text
+from ..settings import pc_settings_filename
+from ..show_quick_panel import show_quick_panel
 
 
 class RemoveChannelCommand(sublime_plugin.WindowCommand):
@@ -12,12 +12,24 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
     A command to remove a channel from the user's Package Control settings
     """
 
+    def __init__(self, window):
+        """
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the list of installed packages in.
+        """
+
+        sublime_plugin.WindowCommand.__init__(self, window)
+        self.channels = None
+        self.settings = None
+
     def run(self):
         self.settings = sublime.load_settings(pc_settings_filename())
         self.channels = self.settings.get('channels')
+
         if not self.channels:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no channels to remove
@@ -25,10 +37,9 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
             ))
             return
 
-        run = False
         if len(self.channels) == 1:
             message = text.format(
-                u'''
+                '''
                 Package Control
 
                 You are about to remove the only channel in your settings. This
@@ -36,13 +47,10 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
                 packages.
                 '''
             )
-            if sublime.ok_cancel_dialog(message, 'Ok'):
-                run = True
-        else:
-            run = True
+            if not sublime.ok_cancel_dialog(message, 'Ok'):
+                return
 
-        if run:
-            show_quick_panel(self.window, self.channels, self.on_done)
+        show_quick_panel(self.window, self.channels, self.on_done)
 
     def on_done(self, index):
         """

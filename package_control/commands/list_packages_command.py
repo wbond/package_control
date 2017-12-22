@@ -6,7 +6,6 @@ import sublime_plugin
 
 from .. import text
 from ..show_quick_panel import show_quick_panel
-from ..package_manager import PackageManager
 from .existing_packages_command import ExistingPackagesCommand
 
 
@@ -45,7 +44,8 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
         self.window = window
         self.filter_function = filter_function
-        self.manager = PackageManager()
+        self.package_list = None
+        ExistingPackagesCommand.__init__(self)
         threading.Thread.__init__(self)
 
     def run(self):
@@ -53,18 +53,16 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         if self.filter_function:
             self.package_list = list(filter(self.filter_function, self.package_list))
 
-        def show_panel():
-            if not self.package_list:
-                sublime.message_dialog(text.format(
-                    u'''
-                    Package Control
+        if not self.package_list:
+            sublime.message_dialog(text.format(
+                '''
+                Package Control
 
-                    There are no packages to list
-                    '''
-                ))
-                return
-            show_quick_panel(self.window, self.package_list, self.on_done)
-        sublime.set_timeout(show_panel, 10)
+                There are no packages to list
+                '''
+            ))
+            return
+        show_quick_panel(self.window, self.package_list, self.on_done)
 
     def on_done(self, picked):
         """
@@ -80,18 +78,16 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
             return
         package_name = self.package_list[picked][0]
 
-        def open_dir():
-            package_dir = self.manager.get_package_dir(package_name)
-            package_file = None
-            if not os.path.exists(package_dir):
-                package_dir = self.manager.settings['installed_packages_path']
-                package_file = package_name + '.sublime-package'
-                if not os.path.exists(os.path.join(package_dir, package_file)):
-                    package_file = None
+        package_dir = self.manager.get_package_dir(package_name)
+        package_file = None
+        if not os.path.exists(package_dir):
+            package_dir = self.manager.settings['installed_packages_path']
+            package_file = package_name + '.sublime-package'
+            if not os.path.exists(os.path.join(package_dir, package_file)):
+                package_file = None
 
-            open_dir_file = {'dir': package_dir}
-            if package_file is not None:
-                open_dir_file['file'] = package_file
+        open_dir_file = {'dir': package_dir}
+        if package_file is not None:
+            open_dir_file['file'] = package_file
 
-            self.window.run_command('open_dir', open_dir_file)
-        sublime.set_timeout(open_dir, 10)
+        self.window.run_command('open_dir', open_dir_file)

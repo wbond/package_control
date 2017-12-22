@@ -5,11 +5,10 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
-from .existing_packages_command import ExistingPackagesCommand
-from ..thread_progress import ThreadProgress
 from ..package_disabler import PackageDisabler
-from ..package_manager import PackageManager
+from ..show_quick_panel import show_quick_panel
+from ..thread_progress import ThreadProgress
+from .existing_packages_command import ExistingPackagesCommand
 
 
 class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand, PackageDisabler):
@@ -26,14 +25,15 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
             Text window to show the list of installed packages in.
         """
 
-        self.window = window
-        self.manager = PackageManager()
+        sublime_plugin.WindowCommand.__init__(self, window)
+        ExistingPackagesCommand.__init__(self)
+        self.package_list = None
 
     def run(self):
         self.package_list = self.make_package_list('remove')
         if not self.package_list:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no packages that can be removed

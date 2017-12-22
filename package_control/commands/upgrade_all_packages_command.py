@@ -1,6 +1,6 @@
-import time
-import threading
 import functools
+import threading
+import time
 
 import sublime
 import sublime_plugin

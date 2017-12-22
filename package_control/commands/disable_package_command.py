@@ -2,10 +2,11 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
-from ..package_manager import PackageManager
-from ..settings import preferences_filename
 from ..package_disabler import PackageDisabler
+from ..package_manager import PackageManager
+from ..settings import load_list_setting
+from ..settings import preferences_filename
+from ..show_quick_panel import show_quick_panel
 
 
 class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
@@ -14,18 +15,25 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
     A command that adds a package to Sublime Text's ignored packages list
     """
 
+    def __init__(self, window):
+        """
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the list of installed packages in.
+        """
+
+        sublime_plugin.WindowCommand.__init__(self, window)
+        self.package_list = None
+
     def run(self):
-        manager = PackageManager()
-        packages = manager.list_all_packages()
-        self.settings = sublime.load_settings(preferences_filename())
-        ignored = self.settings.get('ignored_packages')
-        if not ignored:
-            ignored = []
-        self.package_list = list(set(packages) - set(ignored))
-        self.package_list = sorted(self.package_list, key=lambda s: s.lower())
+        packages = PackageManager().list_all_packages()
+        settings = sublime.load_settings(preferences_filename())
+        ignored = load_list_setting(settings, 'ignored_packages')
+        self.package_list = sorted(
+            set(packages) - set(ignored), key=lambda s: s.lower())
         if not self.package_list:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no enabled packages to disable

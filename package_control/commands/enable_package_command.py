@@ -2,9 +2,9 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
-from ..settings import preferences_filename, load_list_setting
 from ..package_disabler import PackageDisabler
+from ..settings import preferences_filename, load_list_setting
+from ..show_quick_panel import show_quick_panel
 
 
 class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
@@ -13,12 +13,22 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
     A command that removes a package from Sublime Text's ignored packages list
     """
 
+    def __init__(self, window):
+        """
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the list of installed packages in.
+        """
+
+        sublime_plugin.WindowCommand.__init__(self, window)
+        self.disabled_packages = None
+
     def run(self):
-        self.settings = sublime.load_settings(preferences_filename())
-        self.disabled_packages = load_list_setting(self.settings, 'ignored_packages')
+        settings = sublime.load_settings(preferences_filename())
+        self.disabled_packages = load_list_setting(settings, 'ignored_packages')
         if not self.disabled_packages:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no disabled packages to enable

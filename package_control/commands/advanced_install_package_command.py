@@ -1,22 +1,15 @@
-import threading
-import re
-import time
 import functools
+import re
+import threading
+import time
 
 import sublime
 import sublime_plugin
 
-from ..show_error import show_error
-from ..package_manager import PackageManager
 from ..package_disabler import PackageDisabler
+from ..package_manager import PackageManager
+from ..show_error import show_error
 from ..thread_progress import ThreadProgress
-
-try:
-    str_cls = unicode
-    bytes_cls = str
-except (NameError):
-    str_cls = str
-    bytes_cls = bytes
 
 
 class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
@@ -27,14 +20,13 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self, packages=None):
-        is_str = isinstance(packages, str_cls)
-        is_bytes = isinstance(packages, bytes_cls)
 
-        if packages and (is_str or is_bytes):
-            packages = self.split(packages)
+        if packages:
+            if isinstance(packages, str):
+                packages = re.split(r'\s*,\s*', packages)
 
-        if packages and isinstance(packages, list):
-            return self.start(packages)
+            if isinstance(packages, list):
+                return self.start(packages)
 
         self.window.show_input_panel(
             'Packages to Install (Comma-separated)',
@@ -44,30 +36,25 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
             None
         )
 
-    def split(self, packages):
-        if isinstance(packages, bytes_cls):
-            packages = packages.decode('utf-8')
-        return re.split(u'\s*,\s*', packages)
-
-    def on_done(self, input):
+    def on_done(self, text):
         """
         Input panel handler - adds the provided URL as a repository
 
-        :param input:
+        :param text:
             A string of the URL to the new repository
         """
 
-        input = input.strip()
+        text = text.strip()
 
-        if not input:
+        if not text:
             show_error(
-                u'''
+                '''
                 No package names were entered
                 '''
             )
             return
 
-        self.start(self.split(input))
+        self.start(re.split(r'\s*,\s*', text))
 
     def start(self, packages):
         thread = AdvancedInstallPackageThread(packages)

@@ -4,10 +4,10 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
-from ..thread_progress import ThreadProgress
 from ..package_installer import PackageInstaller, PackageInstallerThread
 from ..package_renamer import PackageRenamer
+from ..show_quick_panel import show_quick_panel
+from ..thread_progress import ThreadProgress
 
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):
@@ -41,6 +41,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
             An instance of :class:`PackageRenamer`
         """
         self.window = window
+        self.package_list = None
         self.package_renamer = package_renamer
         self.completion_type = 'upgraded'
         threading.Thread.__init__(self)
@@ -51,18 +52,16 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
         self.package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
-        def show_panel():
-            if not self.package_list:
-                sublime.message_dialog(text.format(
-                    u'''
-                    Package Control
+        if not self.package_list:
+            sublime.message_dialog(text.format(
+                '''
+                Package Control
 
-                    There are no packages ready for upgrade
-                    '''
-                ))
-                return
-            show_quick_panel(self.window, self.package_list, self.on_done)
-        sublime.set_timeout(show_panel, 10)
+                There are no packages ready for upgrade
+                '''
+            ))
+            return
+        show_quick_panel(self.window, self.package_list, self.on_done)
 
     def on_done(self, picked):
         """
