@@ -265,7 +265,7 @@ class PackageCleanup(threading.Thread):
                 continue
 
             metadata = self.manager.get_metadata(package)
-            if metadata and not self.is_compatible(metadata)
+            if metadata and not self.is_compatible(metadata):
                 invalid_packages.append(package)
 
         # Make sure installed dependencies are not improperly installed
