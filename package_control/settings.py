@@ -1,19 +1,11 @@
 import sublime
 
-try:
-    str_cls = unicode
-except (NameError):
-    str_cls = str
-
 
 def preferences_filename():
     """
     :return: The appropriate settings filename based on the version of Sublime Text
     """
-
-    if int(sublime.version()) >= 2174:
-        return 'Preferences.sublime-settings'
-    return 'Global.sublime-settings'
+    return 'Preferences.sublime-settings'
 
 
 def pc_settings_filename():
@@ -40,19 +32,11 @@ def load_list_setting(settings, name):
     """
 
     value = settings.get(name)
-    if not value:
-        return []
-    if isinstance(value, str_cls):
-        value = [value]
+    if isinstance(value, str):
+        return [value]
     if not isinstance(value, list):
         return []
-
-    filtered_value = []
-    for v in value:
-        if not isinstance(v, str_cls):
-            continue
-        filtered_value.append(v)
-    return sorted(filtered_value, key=lambda s: s.lower())
+    return sorted((v for v in set(value) if isinstance(v, str)), key=lambda s: s.lower())
 
 
 def save_list_setting(settings, filename, name, new_value, old_value=None):
@@ -77,8 +61,7 @@ def save_list_setting(settings, filename, name, new_value, old_value=None):
     """
 
     # Clean up the list to only include unique values, sorted
-    new_value = list(set(new_value))
-    new_value = sorted(new_value, key=lambda s: s.lower())
+    new_value = sorted(set(new_value), key=lambda s: s.lower())
 
     if old_value is not None:
         if old_value == new_value:
