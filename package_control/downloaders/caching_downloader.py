@@ -140,7 +140,7 @@ class CachingDownloader(object):
         # Respect some basic cache control headers
         cache_control = headers.get('cache-control', '')
         if cache_control:
-            fields = re.split(',\s*', cache_control)
+            fields = re.split(r'\s*,\s*', cache_control)
             for field in fields:
                 if field == 'no-store':
                     return content
