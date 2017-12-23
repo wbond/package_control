@@ -158,7 +158,14 @@ class CachingDownloader(object):
         etag = headers.get('etag')
         last_modified = headers.get('last-modified')
 
-        if not etag and not last_modified:
+        # Cache content only if both etag and last-modified are valid
+        if not etag or not last_modified:
+            if debug:
+                console_write(
+                    u'''
+                    Skipping cache since etag or last_modified is invalid
+                    '''
+                )
             return content
 
         struct = {'etag': etag, 'last-modified': last_modified}
