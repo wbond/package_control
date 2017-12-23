@@ -30,19 +30,18 @@ class CachingDownloader(object):
         :return:
             The request headers dict, possibly with new headers added
         """
-
-        if not self.settings.get('cache'):
+        cache = self.settings.get('cache')
+        if not cache:
             return headers
 
         info_key = self.generate_key(url, '.info')
-        info_json = self.settings['cache'].get(info_key)
-
+        info_json = cache.get(info_key)
         if not info_json:
             return headers
 
         # Make sure we have the cached content to use if we get a 304
         key = self.generate_key(url)
-        if not self.settings['cache'].has(key):
+        if not cache.has(key):
             return headers
 
         try:
@@ -108,7 +107,7 @@ class CachingDownloader(object):
         status = int(status)
 
         # Don't do anything unless it was successful or not modified
-        if status not in [200, 304]:
+        if status not in (200, 304):
             if debug:
                 console_write(
                     u'''
@@ -146,7 +145,7 @@ class CachingDownloader(object):
                     return content
 
         # Don't ever cache zip/binary files for the sake of hard drive space
-        if headers.get('content-type') in ['application/zip', 'application/octet-stream']:
+        if headers.get('content-type') in ('application/zip', 'application/octet-stream'):
             if debug:
                 console_write(
                     u'''
