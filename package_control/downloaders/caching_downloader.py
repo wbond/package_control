@@ -218,10 +218,8 @@ class CachingDownloader(object):
         key = self.generate_key(url)
         cache = self.settings['cache']
 
-        if not cache.has(key):
-            return False
-
-        if self.settings.get('debug'):
+        cached_content = cache.get(key)
+        if cached_content and self.settings.get('debug'):
             console_write(
                 u'''
                 Using cached content for %s from %s
@@ -229,4 +227,4 @@ class CachingDownloader(object):
                 (url, cache.path(key))
             )
 
-        return cache.get(key)
+        return cached_content
