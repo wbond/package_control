@@ -215,11 +215,22 @@ class CachingDownloader(object):
             The cached content
         """
 
+        debug = self.settings.get('debug')
+        cache = self.settings.get('cache')
+
+        if not cache:
+            if debug:
+                console_write(
+                    u'''
+                    Skipping cache since there is no cache object
+                    '''
+                )
+            return False
+
         key = self.generate_key(url)
-        cache = self.settings['cache']
 
         cached_content = cache.get(key)
-        if cached_content and self.settings.get('debug'):
+        if cached_content and debug:
             console_write(
                 u'''
                 Using cached content for %s from %s
