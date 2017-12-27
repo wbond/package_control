@@ -3,6 +3,7 @@ import unittest
 
 from . import clients
 from . import downloaders
+from . import http_cache
 from . import providers
 
 
@@ -18,6 +19,10 @@ def select_and_run(window):
             downloaders.UrlLibDownloaderTests,
             downloaders.WgetDownloaderTests,
             downloaders.WinINetDownloaderTests,
+        ),
+
+        'Http Cache Tests': (
+            http_cache.HttpCacheTests,
         ),
 
         'Provider Tests': (
