@@ -2,6 +2,7 @@ import threading
 import unittest
 
 from . import clients
+from . import downloaders
 from . import providers
 
 
@@ -10,6 +11,13 @@ def select_and_run(window):
         'Clients Tests': (
             clients.BitBucketClientTests,
             clients.GitHubClientTests,
+        ),
+
+        'Downloaders Tests': (
+            downloaders.CurlDownloaderTests,
+            downloaders.UrlLibDownloaderTests,
+            downloaders.WgetDownloaderTests,
+            downloaders.WinINetDownloaderTests,
         ),
 
         'Provider Tests': (

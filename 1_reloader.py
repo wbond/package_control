@@ -179,6 +179,7 @@ mods_load_order = [
 
     '.tests.consts',
     '.tests.clients',
+    '.tests.downloaders',
     '.tests.providers',
     '.tests',
 
