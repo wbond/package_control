@@ -52,8 +52,7 @@ def downloader(url, settings):
 def _grab(url, settings):
     global _managers, _lock, _in_use, _timer
 
-    _lock.acquire()
-    try:
+    with _lock:
         if _timer:
             _timer.cancel()
             _timer = None
@@ -72,15 +71,11 @@ def _grab(url, settings):
 
         return _managers[hostname].pop()
 
-    finally:
-        _lock.release()
-
 
 def _release(url, manager):
     global _managers, _lock, _in_use, _timer
 
-    _lock.acquire()
-    try:
+    with _lock:
         hostname = urlparse(url).hostname.lower()
 
         # This means the package was reloaded between _grab and _release,
@@ -100,26 +95,19 @@ def _release(url, manager):
             _timer = Timer(5.0, close_all_connections)
             _timer.start()
 
-    finally:
-        _lock.release()
-
 
 def close_all_connections():
     global _managers, _lock, _in_use, _timer
 
-    _lock.acquire()
-    try:
+    with _lock:
         if _timer:
             _timer.cancel()
             _timer = None
 
-        for domain, managers in _managers.items():
+        for managers in _managers.values():
             for manager in managers:
                 manager.close()
-        _managers = {}
-
-    finally:
-        _lock.release()
+        _managers.clear()
 
 
 def update_url(url, debug):
