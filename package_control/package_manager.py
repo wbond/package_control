@@ -917,11 +917,7 @@ class PackageManager():
         package_filename = package_name + '.sublime-package'
         package_path = os.path.join(package_destination, package_filename)
 
-        if not os.path.exists(self.settings['installed_packages_path']):
-            os.mkdir(self.settings['installed_packages_path'])
-
-        if os.path.exists(package_path):
-            os.remove(package_path)
+        os.makedirs(package_destination, exist_ok=True)
 
         try:
             package_file = zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED)
@@ -953,25 +949,18 @@ class PackageManager():
         files_to_ignore = get_profile_setting('files_to_ignore', [])
         files_to_include = get_profile_setting('files_to_include', [])
 
-        slash = '\\' if os.name == 'nt' else '/'
-        trailing_package_dir = package_dir + slash if package_dir[-1] != slash else package_dir
-        package_dir_regex = re.compile('^' + re.escape(trailing_package_dir))
         for root, dirs, files in os.walk(package_dir):
-            # add "dir" to "paths" list if "dir" is not in "dirs_to_ignore"
+            # remove all "dirs_to_ignore" from "dirs" to make os.walk ignore them
             dirs[:] = [x for x in dirs if x not in dirs_to_ignore]
-            paths = dirs
-            paths.extend(files)
-            for path in paths:
-                full_path = os.path.join(root, path)
-                relative_path = re.sub(package_dir_regex, '', full_path)
+            for file in files:
+                full_path = os.path.join(root, file)
+                relative_path = os.path.relpath(full_path, package_dir)
 
-                ignore_matches = [fnmatch(relative_path, p) for p in files_to_ignore]
-                include_matches = [fnmatch(relative_path, p) for p in files_to_include]
+                ignore_matches = (fnmatch(relative_path, p) for p in files_to_ignore)
+                include_matches = (fnmatch(relative_path, p) for p in files_to_include)
                 if any(ignore_matches) and not any(include_matches):
                     continue
 
-                if os.path.isdir(full_path):
-                    continue
                 package_file.write(full_path, relative_path)
 
         package_file.close()
