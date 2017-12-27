@@ -62,8 +62,8 @@ class AutomaticUpgrader(threading.Thread):
         """
 
         self.last_run = None
-
-        self.last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
+        self.last_run_file = os.path.join(
+            sublime.cache_path(), 'Package Control', 'last-run')
 
         try:
             with open(self.last_run_file) as f:
@@ -93,6 +93,7 @@ class AutomaticUpgrader(threading.Thread):
             The unix timestamp of when to record the last run as
         """
 
+        os.makedirs(os.path.dirname(self.last_run_file), mode=0o555, exist_ok=True)
         with open(self.last_run_file, 'w') as f:
             f.write(str(last_run))
 

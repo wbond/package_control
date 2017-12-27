@@ -29,7 +29,7 @@ def get_ca_bundle_path(settings):
 
     system_ca_bundle_path = get_system_ca_bundle_path(settings)
     user_ca_bundle_path = get_user_ca_bundle_path(settings)
-    merged_ca_bundle_path = os.path.join(ca_bundle_dir, 'Package Control.merged-ca-bundle')
+    merged_ca_bundle_path = os.path.join(ca_bundle_dir, 'merged-ca-bundle.crt')
 
     merged_missing = not os.path.exists(merged_ca_bundle_path)
     merged_empty = (not merged_missing) and os.stat(merged_ca_bundle_path).st_size == 0
@@ -76,7 +76,7 @@ def get_user_ca_bundle_path(settings):
 
     ensure_ca_bundle_dir()
 
-    user_ca_bundle_path = os.path.join(ca_bundle_dir, 'Package Control.user-ca-bundle')
+    user_ca_bundle_path = os.path.join(ca_bundle_dir, 'user-ca-bundle.crt')
     if not os.path.exists(user_ca_bundle_path):
         if settings.get('debug'):
             console_write(
@@ -139,7 +139,7 @@ def get_system_ca_bundle_path(settings):
 
     if platform == 'win32' or platform == 'darwin':
         # Remove any file with the old system bundle filename
-        old_ca_path = os.path.join(ca_bundle_dir, 'Package Control.system-ca-bundle')
+        old_ca_path = os.path.join(ca_bundle_dir, 'system-ca-bundle.crt')
         if os.path.exists(old_ca_path):
             os.unlink(old_ca_path)
 
@@ -212,19 +212,18 @@ def get_system_ca_bundle_path(settings):
 
 def ensure_ca_bundle_dir():
     """
-    Make sure we have a placed to save the merged-ca-bundle and system-ca-bundle
+    Make sure we have a place to save the merged-ca-bundle and system-ca-bundle
     """
 
     # If the sublime module is available, we bind this value at run time
-    # since the sublime.packages_path() is not available at import time
+    # since the sublime.cache_path() is not available at import time
     global ca_bundle_dir
 
     if not ca_bundle_dir:
-        ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
-    if not os.path.exists(ca_bundle_dir):
-        try:
-            os.mkdir(ca_bundle_dir)
-        except PermissionError:
-            ca_bundle_dir = '/var/tmp/package_control'
-            if not os.path.exists(ca_bundle_dir):
-                 os.mkdir(ca_bundle_dir)
+        ca_bundle_dir = os.path.join(sublime.cache_path(), 'Package Control')
+
+    try:
+        os.makedirs(ca_bundle_dir, mode=0o555, exist_ok=True)
+    except PermissionError:
+        ca_bundle_dir = '/var/tmp/package_control'
+        os.makedirs(ca_bundle_dir, mode=0o555, exist_ok=True)

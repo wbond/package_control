@@ -11,10 +11,16 @@ class HttpCache(object):
     """
 
     def __init__(self, ttl):
-        self.base_path = os.path.join(sublime.packages_path(), 'User', 'Package Control.cache')
-        if not os.path.exists(self.base_path):
-            os.mkdir(self.base_path)
-        self.clear(int(ttl))
+        """
+        Initialize the HttpCache object.
+
+        Ensure the http cache folder exists and out-dated entries are removed.
+        """
+        self.base_path = os.path.join(
+            sublime.cache_path(), 'Package Control', 'http')
+        os.makedirs(self.base_path, mode=0o555, exist_ok=True)
+
+        self.clear(ttl)
 
     def clear(self, ttl):
         """
@@ -47,15 +53,13 @@ class HttpCache(object):
             The (binary) cached value, or False
         """
         try:
-            cache_file = os.path.join(self.base_path, key)
-            with open(cache_file, 'rb') as f:
+            with open(self.path(key), 'rb') as f:
                 return f.read()
         except FileNotFoundError:
             return False
 
     def has(self, key):
-        cache_file = os.path.join(self.base_path, key)
-        return os.path.exists(cache_file)
+        return os.path.exists(self.path(key))
 
     def path(self, key):
         """
@@ -81,6 +85,5 @@ class HttpCache(object):
             The (binary) content to cache
         """
 
-        cache_file = os.path.join(self.base_path, key)
-        with open(cache_file, 'wb') as f:
+        with open(self.path(key), 'wb') as f:
             f.write(content)
