@@ -1,16 +1,11 @@
 import time
 import threading
 import unittest
-import re
 
 import sublime
 
-
-LAST_COMMIT_TIMESTAMP = '2014-11-28 20:54:15'
-LAST_COMMIT_VERSION = re.sub('[ :\-]', '.', LAST_COMMIT_TIMESTAMP)
-
-CLIENT_ID = ''
-CLIENT_SECRET = ''
+from . import clients
+from . import providers
 
 
 class StringQueue():
@@ -32,6 +27,29 @@ class StringQueue():
 
     def flush(self):
         pass
+
+
+def run_all(window):
+    """
+    Run all test cases defined in this package.
+
+    :param window:
+        A sublime.Window object to use to display the results
+    """
+
+    test_classes = [
+        # clients
+        clients.BitBucketClientTests,
+        clients.GitHubClientTests,
+
+        # providers
+        providers.BitBucketRepositoryProviderTests,
+        providers.ChannelProviderTests,
+        providers.GitHubRepositoryProviderTests,
+        providers.GitHubUserProviderTests,
+        providers.RepositoryProviderTests,
+    ]
+    runner(window, test_classes)
 
 
 def runner(window, test_classes):

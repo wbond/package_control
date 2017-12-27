@@ -5,7 +5,10 @@ from ..clients.github_client import GitHubClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..http_cache import HttpCache
 
-from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET
+from .consts import CLIENT_ID
+from .consts import CLIENT_SECRET
+from .consts import LAST_COMMIT_TIMESTAMP
+from .consts import LAST_COMMIT_VERSION
 
 
 class GitHubClientTests(unittest.TestCase):

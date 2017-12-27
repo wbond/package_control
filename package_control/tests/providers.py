@@ -7,7 +7,10 @@ from ..providers.github_user_provider import GitHubUserProvider
 from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
 from ..http_cache import HttpCache
 
-from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET
+from .consts import CLIENT_ID
+from .consts import CLIENT_SECRET
+from .consts import LAST_COMMIT_TIMESTAMP
+from .consts import LAST_COMMIT_VERSION
 
 
 class GitHubRepositoryProviderTests(unittest.TestCase):

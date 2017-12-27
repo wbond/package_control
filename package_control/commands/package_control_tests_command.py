@@ -1,15 +1,7 @@
 import sublime
 import sublime_plugin
 
-from ..tests import runner
-from ..tests.clients import GitHubClientTests, BitBucketClientTests
-from ..tests.providers import (
-    BitBucketRepositoryProviderTests,
-    ChannelProviderTests,
-    GitHubRepositoryProviderTests,
-    GitHubUserProviderTests,
-    RepositoryProviderTests,
-)
+from .. import tests
 
 
 class PackageControlTestsCommand(sublime_plugin.WindowCommand):
@@ -19,18 +11,7 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        runner(
-            self.window,
-            [
-                GitHubClientTests,
-                BitBucketClientTests,
-                GitHubRepositoryProviderTests,
-                BitBucketRepositoryProviderTests,
-                GitHubUserProviderTests,
-                RepositoryProviderTests,
-                ChannelProviderTests
-            ]
-        )
+        tests.run_all(self.window)
 
     def is_visible(self):
         settings = sublime.load_settings('Package Control.sublime-settings')

@@ -177,9 +177,10 @@ mods_load_order = [
     '.loader',
     '.bootstrap',
 
-    '.tests',
+    '.tests.consts',
     '.tests.clients',
     '.tests.providers',
+    '.tests',
 
     '.commands',
     '.commands.add_channel_command',
