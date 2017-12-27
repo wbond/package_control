@@ -1,10 +1,9 @@
 import threading
 import os
 
-import sublime
 import sublime_plugin
 
-from .. import text
+from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 from .existing_packages_command import ExistingPackagesCommand
 
@@ -54,13 +53,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
             self.package_list = list(filter(self.filter_function, self.package_list))
 
         if not self.package_list:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
-
-                There are no packages to list
-                '''
-            ))
+            show_message('There are no packages to list')
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
 

@@ -1,11 +1,10 @@
 import threading
 
-import sublime
 import sublime_plugin
 
-from .. import text
 from ..package_installer import PackageInstaller, PackageInstallerThread
 from ..package_renamer import PackageRenamer
+from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
 
@@ -53,13 +52,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         self.package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
         if not self.package_list:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
-
-                There are no packages ready for upgrade
-                '''
-            ))
+            show_message('There are no packages ready for upgrade')
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
 

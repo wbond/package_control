@@ -1,11 +1,12 @@
 import sublime
 import sublime_plugin
 
-from .. import text
 from ..package_disabler import PackageDisabler
 from ..package_manager import PackageManager
 from ..settings import load_list_setting
 from ..settings import preferences_filename
+from ..show_error import show_message
+from ..show_error import status_message
 from ..show_quick_panel import show_quick_panel
 
 
@@ -32,13 +33,7 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
         self.package_list = sorted(
             set(packages) - set(ignored), key=lambda s: s.lower())
         if not self.package_list:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
-
-                There are no enabled packages to disable
-                '''
-            ))
+            show_message('There are no enabled packages to disable')
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
 
@@ -57,10 +52,10 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
 
         self.disable_packages(package, 'disable')
 
-        sublime.status_message(text.format(
+        status_message(
             '''
             Package %s successfully added to list of disabled packages -
             restarting Sublime Text may be required
             ''',
             package
-        ))
+        )

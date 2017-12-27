@@ -3,6 +3,7 @@ import sublime_plugin
 
 from .. import text
 from ..settings import pc_settings_filename
+from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 
 
@@ -28,13 +29,7 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
         self.channels = self.settings.get('channels')
 
         if not self.channels:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
-
-                There are no channels to remove
-                '''
-            ))
+            show_message('There are no channels to remove')
             return
 
         if len(self.channels) == 1:

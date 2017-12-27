@@ -1,9 +1,9 @@
-import sublime
 import sublime_plugin
 
 from .. import loader
-from .. import text
 from ..package_manager import PackageManager
+from ..show_error import show_message
+from ..show_error import status_message
 from ..show_quick_panel import show_quick_panel
 
 
@@ -29,13 +29,7 @@ class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
         dependencies = self.manager.list_unloaded_dependencies()
         self.dependency_list = sorted(dependencies, key=lambda s: s.lower())
         if not self.dependency_list:
-            sublime.message_dialog(text.format(
-                u'''
-                Package Control
-
-                All local dependencies are currently loaded
-                '''
-            ))
+            show_message('All local dependencies are currently loaded')
             return
         show_quick_panel(self.window, self.dependency_list, self.on_done)
 
@@ -56,10 +50,10 @@ class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
         priority, code = self.manager.get_dependency_priority_code(dependency)
         loader.add(priority, dependency, code)
 
-        sublime.status_message(text.format(
+        status_message(
             '''
             Dependency %s successfully added to dependency loader -
             restarting Sublime Text may be required
             ''',
             dependency
-        ))
+        )

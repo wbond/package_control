@@ -1,9 +1,9 @@
 import sublime
 import sublime_plugin
 
-from .. import text
 from ..settings import load_list_setting
 from ..settings import pc_settings_filename
+from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 
 
@@ -28,13 +28,7 @@ class RemoveRepositoryCommand(sublime_plugin.WindowCommand):
         self.settings = sublime.load_settings(pc_settings_filename())
         self.repositories = load_list_setting(self.settings, 'repositories')
         if not self.repositories:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
-
-                There are no repositories to remove
-                '''
-            ))
+            show_message('There are no repositories to remove')
             return
 
         show_quick_panel(self.window, self.repositories, self.on_done)

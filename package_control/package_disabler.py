@@ -2,7 +2,6 @@ import json
 
 import sublime
 
-from . import text
 from .console_write import console_write
 from .package_io import package_file_exists
 from .package_io import read_package_file
@@ -11,6 +10,7 @@ from .settings import pc_settings_filename
 from .settings import preferences_filename
 from .settings import save_list_setting
 from .show_error import show_error
+from .show_error import show_message
 
 # This has to be imported this way for consistency with the public API,
 # otherwise this code and packages will each load a different instance of the
@@ -193,17 +193,13 @@ class PackageDisabler():
             corruption_notice = ' You may see some graphical corruption until you restart Sublime Text.'
 
             if type == 'remove' and PackageDisabler.old_theme_package == package:
-                message = text.format(
-                    '''
-                    Package Control
-
+                message = '''
                     The package containing your active theme was just removed
                     and the Default theme was enabled in its place.
-                    '''
-                )
+                '''
                 if int(sublime.version()) < 3106:
                     message += corruption_notice
-                sublime.message_dialog(message)
+                show_message(message)
 
             # By delaying the restore, we give Sublime Text some time to
             # re-enable the package, making errors less likely
@@ -251,16 +247,10 @@ class PackageDisabler():
                 if type == 'upgrade' and PackageDisabler.old_theme_package == package:
                     if package_file_exists(package, PackageDisabler.old_theme):
                         settings.set('theme', PackageDisabler.old_theme)
-                        message = text.format(
-                            '''
-                            Package Control
-
-                            The package containing your active theme was just upgraded.
-                            '''
-                        )
+                        message = 'The package containing your active theme was just upgraded.'
                         if int(sublime.version()) < 3106:
                             message += corruption_notice
-                        sublime.message_dialog(message)
+                        show_message(message)
                     else:
                         show_error(
                             '''
