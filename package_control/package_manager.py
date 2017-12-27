@@ -890,8 +890,7 @@ class PackageManager():
         """
 
         package_dir = self.get_package_dir(package_name)
-
-        if not os.path.exists(package_dir):
+        if not os.path.isdir(package_dir):
             show_error(
                 '''
                 The folder for the package name specified, %s,
@@ -904,13 +903,8 @@ class PackageManager():
         package_filename = package_name + '.sublime-package'
         package_path = os.path.join(package_destination, package_filename)
 
-        if not os.path.exists(self.settings['installed_packages_path']):
-            os.mkdir(self.settings['installed_packages_path'])
-
-        if os.path.exists(package_path):
-            os.remove(package_path)
-
         try:
+            os.makedirs(package_destination, exist_ok=True)
             package_file = zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED)
         except (OSError, IOError) as e:
             show_error(
