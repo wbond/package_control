@@ -917,11 +917,7 @@ class PackageManager():
         package_filename = package_name + '.sublime-package'
         package_path = os.path.join(package_destination, package_filename)
 
-        if not os.path.exists(self.settings['installed_packages_path']):
-            os.mkdir(self.settings['installed_packages_path'])
-
-        if os.path.exists(package_path):
-            os.remove(package_path)
+        os.makedirs(package_destination, exist_ok=True)
 
         try:
             package_file = zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED)
