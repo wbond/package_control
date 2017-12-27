@@ -11,6 +11,7 @@ from .consts import CLIENT_ID
 from .consts import CLIENT_SECRET
 from .consts import LAST_COMMIT_TIMESTAMP
 from .consts import LAST_COMMIT_VERSION
+from .consts import USER_AGENT
 
 
 class GitHubRepositoryProviderTests(unittest.TestCase):
@@ -20,12 +21,14 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
         return {
             'debug': True,
             'cache': HttpCache(604800),
+            'cache_length': 604800,  # required to handle RateLimitException
             'query_string_params': {
                 'api.github.com': {
                     'client_id': CLIENT_ID,
                     'client_secret': CLIENT_SECRET
                 }
-            }
+            },
+            'user_agent': USER_AGENT
         }
 
     def test_match_url(self):
@@ -129,12 +132,14 @@ class GitHubUserProviderTests(unittest.TestCase):
         return {
             'debug': True,
             'cache': HttpCache(604800),
+            'cache_length': 604800,  # required to handle RateLimitException
             'query_string_params': {
                 'api.github.com': {
                     'client_id': CLIENT_ID,
                     'client_secret': CLIENT_SECRET
                 }
-            }
+            },
+            'user_agent': USER_AGENT
         }
 
     def test_match_url(self):
@@ -216,7 +221,9 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
     def bitbucket_settings(self):
         return {
             'debug': True,
-            'cache': HttpCache(604800)
+            'cache': HttpCache(604800),
+            'cache_length': 604800,  # required to handle RateLimitException
+            'user_agent': USER_AGENT
         }
 
     def test_match_url(self):
@@ -316,12 +323,14 @@ class RepositoryProviderTests(unittest.TestCase):
         return {
             'debug': True,
             'cache': HttpCache(604800),
+            'cache_length': 604800,  # required to handle RateLimitException
             'query_string_params': {
                 'api.github.com': {
                     'client_id': CLIENT_ID,
                     'client_secret': CLIENT_SECRET
                 }
-            }
+            },
+            'user_agent': USER_AGENT
         }
 
     def test_get_packages_10(self):
@@ -1126,7 +1135,9 @@ class ChannelProviderTests(unittest.TestCase):
     def settings(self):
         return {
             'debug': True,
-            'cache': HttpCache(604800)
+            'cache': HttpCache(604800),
+            'cache_length': 604800,  # required to handle RateLimitException
+            'user_agent': USER_AGENT
         }
 
     def test_get_name_map_12(self):

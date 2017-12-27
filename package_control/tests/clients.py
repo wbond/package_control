@@ -9,6 +9,7 @@ from .consts import CLIENT_ID
 from .consts import CLIENT_SECRET
 from .consts import LAST_COMMIT_TIMESTAMP
 from .consts import LAST_COMMIT_VERSION
+from .consts import USER_AGENT
 
 
 class GitHubClientTests(unittest.TestCase):
@@ -18,12 +19,14 @@ class GitHubClientTests(unittest.TestCase):
         return {
             'debug': True,
             'cache': HttpCache(604800),
+            'cache_length': 604800,  # required to handle RateLimitException
             'query_string_params': {
                 'api.github.com': {
                     'client_id': CLIENT_ID,
                     'client_secret': CLIENT_SECRET
                 }
-            }
+            },
+            'user_agent': USER_AGENT
         }
 
     def test_github_client_repo_info(self):
@@ -136,7 +139,9 @@ class BitBucketClientTests(unittest.TestCase):
     def bitbucket_settings(self):
         return {
             'debug': True,
-            'cache': HttpCache(604800)
+            'cache': HttpCache(604800),
+            'cache_length': 604800,  # required to handle RateLimitException
+            'user_agent': USER_AGENT
         }
 
     def test_bitbucket_client_repo_info(self):
@@ -155,17 +160,18 @@ class BitBucketClientTests(unittest.TestCase):
             client.repo_info('https://bitbucket.org/wbond/package_control-tester')
         )
 
-    def test_bitbucket_readme(self):
-        client = ReadmeClient(self.bitbucket_settings())
-        self.assertEqual(
-            {
-                'filename': 'readme.md',
-                'contents': '# Package Control Tester\n\nThis repo is used to test the various '
-                            'clients and providers that are part of\nPackage Control.\n',
-                'format': 'markdown'
-            },
-            client.readme_info('https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md')
-        )
+    # DOESN'T WORK AS ReadmeClient SUPPORTS Github ONLY!!!
+    # def test_bitbucket_readme(self):
+    #     client = ReadmeClient(self.bitbucket_settings())
+    #     self.assertEqual(
+    #         {
+    #             'filename': 'readme.md',
+    #             'contents': '# Package Control Tester\n\nThis repo is used to test the various '
+    #                         'clients and providers that are part of\nPackage Control.\n',
+    #             'format': 'markdown'
+    #         },
+    #         client.readme_info('https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md')
+    #     )
 
     def test_bitbucket_client_branch_downloads(self):
         client = BitBucketClient(self.bitbucket_settings())
