@@ -1,10 +1,7 @@
-import threading
-import os
 import datetime
-# To prevent import errors in thread with datetime
-import locale  # noqa
+import os
+import threading
 import time
-import functools
 
 import sublime
 
@@ -36,153 +33,88 @@ class AutomaticUpgrader(threading.Thread):
         self.installer = PackageInstaller()
         self.manager = self.installer.manager
 
-        self.load_settings()
-
         self.package_renamer = PackageRenamer()
         self.package_renamer.load_settings()
 
-        self.auto_upgrade = self.settings.get('auto_upgrade')
-        self.auto_upgrade_ignore = self.settings.get('auto_upgrade_ignore')
-
-        self.load_last_run()
-        self.determine_next_run()
-
         # Detect if a package is missing that should be installed
-        self.missing_packages = list(set(self.installed_packages) - set(found_packages))
-        self.missing_dependencies = list(set(self.manager.find_required_dependencies()) - set(found_dependencies))
-
-        if self.auto_upgrade and self.next_run <= time.time():
-            self.save_last_run(time.time())
-
-        threading.Thread.__init__(self)
-
-    def load_last_run(self):
-        """
-        Loads the last run time from disk into memory
-        """
-
-        self.last_run = None
-        self.last_run_file = os.path.join(
-            sublime.cache_path(), 'Package Control', 'last-run')
-
-        try:
-            with open(self.last_run_file) as f:
-                self.last_run = int(f.read())
-        except (FileNotFoundError, ValueError):
-            pass
-
-    def determine_next_run(self):
-        """
-        Figure out when the next run should happen
-        """
-
-        self.next_run = int(time.time())
-
-        frequency = self.settings.get('auto_upgrade_frequency')
-        if frequency:
-            if self.last_run:
-                self.next_run = int(self.last_run) + (frequency * 60 * 60)
-            else:
-                self.next_run = time.time()
-
-    def save_last_run(self, last_run):
-        """
-        Saves a record of when the last run was
-
-        :param last_run:
-            The unix timestamp of when to record the last run as
-        """
-
-        os.makedirs(os.path.dirname(self.last_run_file), mode=0o555, exist_ok=True)
-        with open(self.last_run_file, 'w') as f:
-            f.write(str(last_run))
-
-    def load_settings(self):
-        """
-        Loads the list of installed packages
-        """
-
         self.settings = sublime.load_settings(pc_settings_filename())
         self.installed_packages = load_list_setting(self.settings, 'installed_packages')
-        self.should_install_missing = self.settings.get('install_missing')
+        self.missing_packages = list(set(self.installed_packages) - set(found_packages))
+        self.missing_dependencies = list(
+            set(self.manager.find_required_dependencies()) - set(found_dependencies))
+        threading.Thread.__init__(self)
 
     def run(self):
-        self.install_missing()
-
-        if self.next_run > time.time():
-            self.print_skip()
+        num_installed = self.install_missing_dependencies()
+        if num_installed > 0:
+            # As installing dependencies asks to restart ST, further
+            # install/upgrade operations might most likely be interrupted
+            # anyway and therefore are skipped. The last-run is not saved to
+            # restart auto upgrader after restarting ST immediatelly.
             return
 
+        self.install_missing_packages()
         self.upgrade_packages()
 
-    def install_missing(self):
+    def install_missing_dependencies(self):
         """
-        Installs all packages that were listed in the list of
+        Installs all dependencies that were listed in the list of
         `installed_packages` from Package Control.sublime-settings but were not
-        found on the filesystem and passed as `found_packages`. Also installs
-        any missing dependencies.
+        found on the filesystem and passed as `found_dependencies`.
         """
 
         # We always install missing dependencies - this operation does not
         # obey the "install_missing" setting since not installing dependencies
         # would result in broken packages.
-        if self.missing_dependencies:
-            total_missing_dependencies = len(self.missing_dependencies)
-            dependency_s = 'ies' if total_missing_dependencies != 1 else 'y'
-            console_write(
-                '''
-                Installing %s missing dependenc%s
-                ''',
-                (total_missing_dependencies, dependency_s)
-            )
+        if not self.missing_dependencies:
+            return 0
 
-            dependencies_installed = 0
+        num_missing = len(self.missing_dependencies)
+        dependency_s = 'ies' if num_missing != 1 else 'y'
+        console_write('Installing %s missing dependenc%s', (num_missing, dependency_s))
 
-            for dependency in self.missing_dependencies:
-                if self.installer.manager.install_package(dependency, is_dependency=True):
-                    console_write('Installed missing dependency %s', dependency)
-                    dependencies_installed += 1
+        num_installed = 0
+        for dependency in self.missing_dependencies:
+            if self.manager.install_package(dependency, is_dependency=True):
+                console_write('Installed missing dependency %s', dependency)
+                num_installed += 1
 
-            if dependencies_installed:
-                def notify_restart():
-                    dependency_was = 'ies were' if dependencies_installed != 1 else 'y was'
-                    show_error(
-                        '''
-                        %s missing dependenc%s just installed. Sublime Text
-                        should be restarted, otherwise one or more of the
-                        installed packages may not function properly.
-                        ''',
-                        (dependencies_installed, dependency_was)
-                    )
-                sublime.set_timeout(notify_restart, 1000)
+        if num_installed:
+            def notify_restart():
+                dependency_was = 'ies were' if num_installed != 1 else 'y was'
+                show_error(
+                    '''
+                    %s missing dependenc%s just installed. Sublime Text
+                    should be restarted, otherwise one or more of the
+                    installed packages may not function properly.
+                    ''',
+                    (num_installed, dependency_was)
+                )
+            sublime.set_timeout(notify_restart, 1000)
+
+        return num_installed
+
+    def install_missing_packages(self):
+        """
+        Installs all packages that were listed in the list of
+        `installed_packages` from Package Control.sublime-settings but were not
+        found on the filesystem and passed as `found_packages`.
+        """
 
         # Missing package installs are controlled by a setting
-        if not self.missing_packages or not self.should_install_missing:
+        if not self.missing_packages or not self.settings.get('install_missing'):
             return
 
-        total_missing_packages = len(self.missing_packages)
+        num_missing = len(self.missing_packages)
 
-        if total_missing_packages > 0:
-            package_s = 's' if total_missing_packages != 1 else ''
-            console_write(
-                '''
-                Installing %s missing package%s
-                ''',
-                (total_missing_packages, package_s)
-            )
+        package_s = 's' if num_missing > 1 else ''
+        console_write('Installing %s missing package%s', (num_missing, package_s))
 
         # Fetching the list of packages also grabs the renamed packages
         self.manager.list_available_packages()
         renamed_packages = self.manager.settings.get('renamed_packages', {})
 
-        # Disabling a package means changing settings, which can only be done
-        # in the main thread. We just sleep in this thread for a bit to ensure
-        # that the packages have been disabled and are ready to be installed.
-        disabled_packages = []
-
-        def disable_packages():
-            disabled_packages.extend(self.installer.disable_packages(self.missing_packages, 'install'))
-        sublime.set_timeout(disable_packages, 1)
+        disabled_packages = self.installer.disable_packages(self.missing_packages, 'install')
 
         time.sleep(0.7)
 
@@ -194,45 +126,21 @@ class AutomaticUpgrader(threading.Thread):
                 old_name = package
                 new_name = renamed_packages[old_name]
 
-                def update_installed_packages():
-                    self.installed_packages.remove(old_name)
-                    self.installed_packages.append(new_name)
-                    self.settings.set('installed_packages', self.installed_packages)
-                    sublime.save_settings(pc_settings_filename())
+                self.installed_packages.remove(old_name)
+                self.installed_packages.append(new_name)
+                self.settings.set('installed_packages', self.installed_packages)
+                sublime.save_settings(pc_settings_filename())
+                # remove the old package from list of disabled packages
+                if package in disabled_packages:
+                    self.installer.reenable_package(package, 'remove')
 
-                sublime.set_timeout(update_installed_packages, 10)
                 package = new_name
 
-            if self.installer.manager.install_package(package):
+            if self.manager.install_package(package):
                 if package in disabled_packages:
-                    # We use a functools.partial to generate the on-complete callback in
-                    # order to bind the current value of the parameters, unlike lambdas.
-                    on_complete = functools.partial(self.installer.reenable_package, package, 'install')
-                    sublime.set_timeout(on_complete, 700)
+                    self.installer.reenable_package(package, 'install')
 
-                console_write(
-                    '''
-                    Installed missing package %s
-                    ''',
-                    package
-                )
-
-    def print_skip(self):
-        """
-        Prints a notice in the console if the automatic upgrade is skipped
-        due to already having been run in the last `auto_upgrade_frequency`
-        hours.
-        """
-
-        last_run = datetime.datetime.fromtimestamp(self.last_run)
-        next_run = datetime.datetime.fromtimestamp(self.next_run)
-        date_format = '%Y-%m-%d %H:%M:%S'
-        console_write(
-            '''
-            Skipping automatic upgrade, last run at %s, next run at %s or after
-            ''',
-            (last_run.strftime(date_format), next_run.strftime(date_format))
-        )
+                console_write('Installed missing package %s', package)
 
     def upgrade_packages(self):
         """
@@ -240,78 +148,96 @@ class AutomaticUpgrader(threading.Thread):
         version. Also renames any installed packages to their new names.
         """
 
-        if not self.auto_upgrade:
+        if not self.settings.get('auto_upgrade'):
+            return
+
+        cookie = LastRunCookie(self.settings.get('auto_upgrade_frequency'))
+        if not cookie.elapsed():
+            last_run = datetime.datetime.fromtimestamp(cookie.last_run)
+            next_run = datetime.datetime.fromtimestamp(cookie.next_run)
+            date_format = '%Y-%m-%d %H:%M:%S'
+            console_write(
+                '''
+                Skipping automatic upgrade, last run at %s, next run at %s or after
+                ''',
+                (last_run.strftime(date_format), next_run.strftime(date_format))
+            )
             return
 
         self.package_renamer.rename_packages(self.installer)
 
-        package_list = self.installer.make_package_list(
-            [
-                'install',
-                'reinstall',
-                'downgrade',
-                'overwrite',
-                'none'
-            ],
-            ignore_packages=self.auto_upgrade_ignore
-        )
+        # Create a list of package names to upgrade
+        packages = [
+            p[0] for p in self.installer.make_package_list(
+                ['install', 'reinstall', 'downgrade', 'overwrite', 'none'],
+                ignore_packages=self.settings.get('auto_upgrade_ignore')
+            )
+        ]
 
         # If Package Control is being upgraded, just do that and restart
-        for package in package_list:
-            if package[0] != 'Package Control':
-                continue
+        if 'Package Control' in packages:
+            packages = ['Package Control']
+        else:
+            cookie.update()
 
-            if self.last_run:
-                def reset_last_run():
-                    # Re-save the last run time so it runs again after PC has
-                    # been updated
-                    self.save_last_run(self.last_run)
-                sublime.set_timeout(reset_last_run, 1)
-            package_list = [package]
-            break
-
-        if not package_list:
-            console_write(
-                '''
-                No updated packages
-                '''
-            )
+        if not packages:
+            console_write('No updated packages')
             return
 
-        console_write(
-            '''
-            Installing %s upgrades
-            ''',
-            len(package_list)
-        )
+        console_write('Installing %s upgrades', len(packages))
 
-        disabled_packages = []
-
-        # Disabling a package means changing settings, which can only be done
-        # in the main thread. We then then wait a bit and continue with the
-        # upgrades.
-        def disable_packages():
-            packages = [info[0] for info in package_list]
-            disabled_packages.extend(self.installer.disable_packages(packages, 'upgrade'))
-        sublime.set_timeout(disable_packages, 1)
+        disabled_packages = self.installer.disable_packages(packages, 'upgrade')
 
         # Wait so that the ignored packages can be "unloaded"
         time.sleep(0.7)
 
-        for info in package_list:
-            package_name = info[0]
+        for package in packages:
+            if self.manager.install_package(package):
+                if package in disabled_packages:
+                    self.installer.reenable_package(package, 'upgrade')
+                version = self.manager.get_version(package)
+                console_write('Upgraded %s to %s', (package, version))
 
-            if self.installer.manager.install_package(package_name):
-                if package_name in disabled_packages:
-                    # We use a functools.partial to generate the on-complete callback in
-                    # order to bind the current value of the parameters, unlike lambdas.
-                    on_complete = functools.partial(self.installer.reenable_package, package_name, 'upgrade')
-                    sublime.set_timeout(on_complete, 700)
 
-                version = self.installer.manager.get_version(package_name)
-                console_write(
-                    '''
-                    Upgraded %s to %s
-                    ''',
-                    (package_name, version)
-                )
+class LastRunCookie(object):
+
+    """
+    A class to handle loading, checking and updating the last-run file.
+    """
+
+    def __init__(self, frequency):
+        self.frequency = frequency
+        self.now = None
+        self.next_run = None
+        self.last_run = None
+        self.last_run_file = os.path.join(
+            sublime.cache_path(), 'Package Control', 'last-run')
+        try:
+            with open(self.last_run_file) as f:
+                self.last_run = int(f.read())
+        except (FileNotFoundError, ValueError):
+            pass
+
+    def elapsed(self):
+        """
+        Check if it's time for upate.
+
+        :returns:
+            True if last update was long ago.
+        """
+        self.now = int(time.time())
+        if self.frequency and self.last_run:
+            self.next_run = int(self.last_run) + (self.frequency * 60 * 60)
+        else:
+            self.next_run = self.now
+
+        return self.now >= self.next_run
+
+    def update(self):
+        """
+        Update the last_run with the timestamp.
+        """
+        os.makedirs(os.path.dirname(self.last_run_file), mode=0o555, exist_ok=True)
+        with open(self.last_run_file, 'w') as f:
+            f.write(str(int(self.now)))
+            self.last_run = self.now
