@@ -1,109 +1,104 @@
-import time
 import threading
 import unittest
-
-import sublime
 
 from . import clients
 from . import providers
 
 
-class StringQueue():
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.queue = ''
+def select_and_run(window):
+    tests = {
+        'Clients Tests': (
+            clients.BitBucketClientTests,
+            clients.GitHubClientTests,
+        ),
+
+        'Provider Tests': (
+            providers.BitBucketRepositoryProviderTests,
+            providers.ChannelProviderTests,
+            providers.GitHubRepositoryProviderTests,
+            providers.GitHubUserProviderTests,
+            providers.RepositoryProviderTests,
+        ),
+    }
+    panel_items = ['All Tests'] + sorted(tests.keys())
+
+    def on_done(index):
+        # canceled
+        if index == -1:
+            return
+        # all tests
+        elif index == 0:
+            name = panel_items[index]
+            run(window, name, [item for group in tests.values() for item in group])
+        # run selected tests
+        elif index > 0:
+            name = panel_items[index]
+            run(window, name, tests[name])
+
+    window.show_quick_panel(panel_items, on_done)
+
+
+def run(window, caption, test_cases):
+    """
+    Start a thread to run the provided unittests in.
+
+    :param: window
+        A Sublime Text window to show the output panel in.
+
+    :param: caption
+        The text to show in the initial message.
+
+    :param: test_cases
+        An iterateable object containing all the test cases to run.
+    """
+
+    def worker(window, test_cases):
+        """The worker to run the unittests."""
+        output = OutputPanel(window)
+        output.write('Running Package Control "%s"\n\n' % caption)
+
+        suite = unittest.TestSuite()
+
+        loader = unittest.TestLoader()
+        for test_case in test_cases:
+            suite.addTest(loader.loadTestsFromTestCase(test_case))
+
+        unittest.TextTestRunner(stream=output, verbosity=1).run(suite)
+
+    threading.Thread(target=worker, args=(window, test_cases)).start()
+
+
+class OutputPanel():
+
+    """
+    A stream to output content to a Sublime Text output panel.
+    """
+
+    NAME = 'package_control_tests'
+    SETTINGS = {
+        "auto_indent": False,
+        "draw_indent_guides": False,
+        "draw_white_space": "None",
+        "gutter": False,
+        "is_widget": True,
+        "line_numbers": False,
+        "match_brackets": False,
+        "scroll_past_end": False,
+        'word_wrap': True
+    }
+
+    def __init__(self, window):
+        self.panel = window.create_output_panel(self.NAME)
+        for key, value in self.SETTINGS.items():
+            self.panel.settings().set(key, value)
+        window.run_command('show_panel', {'panel': 'output.' + self.NAME})
 
     def write(self, data):
-        self.lock.acquire()
-        self.queue += data
-        self.lock.release()
+        self.panel.run_command('append', {'characters': data})
+        self.panel.show(self.panel.size(), True)
 
     def get(self):
-        self.lock.acquire()
-        output = self.queue
-        self.queue = ''
-        self.lock.release()
-        return output
+        pass
 
     def flush(self):
         pass
-
-
-def run_all(window):
-    """
-    Run all test cases defined in this package.
-
-    :param window:
-        A sublime.Window object to use to display the results
-    """
-
-    test_classes = [
-        # clients
-        clients.BitBucketClientTests,
-        clients.GitHubClientTests,
-
-        # providers
-        providers.BitBucketRepositoryProviderTests,
-        providers.ChannelProviderTests,
-        providers.GitHubRepositoryProviderTests,
-        providers.GitHubUserProviderTests,
-        providers.RepositoryProviderTests,
-    ]
-    runner(window, test_classes)
-
-
-def runner(window, test_classes):
-    """
-    Runs tests in a thread and outputs the results to an output panel
-
-    :param window:
-        A sublime.Window object to use to display the results
-
-    :param test_classes:
-        A unittest.TestCase class, or list of classes
-    """
-
-    output = StringQueue()
-
-    panel = window.get_output_panel('package_control_tests')
-    panel.settings().set('word_wrap', True)
-
-    window.run_command('show_panel', {'panel': 'output.package_control_tests'})
-
-    threading.Thread(target=show_results, args=(panel, output)).start()
-    threading.Thread(target=do_run, args=(test_classes, output)).start()
-
-
-def do_run(test_classes, output):
-    if not isinstance(test_classes, list) and not isinstance(test_classes, tuple):
-        test_classes = [test_classes]
-
-    suite = unittest.TestSuite()
-
-    loader = unittest.TestLoader()
-    for test_class in test_classes:
-        suite.addTest(loader.loadTestsFromTestCase(test_class))
-
-    unittest.TextTestRunner(stream=output, verbosity=1).run(suite)
-    output.write("\x04")
-
-
-def show_results(panel, output):
-    def write_to_panel(chars):
-        sublime.set_timeout(lambda: panel.run_command('package_control_insert', {'string': chars}), 10)
-
-    write_to_panel(u'Running Package Control Tests\n\n')
-
-    while True:
-        chars = output.get()
-
-        if chars == '':
-            time.sleep(0.1)
-            continue
-
-        if chars[-1] == "\x04":
-            chars = chars[0:-1]
-            write_to_panel(chars)
-            break
-
-        write_to_panel(chars)
