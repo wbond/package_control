@@ -1,20 +1,27 @@
 import os
 import time
-from functools import partial
 
 import sublime
 
 from .console_write import console_write
-from .package_disabler import PackageDisabler
-from .settings import pc_settings_filename, load_list_setting, save_list_setting
+from .settings import load_list_setting
+from .settings import pc_settings_filename
+from .settings import save_list_setting
 
 
-class PackageRenamer(PackageDisabler):
+class PackageRenamer(object):
 
     """
     Class to handle renaming packages via the renamed_packages setting
     gathered from channels and repositories.
     """
+
+    def __init__(self):
+        """
+        Initiate new PackageRenamer object
+        """
+
+        self.original_installed_packages = None
 
     def load_settings(self):
         """
@@ -75,14 +82,11 @@ class PackageRenamer(PackageDisabler):
             else:
                 continue
 
-            # We use a functools.partial to generate the on-complete callback in
-            # order to bind the current value of the parameters, unlike lambdas.
-            # This is needed for a total of 4 times here.
-            sublime.set_timeout(partial(self.disable_packages, package_name, 'remove'), 10)
+            installer.disable_packages(package_name, 'remove')
 
             remove_result = True
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
-                sublime.set_timeout(partial(self.disable_packages, new_package_name, 'install'), 10)
+                installer.disable_packages(new_package_name, 'install')
                 time.sleep(0.7)
 
                 # Windows will not allow you to rename to the same name with
@@ -104,7 +108,7 @@ class PackageRenamer(PackageDisabler):
                     ''',
                     (package_name, new_package_name)
                 )
-                sublime.set_timeout(partial(self.reenable_package, new_package_name, 'install'), 700)
+                installer.reenable_package(new_package_name, 'install')
 
             else:
                 time.sleep(0.7)
@@ -119,14 +123,14 @@ class PackageRenamer(PackageDisabler):
 
             # Do not reenable if removal has been delayed until next restart
             if remove_result is not None:
-                sublime.set_timeout(partial(self.reenable_package, package_name, 'remove'), 700)
+                installer.reenable_package(package_name, 'remove')
 
             try:
                 installed_packages.remove(package_name)
             except (ValueError):
                 pass
 
-        sublime.set_timeout(lambda: self.save_packages(installed_packages), 10)
+        self.save_packages(installed_packages)
 
     def save_packages(self, installed_packages):
         """

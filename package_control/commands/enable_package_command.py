@@ -1,17 +1,26 @@
-import sublime
 import sublime_plugin
 
 from ..package_disabler import PackageDisabler
-from ..settings import preferences_filename, load_list_setting
 from ..show_error import show_message
 from ..show_error import status_message
 from ..show_quick_panel import show_quick_panel
 
 
-class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
+class EnablePackageCommand(sublime_plugin.WindowCommand):
 
     """
     A command that removes a package from Sublime Text's ignored packages list
+    """
+
+    def run(self):
+        EnablePackageWorker(self.window).start()
+
+
+class EnablePackageWorker(PackageDisabler):
+
+    """
+    A worker to handle all temporary objects required to display a quick panel to
+    list packages and remove the selected one from Sublime Text's ignored packages list
     """
 
     def __init__(self, window):
@@ -20,17 +29,19 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
             An instance of :class:`sublime.Window` that represents the Sublime
             Text window to show the list of installed packages in.
         """
+        self.window = window
+        self.package_list = None
 
-        sublime_plugin.WindowCommand.__init__(self, window)
-        self.disabled_packages = None
+    def start(self):
+        """
+        The threading.Thread API compatible entry point to start the command.
+        """
 
-    def run(self):
-        settings = sublime.load_settings(preferences_filename())
-        self.disabled_packages = load_list_setting(settings, 'ignored_packages')
-        if not self.disabled_packages:
+        self.package_list = self.disabled_packages()
+        if not self.package_list:
             show_message('There are no disabled packages to enable')
             return
-        show_quick_panel(self.window, self.disabled_packages, self.on_done)
+        show_quick_panel(self.window, self.package_list, self.on_done)
 
     def on_done(self, picked):
         """
@@ -43,7 +54,7 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
 
         if picked == -1:
             return
-        package = self.disabled_packages[picked]
+        package = self.package_list[picked]
 
         self.reenable_package(package, 'enable')
 

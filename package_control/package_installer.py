@@ -1,8 +1,7 @@
+import functools
 import re
 import threading
 import time
-
-import sublime
 
 from .package_disabler import PackageDisabler
 from .package_manager import PackageManager
@@ -18,12 +17,6 @@ class PackageInstaller(PackageDisabler):
 
     def __init__(self):
         self.manager = PackageManager()
-        # Track what the color scheme was before upgrade so we can restore it
-        self.old_color_scheme_package = None
-        self.old_color_scheme = None
-        # Track what the theme was before upgrade so we can restore it
-        self.old_theme_package = None
-        self.old_theme = None
 
     def make_package_list(self, ignore_actions=[], override_action=None, ignore_packages=[]):
         """
@@ -137,33 +130,45 @@ class PackageInstaller(PackageDisabler):
             package_list.append(package_entry)
         return package_list
 
-    def on_done(self, picked):
+    def install(self, package_name, disabled_packages, pause=False):
         """
-        Quick panel user selection handler - disables a package, installs or
-        upgrades it, then re-enables the package
-
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
+        Install a single package.
         """
-
-        if picked == -1:
-            return
-        name = self.package_list[picked][0]
-
-        if name in self.disable_packages(name, 'install'):
-            def on_complete():
-                self.reenable_package(name, 'install')
+        if package_name in disabled_packages:
+            # We use a functools.partial to generate the on-complete callback in
+            # order to bind the current value of the parameters, unlike lambdas.
+            on_complete = functools.partial(self.reenable_package, package_name, 'install')
         else:
             on_complete = None
 
-        thread = PackageInstallerThread(self.manager, name, on_complete)
+        thread = PackageInstallerThread(self.manager, package_name, on_complete, pause)
         thread.start()
         ThreadProgress(
             thread,
-            'Installing package %s' % name,
-            'Package %s successfully %s' % (name, self.completion_type)
+            'Installing package %s' % package_name,
+            'Package %s successfully installed' % package_name
         )
+        return thread
+
+    def upgrade(self, package_name, disabled_packages, pause=False):
+        """
+        Upgrade a single package and reenable after upgrade.
+        """
+
+        if package_name in disabled_packages:
+            # We use a functools.partial to generate the on-complete callback in
+            # order to bind the current value of the parameters, unlike lambdas.
+            on_complete = functools.partial(self.reenable_package, package_name, 'upgrade')
+        else:
+            on_complete = None
+        thread = PackageInstallerThread(self.manager, package_name, on_complete, pause)
+        thread.start()
+        ThreadProgress(
+            thread,
+            'Upgrading package %s' % package_name,
+            'Package %s successfully upgraded' % package_name
+        )
+        return thread
 
 
 class PackageInstallerThread(threading.Thread):
@@ -193,6 +198,7 @@ class PackageInstallerThread(threading.Thread):
         self.manager = manager
         self.on_complete = on_complete
         self.pause = pause
+        self.result = None
         threading.Thread.__init__(self)
 
     def run(self):
@@ -200,10 +206,10 @@ class PackageInstallerThread(threading.Thread):
             time.sleep(0.7)
         try:
             self.result = self.manager.install_package(self.package)
-        except (Exception):
+        except:
             self.result = False
             raise
         finally:
             # Do not reenable if deferred until next restart
             if self.on_complete and self.result is not None:
-                sublime.set_timeout(self.on_complete, 700)
+                self.on_complete()

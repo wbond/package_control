@@ -1,13 +1,9 @@
-import functools
 import re
 import threading
-import time
 
-import sublime
 import sublime_plugin
 
-from ..package_disabler import PackageDisabler
-from ..package_manager import PackageManager
+from ..package_installer import PackageInstaller
 from ..show_error import show_error
 from ..thread_progress import ThreadProgress
 
@@ -65,7 +61,7 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
         ThreadProgress(thread, message, '')
 
 
-class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
+class AdvancedInstallPackageThread(threading.Thread, PackageInstaller):
 
     """
     A thread to run the installation of one or more packages in
@@ -78,30 +74,25 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
             Text window to show the available package list in.
         """
 
-        self.manager = PackageManager()
         self.packages = packages
-
-        self.installed = self.manager.list_packages()
-        self.disabled = []
-        for package_name in packages:
-            operation_type = 'install' if package_name not in self.installed else 'upgrade'
-            self.disabled.extend(self.disable_packages(package_name, operation_type))
-
         threading.Thread.__init__(self)
+        PackageInstaller.__init__(self)
 
     def run(self):
-        # Allow packages to properly disable
-        time.sleep(0.7)
+        installed = self.manager.list_packages()
 
-        def do_reenable_package(package_name):
-            operation_type = 'install' if package_name not in self.installed else 'upgrade'
-            self.reenable_package(package_name, operation_type)
+        packages_to_install = [p for p in self.packages if p not in installed]
+        packages_to_upgrade = [p for p in self.packages if p in installed]
 
-        for package in self.packages:
-            result = self.manager.install_package(package)
+        disabled_for_install = self.disable_packages(packages_to_install, 'install')
+        disabled_for_upgrade = self.disable_packages(packages_to_upgrade, 'upgrade')
 
-            # Do not reenable if installation deferred until next restart
-            if result is not None and package in self.disabled:
-                # We use a functools.partial to generate the on-complete callback in
-                # order to bind the current value of the parameters, unlike lambdas.
-                sublime.set_timeout(functools.partial(do_reenable_package, package), 700)
+        # wait with installing the first package
+        pause = True
+
+        for package in packages_to_install:
+            self.install(package, disabled_for_install, pause)
+            pause = False
+
+        for package in packages_to_upgrade:
+            self.upgrade(package, disabled_for_upgrade, False)

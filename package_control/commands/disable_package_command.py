@@ -1,19 +1,27 @@
-import sublime
 import sublime_plugin
 
 from ..package_disabler import PackageDisabler
 from ..package_manager import PackageManager
-from ..settings import load_list_setting
-from ..settings import preferences_filename
 from ..show_error import show_message
 from ..show_error import status_message
 from ..show_quick_panel import show_quick_panel
 
 
-class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
+class DisablePackageCommand(sublime_plugin.WindowCommand):
 
     """
     A command that adds a package to Sublime Text's ignored packages list
+    """
+
+    def run(self):
+        DisablePackageWorker(self.window).start()
+
+
+class DisablePackageWorker(PackageDisabler):
+
+    """
+    A worker to handle all temporary objects required to display a quick panel to
+    list packages and add the selected one to Sublime Text's ignored packages list
     """
 
     def __init__(self, window):
@@ -22,16 +30,22 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
             An instance of :class:`sublime.Window` that represents the Sublime
             Text window to show the list of installed packages in.
         """
-
-        sublime_plugin.WindowCommand.__init__(self, window)
+        self.window = window
         self.package_list = None
 
-    def run(self):
+    def start(self):
+        """
+        The threading.Thread API compatible entry point to start the command.
+        """
+
         packages = PackageManager().list_all_packages()
-        settings = sublime.load_settings(preferences_filename())
-        ignored = load_list_setting(settings, 'ignored_packages')
+        ignored = self.disabled_packages()
         self.package_list = sorted(
             set(packages) - set(ignored), key=lambda s: s.lower())
+
+        # Never let user disable Package Control
+        self.package_list.remove("Package Control")
+
         if not self.package_list:
             show_message('There are no enabled packages to disable')
             return

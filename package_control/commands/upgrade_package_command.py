@@ -2,7 +2,7 @@ import threading
 
 import sublime_plugin
 
-from ..package_installer import PackageInstaller, PackageInstallerThread
+from ..package_installer import PackageInstaller
 from ..package_renamer import PackageRenamer
 from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
@@ -16,10 +16,7 @@ class UpgradePackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        package_renamer = PackageRenamer()
-        package_renamer.load_settings()
-
-        thread = UpgradePackageThread(self.window, package_renamer)
+        thread = UpgradePackageThread(self.window)
         thread.start()
         ThreadProgress(thread, 'Loading repositories', '')
 
@@ -30,24 +27,21 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
     A thread to run the action of retrieving upgradable packages in.
     """
 
-    def __init__(self, window, package_renamer):
+    def __init__(self, window):
         """
         :param window:
             An instance of :class:`sublime.Window` that represents the Sublime
             Text window to show the list of upgradable packages in.
-
-        :param package_renamer:
-            An instance of :class:`PackageRenamer`
         """
         self.window = window
         self.package_list = None
-        self.package_renamer = package_renamer
-        self.completion_type = 'upgraded'
+        self.renamer = PackageRenamer()
+        self.renamer.load_settings()
         threading.Thread.__init__(self)
         PackageInstaller.__init__(self)
 
     def run(self):
-        self.package_renamer.rename_packages(self)
+        self.renamer.rename_packages(self)
 
         self.package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
@@ -66,20 +60,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
             list. -1 means the user cancelled.
         """
 
-        if picked == -1:
-            return
-        name = self.package_list[picked][0]
-
-        if name in self.disable_packages(name, 'upgrade'):
-            def on_complete():
-                self.reenable_package(name)
-        else:
-            on_complete = None
-
-        thread = PackageInstallerThread(self.manager, name, on_complete, pause=True)
-        thread.start()
-        ThreadProgress(
-            thread,
-            'Upgrading package %s' % name,
-            'Package %s successfully %s' % (name, self.completion_type)
-        )
+        if picked > -1:
+            name = self.package_list[picked][0]
+            disabled_packages = self.disable_packages(name, 'upgrade')
+            self.upgrade(name, disabled_packages, True)

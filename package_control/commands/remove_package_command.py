@@ -1,7 +1,6 @@
 import threading
 import time
 
-import sublime
 import sublime_plugin
 
 from ..package_disabler import PackageDisabler
@@ -11,11 +10,21 @@ from ..thread_progress import ThreadProgress
 from .existing_packages_command import ExistingPackagesCommand
 
 
-class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand, PackageDisabler):
+class RemovePackageCommand(sublime_plugin.WindowCommand):
 
     """
     A command that presents a list of installed packages, allowing the user to
     select one to remove
+    """
+
+    def run(self):
+        ListRemovePackageThread(self.window).start()
+
+
+class ListRemovePackageThread(threading.Thread, ExistingPackagesCommand):
+
+    """
+    A thread to prevent the listing of existing packages from freezing the UI
     """
 
     def __init__(self, window):
@@ -25,9 +34,10 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
             Text window to show the list of installed packages in.
         """
 
-        sublime_plugin.WindowCommand.__init__(self, window)
-        ExistingPackagesCommand.__init__(self)
+        self.window = window
         self.package_list = None
+        threading.Thread.__init__(self)
+        ExistingPackagesCommand.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list('remove')
@@ -49,8 +59,6 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
             return
         package = self.package_list[picked][0]
 
-        self.disable_packages(package, 'remove')
-
         thread = RemovePackageThread(self.manager, package)
         thread.start()
         ThreadProgress(
@@ -63,8 +71,7 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
 class RemovePackageThread(threading.Thread, PackageDisabler):
 
     """
-    A thread to run the remove package operation in so that the Sublime Text
-    UI does not become frozen
+    A thread to run the remove package operation without freezing Sublime Text UI.
     """
 
     def __init__(self, manager, package):
@@ -73,13 +80,13 @@ class RemovePackageThread(threading.Thread, PackageDisabler):
         threading.Thread.__init__(self)
 
     def run(self):
+        self.disable_packages(self.package, 'remove')
+
         # Let the package disabling take place
         time.sleep(0.7)
-        self.result = self.manager.remove_package(self.package)
+
+        result = self.manager.remove_package(self.package)
 
         # Do not reenable if removing deferred until next restart
-        if self.result is not None:
-            def unignore_package():
-                self.reenable_package(self.package, 'remove')
-
-            sublime.set_timeout(unignore_package, 200)
+        if result is not None:
+            self.reenable_package(self.package, 'remove')

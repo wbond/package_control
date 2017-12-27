@@ -13,6 +13,16 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
     A command to remove a channel from the user's Package Control settings
     """
 
+    def run(self):
+        RemoveChannelWorker(self.window).start()
+
+
+class RemoveChannelWorker(object):
+
+    """
+    A worker class to remove a channel from the user's Package Control settings
+    """
+
     def __init__(self, window):
         """
         :param window:
@@ -20,14 +30,16 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
             Text window to show the list of installed packages in.
         """
 
-        sublime_plugin.WindowCommand.__init__(self, window)
-        self.channels = None
-        self.settings = None
-
-    def run(self):
+        self.window = window
         self.settings = sublime.load_settings(pc_settings_filename())
-        self.channels = self.settings.get('channels')
+        self.channels = None
 
+    def start(self):
+        """
+        The threading.Thread API compatible entry point to start the command.
+        """
+
+        self.channels = self.settings.get('channels')
         if not self.channels:
             show_message('There are no channels to remove')
             return

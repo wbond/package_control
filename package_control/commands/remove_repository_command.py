@@ -13,6 +13,16 @@ class RemoveRepositoryCommand(sublime_plugin.WindowCommand):
     A command to remove a repository from the user's Package Control settings
     """
 
+    def run(self):
+        RemoveRepositoryWorker(self.window).start()
+
+
+class RemoveRepositoryWorker(object):
+
+    """
+    A worker class to remove a repository from the user's Package Control settings
+    """
+
     def __init__(self, window):
         """
         :param window:
@@ -20,12 +30,15 @@ class RemoveRepositoryCommand(sublime_plugin.WindowCommand):
             Text window to show the list of installed packages in.
         """
 
-        sublime_plugin.WindowCommand.__init__(self, window)
-        self.settings = None
+        self.window = window
+        self.settings = sublime.load_settings(pc_settings_filename())
         self.repositories = None
 
-    def run(self):
-        self.settings = sublime.load_settings(pc_settings_filename())
+    def start(self):
+        """
+        The threading.Thread API compatible entry point to start the command.
+        """
+
         self.repositories = load_list_setting(self.settings, 'repositories')
         if not self.repositories:
             show_message('There are no repositories to remove')

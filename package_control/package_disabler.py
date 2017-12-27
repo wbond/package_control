@@ -23,7 +23,7 @@ except (ImportError):
     events = None
 
 
-class PackageDisabler():
+class PackageDisabler(object):
     old_color_scheme_package = None
     old_color_scheme = None
 
@@ -53,6 +53,13 @@ class PackageDisabler():
                     pass
 
         return 'unknown version'
+
+    def disabled_packages(self):
+        """
+        Return the list of disabled packages.
+        """
+        settings = sublime.load_settings(preferences_filename())
+        return load_list_setting(settings, 'ignored_packages')
 
     def disable_packages(self, packages, type='upgrade'):
         """

@@ -1,6 +1,8 @@
 import sublime
 import sublime_plugin
 
+from ..settings import load_list_setting
+from ..settings import pc_settings_filename
 from .list_packages_command import ListPackagesThread
 
 
@@ -13,10 +15,10 @@ class ListUnmanagedPackagesCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        settings = sublime.load_settings('Package Control.sublime-settings')
+        settings = sublime.load_settings(pc_settings_filename())
 
-        ignored_packages = settings.get('unmanaged_packages_ignore', [])
-        ignored_packages.extend(settings.get('installed_packages', []))
+        ignored_packages = load_list_setting(settings, 'unmanaged_packages_ignore')
+        ignored_packages.extend(load_list_setting(settings, 'installed_packages'))
 
         def filter_packages(package):
             return package[0] not in ignored_packages

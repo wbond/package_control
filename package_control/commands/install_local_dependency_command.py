@@ -9,6 +9,12 @@ from ..show_quick_panel import show_quick_panel
 
 class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
 
+    def run(self):
+        InstallLocalDependencyWorker(self.window).start()
+
+
+class InstallLocalDependencyWorker(object):
+
     """
     A command that allows package developers to install a dependency that exists
     in the Packages/ folder, but is not currently being loaded.
@@ -21,11 +27,15 @@ class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
             Text window to show the list of installed packages in.
         """
 
-        sublime_plugin.WindowCommand.__init__(self, window)
+        self.window = window
         self.manager = PackageManager()
         self.dependency_list = None
 
-    def run(self):
+    def start(self):
+        """
+        The threading.Thread API compatible entry point to start the command.
+        """
+
         dependencies = self.manager.list_unloaded_dependencies()
         self.dependency_list = sorted(dependencies, key=lambda s: s.lower())
         if not self.dependency_list:

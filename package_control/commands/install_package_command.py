@@ -36,7 +36,6 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
         """
 
         self.window = window
-        self.completion_type = 'installed'
         self.package_list = None
         threading.Thread.__init__(self)
         PackageInstaller.__init__(self)
@@ -56,3 +55,18 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
             )
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
+
+    def on_done(self, picked):
+        """
+        Quick panel user selection handler - disables a package, installs or
+        upgrades it, then re-enables the package
+
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
+        if picked > -1:
+            name = self.package_list[picked][0]
+            disabled_packages = self.disable_packages(name, 'install')
+            self.install(self.package_list[picked][0], disabled_packages, True)

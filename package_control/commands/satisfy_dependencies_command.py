@@ -1,7 +1,5 @@
-import functools
 import threading
 
-import sublime
 import sublime_plugin
 
 from ..console_write import console_write
@@ -18,8 +16,7 @@ class SatisfyDependenciesCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        manager = PackageManager()
-        thread = SatisfyDependenciesThread(manager)
+        thread = SatisfyDependenciesThread()
         thread.start()
         ThreadProgress(thread, 'Satisfying dependencies', '')
 
@@ -31,19 +28,16 @@ class SatisfyDependenciesThread(threading.Thread):
     default PackageInstaller.on_done quick panel handler.
     """
 
-    def __init__(self, manager):
-        self.manager = manager
+    def __init__(self):
+        self.manager = PackageManager()
         threading.Thread.__init__(self)
-
-    def show_error(self, msg):
-        sublime.set_timeout(functools.partial(show_error, msg), 10)
 
     def run(self):
         required_dependencies = self.manager.find_required_dependencies()
         error = False
 
         if not self.manager.install_dependencies(required_dependencies, fail_early=False):
-            self.show_error(
+            show_error(
                 '''
                 One or more dependencies could not be installed or updated.
 
@@ -53,7 +47,7 @@ class SatisfyDependenciesThread(threading.Thread):
             error = True
 
         if not self.manager.cleanup_dependencies(required_dependencies=required_dependencies):
-            self.show_error(
+            show_error(
                 '''
                 One or more orphaned dependencies could not be removed.
 

@@ -6,7 +6,7 @@ import sublime
 from ..package_manager import PackageManager
 
 
-class ExistingPackagesCommand():
+class ExistingPackagesCommand(object):
 
     """
     Allows listing installed packages and their current version
@@ -37,7 +37,7 @@ class ExistingPackagesCommand():
             action += ' '
 
         package_list = []
-        for package in sorted(packages, key=lambda s: s.lower()):
+        for package in packages:
             package_entry = [package]
             metadata = self.manager.get_metadata(package)
             package_dir = os.path.join(sublime.packages_path(), package)
