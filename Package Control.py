@@ -85,6 +85,7 @@ try:
     from .package_control.commands import *  # noqa
     from .package_control.console_write import console_write
     from .package_control.package_cleanup import PackageCleanup
+    from .package_control.path import unpacked_package_path
     from .package_control.settings import pc_settings_filename
 
     def plugin_loaded():
@@ -95,7 +96,7 @@ try:
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
         try:
-            os.path.exists(os.path.join(sublime.packages_path(), "fran\u00e7ais"))
+            os.path.exists(unpacked_package_path("fran\u00e7ais"))
         except UnicodeEncodeError:
             message = text.format(
                 '''

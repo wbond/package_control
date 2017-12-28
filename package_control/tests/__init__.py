@@ -4,6 +4,7 @@ import unittest
 from . import clients
 from . import downloaders
 from . import http_cache
+from . import path
 from . import providers
 
 
@@ -23,6 +24,10 @@ def select_and_run(window):
 
         'Http Cache Tests': (
             http_cache.HttpCacheTests,
+        ),
+
+        'Path Tests': (
+            path.PathTests,
         ),
 
         'Provider Tests': (

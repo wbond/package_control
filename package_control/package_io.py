@@ -1,9 +1,9 @@
 import os
 import zipfile
 
-import sublime
-
 from .console_write import console_write
+from .path import installed_package_path
+from .path import unpacked_package_path
 
 
 def read_package_file(package, relative_path, binary=False):
@@ -54,7 +54,7 @@ def package_file_exists(package, relative_path):
 
 
 def _read_regular_file(package, relative_path, binary=False):
-    file_path = os.path.join(sublime.packages_path(), package, relative_path)
+    file_path = os.path.join(unpacked_package_path(package), relative_path)
 
     mode, encoding = ('rb', None) if binary else ('r', 'utf-8')
     with open(file_path, mode=mode, encoding=encoding) as f:
@@ -62,10 +62,8 @@ def _read_regular_file(package, relative_path, binary=False):
 
 
 def _read_zip_file(package, relative_path, binary=False):
-    zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
-
     try:
-        package_zip = zipfile.ZipFile(zip_path, 'r')
+        package_zip = zipfile.ZipFile(installed_package_path(package), 'r')
 
     except (FileNotFoundError):
         return False
@@ -119,15 +117,13 @@ def _read_zip_file(package, relative_path, binary=False):
 
 
 def _regular_file_exists(package, relative_path):
-    file_path = os.path.join(sublime.packages_path(), package, relative_path)
+    file_path = os.path.join(unpacked_package_path(package), relative_path)
     return os.path.exists(file_path)
 
 
 def _zip_file_exists(package, relative_path):
-    zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
-
     try:
-        package_zip = zipfile.ZipFile(zip_path, 'r')
+        package_zip = zipfile.ZipFile(installed_package_path(package), 'r')
 
     except (FileNotFoundError):
         return False

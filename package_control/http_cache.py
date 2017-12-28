@@ -1,7 +1,7 @@
 import os
 import time
 
-import sublime
+from .path import cache_path
 
 
 class HttpCache(object):
@@ -16,8 +16,7 @@ class HttpCache(object):
 
         Ensure the http cache folder exists and out-dated entries are removed.
         """
-        self.base_path = os.path.join(
-            sublime.cache_path(), 'Package Control', 'http')
+        self.base_path = os.path.join(cache_path(), 'http')
         os.makedirs(self.base_path, mode=0o555, exist_ok=True)
 
         self.clear(ttl)

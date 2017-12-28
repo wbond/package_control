@@ -29,6 +29,11 @@ from .download_manager import downloader
 from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.exceptions import DownloaderException
 from .package_io import read_package_file
+from .path import default_packages_path
+from .path import installed_package_path
+from .path import installed_packages_path
+from .path import unpacked_packages_path
+from .path import unpacked_package_path
 from .providers import CHANNEL_PROVIDERS
 from .providers import REPOSITORY_PROVIDERS
 from .providers.provider_exception import ProviderException
@@ -121,8 +126,6 @@ class PackageManager():
         self.settings['platform'] = sublime.platform()
         self.settings['arch'] = sublime.arch()
         self.settings['version'] = int(sublime.version())
-        self.settings['packages_path'] = sublime.packages_path()
-        self.settings['installed_packages_path'] = sublime.installed_packages_path()
 
         # Use the cache to see if settings have changed since the last
         # time the package manager was created, and clearing any cached
@@ -227,7 +230,7 @@ class PackageManager():
             value will be (None, None) if the dependency was not found on disk.
         """
 
-        dependency_path = self.get_package_dir(dependency)
+        dependency_path = unpacked_package_path(dependency)
         if not os.path.exists(dependency_path):
             return (None, None)
 
@@ -265,7 +268,7 @@ class PackageManager():
 
         return (priority, code)
 
-    def _is_git_package(self, package):
+    def is_git_package(self, package):
         """
         :param package:
             The package name
@@ -274,10 +277,10 @@ class PackageManager():
             If the package is installed via git
         """
 
-        git_dir = os.path.join(self.get_package_dir(package), '.git')
+        git_dir = os.path.join(unpacked_package_path(package), '.git')
         return os.path.isdir(git_dir) or os.path.isfile(git_dir)
 
-    def _is_hg_package(self, package):
+    def is_hg_package(self, package):
         """
         :param package:
             The package name
@@ -286,7 +289,7 @@ class PackageManager():
             If the package is installed via hg
         """
 
-        hg_dir = os.path.join(self.get_package_dir(package), '.hg')
+        hg_dir = os.path.join(unpacked_package_path(package), '.hg')
         return os.path.isdir(hg_dir)
 
     def is_vcs_package(self, package):
@@ -300,7 +303,7 @@ class PackageManager():
             bool
         """
 
-        return self._is_git_package(package) or self._is_hg_package(package)
+        return self.is_git_package(package) or self.is_hg_package(package)
 
     def get_version(self, package, is_dependency=False):
         """
@@ -335,20 +338,20 @@ class PackageManager():
             GitUpgrader, HgUpgrader or None
         """
 
-        if self._is_git_package(package):
+        if self.is_git_package(package):
             return GitUpgrader(
                 self.settings['git_binary'],
                 self.settings['git_update_command'],
-                self.get_package_dir(package),
+                unpacked_package_path(package),
                 self.settings['cache_length'],
                 self.settings['debug']
             )
 
-        if self._is_hg_package(package):
+        if self.is_hg_package(package):
             return HgUpgrader(
                 self.settings['hg_binary'],
                 self.settings['hg_update_command'],
-                self.get_package_dir(package),
+                unpacked_package_path(package),
                 self.settings['cache_length'],
                 self.settings['debug']
             )
@@ -700,10 +703,10 @@ class PackageManager():
         :return: A list of all installed, non-default, non-dependency, package names
         """
 
-        packages = self._list_visible_dirs(self.settings['packages_path'])
+        packages = self._list_visible_dirs(unpacked_packages_path())
 
         if not unpacked_only:
-            packages |= self._list_sublime_package_files(self.settings['installed_packages_path'])
+            packages |= self._list_sublime_package_files(installed_packages_path())
 
         packages -= set(self.list_default_packages())
         packages -= set(self.list_dependencies())
@@ -717,7 +720,7 @@ class PackageManager():
 
         output = ['0_package_control_loader']
 
-        for name in self._list_visible_dirs(self.settings['packages_path']):
+        for name in self._list_visible_dirs(unpacked_packages_path()):
             if not self._is_dependency(name):
                 continue
             output.append(name)
@@ -732,8 +735,8 @@ class PackageManager():
         """
 
         output = []
-        for name in self._list_visible_dirs(self.settings['packages_path']):
-            hidden_file_path = os.path.join(self.get_package_dir(name), '.sublime-dependency')
+        for name in self._list_visible_dirs(unpacked_packages_path()):
+            hidden_file_path = os.path.join(unpacked_package_path(name), '.sublime-dependency')
             if not os.path.exists(hidden_file_path):
                 continue
             if not loader.exists(name):
@@ -754,8 +757,7 @@ class PackageManager():
     def list_default_packages(self):
         """ :return: A list of all default package names"""
 
-        app_dir = os.path.dirname(sublime.executable_path())
-        packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
+        packages = self._list_sublime_package_files(default_packages_path())
         packages -= {'Default', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
@@ -814,7 +816,7 @@ class PackageManager():
         :return:
             Bool, if the package is a dependency
         """
-        package_dir = self.get_package_dir(name)
+        package_dir = unpacked_package_path(name)
         return (
             # Check for dependency-metadata.json first as it is more likely to exist.
             os.path.isfile(os.path.join(package_dir, 'dependency-metadata.json')) or
@@ -835,7 +837,7 @@ class PackageManager():
         :return:
             Bool, if the package is a dependency
         """
-        package_dir = self.get_package_dir(name)
+        package_dir = unpacked_package_path(name)
         return (
             os.path.isfile(os.path.join(package_dir, '.sublime-dependency')) and not
             os.path.isfile(os.path.join(package_dir, 'dependency-metadata.json'))
@@ -859,16 +861,11 @@ class PackageManager():
             if package != ignore_package:
                 output |= set(self.get_dependencies(package))
 
-        for name in self._list_visible_dirs(self.settings['packages_path']):
+        for name in self._list_visible_dirs(unpacked_packages_path()):
             if self._is_required_dependency(name):
                 output.add(name)
 
         return sorted(output, key=lambda s: s.lower())
-
-    def get_package_dir(self, package):
-        """:return: The full filesystem path to the package directory"""
-
-        return os.path.join(self.settings['packages_path'], package)
 
     def get_mapped_name(self, package):
         """:return: The name of the package after passing through mapping rules"""
@@ -896,7 +893,7 @@ class PackageManager():
         :return: bool if the package file was successfully created
         """
 
-        package_dir = self.get_package_dir(package_name)
+        package_dir = unpacked_package_path(package_name)
 
         if not os.path.exists(package_dir):
             show_error(
@@ -904,7 +901,7 @@ class PackageManager():
                 The folder for the package name specified, %s,
                 does not exists in %s
                 ''',
-                (package_name, self.settings['packages_path'])
+                (package_name, unpacked_packages_path())
             )
             return False
 
@@ -1048,8 +1045,8 @@ class PackageManager():
 
             tmp_package_path = os.path.join(tmp_dir, package_filename)
 
-            unpacked_package_dir = self.get_package_dir(package_name)
-            package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
+            unpacked_package_dir = unpacked_package_path(package_name)
+            package_path = installed_package_path(package_name)
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
@@ -1451,7 +1448,7 @@ class PackageManager():
                     )
                     return None
 
-            os.chdir(self.settings['packages_path'])
+            os.chdir(unpacked_packages_path())
             return True
 
         finally:
@@ -1487,7 +1484,7 @@ class PackageManager():
                 continue
 
             # Collect dependency information
-            dependency_dir = self.get_package_dir(dependency)
+            dependency_dir = unpacked_package_path(dependency)
             dependency_git_dir = os.path.join(dependency_dir, '.git')
             dependency_hg_dir = os.path.join(dependency_dir, '.hg')
             dependency_metadata = self.get_metadata(dependency, is_dependency=True)
@@ -1605,13 +1602,13 @@ class PackageManager():
             If the backup succeeded
         """
 
-        package_dir = self.get_package_dir(package_name)
+        package_dir = unpacked_package_path(package_name)
         if not os.path.exists(package_dir):
             return True
 
         try:
             backup_dir = os.path.join(os.path.dirname(
-                self.settings['packages_path']), 'Backup',
+                unpacked_packages_path()), 'Backup',
                 datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
             os.makedirs(backup_dir, exist_ok=True)
             package_backup_dir = os.path.join(backup_dir, package_name)
@@ -1821,19 +1818,20 @@ class PackageManager():
             )
             return False
 
-        os.chdir(self.settings['packages_path'])
+        os.chdir(unpacked_packages_path())
 
-        package_filename = package_name + '.sublime-package'
-        installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
-        package_dir = self.get_package_dir(package_name)
+        # For handling .sublime-package files
+        package_file = installed_package_path(package_name)
+        # For handling unpacked packages
+        package_dir = unpacked_package_path(package_name)
 
         version = self.get_version(package_name, is_dependency=is_dependency)
 
         cleanup_complete = True
 
         try:
-            if os.path.exists(installed_package_path):
-                os.remove(installed_package_path)
+            if os.path.exists(package_file):
+                os.remove(package_file)
         except (OSError, IOError) as e:
             cleanup_complete = False
 

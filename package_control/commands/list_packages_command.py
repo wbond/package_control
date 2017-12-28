@@ -3,6 +3,8 @@ import os
 
 import sublime_plugin
 
+from ..path import unpacked_package_path
+from ..path import installed_package_parts
 from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 from .existing_packages_command import ExistingPackagesCommand
@@ -71,12 +73,10 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
             return
         package_name = self.package_list[picked][0]
 
-        package_dir = self.manager.get_package_dir(package_name)
-        package_file = None
-        if not os.path.exists(package_dir):
-            package_dir = self.manager.settings['installed_packages_path']
-            package_file = package_name + '.sublime-package'
-            if not os.path.exists(os.path.join(package_dir, package_file)):
+        package_dir, package_file = unpacked_package_path(package_name), None
+        if not os.path.isdir(package_dir):
+            package_dir, package_file = installed_package_parts(package_name)
+            if not os.path.isfile(os.path.join(package_dir, package_file)):
                 package_file = None
 
         open_dir_file = {'dir': package_dir}

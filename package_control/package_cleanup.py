@@ -12,6 +12,9 @@ from .clear_directory import clear_directory
 from .clear_directory import delete_directory
 from .console_write import console_write
 from .package_io import package_file_exists
+from .path import installed_packages_path
+from .path import unpacked_package_path
+from .path import unpacked_packages_path
 from .package_manager import PackageManager
 from .providers.release_selector import is_compatible_version
 from .settings import load_list_setting
@@ -64,7 +67,7 @@ class PackageCleanup(threading.Thread):
 
         found_dependencies = []
         installed_dependencies = self.manager.list_dependencies()
-        installed_path = sublime.installed_packages_path()
+        installed_path = installed_packages_path()
 
         for file in os.listdir(installed_path):
             # If there is a package file ending in .sublime-package-new, it
@@ -119,7 +122,7 @@ class PackageCleanup(threading.Thread):
         # Clean up unneeded dependencies so that found_dependencies will only
         # end up having required dependencies added to it
         for dependency in extra_dependencies:
-            dependency_dir = os.path.join(sublime.packages_path(), dependency)
+            dependency_dir = unpacked_package_path(dependency)
             if delete_directory(dependency_dir):
                 console_write(
                     '''
@@ -141,10 +144,10 @@ class PackageCleanup(threading.Thread):
             # Make sure when cleaning up the dependency files that we remove the loader for it also
             loader.remove(dependency)
 
-        for package_name in os.listdir(sublime.packages_path()):
+        for package_name in os.listdir(unpacked_packages_path()):
             found = True
 
-            package_dir = os.path.join(sublime.packages_path(), package_name)
+            package_dir = unpacked_package_path(package_name)
             if not os.path.isdir(package_dir):
                 continue
 

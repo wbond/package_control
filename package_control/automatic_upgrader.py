@@ -9,6 +9,7 @@ from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
+from .path import cache_path
 from .settings import pc_settings_filename, load_list_setting
 
 
@@ -210,8 +211,7 @@ class LastRunCookie(object):
         self.now = None
         self.next_run = None
         self.last_run = None
-        self.last_run_file = os.path.join(
-            sublime.cache_path(), 'Package Control', 'last-run')
+        self.last_run_file = os.path.join(cache_path(), 'last-run')
         try:
             with open(self.last_run_file) as f:
                 self.last_run = int(f.read())

@@ -1,7 +1,4 @@
-import os
 import re
-
-import sublime
 
 from ..package_manager import PackageManager
 
@@ -40,7 +37,6 @@ class ExistingPackagesCommand(object):
         for package in packages:
             package_entry = [package]
             metadata = self.manager.get_metadata(package)
-            package_dir = os.path.join(sublime.packages_path(), package)
 
             description = metadata.get('description')
             if not description:
@@ -48,9 +44,9 @@ class ExistingPackagesCommand(object):
             package_entry.append(description)
 
             version = metadata.get('version')
-            if not version and os.path.exists(os.path.join(package_dir, '.git')):
+            if not version and self.manager.is_git_package(package):
                 installed_version = 'git repository'
-            elif not version and os.path.exists(os.path.join(package_dir, '.hg')):
+            elif not version and self.manager.is_hg_package(package):
                 installed_version = 'hg repository'
             else:
                 installed_version = 'v' + version if version else 'unknown version'

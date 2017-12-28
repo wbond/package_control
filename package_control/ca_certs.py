@@ -5,10 +5,9 @@ import time
 from .console_write import console_write
 from .deps.oscrypto import trust_list
 
-
 # Have somewhere to store the CA bundle, even when not running in Sublime Text
 try:
-    import sublime
+    from .path import cache_path
     ca_bundle_dir = None
 except (ImportError):
     ca_bundle_dir = os.path.join(os.path.expanduser('~'), '.package_control')
@@ -220,7 +219,7 @@ def ensure_ca_bundle_dir():
     global ca_bundle_dir
 
     if not ca_bundle_dir:
-        ca_bundle_dir = os.path.join(sublime.cache_path(), 'Package Control')
+        ca_bundle_dir = cache_path()
 
     try:
         os.makedirs(ca_bundle_dir, mode=0o555, exist_ok=True)
