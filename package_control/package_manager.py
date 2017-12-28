@@ -821,6 +821,26 @@ class PackageManager():
             os.path.isfile(os.path.join(package_dir, '.sublime-dependency'))
         )
 
+    def _is_required_dependency(self, name):
+        """
+        Checks if a package specified is a required dependency
+
+        Consider any folder with a .sublime-dependency file that does not
+        have a dependency-metadata.json file to be a dependency that was
+        hand-installed by a developer, and thus "required"
+
+        :param name:
+            The name of the package to check if it is a dependency
+
+        :return:
+            Bool, if the package is a dependency
+        """
+        package_dir = self.get_package_dir(name)
+        return (
+            os.path.isfile(os.path.join(package_dir, '.sublime-dependency')) and not
+            os.path.isfile(os.path.join(package_dir, 'dependency-metadata.json'))
+        )
+
     def find_required_dependencies(self, ignore_package=None):
         """
         Find all of the dependencies required by the installed packages,
@@ -833,27 +853,16 @@ class PackageManager():
             A list of the dependencies required by the installed packages
         """
 
-        output = ['0_package_control_loader']
+        output = {'0_package_control_loader'}
 
         for package in self.list_packages():
-            if package == ignore_package:
-                continue
-            output.extend(self.get_dependencies(package))
+            if package != ignore_package:
+                output |= set(self.get_dependencies(package))
 
-        # Consider any folder with a .sublime-dependency file that does not
-        # have a dependency-metadata.json file to be a dependency that was
-        # hand-installed by a developer, and thus "required"
         for name in self._list_visible_dirs(self.settings['packages_path']):
-            package_dir = self.get_package_dir(name)
-            metadata_path = os.path.join(package_dir, 'dependency-metadata.json')
-            hidden_path = os.path.join(package_dir, '.sublime-dependency')
-            metadata_exists = os.path.exists(metadata_path)
-            hidden_exists = os.path.exists(hidden_path)
-            if metadata_exists or not hidden_exists:
-                continue
-            output.append(name)
+            if self._is_required_dependency(name):
+                output.add(name)
 
-        output = list(set(output))
         return sorted(output, key=lambda s: s.lower())
 
     def get_package_dir(self, package):
