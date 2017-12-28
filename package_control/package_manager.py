@@ -733,7 +733,7 @@ class PackageManager():
 
         output = []
         for name in self._list_visible_dirs(self.settings['packages_path']):
-            hidden_file_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
+            hidden_file_path = os.path.join(self.get_package_dir(name), '.sublime-dependency')
             if not os.path.exists(hidden_file_path):
                 continue
             if not loader.exists(name):
@@ -814,10 +814,12 @@ class PackageManager():
         :return:
             Bool, if the package is a dependency
         """
-
-        metadata_path = os.path.join(self.settings['packages_path'], name, 'dependency-metadata.json')
-        hidden_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
-        return os.path.exists(metadata_path) or os.path.exists(hidden_path)
+        package_dir = self.get_package_dir(name)
+        return (
+            # Check for dependency-metadata.json first as it is more likely to exist.
+            os.path.isfile(os.path.join(package_dir, 'dependency-metadata.json')) or
+            os.path.isfile(os.path.join(package_dir, '.sublime-dependency'))
+        )
 
     def find_required_dependencies(self, ignore_package=None):
         """
@@ -842,8 +844,9 @@ class PackageManager():
         # have a dependency-metadata.json file to be a dependency that was
         # hand-installed by a developer, and thus "required"
         for name in self._list_visible_dirs(self.settings['packages_path']):
-            metadata_path = os.path.join(self.settings['packages_path'], name, 'dependency-metadata.json')
-            hidden_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
+            package_dir = self.get_package_dir(name)
+            metadata_path = os.path.join(package_dir, 'dependency-metadata.json')
+            hidden_path = os.path.join(package_dir, '.sublime-dependency')
             metadata_exists = os.path.exists(metadata_path)
             hidden_exists = os.path.exists(hidden_path)
             if metadata_exists or not hidden_exists:
@@ -1475,7 +1478,7 @@ class PackageManager():
                 continue
 
             # Collect dependency information
-            dependency_dir = os.path.join(self.settings['packages_path'], dependency)
+            dependency_dir = self.get_package_dir(dependency)
             dependency_git_dir = os.path.join(dependency_dir, '.git')
             dependency_hg_dir = os.path.join(dependency_dir, '.hg')
             dependency_metadata = self.get_metadata(dependency, is_dependency=True)
@@ -1593,7 +1596,7 @@ class PackageManager():
             If the backup succeeded
         """
 
-        package_dir = os.path.join(self.settings['packages_path'], package_name)
+        package_dir = self.get_package_dir(package_name)
         if not os.path.exists(package_dir):
             return True
 
