@@ -45,11 +45,11 @@ from .versions import version_sort
 
 
 DEFAULT_CHANNEL = 'https://packagecontrol.io/channel_v3.json'
-OLD_DEFAULT_CHANNELS = set([
+OLD_DEFAULT_CHANNELS = {
     'https://packagecontrol.io/channel.json',
     'https://sublime.wbond.net/channel.json',
     'https://sublime.wbond.net/repositories.json'
-])
+}
 
 
 class PackageManager():
@@ -104,9 +104,9 @@ class PackageManager():
             'user_agent'
         ]
         for setting in setting_names:
-            if settings.get(setting) is None:
-                continue
-            self.settings[setting] = settings.get(setting)
+            value = settings.get(setting)
+            if value is not None:
+                self.settings[setting] = value
 
         # https_proxy will inherit from http_proxy unless it is set to a
         # string value or false
@@ -132,7 +132,7 @@ class PackageManager():
         # Reduce the settings down to exclude channel info since that will
         # make the settings always different
         filtered_settings = self.settings.copy()
-        for key in ['repositories', 'channels', 'package_name_map', 'cache']:
+        for key in ('repositories', 'channels', 'package_name_map', 'cache'):
             if key in filtered_settings:
                 del filtered_settings[key]
 
@@ -163,23 +163,19 @@ class PackageManager():
             or an empty dict on error
         """
 
-        metadata_filename = 'package-metadata.json'
-        if is_dependency:
-            metadata_filename = 'dependency-metadata.json'
-
-        if package_file_exists(package, metadata_filename):
-            metadata_json = read_package_file(package, metadata_filename)
-            if metadata_json:
-                try:
-                    return json.loads(metadata_json)
-                except (ValueError):
-                    console_write(
-                        u'''
-                        An error occurred while trying to parse the package
-                        metadata for %s.
-                        ''',
-                        package
-                    )
+        metadata_filename = 'dependency-metadata.json' if is_dependency else 'package-metadata.json'
+        metadata_json = read_package_file(package, metadata_filename)
+        if metadata_json:
+            try:
+                return json.loads(metadata_json)
+            except (ValueError):
+                console_write(
+                    '''
+                    An error occurred while trying to parse the package
+                    metadata for %s.
+                    ''',
+                    package
+                )
 
         return {}
 
@@ -195,19 +191,18 @@ class PackageManager():
             A list of dependency names
         """
 
-        if package_file_exists(package, 'dependencies.json'):
-            dep_info_json = read_package_file(package, 'dependencies.json')
-            if dep_info_json:
-                try:
-                    return self.select_dependencies(json.loads(dep_info_json))
-                except (ValueError):
-                    console_write(
-                        u'''
-                        An error occurred while trying to parse the
-                        dependencies.json for %s.
-                        ''',
-                        package
-                    )
+        dep_info_json = read_package_file(package, 'dependencies.json')
+        if dep_info_json:
+            try:
+                return self.select_dependencies(json.loads(dep_info_json))
+            except (ValueError):
+                console_write(
+                    '''
+                    An error occurred while trying to parse the
+                    dependencies.json for %s.
+                    ''',
+                    package
+                )
 
         metadata = self.get_metadata(package)
         if metadata:
@@ -280,7 +275,7 @@ class PackageManager():
         """
 
         git_dir = os.path.join(self.get_package_dir(package), '.git')
-        return os.path.exists(git_dir) and (os.path.isdir(git_dir) or os.path.isfile(git_dir))
+        return os.path.isdir(git_dir) or os.path.isfile(git_dir)
 
     def _is_hg_package(self, package):
         """
@@ -292,7 +287,7 @@ class PackageManager():
         """
 
         hg_dir = os.path.join(self.get_package_dir(package), '.hg')
-        return os.path.exists(hg_dir) and os.path.isdir(hg_dir)
+        return os.path.isdir(hg_dir)
 
     def is_vcs_package(self, package):
         """
@@ -307,7 +302,7 @@ class PackageManager():
 
         return self._is_git_package(package) or self._is_hg_package(package)
 
-    def get_version(self, package):
+    def get_version(self, package, is_dependency=False):
         """
         Determines the current version for a package
 
@@ -315,7 +310,7 @@ class PackageManager():
             The package name
         """
 
-        version = self.get_metadata(package).get('version')
+        version = self.get_metadata(package, is_dependency).get('version')
 
         if version:
             return version
@@ -712,7 +707,7 @@ class PackageManager():
 
         packages -= set(self.list_default_packages())
         packages -= set(self.list_dependencies())
-        packages -= set(['User', 'Default'])
+        packages -= {'Default', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
     def list_dependencies(self):
@@ -761,7 +756,7 @@ class PackageManager():
 
         app_dir = os.path.dirname(sublime.executable_path())
         packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
-        packages -= set(('User', 'Default'))
+        packages -= {'Default', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
     def _list_visible_dirs(self, path):
@@ -804,7 +799,7 @@ class PackageManager():
         if not os.path.exists(path):
             return output
         for filename in os.listdir(path):
-            if not re.search('\.sublime-package$', filename):
+            if not filename.endswith('.sublime-package'):
                 continue
             output.add(filename.replace('.sublime-package', ''))
         return output
@@ -1076,7 +1071,7 @@ class PackageManager():
 
                 return result
 
-            old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
+            old_version = self.get_version(package_name, is_dependency=is_dependency)
             is_upgrade = old_version is not None
 
             # Download the sublime-package or zip file
@@ -1117,10 +1112,10 @@ class PackageManager():
 
                 last_path = path
 
-                if path.find('/') in [len(path) - 1, -1]:
+                if path.find('/') in (len(path) - 1, -1):
                     root_level_paths.append(path)
                 # Make sure there are no paths that look like security vulnerabilities
-                if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
+                if path[0] == '/' or '../' in path or '..\\' in path:
                     show_error(
                         '''
                         The package specified, %s, contains files outside of
@@ -1181,9 +1176,7 @@ class PackageManager():
                 except (KeyError):
                     pass
 
-            metadata_filename = 'package-metadata.json'
-            if is_dependency:
-                metadata_filename = 'dependency-metadata.json'
+            metadata_filename = 'dependency-metadata.json' if is_dependency else 'package-metadata.json'
 
             # If we already have a package-metadata.json file in
             # Packages/{package_name}/, but the package no longer contains
@@ -1263,10 +1256,7 @@ class PackageManager():
                 if skip_root_dir:
                     dest = dest[len(root_level_paths[0]):]
 
-                if os.name == 'nt':
-                    dest = dest.replace('/', '\\')
-                else:
-                    dest = dest.replace('\\', '/')
+                dest = os.path.normpath(dest)
 
                 # loader.py is included for backwards compatibility. New code
                 # should use loader.code with Python inside of it. We no longer
@@ -1277,7 +1267,7 @@ class PackageManager():
                 # errors when Sublime Text tries to initialize plugins. By using
                 # loader.code, developers can git clone a dependency into their
                 # Packages folder without issue.
-                if is_dependency and dest in set(['loader.code', 'loader.py']):
+                if is_dependency and dest in ('loader.code', 'loader.py'):
                     loader_code = package_zip.read(path).decode('utf-8')
                     if dest == 'loader.py':
                         continue
@@ -1825,7 +1815,7 @@ class PackageManager():
         installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
         package_dir = self.get_package_dir(package_name)
 
-        version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
+        version = self.get_version(package_name, is_dependency=is_dependency)
 
         cleanup_complete = True
 
@@ -1891,7 +1881,7 @@ class PackageManager():
 
         if not self.settings.get('submit_usage'):
             return
-        params['package_control_version'] = self.get_metadata('Package Control').get('version')
+        params['package_control_version'] = self.get_version('Package Control')
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
 

@@ -43,14 +43,12 @@ class PackageDisabler(object):
         :return:
             The string version
         """
-
-        if package_file_exists(package, 'package-metadata.json'):
-            metadata_json = read_package_file(package, 'package-metadata.json')
-            if metadata_json:
-                try:
-                    return json.loads(metadata_json).get('version', 'unknown version')
-                except (ValueError):
-                    pass
+        metadata_json = read_package_file(package, 'package-metadata.json')
+        if metadata_json:
+            try:
+                return json.loads(metadata_json).get('version', 'unknown version')
+            except (ValueError):
+                pass
 
         return 'unknown version'
 
@@ -113,13 +111,15 @@ class PackageDisabler(object):
                 ignored.append(package)
                 disabled.append(package)
 
-            if type in ['upgrade', 'remove']:
+            if type in ('upgrade', 'remove'):
                 version = self.get_version(package)
                 tracker_type = 'pre_upgrade' if type == 'upgrade' else type
                 events.add(tracker_type, package, version)
 
+            package_path = 'Packages/%s/' % package
+
             global_color_scheme = settings.get('color_scheme')
-            if global_color_scheme is not None and global_color_scheme.find('Packages/' + package + '/') != -1:
+            if global_color_scheme and package_path in global_color_scheme:
                 PackageDisabler.old_color_scheme_package = package
                 PackageDisabler.old_color_scheme = global_color_scheme
                 settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
@@ -128,19 +128,16 @@ class PackageDisabler(object):
                 for view in window.views():
                     view_settings = view.settings()
                     syntax = view_settings.get('syntax')
-                    if syntax is not None and syntax.find('Packages/' + package + '/') != -1:
-                        if package not in PackageDisabler.old_syntaxes:
-                            PackageDisabler.old_syntaxes[package] = []
-                        PackageDisabler.old_syntaxes[package].append([view, syntax])
+                    if syntax and package_path in syntax:
+                        PackageDisabler.old_syntaxes.setdefault(package, []).append([view, syntax])
                         view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
+
                     # Handle view-specific color_scheme settings not already taken care
                     # of by resetting the global color_scheme above
                     scheme = view_settings.get('color_scheme')
-                    if scheme is not None and scheme != global_color_scheme and scheme.find('Packages/' + package + '/') != -1:
-                        if package not in PackageDisabler.old_color_schemes:
-                            PackageDisabler.old_color_schemes[package] = []
-                        PackageDisabler.old_color_schemes[package].append([view, scheme])
-                        view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
+                    if scheme and scheme != global_color_scheme and package_path in scheme:
+                        PackageDisabler.old_color_schemes.setdefault(package, []).append([view, scheme])
+                        view_settings.erase('color_scheme')
 
             # Change the theme before disabling the package containing it
             if package_file_exists(package, settings.get('theme')):
@@ -183,7 +180,7 @@ class PackageDisabler(object):
 
         if package in ignored:
 
-            if type in ['install', 'upgrade']:
+            if type in ('install', 'upgrade'):
                 version = self.get_version(package)
                 tracker_type = 'post_upgrade' if type == 'upgrade' else type
                 events.add(tracker_type, package, version)
