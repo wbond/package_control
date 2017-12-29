@@ -1800,21 +1800,12 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        if not is_dependency:
-            installed_packages = self.list_packages()
-        else:
-            installed_packages = self.list_dependencies()
-
-        package_type = 'package'
-        if is_dependency:
-            package_type = 'dependency'
-
-        if package_name not in installed_packages:
+        if package_name in {'Default', 'User'}:
             show_error(
                 '''
-                The %s specified, %s, is not installed
+                The protected package %s can't be removed
                 ''',
-                (package_type, package_name)
+                package_name
             )
             return False
 
@@ -1827,24 +1818,36 @@ class PackageManager():
 
         version = self.get_version(package_name, is_dependency=is_dependency)
 
+        can_delete_dir = False
         cleanup_complete = True
+        package_exists = False
 
+        # remove the .sublime-package file
         try:
             if os.path.exists(package_file):
+                package_exists = True
                 os.remove(package_file)
         except (OSError, IOError) as e:
             cleanup_complete = False
 
+        # remove the unpacked package directory
         if os.path.exists(package_dir):
+            package_exists = True
             # We don't delete the actual package dir immediately due to a bug
             # in sublime_plugin.py
-            can_delete_dir = True
-            if not clear_directory(package_dir):
+            can_delete_dir = clear_directory(package_dir)
+            if not can_delete_dir:
                 # If there is an error deleting now, we will mark it for
                 # cleanup the next time Sublime Text starts
                 open(os.path.join(package_dir, 'package-control.cleanup'), 'wb').close()
                 cleanup_complete = False
-                can_delete_dir = False
+
+        if not package_exists:
+            show_error(
+                'The %s specified, %s, is not installed',
+                ('package' if is_dependency else 'dependency', package_name)
+            )
+            return False
 
         params = {
             'package': package_name,
@@ -1861,8 +1864,12 @@ class PackageManager():
                 names.remove(package_name)
             save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
 
-        if os.path.exists(package_dir) and can_delete_dir:
-            os.rmdir(package_dir)
+        try:
+            if can_delete_dir:
+                os.rmdir(package_dir)
+        except (OSError, IOError) as e:
+            open(os.path.join(package_dir, 'package-control.cleanup'), 'wb').close()
+            cleanup_complete = False
 
         if is_dependency:
             loader.remove(package_name)
