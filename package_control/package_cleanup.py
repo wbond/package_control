@@ -1,6 +1,6 @@
-import functools
 import os
 import threading
+import time
 
 import sublime
 
@@ -12,6 +12,7 @@ from .clear_directory import clear_directory
 from .clear_directory import delete_directory
 from .console_write import console_write
 from .package_io import package_file_exists
+from .path import installed_package_path
 from .path import installed_packages_path
 from .path import unpacked_package_path
 from .path import unpacked_packages_path
@@ -38,7 +39,7 @@ class PackageCleanup(threading.Thread):
 
         # We no longer use the installed_dependencies setting because it is not
         # necessary and created issues with settings shared across operating systems
-        if settings.get('installed_dependencies'):
+        if settings.has('installed_dependencies'):
             settings.erase('installed_dependencies')
             sublime.save_settings(pc_settings_filename())
 
@@ -67,35 +68,48 @@ class PackageCleanup(threading.Thread):
 
         found_dependencies = []
         installed_dependencies = self.manager.list_dependencies()
+
         installed_path = installed_packages_path()
 
         for file in os.listdir(installed_path):
+
+            package_name, package_ext = os.path.splitext(file)
+            package_ext = package_ext.lower()
+
+            if package_name == loader.loader_package_name:
+                found_dependencies.append(package_name)
+                continue
+
             # If there is a package file ending in .sublime-package-new, it
             # means that the .sublime-package file was locked when we tried
             # to upgrade, so the package was left in ignored_packages and
             # the user was prompted to restart Sublime Text. Now that the
             # package is not loaded, we can replace the old version with the
             # new one.
-            if file.endswith('.sublime-package-new') and file != loader.loader_package_name + '.sublime-package-new':
-                package_name = file.replace('.sublime-package-new', '')
-                package_file = os.path.join(installed_path, package_name + '.sublime-package')
-                if os.path.exists(package_file):
-                    os.remove(package_file)
-                os.rename(os.path.join(installed_path, file), package_file)
-                console_write(
-                    '''
-                    Finished replacing %s.sublime-package
-                    ''',
-                    package_name
-                )
+            if package_ext == '.sublime-package-new':
+                package_file = installed_package_path(package_name)
+                try:
+                    try:
+                        os.remove(package_file)
+                    except FileNotFoundError:
+                        pass
+                    os.rename(os.path.join(installed_path, file), package_file)
+                    console_write(
+                        '''
+                        Finished replacing %s.sublime-package
+                        ''',
+                        package_name
+                    )
+                except:
+                    console_write(
+                        '''
+                        Error replacing %s.sublime-package
+                        ''',
+                        package_name
+                    )
                 continue
 
-            package_name, package_ext = os.path.splitext(file)
             if package_ext != '.sublime-package':
-                continue
-
-            if package_name == loader.loader_package_name:
-                found_dependencies.append(package_name)
                 continue
 
             # Cleanup packages that were installed via Package Control, but
@@ -104,20 +118,13 @@ class PackageCleanup(threading.Thread):
             # being synced.
             if self.remove_orphaned and package_name not in installed_packages_at_start \
                     and package_file_exists(package_name, 'package-metadata.json'):
-                # Since Windows locks the .sublime-package files, we must
-                # do a dance where we disable the package first, which has
-                # to be done in the main Sublime Text thread.
-                package_filename = os.path.join(installed_path, file)
+                self.remove_package_file(package_name, os.path.join(installed_path, file))
+                continue
 
-                # We use a functools.partial to generate the on-complete callback in
-                # order to bind the current value of the parameters, unlike lambdas.
-                sublime.set_timeout(functools.partial(
-                    self.remove_package_file, package_name, package_filename), 10)
-            else:
-                found_packages.append(package_name)
+            found_packages.append(package_name)
 
         required_dependencies = set(self.manager.find_required_dependencies())
-        extra_dependencies = list(set(installed_dependencies) - required_dependencies)
+        extra_dependencies = set(installed_dependencies) - required_dependencies
 
         # Clean up unneeded dependencies so that found_dependencies will only
         # end up having required dependencies added to it
@@ -132,8 +139,7 @@ class PackageCleanup(threading.Thread):
                 )
             else:
                 cleanup_file = os.path.join(dependency_dir, 'package-control.cleanup')
-                if not os.path.exists(cleanup_file):
-                    open(cleanup_file, 'wb').close()
+                open(cleanup_file, 'wb').close()
                 console_write(
                     '''
                     Unable to remove directory for unneeded dependency %s -
@@ -147,6 +153,15 @@ class PackageCleanup(threading.Thread):
         for package_name in os.listdir(unpacked_packages_path()):
             found = True
 
+            # ignore hidden directories
+            if package_name[0] == '.':
+                continue
+
+            # ignore special packages
+            if package_name in ('Default', 'User'):
+                continue
+
+            # ignore ordinary files
             package_dir = unpacked_package_path(package_name)
             if not os.path.isdir(package_dir):
                 continue
@@ -165,37 +180,28 @@ class PackageCleanup(threading.Thread):
                     )
                     found = False
                 else:
-                    if not os.path.exists(cleanup_file):
-                        open(cleanup_file, 'wb').close()
+                    open(cleanup_file, 'wb').close()
                     console_write(
                         '''
-                        Unable to remove old directory %s - deferring until next
-                        start
+                        Unable to remove old directory %s - deferring until next start
                         ''',
                         package_name
                     )
 
-            # Finish reinstalling packages that could not be upgraded due to
-            # in-use files
+            # Finish reinstalling packages that could not be upgraded due to in-use files
             reinstall = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall):
                 metadata_path = os.path.join(package_dir, 'package-metadata.json')
                 if not clear_directory(package_dir, [metadata_path]):
-                    if not os.path.exists(reinstall):
-                        open(reinstall, 'wb').close()
-
-                    def show_still_locked(package_name):
-                        show_error(
-                            '''
-                            An error occurred while trying to finish the upgrade of
-                            %s. You will most likely need to restart your computer
-                            to complete the upgrade.
-                            ''',
-                            package_name
-                        )
-                    # We use a functools.partial to generate the on-complete callback in
-                    # order to bind the current value of the parameters, unlike lambdas.
-                    sublime.set_timeout(functools.partial(show_still_locked, package_name), 10)
+                    open(reinstall, 'wb').close()
+                    show_error(
+                        '''
+                        An error occurred while trying to finish the upgrade of
+                        %s. You will most likely need to restart your computer
+                        to complete the upgrade.
+                        ''',
+                        package_name
+                    )
                 else:
                     self.manager.install_package(package_name)
 
@@ -227,8 +233,7 @@ class PackageCleanup(threading.Thread):
                         )
                         found = False
                     else:
-                        if not os.path.exists(cleanup_file):
-                            open(cleanup_file, 'wb').close()
+                        open(cleanup_file, 'wb').close()
                         console_write(
                             '''
                             Unable to remove directory for orphaned package %s -
@@ -238,82 +243,24 @@ class PackageCleanup(threading.Thread):
                         )
 
             if package_name.endswith('.package-control-old'):
-                console_write(
-                    '''
-                    Removed old directory %s
-                    ''',
-                    package_name
-                )
-                delete_directory(package_dir)
+                if delete_directory(package_dir):
+                    console_write(
+                        '''
+                        Removed old directory %s
+                        ''',
+                        package_name
+                    )
 
             # Skip over dependencies since we handle them separately
-            if (package_file_exists(package_name, 'dependency-metadata.json')
-                    or package_file_exists(package_name, '.sublime-dependency')) \
-                    and (package_name == loader.loader_package_name or loader.exists(package_name)):
+            if self.manager._is_dependency(package_name) and (
+                    package_name == loader.loader_package_name or
+                    loader.exists(package_name)):
                 found_dependencies.append(package_name)
-                continue
-
-            if found:
+            elif found:
                 found_packages.append(package_name)
 
-        invalid_packages = []
-        invalid_dependencies = []
-
-        # Check metadata to verify packages were not improperly installed
-        for package in found_packages:
-            if package == 'User':
-                continue
-
-            metadata = self.manager.get_metadata(package)
-            if metadata and not self.is_compatible(metadata):
-                invalid_packages.append(package)
-
-        # Make sure installed dependencies are not improperly installed
-        for dependency in found_dependencies:
-            metadata = self.manager.get_metadata(dependency, is_dependency=True)
-            if metadata and not self.is_compatible(metadata):
-                invalid_dependencies.append(dependency)
-
-        if invalid_packages or invalid_dependencies:
-
-            def show_sync_error():
-                message = ''
-                if invalid_packages:
-                    package_s = 's were' if len(invalid_packages) != 1 else ' was'
-                    message += '''
-                        The following incompatible package%s found installed:
-
-                        %s
-
-                        ''' % (package_s, '\n'.join(invalid_packages))
-
-                if invalid_dependencies:
-                    dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
-                    message += '''
-                        The following incompatible dependenc%s found installed:
-
-                        %s
-
-                        ''' % (dependency_s, '\n'.join(invalid_dependencies))
-
-                message += '''
-                    This is usually due to syncing packages across different
-                    machines in a way that does not check package metadata for
-                    compatibility.
-
-                    Please visit https://packagecontrol.io/docs/syncing for
-                    information about how to properly sync configuration and
-                    packages across machines.
-
-                    To restore package functionality, please remove each listed
-                    package and reinstall it.
-                    '''
-                show_error(message)
-
-            sublime.set_timeout(show_sync_error, 100)
-
-        sublime.set_timeout(lambda: self.finish(
-            installed_packages, found_packages, found_dependencies), 10)
+        self.check_invalid_packages(found_packages, found_dependencies)
+        self.finish(installed_packages, found_packages, found_dependencies)
 
     def remove_package_file(self, name, filename):
         """
@@ -327,37 +274,6 @@ class PackageCleanup(threading.Thread):
             The filename of the package
         """
 
-        def do_remove():
-            try:
-                os.remove(filename)
-                console_write(
-                    '''
-                    Removed orphaned package %s
-                    ''',
-                    name
-                )
-
-            except (OSError) as e:
-                console_write(
-                    '''
-                    Unable to remove orphaned package %s - deferring until
-                    next start: %s
-                    ''',
-                    (name, str(e))
-                )
-
-            finally:
-                # Always re-enable the package so it doesn't get stuck
-                pref_filename = preferences_filename()
-                settings = sublime.load_settings(pref_filename)
-                ignored = load_list_setting(settings, 'ignored_packages')
-                new_ignored = list(ignored)
-                try:
-                    new_ignored.remove(name)
-                except (ValueError):
-                    pass
-                save_list_setting(settings, pref_filename, 'ignored_packages', new_ignored, ignored)
-
         # Disable the package so any filesystem locks are released
         pref_filename = preferences_filename()
         settings = sublime.load_settings(pref_filename)
@@ -366,7 +282,88 @@ class PackageCleanup(threading.Thread):
         new_ignored.append(name)
         save_list_setting(settings, pref_filename, 'ignored_packages', new_ignored, ignored)
 
-        sublime.set_timeout(do_remove, 700)
+        # wait a little for ST to disable the package
+        time.sleep(0.7)
+
+        try:
+            os.remove(filename)
+            console_write(
+                '''
+                Removed orphaned package %s
+                ''',
+                name
+            )
+
+        except (OSError) as e:
+            console_write(
+                '''
+                Unable to remove orphaned package %s - deferring until
+                next start: %s
+                ''',
+                (name, str(e))
+            )
+
+        finally:
+            # Always re-enable the package so it doesn't get stuck
+            pref_filename = preferences_filename()
+            settings = sublime.load_settings(pref_filename)
+            ignored = load_list_setting(settings, 'ignored_packages')
+            new_ignored = list(ignored)
+            try:
+                new_ignored.remove(name)
+            except (ValueError):
+                pass
+            save_list_setting(settings, pref_filename, 'ignored_packages', new_ignored, ignored)
+
+    def check_invalid_packages(self, found_packages, found_dependencies):
+
+        # Check metadata to verify packages were not improperly installed
+        invalid_packages = [
+            package for package in found_packages
+            if not self.is_compatible(self.manager.get_metadata(package))
+        ]
+
+        # Make sure installed dependencies are not improperly installed
+        invalid_dependencies = [
+            dependency for dependency in found_dependencies
+            if not self.is_compatible(self.manager.get_metadata(dependency, is_dependency=True))
+        ]
+
+        if not invalid_packages and not invalid_dependencies:
+            return
+
+        message = ''
+        if invalid_packages:
+            package_s = 's were' if len(invalid_packages) != 1 else ' was'
+            message += '''
+                The following incompatible package%s found installed:
+
+                %s
+
+                ''' % (package_s, '\n'.join(invalid_packages))
+
+        if invalid_dependencies:
+            dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
+            message += '''
+                The following incompatible dependenc%s found installed:
+
+                %s
+
+                ''' % (dependency_s, '\n'.join(invalid_dependencies))
+
+        message += '''
+            This is usually due to syncing packages across different
+            machines in a way that does not check package metadata for
+            compatibility.
+
+            Please visit https://packagecontrol.io/docs/syncing for
+            information about how to properly sync configuration and
+            packages across machines.
+
+            To restore package functionality, please remove each listed
+            package and reinstall it.
+            '''
+        show_error(message)
 
     def is_compatible(self, metadata):
         """
