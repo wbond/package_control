@@ -1080,7 +1080,7 @@ class PackageManager():
 
                 return result
 
-            old_version = self.get_version(package_name, is_dependency=is_dependency)
+            old_version = self.get_metadata(package_name, is_dependency).get('version')
             is_upgrade = old_version is not None
 
             # Download the sublime-package or zip file
@@ -1816,7 +1816,7 @@ class PackageManager():
         # For handling unpacked packages
         package_dir = unpacked_package_path(package_name)
 
-        version = self.get_version(package_name, is_dependency=is_dependency)
+        version = self.manager.get_metadata(package_name, is_dependency).get('version')
 
         can_delete_dir = False
         cleanup_complete = True
@@ -1898,7 +1898,7 @@ class PackageManager():
 
         if not self.settings.get('submit_usage'):
             return
-        params['package_control_version'] = self.get_version('Package Control')
+        params['package_control_version'] = self.get_metadata('Package Control').get('version')
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
 
