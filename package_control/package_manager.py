@@ -1203,11 +1203,6 @@ class PackageManager():
                     reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
                     open(reinstall_file, 'w').close()
 
-                    # Don't delete the metadata file, that way we have it
-                    # when the reinstall happens, and the appropriate
-                    # usage info can be sent back to the server
-                    clear_directory(unpacked_package_dir, [reinstall_file, unpacked_metadata_file])
-
                     show_error(
                         '''
                         An error occurred while trying to upgrade %s. Please
