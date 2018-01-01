@@ -166,8 +166,6 @@ class PackageCleanup(threading.Thread):
             if not os.path.isdir(package_dir):
                 continue
 
-            clean_old_files(package_dir)
-
             # Cleanup packages/dependencies that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
@@ -188,10 +186,11 @@ class PackageCleanup(threading.Thread):
                         package_name
                     )
 
+            metadata_path = os.path.join(package_dir, 'package-metadata.json')
+
             # Finish reinstalling packages that could not be upgraded due to in-use files
             reinstall = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall):
-                metadata_path = os.path.join(package_dir, 'package-metadata.json')
                 if not clear_directory(package_dir, [metadata_path]):
                     open(reinstall, 'wb').close()
                     show_error(
@@ -205,7 +204,7 @@ class PackageCleanup(threading.Thread):
                 else:
                     self.manager.install_package(package_name)
 
-            if package_file_exists(package_name, 'package-metadata.json'):
+            if os.path.exists(metadata_path):
                 # This adds previously installed packages from old versions of
                 # PC. As of PC 3.0, this should basically never actually be used
                 # since installed_packages was added in late 2011.
@@ -250,6 +249,8 @@ class PackageCleanup(threading.Thread):
                         ''',
                         package_name
                     )
+            # Cleanup old files, if not already done by one of the previous functions
+            clean_old_files(package_dir)
 
             # Skip over dependencies since we handle them separately
             if self.manager._is_dependency(package_name) and (
