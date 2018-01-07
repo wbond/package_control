@@ -101,7 +101,7 @@ def delete_directory(path):
     :param path:
         The path to the folder to be deleted
     """
-    if clear_directory():
+    if clear_directory(path):
         try:
             os.rmdir(path)
             return True
