@@ -1811,7 +1811,7 @@ class PackageManager():
         # For handling unpacked packages
         package_dir = unpacked_package_path(package_name)
 
-        version = self.manager.get_metadata(package_name, is_dependency).get('version')
+        version = self.get_metadata(package_name, is_dependency).get('version')
 
         can_delete_dir = False
         cleanup_complete = True
