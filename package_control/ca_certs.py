@@ -157,13 +157,15 @@ def get_system_ca_bundle_path(settings):
             is_old = stats.st_mtime < time.time() - (hours_to_cache * 60 * 60)
 
         if not exists or is_empty or is_old:
+            cert_callback = None
             if debug:
                 console_write(
                     u'''
                     Generating new CA bundle from system keychain
                     '''
                 )
-            trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback=print_cert_subject)
+                cert_callback = print_cert_subject
+            trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback=cert_callback)
             if debug:
                 console_write(
                     u'''
