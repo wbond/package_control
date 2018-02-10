@@ -194,16 +194,13 @@ class PackageDisabler(object):
             ignored = list(set(ignored) - set([package]))
             save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
-            corruption_notice = ' You may see some graphical corruption until you restart Sublime Text.'
-
             if type == 'remove' and PackageDisabler.old_theme_package == package:
-                message = '''
+                show_message(
+                    '''
                     The package containing your active theme was just removed
                     and the Default theme was enabled in its place.
-                '''
-                if int(sublime.version()) < 3106:
-                    message += corruption_notice
-                show_message(message)
+                    '''
+                )
 
             # By delaying the restore, we give Sublime Text some time to
             # re-enable the package, making errors less likely
@@ -251,10 +248,7 @@ class PackageDisabler(object):
                 if type == 'upgrade' and PackageDisabler.old_theme_package == package:
                     if package_file_exists(package, PackageDisabler.old_theme):
                         settings.set('theme', PackageDisabler.old_theme)
-                        message = 'The package containing your active theme was just upgraded.'
-                        if int(sublime.version()) < 3106:
-                            message += corruption_notice
-                        show_message(message)
+                        show_message('The package containing your active theme was just upgraded.')
                     else:
                         show_error(
                             '''

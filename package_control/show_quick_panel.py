@@ -14,11 +14,4 @@ def show_quick_panel(window, items, on_done):
     :param on_done:
         The callback to execute when the user has selected an item
     """
-
-    # When possible, keep the quick panel open until the users picks an option
-    if int(sublime.version()) >= 3070:
-        flags = sublime.KEEP_OPEN_ON_FOCUS_LOST
-    else:
-        flags = 0
-
-    return window.show_quick_panel(items, on_done, flags)
+    return window.show_quick_panel(items, on_done, sublime.KEEP_OPEN_ON_FOCUS_LOST)

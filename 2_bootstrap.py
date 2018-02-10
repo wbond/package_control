@@ -2,17 +2,9 @@ import threading
 
 from textwrap import dedent
 
-import sublime
-
-st_build = int(sublime.version())
-if st_build < 3000:
-    raise ImportError('Package Control requires Sublime Text 3')
-
 from .package_control import loader
-from .package_control.bootstrap import bootstrap_dependency
 from .package_control.bootstrap import mark_bootstrapped
 from .package_control.package_manager import PackageManager
-from .package_control.show_error import show_message
 
 
 def plugin_loaded():
@@ -77,36 +69,4 @@ def _background_bootstrap(settings):
     """
     base_loader_code = dedent(base_loader_code).lstrip()
     loader.add_or_update('00', 'package_control', base_loader_code)
-
-    # SSL support fo Linux
-    if sublime.platform() == 'linux' and int(sublime.version()) < 3109:
-        linux_ssl_url = 'http://packagecontrol.io/ssl/1.0.2/ssl-linux.sublime-package'
-        linux_ssl_hash = '23f35f64458a0a14c99b1bb1bbc3cb04794c7361c4940e0a638d40f038acd377'
-        linux_ssl_priority = '01'
-        linux_ssl_version = '1.0.2'
-
-        def linux_ssl_show_restart():
-            show_message(
-                '''
-                Package Control just installed or upgraded the missing Python
-                _ssl module for Linux since Sublime Text does not include it.
-
-                Please restart Sublime Text to make SSL available to all
-                packages.
-                '''
-            )
-
-        threading.Thread(
-            target=bootstrap_dependency,
-            args=(
-                settings,
-                linux_ssl_url,
-                linux_ssl_hash,
-                linux_ssl_priority,
-                linux_ssl_version,
-                linux_ssl_show_restart,
-            )
-        ).start()
-
-    else:
-        mark_bootstrapped()
+    mark_bootstrapped()
