@@ -27,6 +27,7 @@ from .downloaders.binary_not_found_error import BinaryNotFoundError
 from .downloaders.rate_limit_exception import RateLimitException
 from .downloaders.downloader_exception import DownloaderException
 from .downloaders.win_downloader_exception import WinDownloaderException
+from .downloaders.oscrypto_downloader_exception import OscryptoDownloaderException
 from .http_cache import HttpCache
 
 
@@ -223,9 +224,9 @@ class DownloadManager(object):
         downloader_precedence = self.settings.get(
             'downloader_precedence',
             {
-                "windows": ["wininet"],
-                "osx": ["urllib"],
-                "linux": ["urllib", "curl", "wget"]
+                "windows": ["wininet", "oscrypto"],
+                "osx": ["oscrypto", "urllib"],
+                "linux": ["oscrypto", "urllib", "curl", "wget"]
             }
         )
         downloader_list = downloader_precedence.get(platform, [])
@@ -242,7 +243,8 @@ class DownloadManager(object):
             raise DownloaderException(error_string)
 
         # Make sure we have a downloader, and it supports SSL if we need it
-        if not self.downloader or (is_ssl and not self.downloader.supports_ssl()):
+        if not self.downloader or ((is_ssl and not self.downloader.supports_ssl())
+                or (not is_ssl and not self.downloader.supports_plaintext())):
             for downloader_name in downloader_list:
 
                 if downloader_name not in DOWNLOADERS:
@@ -259,6 +261,8 @@ class DownloadManager(object):
                 try:
                     downloader = DOWNLOADERS[downloader_name](self.settings)
                     if is_ssl and not downloader.supports_ssl():
+                        continue
+                    if not is_ssl and not downloader.supports_plaintext():
                         continue
                     self.downloader = downloader
                     break
@@ -352,6 +356,18 @@ class DownloadManager(object):
                 (e.limit, e.domain)
             )
             raise
+
+        except (OscryptoDownloaderException) as e:
+            console_write(
+                u'''
+                Attempting to use Urllib downloader due to Oscrypto error: %s
+                ''',
+                str_cls(e)
+            )
+
+            self.downloader = UrlLibDownloader(self.settings)
+            # Try again with the new downloader!
+            return self.fetch(url, error_message, prefer_cached)
 
         except (WinDownloaderException) as e:
 

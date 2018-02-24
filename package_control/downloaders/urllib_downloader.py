@@ -334,3 +334,13 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             If the object supports HTTPS requests
         """
         return 'ssl' in sys.modules and hasattr(urllib_compat, 'HTTPSHandler')
+
+    def supports_plaintext(self):
+        """
+        Indicates if the object can handle non-secure HTTP requests
+
+        :return:
+            If the object supports non-secure HTTP requests
+        """
+
+        return True

@@ -286,6 +286,16 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         return True
 
+    def supports_plaintext(self):
+        """
+        Indicates if the object can handle non-secure HTTP requests
+
+        :return:
+            If the object supports non-secure HTTP requests
+        """
+
+        return True
+
     def split_debug(self, string):
         """
         Takes debug output from curl and splits it into stderr and

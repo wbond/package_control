@@ -748,6 +748,16 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
         return True
 
+    def supports_plaintext(self):
+        """
+        Indicates if the object can handle non-secure HTTP requests
+
+        :return:
+            If the object supports non-secure HTTP requests
+        """
+
+        return True
+
     def cache_proxy_info(self):
         proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
         if proxy_struct.lpszProxy:

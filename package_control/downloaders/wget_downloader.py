@@ -214,6 +214,16 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         return True
 
+    def supports_plaintext(self):
+        """
+        Indicates if the object can handle non-secure HTTP requests
+
+        :return:
+            If the object supports non-secure HTTP requests
+        """
+
+        return True
+
     def parse_output(self, clean_run):
         """
         Parses the wget output file, prints debug information and returns headers

@@ -454,6 +454,15 @@ class Pbes1Params(Sequence):
     ]
 
 
+class CcmParams(Sequence):
+    # https://tools.ietf.org/html/rfc5084
+    # aes_ICVlen: 4 | 6 | 8 | 10 | 12 | 14 | 16
+    _fields = [
+        ('aes_nonce', OctetString),
+        ('aes_icvlen', Integer),
+    ]
+
+
 class PSourceAlgorithmId(ObjectIdentifier):
     _map = {
         '1.2.840.113549.1.1.9': 'p_specified',
@@ -628,6 +637,10 @@ class EncryptionAlgorithm(_ForceNullParameters, Sequence):
         'aes128_ofb': OctetString,
         'aes192_ofb': OctetString,
         'aes256_ofb': OctetString,
+        # From RFC5084
+        'aes128_ccm': CcmParams,
+        'aes192_ccm': CcmParams,
+        'aes256_ccm': CcmParams,
         # From PKCS#5
         'pbes1_md2_des': Pbes1Params,
         'pbes1_md5_des': Pbes1Params,
