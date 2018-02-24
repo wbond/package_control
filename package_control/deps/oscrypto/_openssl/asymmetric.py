@@ -3,9 +3,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 
 import hashlib
 
-from ... import asn1crypto.algos
-from ... import asn1crypto.keys
-from ... import asn1crypto.x509
+from ...asn1crypto import algos, keys, x509 as asn1x509
 
 from .._errors import pretty_message
 from .._ffi import (
@@ -450,10 +448,10 @@ def generate_pair(algorithm, bit_size=None, curve=None):
 
             # i2o_ECPublicKey only returns the ECPoint bytes, so we have to
             # manually wrap it in a PublicKeyInfo structure to get it to parse
-            public_key = asn1crypto.keys.PublicKeyInfo({
-                'algorithm': asn1crypto.keys.PublicKeyAlgorithm({
+            public_key = keys.PublicKeyInfo({
+                'algorithm': keys.PublicKeyAlgorithm({
                     'algorithm': 'ec',
-                    'parameters': asn1crypto.keys.ECDomainParameters(
+                    'parameters': keys.ECDomainParameters(
                         name='named',
                         value=curve
                     )
@@ -541,7 +539,7 @@ def generate_dh_parameters(bit_size):
             handle_openssl_error(result)
         dh_params_bytes = bytes_from_buffer(buffer, buffer_length)
 
-        return asn1crypto.algos.DHParameters.load(dh_params_bytes)
+        return algos.DHParameters.load(dh_params_bytes)
 
     finally:
         if dh:
@@ -568,7 +566,7 @@ def load_certificate(source):
         A Certificate object
     """
 
-    if isinstance(source, asn1crypto.x509.Certificate):
+    if isinstance(source, asn1x509.Certificate):
         certificate = source
 
     elif isinstance(source, byte_cls):
@@ -633,7 +631,7 @@ def load_private_key(source, password=None):
         A PrivateKey object
     """
 
-    if isinstance(source, asn1crypto.keys.PrivateKeyInfo):
+    if isinstance(source, keys.PrivateKeyInfo):
         private_object = source
 
     else:
@@ -684,7 +682,7 @@ def load_public_key(source):
         A PublicKey object
     """
 
-    if isinstance(source, asn1crypto.keys.PublicKeyInfo):
+    if isinstance(source, keys.PublicKeyInfo):
         public_key = source
 
     elif isinstance(source, byte_cls):

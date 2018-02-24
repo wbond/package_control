@@ -444,7 +444,7 @@ def parse_pkcs12(data, password=None):
 
     :return:
         A three-element tuple of:
-         1. An ans1crypto.keys.PrivateKeyInfo object
+         1. An asn1crypto.keys.PrivateKeyInfo object
          2. An asn1crypto.x509.Certificate object
          3. A list of zero or more asn1crypto.x509.Certificate objects that are
             "extra" certificates, possibly intermediates from the cert chain

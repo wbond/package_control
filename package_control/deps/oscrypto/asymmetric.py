@@ -4,8 +4,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import hashlib
 import binascii
 
-from ..asn1crypto import keys, x509, algos, core
-from .. import asn1crypto.pem
+from ..asn1crypto import keys, x509, algos, core, pem
 from ..asn1crypto.util import OrderedDict
 
 from . import backend
@@ -148,7 +147,7 @@ def dump_dh_parameters(dh_parameters, encoding='pem'):
     Serializes an asn1crypto.algos.DHParameters object into a byte string
 
     :param dh_parameters:
-        An ans1crypto.algos.DHParameters object
+        An asn1crypto.algos.DHParameters object
 
     :param encoding:
         A unicode string of "pem" or "der"
@@ -176,7 +175,7 @@ def dump_dh_parameters(dh_parameters, encoding='pem'):
 
     output = dh_parameters.dump()
     if encoding == 'pem':
-        output = asn1crypto.pem.armor('DH PARAMETERS', output)
+        output = pem.armor('DH PARAMETERS', output)
     return output
 
 
@@ -217,7 +216,7 @@ def dump_public_key(public_key, encoding='pem'):
 
     output = public_key.dump()
     if encoding == 'pem':
-        output = asn1crypto.pem.armor('PUBLIC KEY', output)
+        output = pem.armor('PUBLIC KEY', output)
     return output
 
 
@@ -258,7 +257,7 @@ def dump_certificate(certificate, encoding='pem'):
 
     output = certificate.dump()
     if encoding == 'pem':
-        output = asn1crypto.pem.armor('CERTIFICATE', output)
+        output = pem.armor('CERTIFICATE', output)
     return output
 
 
@@ -375,7 +374,7 @@ def dump_private_key(private_key, passphrase, encoding='pem', target_ms=200):
             object_type = 'PRIVATE KEY'
         else:
             object_type = 'ENCRYPTED PRIVATE KEY'
-        output = asn1crypto.pem.armor(object_type, output)
+        output = pem.armor(object_type, output)
 
     return output
 
@@ -465,7 +464,7 @@ def dump_openssl_private_key(private_key, passphrase):
     elif private_key.algorithm == 'dsa':
         object_type = 'DSA PRIVATE KEY'
 
-    return asn1crypto.pem.armor(object_type, output, headers=headers)
+    return pem.armor(object_type, output, headers=headers)
 
 
 if _backend == 'osx':
