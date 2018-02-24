@@ -178,35 +178,36 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                         (error_message, code, url)
                     )
 
-                data = b''
-                transfer_encoding = resp_headers.get('transfer-encoding')
-                if transfer_encoding and transfer_encoding.lower() == 'chunked':
-                    while True:
-                        line = self.socket.read_until(b'\r\n').decode('iso-8859-1').rstrip()
-                        if re.match(r'^[a-fA-F0-9]+$', line):
-                            chunk_length = int(line, 16)
-                            if chunk_length == 0:
-                                break
-                            data += self.socket.read_exactly(chunk_length)
-                            if self.socket.read_exactly(2) != b'\r\n':
-                                raise OscryptoDownloaderException('Unable to parse chunk newline')
-                        else:
-                            self.close()
-                            raise OscryptoDownloaderException('Unable to parse chunk length')
                 else:
-                    content_length = self.parse_content_length(resp_headers)
-                    if content_length is not None:
-                        data = self.socket.read_exactly(content_length)
+                    data = b''
+                    transfer_encoding = resp_headers.get('transfer-encoding')
+                    if transfer_encoding and transfer_encoding.lower() == 'chunked':
+                        while True:
+                            line = self.socket.read_until(b'\r\n').decode('iso-8859-1').rstrip()
+                            if re.match(r'^[a-fA-F0-9]+$', line):
+                                chunk_length = int(line, 16)
+                                if chunk_length == 0:
+                                    break
+                                data += self.socket.read_exactly(chunk_length)
+                                if self.socket.read_exactly(2) != b'\r\n':
+                                    raise OscryptoDownloaderException('Unable to parse chunk newline')
+                            else:
+                                self.close()
+                                raise OscryptoDownloaderException('Unable to parse chunk length')
                     else:
-                        # This should only happen if the server is going to close the connection
-                        while self.socket.select_read(timeout=timeout):
-                            data += self.socket.read(8192)
-                        self.close()
+                        content_length = self.parse_content_length(resp_headers)
+                        if content_length is not None:
+                            data = self.socket.read_exactly(content_length)
+                        else:
+                            # This should only happen if the server is going to close the connection
+                            while self.socket.select_read(timeout=timeout):
+                                data += self.socket.read(8192)
+                            self.close()
 
-                encoding = resp_headers.get('content-encoding')
-                data = self.decode_response(encoding, data)
+                    encoding = resp_headers.get('content-encoding')
+                    data = self.decode_response(encoding, data)
 
-                return self.cache_result('get', url, code, resp_headers, data)
+                    return self.cache_result('get', url, code, resp_headers, data)
 
             except (OSError) as e:
                 self.close()
