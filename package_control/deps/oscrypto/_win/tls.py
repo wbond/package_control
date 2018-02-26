@@ -30,12 +30,13 @@ from ._secur32 import secur32, Secur32Const, handle_error
 from ._crypt32 import crypt32, Crypt32Const, handle_error as handle_crypt32_error
 from ._kernel32 import kernel32
 from .._types import type_name, str_cls, byte_cls, int_types
-from ..errors import TLSError, TLSVerificationError
+from ..errors import TLSError, TLSVerificationError, TLSDisconnectError, TLSGracefulDisconnectError
 from .._tls import (
     detect_client_auth_request,
     detect_other_protocol,
     extract_chain,
     get_dh_params_length,
+    parse_alert,
     parse_session_info,
     raise_client_auth,
     raise_dh_params,
@@ -45,6 +46,7 @@ from .._tls import (
     raise_hostname,
     raise_no_issuer,
     raise_protocol_error,
+    raise_protocol_version,
     raise_revoked,
     raise_self_signed,
     raise_verification,
@@ -806,6 +808,9 @@ class TLSSocket(object):
                 if result == Secur32Const.SEC_E_ILLEGAL_MESSAGE:
                     if detect_client_auth_request(handshake_server_bytes):
                         raise_client_auth()
+                    alert_info = parse_alert(handshake_server_bytes)
+                    if alert_info and alert_info == (2, 70):
+                        raise_protocol_version()
                     raise_handshake()
 
                 if result == Secur32Const.SEC_E_WRONG_PRINCIPAL:
@@ -1452,10 +1457,9 @@ class TLSSocket(object):
         """
 
         if self._remote_closed:
-            message = 'The remote end closed the connection'
+            raise TLSGracefulDisconnectError('The remote end closed the connection')
         else:
-            message = 'The connection was already closed'
-        raise TLSError(message)
+            raise TLSDisconnectError('The connection was already closed')
 
     @property
     def certificate(self):

@@ -82,6 +82,18 @@ class TLSError(socket.error):
         return self.message
 
 
+class TLSConnectionError(TLSError):
+    pass
+
+
+class TLSDisconnectError(TLSConnectionError):
+    pass
+
+
+class TLSGracefulDisconnectError(TLSDisconnectError):
+    pass
+
+
 class TLSVerificationError(TLSError):
 
     """

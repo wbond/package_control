@@ -15,7 +15,7 @@ from .. import _backend_config
 from .._errors import pretty_message
 from .._ffi import null, bytes_from_buffer, buffer_from_bytes, is_null, buffer_pointer
 from .._types import type_name, str_cls, byte_cls, int_types
-from ..errors import TLSError
+from ..errors import TLSError, TLSDisconnectError, TLSGracefulDisconnectError
 from .._tls import (
     detect_client_auth_request,
     extract_chain,
@@ -29,6 +29,7 @@ from .._tls import (
     raise_hostname,
     raise_no_issuer,
     raise_protocol_error,
+    raise_protocol_version,
     raise_self_signed,
     raise_verification,
     raise_weak_signature,
@@ -265,14 +266,33 @@ class TLSSocket(object):
     """
 
     _socket = None
+
+    # An oscrypto.tls.TLSSession object
     _session = None
 
+    # An OpenSSL SSL struct pointer
     _ssl = None
+
+    # OpenSSL memory bios used for reading/writing data to and
+    # from the socket
     _rbio = None
     _wbio = None
+
+    # Size of _bio_write_buffer and _read_buffer
+    _buffer_size = 8192
+
+    # A buffer used to pull bytes out of the _wbio memory bio to
+    # be written to the socket
     _bio_write_buffer = None
+
+    # A buffer used to push bytes into the _rbio memory bio to
+    # be decrypted by OpenSSL
     _read_buffer = None
 
+    # Raw ciphertext from the socker that hasn't need fed to OpenSSL yet
+    _raw_bytes = None
+
+    # Plaintext that has been decrypted, but not asked for yet
     _decrypted_bytes = None
 
     _hostname = None
@@ -286,6 +306,7 @@ class TLSSocket(object):
     _session_id = None
     _session_ticket = None
 
+    # If we explicitly asked for the connection to be closed
     _local_closed = False
 
     @classmethod
@@ -356,6 +377,7 @@ class TLSSocket(object):
             controlling the protocols and validation performed
         """
 
+        self._raw_bytes = b''
         self._decrypted_bytes = b''
 
         if address is None and port is None:
@@ -411,60 +433,57 @@ class TLSSocket(object):
         Perform an initial TLS handshake
         """
 
-        ssl = None
-        rbio = None
-        wbio = None
+        self._ssl = None
+        self._rbio = None
+        self._wbio = None
 
         try:
-            ssl = libssl.SSL_new(self._session._ssl_ctx)
-            if is_null(ssl):
+            self._ssl = libssl.SSL_new(self._session._ssl_ctx)
+            if is_null(self._ssl):
+                self._ssl = None
                 handle_openssl_error(0)
 
             mem_bio = libssl.BIO_s_mem()
 
-            rbio = libssl.BIO_new(mem_bio)
-            if is_null(rbio):
+            self._rbio = libssl.BIO_new(mem_bio)
+            if is_null(self._rbio):
                 handle_openssl_error(0)
 
-            wbio = libssl.BIO_new(mem_bio)
-            if is_null(wbio):
+            self._wbio = libssl.BIO_new(mem_bio)
+            if is_null(self._wbio):
                 handle_openssl_error(0)
 
-            libssl.SSL_set_bio(ssl, rbio, wbio)
+            libssl.SSL_set_bio(self._ssl, self._rbio, self._wbio)
 
             utf8_domain = self._hostname.encode('utf-8')
             libssl.SSL_ctrl(
-                ssl,
+                self._ssl,
                 LibsslConst.SSL_CTRL_SET_TLSEXT_HOSTNAME,
                 LibsslConst.TLSEXT_NAMETYPE_host_name,
                 utf8_domain
             )
 
-            libssl.SSL_set_connect_state(ssl)
+            libssl.SSL_set_connect_state(self._ssl)
 
             if self._session._ssl_session:
-                libssl.SSL_set_session(ssl, self._session._ssl_session)
+                libssl.SSL_set_session(self._ssl, self._session._ssl_session)
 
-            self._bio_write_buffer = buffer_from_bytes(8192)
-            self._read_buffer = buffer_from_bytes(8192)
+            self._bio_write_buffer = buffer_from_bytes(self._buffer_size)
+            self._read_buffer = buffer_from_bytes(self._buffer_size)
 
             handshake_server_bytes = b''
             handshake_client_bytes = b''
 
-            self._ssl = ssl
-            self._rbio = rbio
-            self._wbio = wbio
-
             while True:
                 result = libssl.SSL_do_handshake(self._ssl)
-                handshake_client_bytes += self._raw_write(self._wbio)
+                handshake_client_bytes += self._raw_write()
 
                 if result == 1:
                     break
 
-                error = libssl.SSL_get_error(ssl, result)
+                error = libssl.SSL_get_error(self._ssl, result)
                 if error == LibsslConst.SSL_ERROR_WANT_READ:
-                    chunk = self._raw_read(self._rbio)
+                    chunk = self._raw_read()
                     if chunk == b'':
                         if handshake_server_bytes == b'':
                             raise_disconnection()
@@ -474,7 +493,11 @@ class TLSSocket(object):
                     handshake_server_bytes += chunk
 
                 elif error == LibsslConst.SSL_ERROR_WANT_WRITE:
-                    handshake_client_bytes += self._raw_write(self._wbio)
+                    handshake_client_bytes += self._raw_write()
+
+                elif error == LibsslConst.SSL_ERROR_ZERO_RETURN:
+                    self._shutdown(False)
+                    self._raise_closed()
 
                 else:
                     info = peek_openssl_error()
@@ -509,6 +532,14 @@ class TLSSocket(object):
                     if info == unknown_protocol_info:
                         raise_protocol_error(handshake_server_bytes)
 
+                    tls_version_info_error = (
+                        20,
+                        LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
+                        LibsslConst.SSL_R_TLSV1_ALERT_PROTOCOL_VERSION
+                    )
+                    if info == tls_version_info_error:
+                        raise_protocol_version()
+
                     handshake_error_info = (
                         20,
                         LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
@@ -539,7 +570,7 @@ class TLSSocket(object):
                         )
 
                     if info == cert_verify_failed_info:
-                        verify_result = libssl.SSL_get_verify_result(ssl)
+                        verify_result = libssl.SSL_get_verify_result(self._ssl)
                         chain = extract_chain(handshake_server_bytes)
 
                         self_signed = False
@@ -593,9 +624,6 @@ class TLSSocket(object):
                 dh_params_length = get_dh_params_length(handshake_server_bytes)
                 if dh_params_length < 1024:
                     self.close()
-                    ssl = None
-                    rbio = None
-                    wbio = None
                     raise_dh_params()
 
             # When saving the session for future requests, we use
@@ -606,7 +634,7 @@ class TLSSocket(object):
             if self._session_id == 'new' or self._session_ticket == 'new':
                 if self._session._ssl_session:
                     libssl.SSL_SESSION_free(self._session._ssl_session)
-                self._session._ssl_session = libssl.SSL_get1_session(ssl)
+                self._session._ssl_session = libssl.SSL_get1_session(self._ssl)
 
             if not self._session._manual_validation:
                 if self.certificate.hash_algo in set(['md5', 'md2']):
@@ -618,40 +646,60 @@ class TLSSocket(object):
                     raise_hostname(self.certificate, self._hostname)
 
         except (OSError, socket_.error):
-            if ssl:
-                libssl.SSL_free(ssl)
+            if self._ssl:
+                libssl.SSL_free(self._ssl)
+                self._ssl = None
+                self._rbio = None
+                self._wbio = None
             # The BIOs are freed by SSL_free(), so we only need to free
             # them if for some reason SSL_free() was not called
             else:
-                if rbio:
-                    libssl.BIO_free(rbio)
-                if wbio:
-                    libssl.BIO_free(wbio)
-
-            self._ssl = None
-            self._rbio = None
-            self._wbio = None
+                if self._rbio:
+                    libssl.BIO_free(self._rbio)
+                    self._rbio = None
+                if self._wbio:
+                    libssl.BIO_free(self._wbio)
+                    self._wbio = None
             self.close()
 
             raise
 
-    def _raw_read(self, rbio):
+    def _raw_read(self):
+        """
+        Reads data from the socket and writes it to the memory bio
+        used by libssl to decrypt the data. Returns the unencrypted
+        data for the purpose of debugging handshakes.
+
+        :return:
+            A byte string of ciphertext from the socket. Used for
+            debugging the handshake only.
+        """
+
+        data = self._raw_bytes
         try:
-            to_write = self._socket.recv(8192)
+            data += self._socket.recv(8192)
         except (socket_.error):
-            to_write = b''
-        output = to_write
-        while to_write != b'':
-            written = libssl.BIO_write(rbio, to_write, len(to_write))
-            to_write = to_write[written:]
+            pass
+        output = data
+        written = libssl.BIO_write(self._rbio, data, len(data))
+        self._raw_bytes = data[written:]
         return output
 
-    def _raw_write(self, wbio):
-        data_available = libssl.BIO_ctrl_pending(wbio)
+    def _raw_write(self):
+        """
+        Takes ciphertext from the memory bio and writes it to the
+        socket.
+
+        :return:
+            A byte string of ciphertext going to the socket. Used
+            for debugging the handshake only.
+        """
+
+        data_available = libssl.BIO_ctrl_pending(self._wbio)
         if data_available == 0:
             return b''
-        to_read = min(8192, data_available)
-        read = libssl.BIO_read(wbio, self._bio_write_buffer, to_read)
+        to_read = min(self._buffer_size, data_available)
+        read = libssl.BIO_read(self._wbio, self._bio_write_buffer, to_read)
         to_write = bytes_from_buffer(self._bio_write_buffer, read)
         output = to_write
         while len(to_write):
@@ -687,16 +735,6 @@ class TLSSocket(object):
                 type_name(max_length)
             ))
 
-        if self._ssl is None:
-            # Even if the session is closed, we can use
-            # buffered data to respond to read requests
-            if self._decrypted_bytes != b'':
-                output = self._decrypted_bytes
-                self._decrypted_bytes = b''
-                return output
-
-            self._raise_closed()
-
         buffered_length = len(self._decrypted_bytes)
 
         # If we already have enough buffered data, just use that
@@ -704,6 +742,9 @@ class TLSSocket(object):
             output = self._decrypted_bytes[0:max_length]
             self._decrypted_bytes = self._decrypted_bytes[max_length:]
             return output
+
+        if self._ssl is None:
+            self._raise_closed()
 
         # Don't block if we have buffered data available, since it is ok to
         # return less than the max_length
@@ -714,7 +755,7 @@ class TLSSocket(object):
 
         # Only read enough to get the requested amount when
         # combined with buffered data
-        to_read = max_length - len(self._decrypted_bytes)
+        to_read = min(self._buffer_size, max_length - buffered_length)
 
         output = self._decrypted_bytes
 
@@ -724,23 +765,23 @@ class TLSSocket(object):
         while again:
             again = False
             result = libssl.SSL_read(self._ssl, self._read_buffer, to_read)
-            self._raw_write(self._wbio)
+            self._raw_write()
             if result <= 0:
 
                 error = libssl.SSL_get_error(self._ssl, result)
                 if error == LibsslConst.SSL_ERROR_WANT_READ:
-                    self._raw_read(self._rbio)
+                    self._raw_read()
                     again = True
                     continue
 
                 elif error == LibsslConst.SSL_ERROR_WANT_WRITE:
-                    self._raw_write(self._wbio)
+                    self._raw_write()
                     again = True
                     continue
 
                 elif error == LibsslConst.SSL_ERROR_ZERO_RETURN:
-                    self.shutdown()
-                    return b''
+                    self._shutdown(False)
+                    break
 
                 else:
                     handle_openssl_error(0, TLSError)
@@ -800,6 +841,8 @@ class TLSSocket(object):
                 chunk = self._decrypted_bytes
                 self._decrypted_bytes = b''
             else:
+                if self._ssl is None:
+                    self._raise_closed()
                 to_read = libssl.SSL_pending(self._ssl) or 8192
                 chunk = self.read(to_read)
 
@@ -866,26 +909,25 @@ class TLSSocket(object):
             OSError - when an error is returned by the OS crypto library
         """
 
-        if self._ssl is None:
-            self._raise_closed()
-
         data_len = len(data)
         while data_len:
+            if self._ssl is None:
+                self._raise_closed()
             result = libssl.SSL_write(self._ssl, data, data_len)
-            self._raw_write(self._wbio)
+            self._raw_write()
             if result <= 0:
 
                 error = libssl.SSL_get_error(self._ssl, result)
                 if error == LibsslConst.SSL_ERROR_WANT_READ:
-                    self._raw_read(self._rbio)
+                    self._raw_read()
                     continue
 
                 elif error == LibsslConst.SSL_ERROR_WANT_WRITE:
-                    self._raw_write(self._wbio)
+                    self._raw_write()
                     continue
 
                 elif error == LibsslConst.SSL_ERROR_ZERO_RETURN:
-                    self.shutdown()
+                    self._shutdown(False)
                     return
 
                 else:
@@ -910,9 +952,12 @@ class TLSSocket(object):
         _, write_ready, _ = select.select([], [self._socket], [], timeout)
         return len(write_ready) > 0
 
-    def shutdown(self):
+    def _shutdown(self, manual):
         """
         Shuts down the TLS session and then shuts down the underlying socket
+
+        :param manual:
+            A boolean if the connection was manually shutdown
         """
 
         if self._ssl is None:
@@ -920,24 +965,25 @@ class TLSSocket(object):
 
         while True:
             result = libssl.SSL_shutdown(self._ssl)
-            self._raw_write(self._wbio)
+            self._raw_write()
 
             if result >= 0:
                 break
             if result < 0:
                 error = libssl.SSL_get_error(self._ssl, result)
                 if error == LibsslConst.SSL_ERROR_WANT_READ:
-                    self._raw_read(self._rbio)
+                    self._raw_read()
                     continue
 
                 elif error == LibsslConst.SSL_ERROR_WANT_WRITE:
-                    self._raw_write(self._wbio)
+                    self._raw_write()
                     continue
 
                 else:
                     handle_openssl_error(0, TLSError)
 
-        self._local_closed = True
+        if manual:
+            self._local_closed = True
 
         libssl.SSL_free(self._ssl)
         self._ssl = None
@@ -949,6 +995,13 @@ class TLSSocket(object):
             self._socket.shutdown(socket_.SHUT_RDWR)
         except (socket_.error):
             pass
+
+    def shutdown(self):
+        """
+        Shuts down the TLS session and then shuts down the underlying socket
+        """
+
+        self._shutdown(True)
 
     def close(self):
         """
@@ -1009,10 +1062,9 @@ class TLSSocket(object):
         """
 
         if self._local_closed:
-            message = 'The connection was already closed'
+            raise TLSDisconnectError('The connection was already closed')
         else:
-            message = 'The remote end closed the connection'
-        raise TLSError(message)
+            raise TLSGracefulDisconnectError('The remote end closed the connection')
 
     @property
     def certificate(self):
