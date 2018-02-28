@@ -13,8 +13,8 @@ if sys.version_info < (3,):
     from urlparse import urlparse
 
     from urllib2 import parse_keqv_list, parse_http_list
-    str_cls = unicode
-    int_types = (int, long)
+    str_cls = unicode  # noqa
+    int_types = (int, long)  # noqa
 else:
     from urllib.parse import urlparse
     from urllib.request import parse_keqv_list, parse_http_list
@@ -132,10 +132,10 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                 req_headers = self.add_conditional_headers(url, req_headers)
 
                 request = 'GET '
+                url_info = urlparse(url)
                 if self.using_proxy:
                     request += url + ' HTTP/1.1'
                 else:
-                    url_info = urlparse(url)
                     path = '/' if not url_info.path else url_info.path
                     if url_info.query:
                         path += '?' + url_info.query
@@ -152,9 +152,22 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     continue
                 version, code, message, resp_headers = response
 
+                # Read the body to get any remaining data off the socket
+                data = self.read_body(code, resp_headers, timeout)
+
                 # Handle cached responses
                 if code == 304:
                     return self.cache_result('get', url, code, resp_headers, b'')
+
+                if code == 301:
+                    location = resp_headers.get('location')
+                    if not isinstance(location, str_cls):
+                        raise OscryptoDownloaderException('Missing or duplicate Location HTTP header')
+                    if not re.match(r'https?://', location):
+                        if not location.startswith('/'):
+                            location = os.path.dirname(url_info.path) + locaation
+                        location = url_info.scheme + '://' + url_info.netloc + location
+                    return self.download(location, error_message, timeout, tried, prefer_cached)
 
                 # Make sure we obey Github's rate limiting headers
                 self.handle_rate_limit(resp_headers, url)
@@ -179,45 +192,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     )
 
                 else:
-                    data = b''
-                    transfer_encoding = resp_headers.get('transfer-encoding')
-                    if transfer_encoding and transfer_encoding.lower() == 'chunked':
-                        while True:
-                            line = self.socket.read_until(b'\r\n').decode('iso-8859-1').rstrip()
-                            if re.match(r'^[a-fA-F0-9]+$', line):
-                                chunk_length = int(line, 16)
-                                if chunk_length == 0:
-                                    break
-                                data += self.socket.read_exactly(chunk_length)
-                                if self.socket.read_exactly(2) != b'\r\n':
-                                    raise OscryptoDownloaderException('Unable to parse chunk newline')
-                            else:
-                                self.close()
-                                raise OscryptoDownloaderException('Unable to parse chunk length')
-                    else:
-                        content_length = self.parse_content_length(resp_headers)
-                        if content_length is not None:
-                            data = self.socket.read_exactly(content_length)
-                        else:
-                            # This should only happen if the server is going to close the connection
-                            while self.socket.select_read(timeout=timeout):
-                                data += self.socket.read(8192)
-                            self.close()
-
-                    encoding = resp_headers.get('content-encoding')
-                    data = self.decode_response(encoding, data)
-
                     return self.cache_result('get', url, code, resp_headers, data)
-
-            except (OSError) as e:
-                self.close()
-                error_string = text.format(
-                    '''
-                    %s OS error %s downloading %s.
-                    ''',
-                    (error_message, unicode_from_os(e), url)
-                )
-                raise
 
             except (oscrypto_errors.TLSVerificationError) as e:
                 self.close()
@@ -229,6 +204,18 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     ''',
                     (error_message, str_cls(e), url)
                 )
+
+            except (oscrypto_errors.TLSGracefulDisconnectError) as e:
+                error_string = text.format(
+                    '''
+                    %s TLS was gracefully closed while downloading %s, trying again.
+                    ''',
+                    (error_message, url)
+                )
+
+                self.close()
+
+                continue
 
             except (oscrypto_errors.TLSError) as e:
                 self.close()
@@ -253,6 +240,16 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                 self.close()
 
                 continue
+
+            except (OSError) as e:
+                self.close()
+                error_string = text.format(
+                    '''
+                    %s OS error %s downloading %s.
+                    ''',
+                    (error_message, unicode_from_os(e), url)
+                )
+                raise
 
             break
 
@@ -446,20 +443,30 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
         string = data.decode('iso-8859-1')
         if self.debug:
             lines = []
-        for i, line in enumerate(string.split('\r\n')):
+        first = True
+        for line in string.split('\r\n'):
             line = line.strip()
-            if self.debug and len(line):
+            if len(line) == 0:
+                continue
+            if self.debug:
                 lines.append(line)
-            if i == 0:
+            if first:
                 match = re.match(r'^HTTP/(1\.[01]) +(\d+) +(.*)$', line)
                 if not match:
+                    if self.debug:
+                        console_write(
+                            '''
+                            Oscrypto Debug Read
+                              %s
+                            ''',
+                            '\n  '.join(lines)
+                        )
                     return None
                 version = tuple(map(int, match.group(1).split('.')))
                 code = int(match.group(2))
                 text = match.group(3)
+                first = False
             else:
-                if not len(line):
-                    continue
                 parts = line.split(':', 1)
                 if len(parts) == 2:
                     name = parts[0].strip().lower()
@@ -495,6 +502,64 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
         if isinstance(content_length, str_cls) and len(content_length) > 0:
             content_length = int(content_length)
         return content_length
+
+    def read_body(self, code, resp_headers, timeout):
+        """
+        Reads the plaintext body of the request
+
+        :param code:
+            The integer HTTP response code
+
+        :param resp_headers:
+            A dict of the response headers
+
+        :param timeout:
+            An integer number of seconds to timeout a read
+
+        :return:
+            A byte string of the decompressed plain text body
+        """
+
+        # Should adhere to https://tools.ietf.org/html/rfc7230#section-3.3.3
+
+        data = b''
+        transfer_encoding = resp_headers.get('transfer-encoding')
+        if transfer_encoding and transfer_encoding.lower() == 'chunked':
+            while True:
+                line = self.socket.read_until(b'\r\n').decode('iso-8859-1').rstrip()
+                if re.match(r'^[a-fA-F0-9]+$', line):
+                    chunk_length = int(line, 16)
+                    if chunk_length == 0:
+                        break
+                    data += self.socket.read_exactly(chunk_length)
+                    if self.socket.read_exactly(2) != b'\r\n':
+                        raise OscryptoDownloaderException('Unable to parse chunk newline')
+                else:
+                    self.close()
+                    raise OscryptoDownloaderException('Unable to parse chunk length')
+        else:
+            content_length = self.parse_content_length(resp_headers)
+            if content_length is not None:
+                if content_length > 0:
+                    data = self.socket.read_exactly(content_length)
+            elif code == 204 or code == 304 or (code >= 100 and code < 200):
+                # These HTTP codes are defined to not have a body
+                pass
+            elif resp_headers.get('connection', '').lower() == 'keep-alive':
+                # If the connection is kept-alive, and there is no content-length,
+                # and not chunked, than the response has an empty body.
+                pass
+            else:
+                # This should only happen if the server is going to close the connection
+                while self.socket.select_read(timeout=timeout):
+                    data += self.socket.read(8192)
+                self.close()
+
+        if resp_headers.get('connection', '').lower() == 'close':
+            self.close()
+
+        encoding = resp_headers.get('content-encoding')
+        return self.decode_response(encoding, data)
 
     def dump_certificate(self, cert):
         """

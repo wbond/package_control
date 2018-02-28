@@ -1169,7 +1169,9 @@ class TLSSocket(object):
 
         :param marker:
             A byte string or regex object from re.compile(). Used to determine
-            when to stop reading.
+            when to stop reading. Regex objects are more inefficient since
+            they must scan the entire byte string of read data each time data
+            is read off the socket.
 
         :return:
             A byte string of the data read
@@ -1194,19 +1196,22 @@ class TLSSocket(object):
             else:
                 chunk = self.read(8192)
 
+            offset = len(output)
             output += chunk
 
             if is_regex:
-                match = marker.search(chunk)
+                match = marker.search(output)
                 if match is not None:
-                    offset = len(output) - len(chunk)
-                    end = offset + match.end()
+                    end = match.end()
                     break
             else:
-                match = chunk.find(marker)
+                # If the marker was not found last time, we have to start
+                # at a position where the marker would have its final char
+                # in the newly read chunk
+                start = max(0, offset - len(marker) - 1)
+                match = output.find(marker, start)
                 if match != -1:
-                    offset = len(output) - len(chunk)
-                    end = offset + match + len(marker)
+                    end = match + len(marker)
                     break
 
         self._decrypted_bytes = output[end:] + self._decrypted_bytes
