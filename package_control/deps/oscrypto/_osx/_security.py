@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 from .._ffi import FFIEngineError, null
+from ..errors import TLSDisconnectError, TLSGracefulDisconnectError
 
 try:
     from ._security_cffi import Security, version_info as osx_version_info
@@ -36,6 +37,11 @@ def handle_sec_error(error, exception_class=None):
 
     if error == 0:
         return
+
+    if error in set([SecurityConst.errSSLClosedNoNotify, SecurityConst.errSSLClosedAbort]):
+        raise TLSDisconnectError('The remote end closed the connection')
+    if error == SecurityConst.errSSLClosedGraceful:
+        raise TLSGracefulDisconnectError('The remote end closed the connection')
 
     cf_error_string = Security.SecCopyErrorMessageString(error, null())
     output = CFHelpers.cf_string_to_unicode(cf_error_string)

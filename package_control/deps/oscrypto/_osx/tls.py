@@ -145,7 +145,7 @@ def _read_callback(connection_id, data_buffer, data_length_pointer):
             error = e.errno
 
         if error is not None and error != errno.EAGAIN:
-            if error == errno.ECONNRESET:
+            if error == errno.ECONNRESET or error == errno.EPIPE:
                 return SecurityConst.errSSLClosedNoNotify
             return SecurityConst.errSSLClosedAbort
 
@@ -247,7 +247,7 @@ def _write_callback(connection_id, data_buffer, data_length_pointer):
             error = e.errno
 
         if error is not None and error != errno.EAGAIN:
-            if error == errno.ECONNRESET:
+            if error == errno.ECONNRESET or error == errno.EPIPE:
                 return SecurityConst.errSSLClosedNoNotify
             return SecurityConst.errSSLClosedAbort
 
@@ -397,6 +397,8 @@ class TLSSocket(object):
     _client_hello = None
 
     _local_closed = False
+    _gracefully_closed = False
+
     _connection_id = None
 
     @classmethod
@@ -1069,6 +1071,7 @@ class TLSSocket(object):
             handle_sec_error(result, TLSError)
 
         if result and result == SecurityConst.errSSLClosedGraceful:
+            self._gracefully_closed = True
             self._shutdown(False)
             self._raise_closed()
 
@@ -1273,8 +1276,8 @@ class TLSSocket(object):
         if self._session_context is None:
             return
 
+        # Ignore error during close in case other end closed already
         result = Security.SSLClose(self._session_context)
-        handle_sec_error(result, TLSError)
 
         if osx_version_info < (10, 8):
             result = Security.SSLDisposeContext(self._session_context)
@@ -1379,8 +1382,10 @@ class TLSSocket(object):
 
         if self._local_closed:
             raise TLSDisconnectError('The connection was already closed')
-        else:
+        elif self._gracefully_closed:
             raise TLSGracefulDisconnectError('The remote end closed the connection')
+        else:
+            raise TLSDisconnectError('The connection was closed')
 
     @property
     def certificate(self):

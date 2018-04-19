@@ -11,6 +11,9 @@ __all__ = [
     'LibraryNotFoundError',
     'SignatureError',
     'TLSError',
+    'TLSConnectionError',
+    'TLSDisconnectError',
+    'TLSGracefulDisconnectError',
     'TLSVerificationError',
 ]
 

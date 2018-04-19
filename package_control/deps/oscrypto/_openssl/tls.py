@@ -309,6 +309,8 @@ class TLSSocket(object):
     # If we explicitly asked for the connection to be closed
     _local_closed = False
 
+    _gracefully_closed = False
+
     @classmethod
     def wrap(cls, socket, hostname, session=None):
         """
@@ -496,6 +498,7 @@ class TLSSocket(object):
                     handshake_client_bytes += self._raw_write()
 
                 elif error == LibsslConst.SSL_ERROR_ZERO_RETURN:
+                    self._gracefully_closed = True
                     self._shutdown(False)
                     self._raise_closed()
 
@@ -703,7 +706,18 @@ class TLSSocket(object):
         to_write = bytes_from_buffer(self._bio_write_buffer, read)
         output = to_write
         while len(to_write):
-            sent = self._socket.send(to_write)
+            raise_disconnect = False
+            try:
+                sent = self._socket.send(to_write)
+            except (socket_.error) as e:
+                # Handle ECONNRESET and EPIPE
+                if e.errno == 104 or e.errno == 32:
+                    raise_disconnect = True
+                else:
+                    raise
+
+            if raise_disconnect:
+                raise_disconnection()
             to_write = to_write[sent:]
             if len(to_write):
                 self.select_write()
@@ -770,9 +784,10 @@ class TLSSocket(object):
 
                 error = libssl.SSL_get_error(self._ssl, result)
                 if error == LibsslConst.SSL_ERROR_WANT_READ:
-                    self._raw_read()
-                    again = True
-                    continue
+                    if self._raw_read() != b'':
+                        again = True
+                        continue
+                    raise_disconnection()
 
                 elif error == LibsslConst.SSL_ERROR_WANT_WRITE:
                     self._raw_write()
@@ -780,6 +795,7 @@ class TLSSocket(object):
                     continue
 
                 elif error == LibsslConst.SSL_ERROR_ZERO_RETURN:
+                    self._gracefully_closed = True
                     self._shutdown(False)
                     break
 
@@ -787,6 +803,9 @@ class TLSSocket(object):
                     handle_openssl_error(0, TLSError)
 
             output += bytes_from_buffer(self._read_buffer, result)
+
+        if self._gracefully_closed and len(output) == 0:
+            self._raise_closed()
 
         self._decrypted_bytes = output[max_length:]
         return output[0:max_length]
@@ -924,16 +943,18 @@ class TLSSocket(object):
 
                 error = libssl.SSL_get_error(self._ssl, result)
                 if error == LibsslConst.SSL_ERROR_WANT_READ:
-                    self._raw_read()
-                    continue
+                    if self._raw_read() != b'':
+                        continue
+                    raise_disconnection()
 
                 elif error == LibsslConst.SSL_ERROR_WANT_WRITE:
                     self._raw_write()
                     continue
 
                 elif error == LibsslConst.SSL_ERROR_ZERO_RETURN:
+                    self._gracefully_closed = True
                     self._shutdown(False)
-                    return
+                    self._raise_closed()
 
                 else:
                     handle_openssl_error(0, TLSError)
@@ -970,15 +991,22 @@ class TLSSocket(object):
 
         while True:
             result = libssl.SSL_shutdown(self._ssl)
-            self._raw_write()
+
+            # Don't be noisy if the socket is already closed
+            try:
+                self._raw_write()
+            except (TLSDisconnectError):
+                pass
 
             if result >= 0:
                 break
             if result < 0:
                 error = libssl.SSL_get_error(self._ssl, result)
                 if error == LibsslConst.SSL_ERROR_WANT_READ:
-                    self._raw_read()
-                    continue
+                    if self._raw_read() != b'':
+                        continue
+                    else:
+                        break
 
                 elif error == LibsslConst.SSL_ERROR_WANT_WRITE:
                     self._raw_write()
@@ -1068,8 +1096,10 @@ class TLSSocket(object):
 
         if self._local_closed:
             raise TLSDisconnectError('The connection was already closed')
-        else:
+        elif self._gracefully_closed:
             raise TLSGracefulDisconnectError('The remote end closed the connection')
+        else:
+            raise TLSDisconnectError('The connection was closed')
 
     @property
     def certificate(self):

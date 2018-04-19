@@ -1061,9 +1061,12 @@ class TLSSocket(object):
         # This read loop will only be run if there wasn't enough
         # buffered data to fulfill the requested max_length
         do_read = len(self._received_bytes) == 0
+
         while output_len < max_length:
             if do_read:
                 self._received_bytes += self._socket.recv(to_recv)
+                if len(self._received_bytes) == 0:
+                    raise_disconnection()
 
             data_len = min(len(self._received_bytes), self._buffer_size)
             if data_len == 0:
@@ -1300,7 +1303,12 @@ class TLSSocket(object):
             to_send = native(int, self._encrypt_buffers[0].cbBuffer)
             to_send += native(int, self._encrypt_buffers[1].cbBuffer)
             to_send += native(int, self._encrypt_buffers[2].cbBuffer)
-            self._socket.send(bytes_from_buffer(self._encrypt_data_buffer, to_send))
+            try:
+                self._socket.send(bytes_from_buffer(self._encrypt_data_buffer, to_send))
+            except (socket_.error) as e:
+                if e.errno == 10053:
+                    raise_disconnection()
+                raise
 
             data = data[to_send:]
 
@@ -1382,7 +1390,12 @@ class TLSSocket(object):
                 handle_error(result, TLSError)
 
             token = bytes_from_buffer(out_buffers[0].pvBuffer, out_buffers[0].cbBuffer)
-            self._socket.send(token)
+            try:
+                # If there is an error sending the shutdown, ignore it since the
+                # connection is likely gone at this point
+                self._socket.send(token)
+            except (socket_.error):
+                pass
 
         finally:
             if out_buffers:

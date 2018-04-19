@@ -8,14 +8,17 @@ from ..asn1crypto.util import int_from_bytes, timezone
 from ..asn1crypto.x509 import Certificate
 
 from ._cipher_suites import CIPHER_SUITE_MAP
-from .errors import TLSVerificationError, TLSError
+from .errors import TLSVerificationError, TLSDisconnectError, TLSError
 
 
 __all__ = [
     'detect_client_auth_request',
     'extract_chain',
     'get_dh_params_length',
+    'parse_alert',
+    'parse_handshake_messages',
     'parse_session_info',
+    'parse_tls_records',
     'raise_client_auth',
     'raise_dh_params',
     'raise_disconnection',
@@ -47,10 +50,10 @@ def extract_chain(server_handshake_bytes):
 
     chain_bytes = None
 
-    for record_type, _, record_data in _parse_tls_records(server_handshake_bytes):
+    for record_type, _, record_data in parse_tls_records(server_handshake_bytes):
         if record_type != b'\x16':
             continue
-        for message_type, message_data in _parse_handshake_messages(record_data):
+        for message_type, message_data in parse_handshake_messages(record_data):
             if message_type == b'\x0b':
                 chain_bytes = message_data
                 break
@@ -83,10 +86,10 @@ def detect_client_auth_request(server_handshake_bytes):
         A boolean - if a client certificate request was found
     """
 
-    for record_type, _, record_data in _parse_tls_records(server_handshake_bytes):
+    for record_type, _, record_data in parse_tls_records(server_handshake_bytes):
         if record_type != b'\x16':
             continue
-        for message_type, message_data in _parse_handshake_messages(record_data):
+        for message_type, message_data in parse_handshake_messages(record_data):
             if message_type == b'\x0d':
                 return True
     return False
@@ -107,10 +110,10 @@ def get_dh_params_length(server_handshake_bytes):
 
     dh_params_bytes = None
 
-    for record_type, _, record_data in _parse_tls_records(server_handshake_bytes):
+    for record_type, _, record_data in parse_tls_records(server_handshake_bytes):
         if record_type != b'\x16':
             continue
-        for message_type, message_data in _parse_handshake_messages(record_data):
+        for message_type, message_data in parse_handshake_messages(record_data):
             if message_type == b'\x0c':
                 dh_params_bytes = message_data
                 break
@@ -136,7 +139,7 @@ def parse_alert(server_handshake_bytes):
          1: The alert description (see https://tools.ietf.org/html/rfc5246#section-7.2)
     """
 
-    for record_type, _, record_data in _parse_tls_records(server_handshake_bytes):
+    for record_type, _, record_data in parse_tls_records(server_handshake_bytes):
         if record_type != b'\x15':
             continue
         if len(record_data) != 2:
@@ -175,10 +178,10 @@ def parse_session_info(server_handshake_bytes, client_handshake_bytes):
     server_session_id = None
     client_session_id = None
 
-    for record_type, _, record_data in _parse_tls_records(server_handshake_bytes):
+    for record_type, _, record_data in parse_tls_records(server_handshake_bytes):
         if record_type != b'\x16':
             continue
-        for message_type, message_data in _parse_handshake_messages(record_data):
+        for message_type, message_data in parse_handshake_messages(record_data):
             # Ensure we are working with a ServerHello message
             if message_type != b'\x02':
                 continue
@@ -209,10 +212,10 @@ def parse_session_info(server_handshake_bytes, client_handshake_bytes):
                     break
             break
 
-    for record_type, _, record_data in _parse_tls_records(client_handshake_bytes):
+    for record_type, _, record_data in parse_tls_records(client_handshake_bytes):
         if record_type != b'\x16':
             continue
-        for message_type, message_data in _parse_handshake_messages(record_data):
+        for message_type, message_data in parse_handshake_messages(record_data):
             # Ensure we are working with a ClientHello message
             if message_type != b'\x01':
                 continue
@@ -256,7 +259,7 @@ def parse_session_info(server_handshake_bytes, client_handshake_bytes):
     }
 
 
-def _parse_tls_records(data):
+def parse_tls_records(data):
     """
     Creates a generator returning tuples of information about each record
     in a byte string of data from a TLS client or server. Stops as soon as it
@@ -287,7 +290,7 @@ def _parse_tls_records(data):
         pointer += 5 + length
 
 
-def _parse_handshake_messages(data):
+def parse_handshake_messages(data):
     """
     Creates a generator returning tuples of information about each message in
     a byte string of data from a TLS handshake record
@@ -494,13 +497,13 @@ def raise_expired_not_yet_valid(certificate):
 
 def raise_disconnection():
     """
-    Raises a TLSError due to a disconnection
+    Raises a TLSDisconnectError due to a disconnection
 
     :raises:
-        TLSError
+        TLSDisconnectError
     """
 
-    raise TLSError('The remote end closed the connection')
+    raise TLSDisconnectError('The remote end closed the connection')
 
 
 def raise_protocol_error(server_handshake_bytes):
