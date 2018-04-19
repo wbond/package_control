@@ -165,7 +165,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                         raise OscryptoDownloaderException('Missing or duplicate Location HTTP header')
                     if not re.match(r'https?://', location):
                         if not location.startswith('/'):
-                            location = os.path.dirname(url_info.path) + locaation
+                            location = os.path.dirname(url_info.path) + location
                         location = url_info.scheme + '://' + url_info.netloc + location
                     return self.download(location, error_message, timeout, tried, prefer_cached)
 
