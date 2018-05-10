@@ -1754,7 +1754,10 @@ class PackageManager():
 
         def read_message(message_path):
             with open_compat(message_path, 'r') as f:
-                return '\n  %s\n' % read_compat(f).rstrip().replace('\n', '\n  ')
+                message = read_compat(f).rstrip().replace('\n', '\n  ')
+                if message == ''
+                    return '\n\n'
+                return '\n  %s\n' % message
 
         output = ''
         if not is_upgrade and message_info.get('install'):
