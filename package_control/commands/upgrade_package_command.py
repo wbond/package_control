@@ -53,10 +53,8 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
         def show_panel():
             if not self.package_list:
-                sublime.message_dialog(text.format(
+                sublime.status_message(text.format(
                     u'''
-                    Package Control
-
                     There are no packages ready for upgrade
                     '''
                 ))
