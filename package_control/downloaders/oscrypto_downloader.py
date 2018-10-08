@@ -205,7 +205,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     (error_message, str_cls(e), url)
                 )
 
-            except (oscrypto_errors.TLSGracefulDisconnectError) as e:
+            except (oscrypto_errors.TLSDisconnectError) as e:
                 error_string = text.format(
                     '''
                     %s TLS was gracefully closed while downloading %s, trying again.
