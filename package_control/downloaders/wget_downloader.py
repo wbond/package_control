@@ -375,6 +375,10 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 general['message'] = match.group(3) or ''
             else:
                 name, value = line.split(':', 1)
-                headers[name.lower()] = value.strip()
+                name = name.lower()
+                if name in headers:
+                    headers[name] += ', %s' % value.strip()
+                else:
+                    headers[name] = value.strip()
 
         return (general, headers)

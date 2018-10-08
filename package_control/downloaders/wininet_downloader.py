@@ -871,7 +871,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     general['message'] = message
             else:
                 name, value = line.split(':', 1)
-                headers[name.lower()] = value.strip()
+                name = name.lower()
+                if name in headers:
+                    headers[name] += ', %s' % value.strip()
+                else:
+                    headers[name] = value.strip()
 
         return (general, headers)
 

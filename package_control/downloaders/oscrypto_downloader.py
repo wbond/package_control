@@ -472,10 +472,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     name = parts[0].strip().lower()
                     value = parts[1].strip()
                     if name in headers:
-                        if isinstance(headers[name], tuple):
-                            headers[name] = headers[name] + (value,)
-                        else:
-                            headers[name] = (headers[name], value)
+                        headers[name] += ', %s' % value
                     else:
                         headers[name] = value
 
