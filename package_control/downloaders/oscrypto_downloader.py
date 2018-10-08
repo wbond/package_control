@@ -197,7 +197,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
             except (oscrypto_errors.TLSVerificationError) as e:
                 self.close()
                 if debug:
-                    self.dump_cert(e.certificate)
+                    self.dump_certificate(e.certificate)
                 error_string = text.format(
                     '''
                     %s TLS verification error %s downloading %s.
