@@ -851,7 +851,7 @@ class PackageManager():
 
         output = ['0_package_control_loader']
 
-        for package in self.list_packages():
+        for package in self.list_packages() + self.list_dependencies():
             if package == ignore_package:
                 continue
             output.extend(self.get_dependencies(package))
@@ -1209,7 +1209,7 @@ class PackageManager():
                 unpack = True
 
             # If dependencies were not in the channel, try the package
-            if not is_dependency and not have_installed_dependencies:
+            if not have_installed_dependencies:
                 try:
                     dep_info_json = package_zip.read(dependencies_path)
                     try:
