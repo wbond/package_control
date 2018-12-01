@@ -11,6 +11,9 @@ __all__ = [
     'LibraryNotFoundError',
     'SignatureError',
     'TLSError',
+    'TLSConnectionError',
+    'TLSDisconnectError',
+    'TLSGracefulDisconnectError',
     'TLSVerificationError',
 ]
 
@@ -80,6 +83,18 @@ class TLSError(socket.error):
 
     def __unicode__(self):
         return self.message
+
+
+class TLSConnectionError(TLSError):
+    pass
+
+
+class TLSDisconnectError(TLSConnectionError):
+    pass
+
+
+class TLSGracefulDisconnectError(TLSDisconnectError):
+    pass
 
 
 class TLSVerificationError(TLSError):

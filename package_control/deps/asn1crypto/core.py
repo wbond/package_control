@@ -2932,8 +2932,8 @@ class ObjectIdentifier(Primitive, ValueMap):
 
         if self._native is None:
             self._native = self.dotted
-            if self._map is not None and self._native in self._map:
-                self._native = self._map[self._native]
+        if self._map is not None and self._native in self._map:
+            self._native = self._map[self._native]
         return self._native
 
 

@@ -263,6 +263,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         if url_info.query:
             path += '?' + url_info.query
 
+        username = url_info.username
+        password = url_info.password
+
         request_headers = {
             'Accept-Encoding': self.supported_encodings()
         }
@@ -346,8 +349,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 self.network_connection,
                 hostname,
                 port,
-                None,
-                None,
+                username,
+                password,
                 self.INTERNET_SERVICE_HTTP,
                 tcp_flags,
                 0
@@ -739,6 +742,16 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
         return True
 
+    def supports_plaintext(self):
+        """
+        Indicates if the object can handle non-secure HTTP requests
+
+        :return:
+            If the object supports non-secure HTTP requests
+        """
+
+        return True
+
     def cache_proxy_info(self):
         proxy_struct = self.read_option(self.network_connection, self.INTERNET_OPTION_PROXY)
         if proxy_struct.lpszProxy:
@@ -852,7 +865,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     general['message'] = message
             else:
                 name, value = line.split(':', 1)
-                headers[name.lower()] = value.strip()
+                name = name.lower()
+                if name in headers:
+                    headers[name] += ', %s' % value.strip()
+                else:
+                    headers[name] = value.strip()
 
         return (general, headers)
 

@@ -185,6 +185,9 @@ class EmailAddress(IA5String):
     # If the value has gone through the .set() method, thus normalizing it
     _normalized = False
 
+    # In the wild we've seen this encoded as a PrintableString
+    _bad_tag = 19
+
     @property
     def contents(self):
         """
@@ -240,13 +243,15 @@ class EmailAddress(IA5String):
             A unicode string
         """
 
+        # We've seen this in the wild as a PrintableString, and since ascii is a
+        # subset of cp1252, we use the later for decoding to be more user friendly
         if self._unicode is None:
             contents = self._merge_chunks()
             if contents.find(b'@') == -1:
-                self._unicode = contents.decode('ascii')
+                self._unicode = contents.decode('cp1252')
             else:
                 mailbox, hostname = contents.rsplit(b'@', 1)
-                self._unicode = mailbox.decode('ascii') + '@' + hostname.decode('idna')
+                self._unicode = mailbox.decode('cp1252') + '@' + hostname.decode('idna')
         return self._unicode
 
     def __ne__(self, other):
