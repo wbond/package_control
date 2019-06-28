@@ -96,8 +96,11 @@ class BitBucketClient(JSONApiClient):
         output = []
         if tags_match:
             user_repo = tags_match.group(1)
-            tags_url = self._make_api_url(user_repo, '/tags')
-            tags_list = self.fetch_json(tags_url)
+            tags_url = self._make_api_url(user_repo, '/refs/tags')
+            tags_list = {
+                tag['name']: tag['target']['date'][0:19].replace('T', ' ')
+                for tag in self.fetch_json(tags_url)['values']
+            }
             tag_info = version_process(tags_list.keys(), tag_prefix)
             tag_info = version_sort(tag_info, reverse=True)
             if not tag_info:
@@ -111,32 +114,26 @@ class BitBucketClient(JSONApiClient):
                 tag = info['prefix'] + version
                 output.append({
                     'url': url_pattern % (user_repo, tag),
-                    'commit': tag,
-                    'version': version
+                    'version': version,
+                    'date': tags_list[tag]
                 })
                 used_versions[version] = True
 
         else:
-            user_repo, commit = self._user_repo_branch(url)
+            user_repo, branch = self._user_repo_branch(url)
             if not user_repo:
                 return user_repo
 
+            branch_url = self._make_api_url(user_repo, '/refs/branches/%s' % branch)
+            branch_info = self.fetch_json(branch_url)
+
+            timestamp = branch_info['target']['date'][0:19].replace('T', ' ')
+
             output.append({
-                'url': url_pattern % (user_repo, commit),
-                'commit': commit
+                'url': url_pattern % (user_repo, branch),
+                'version': re.sub(r'[\-: ]', '.', timestamp),
+                'date': timestamp
             })
-
-        for release in output:
-            changeset_url = self._make_api_url(user_repo, '/changesets/%s' % release['commit'])
-            commit_info = self.fetch_json(changeset_url)
-
-            timestamp = commit_info['utctimestamp'][0:19]
-
-            if 'version' not in release:
-                release['version'] = re.sub(r'[\-: ]', '.', timestamp)
-            release['date'] = timestamp
-
-            del release['commit']
 
         return output
 
@@ -178,7 +175,7 @@ class BitBucketClient(JSONApiClient):
             'name': info['name'],
             'description': info['description'] or 'No description provided',
             'homepage': info['website'] or url,
-            'author': info['owner'],
+            'author': info['owner']['nickname'],
             'donate': None,
             'readme': self._readme_url(user_repo, branch),
             'issues': issues_url if info['has_issues'] else None
@@ -199,9 +196,9 @@ class BitBucketClient(JSONApiClient):
             The name of the main branch - `master` or `default`
         """
 
-        main_branch_url = self._make_api_url(user_repo, '/main-branch')
+        main_branch_url = self._make_api_url(user_repo)
         main_branch_info = self.fetch_json(main_branch_url, True)
-        return main_branch_info['name']
+        return main_branch_info['mainbranch']['name']
 
     def _make_api_url(self, user_repo, suffix=''):
         """
@@ -217,7 +214,7 @@ class BitBucketClient(JSONApiClient):
             The API URL
         """
 
-        return 'https://api.bitbucket.org/1.0/repositories/%s%s' % (user_repo, suffix)
+        return 'https://api.bitbucket.org/2.0/repositories/%s%s' % (user_repo, suffix)
 
     def _readme_url(self, user_repo, branch, prefer_cached=False):
         """
@@ -242,9 +239,9 @@ class BitBucketClient(JSONApiClient):
         """
 
         listing_url = self._make_api_url(user_repo, '/src/%s/' % branch)
-        root_dir_info = self.fetch_json(listing_url, prefer_cached)
+        root_dir_info = self.fetch_json(listing_url, prefer_cached)['values']
 
-        for entry in root_dir_info['files']:
+        for entry in root_dir_info:
             if entry['path'].lower() in _README_FILENAMES:
                 return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
 
