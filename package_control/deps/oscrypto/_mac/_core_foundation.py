@@ -1,11 +1,12 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
-from .._ffi import FFIEngineError, is_null, unwrap
+from .. import ffi
+from .._ffi import is_null, unwrap
 
-try:
+if ffi() == 'cffi':
     from ._core_foundation_cffi import CoreFoundation, CFHelpers
-except (FFIEngineError, ImportError):
+else:
     from ._core_foundation_ctypes import CoreFoundation, CFHelpers
 
 

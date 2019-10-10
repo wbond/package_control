@@ -10,11 +10,13 @@ import numbers
 import errno
 import weakref
 
-from ...asn1crypto import x509
-from ...asn1crypto.util import int_to_bytes, timezone
-
 from ._security import Security, osx_version_info, handle_sec_error, SecurityConst
 from ._core_foundation import CoreFoundation, handle_cf_error, CFHelpers
+from .._asn1 import (
+    Certificate as Asn1Certificate,
+    int_to_bytes,
+    timezone,
+)
 from .._errors import pretty_message
 from .._ffi import (
     array_from_pointer,
@@ -61,6 +63,11 @@ from ..keys import parse_certificate
 
 if sys.version_info < (3,):
     range = xrange  # noqa
+
+if sys.version_info < (3, 7):
+    Pattern = re._pattern_type
+else:
+    Pattern = re.Pattern
 
 
 __all__ = [
@@ -354,7 +361,7 @@ class TLSSession(object):
                 elif isinstance(extra_trust_root, str_cls):
                     with open(extra_trust_root, 'rb') as f:
                         extra_trust_root = parse_certificate(f.read())
-                elif not isinstance(extra_trust_root, x509.Certificate):
+                elif not isinstance(extra_trust_root, Asn1Certificate):
                     raise TypeError(pretty_message(
                         '''
                         extra_trust_roots must be a list of byte strings, unicode
@@ -535,6 +542,7 @@ class TLSSocket(object):
         ocsp_search_ref = None
         ocsp_policy_ref = None
         policy_array_ref = None
+        trust_ref = None
 
         try:
             if osx_version_info < (10, 8):
@@ -832,6 +840,10 @@ class TLSSocket(object):
             # certificate from the handshake and use the deprecated function
             # SecTrustGetCssmResultCode().
             if handshake_result in handshake_error_codes:
+                if trust_ref:
+                    CoreFoundation.CFRelease(trust_ref)
+                    trust_ref = None
+
                 trust_ref_pointer = new(Security, 'SecTrustRef *')
                 result = Security.SSLCopyPeerTrust(
                     session_context,
@@ -998,6 +1010,10 @@ class TLSSocket(object):
                 handle_cf_error(result)
                 policy_array_ref = None
 
+            if trust_ref:
+                CoreFoundation.CFRelease(trust_ref)
+                trust_ref = None
+
     def read(self, max_length):
         """
         Reads data from the TLS-wrapped socket
@@ -1116,7 +1132,7 @@ class TLSSocket(object):
             A byte string of the data read, including the marker
         """
 
-        if not isinstance(marker, byte_cls) and not isinstance(marker, re._pattern_type):
+        if not isinstance(marker, byte_cls) and not isinstance(marker, Pattern):
             raise TypeError(pretty_message(
                 '''
                 marker must be a byte string or compiled regex object, not %s
@@ -1126,7 +1142,7 @@ class TLSSocket(object):
 
         output = b''
 
-        is_regex = isinstance(marker, re._pattern_type)
+        is_regex = isinstance(marker, Pattern)
 
         while True:
             if len(self._decrypted_bytes) > 0:
@@ -1359,7 +1375,7 @@ class TLSSocket(object):
                 handle_cf_error(result)
                 cf_data_ref = None
 
-                cert = x509.Certificate.load(cert_data)
+                cert = Asn1Certificate.load(cert_data)
 
                 if index == 0:
                     self._certificate = cert

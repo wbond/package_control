@@ -232,6 +232,12 @@ try:
     ]
     libcrypto.d2i_PUBKEY.restype = P_EVP_PKEY
 
+    libcrypto.i2d_PUBKEY.argtypes = [
+        P_EVP_PKEY,
+        POINTER(c_char_p)
+    ]
+    libcrypto.i2d_PUBKEY.restype = c_int
+
     libcrypto.d2i_X509.argtypes = [
         POINTER(P_X509),
         POINTER(c_char_p),

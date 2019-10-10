@@ -1,15 +1,24 @@
 # coding: utf-8
 
 """
-Helper for formatting exception messages. Exports the following items:
+Exports the following items:
 
  - unwrap()
+ - APIException()
 """
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import re
 import textwrap
+
+
+class APIException(Exception):
+    """
+    An exception indicating an API has been removed from asn1crypto
+    """
+
+    pass
 
 
 def unwrap(string, *params):

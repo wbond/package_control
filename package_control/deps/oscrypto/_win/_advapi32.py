@@ -3,14 +3,15 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 
 import sys
 
+from .. import ffi
 from ._decode import _try_decode
 from ..errors import SignatureError
-from .._ffi import FFIEngineError, new, unwrap, null
+from .._ffi import new, unwrap, null
 from .._types import str_cls
 
-try:
+if ffi() == 'cffi':
     from ._advapi32_cffi import advapi32, get_error
-except (FFIEngineError, ImportError):
+else:
     from ._advapi32_ctypes import advapi32, get_error
 
 

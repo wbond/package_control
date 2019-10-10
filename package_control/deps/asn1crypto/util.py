@@ -8,6 +8,8 @@ from bytes and UTC timezone. Exports the following items:
  - int_from_bytes()
  - int_to_bytes()
  - timezone.utc
+ - utc_with_dst
+ - create_timezone()
  - inet_ntop()
  - inet_pton()
  - uri_to_iri()
@@ -18,7 +20,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 
 import math
 import sys
-from datetime import datetime, date, time
+from datetime import datetime, date, timedelta, tzinfo
 
 from ._errors import unwrap
 from ._iri import iri_to_uri, uri_to_iri  # noqa
@@ -34,10 +36,6 @@ else:
 # Python 2
 if sys.version_info <= (3,):
 
-    from datetime import timedelta, tzinfo
-
-    py2 = True
-
     def int_to_bytes(value, signed=False, width=None):
         """
         Converts an integer to a byte string
@@ -49,12 +47,15 @@ if sys.version_info <= (3,):
             If the byte string should be encoded using two's complement
 
         :param width:
-            None == auto, otherwise an integer of the byte width for the return
-            value
+            If None, the minimal possible size (but at least 1),
+            otherwise an integer of the byte width for the return value
 
         :return:
             A byte string
         """
+
+        if value == 0 and width == 0:
+            return b''
 
         # Handle negatives in two's complement
         is_neg = False
@@ -73,6 +74,8 @@ if sys.version_info <= (3,):
             output = b'\x00' + output
 
         if width is not None:
+            if len(output) > width:
+                raise OverflowError('int too big to convert')
             if is_neg:
                 pad_char = b'\xFF'
             else:
@@ -112,28 +115,91 @@ if sys.version_info <= (3,):
 
         return num
 
-    class utc(tzinfo):  # noqa
+    class timezone(tzinfo):  # noqa
+        """
+        Implements datetime.timezone for py2.
+        Only full minute offsets are supported.
+        DST is not supported.
+        """
 
-        def tzname(self, _):
-            return b'UTC+00:00'
+        def __init__(self, offset, name=None):
+            """
+            :param offset:
+                A timedelta with this timezone's offset from UTC
 
-        def utcoffset(self, _):
+            :param name:
+                Name of the timezone; if None, generate one.
+            """
+
+            if not timedelta(hours=-24) < offset < timedelta(hours=24):
+                raise ValueError('Offset must be in [-23:59, 23:59]')
+
+            if offset.seconds % 60 or offset.microseconds:
+                raise ValueError('Offset must be full minutes')
+
+            self._offset = offset
+
+            if name is not None:
+                self._name = name
+            elif not offset:
+                self._name = 'UTC'
+            else:
+                self._name = 'UTC' + _format_offset(offset)
+
+        def __eq__(self, other):
+            """
+            Compare two timezones
+
+            :param other:
+                The other timezone to compare to
+
+            :return:
+                A boolean
+            """
+
+            if type(other) != timezone:
+                return False
+            return self._offset == other._offset
+
+        def tzname(self, dt):
+            """
+            :param dt:
+                A datetime object; ignored.
+
+            :return:
+                Name of this timezone
+            """
+
+            return self._name
+
+        def utcoffset(self, dt):
+            """
+            :param dt:
+                A datetime object; ignored.
+
+            :return:
+                A timedelta object with the offset from UTC
+            """
+
+            return self._offset
+
+        def dst(self, dt):
+            """
+            :param dt:
+                A datetime object; ignored.
+
+            :return:
+                Zero timedelta
+            """
+
             return timedelta(0)
 
-        def dst(self, _):
-            return timedelta(0)
-
-    class timezone():  # noqa
-
-        utc = utc()
-
+    timezone.utc = timezone(timedelta(0))
 
 # Python 3
 else:
 
     from datetime import timezone  # noqa
-
-    py2 = False
 
     def int_to_bytes(value, signed=False, width=None):
         """
@@ -146,8 +212,8 @@ else:
             If the byte string should be encoded using two's complement
 
         :param width:
-            None == auto, otherwise an integer of the byte width for the return
-            value
+            If None, the minimal possible size (but at least 1),
+            otherwise an integer of the byte width for the return value
 
         :return:
             A byte string
@@ -183,31 +249,66 @@ else:
         return int.from_bytes(value, 'big', signed=signed)
 
 
-_DAYS_PER_MONTH_YEAR_0 = {
-    1: 31,
-    2: 29,  # Year 0 was a leap year
-    3: 31,
-    4: 30,
-    5: 31,
-    6: 30,
-    7: 31,
-    8: 31,
-    9: 30,
-    10: 31,
-    11: 30,
-    12: 31
-}
+def _format_offset(off):
+    """
+    Format a timedelta into "[+-]HH:MM" format or "" for None
+    """
+
+    if off is None:
+        return ''
+    mins = off.days * 24 * 60 + off.seconds // 60
+    sign = '-' if mins < 0 else '+'
+    return sign + '%02d:%02d' % divmod(abs(mins), 60)
+
+
+class _UtcWithDst(tzinfo):
+    """
+    Utc class where dst does not return None; required for astimezone
+    """
+
+    def tzname(self, dt):
+        return 'UTC'
+
+    def utcoffset(self, dt):
+        return timedelta(0)
+
+    def dst(self, dt):
+        return timedelta(0)
+
+
+utc_with_dst = _UtcWithDst()
+
+_timezone_cache = {}
+
+
+def create_timezone(offset):
+    """
+    Returns a new datetime.timezone object with the given offset.
+    Uses cached objects if possible.
+
+    :param offset:
+        A datetime.timedelta object; It needs to be in full minutes and between -23:59 and +23:59.
+
+    :return:
+        A datetime.timezone object
+    """
+
+    try:
+        tz = _timezone_cache[offset]
+    except KeyError:
+        tz = _timezone_cache[offset] = timezone(offset)
+    return tz
 
 
 class extended_date(object):
     """
-    A datetime.date-like object that can represent the year 0. This is just
-    to handle 0000-01-01 found in some certificates.
-    """
+    A datetime.datetime-like object that represents the year 0. This is just
+    to handle 0000-01-01 found in some certificates. Python's datetime does
+    not support year 0.
 
-    year = None
-    month = None
-    day = None
+    The proleptic gregorian calendar repeats itself every 400 years. Therefore,
+    the simplest way to format is to substitute year 2000.
+    """
 
     def __init__(self, year, month, day):
         """
@@ -224,45 +325,52 @@ class extended_date(object):
         if year != 0:
             raise ValueError('year must be 0')
 
-        if month < 1 or month > 12:
-            raise ValueError('month is out of range')
+        self._y2k = date(2000, month, day)
 
-        if day < 0 or day > _DAYS_PER_MONTH_YEAR_0[month]:
-            raise ValueError('day is out of range')
-
-        self.year = year
-        self.month = month
-        self.day = day
-
-    def _format(self, format):
+    @property
+    def year(self):
         """
-        Performs strftime(), always returning a unicode string
+        :return:
+            The integer 0
+        """
+
+        return 0
+
+    @property
+    def month(self):
+        """
+        :return:
+            An integer from 1 to 12
+        """
+
+        return self._y2k.month
+
+    @property
+    def day(self):
+        """
+        :return:
+            An integer from 1 to 31
+        """
+
+        return self._y2k.day
+
+    def strftime(self, format):
+        """
+        Formats the date using strftime()
 
         :param format:
             A strftime() format string
 
         :return:
-            A unicode string of the formatted date
+            A str, the formatted date as a unicode string
+            in Python 3 and a byte string in Python 2
         """
 
-        format = format.replace('%Y', '0000')
-        # Year 0 is 1BC and a leap year. Leap years repeat themselves
-        # every 28 years. Because of adjustments and the proleptic gregorian
-        # calendar, the simplest way to format is to substitute year 2000.
-        temp = date(2000, self.month, self.day)
-        if '%c' in format:
-            c_out = temp.strftime('%c')
-            # Handle full years
-            c_out = c_out.replace('2000', '0000')
-            c_out = c_out.replace('%', '%%')
-            format = format.replace('%c', c_out)
-        if '%x' in format:
-            x_out = temp.strftime('%x')
-            # Handle formats such as 08/16/2000 or 16.08.2000
-            x_out = x_out.replace('2000', '0000')
-            x_out = x_out.replace('%', '%%')
-            format = format.replace('%x', x_out)
-        return temp.strftime(format)
+        # Format the date twice, once with year 2000, once with year 4000.
+        # The only differences in the result will be in the millennium. Find them and replace by zeros.
+        y2k = self._y2k.strftime(format)
+        y4k = self._y2k.replace(year=4000).strftime(format)
+        return ''.join('0' if (c2, c4) == ('2', '4') else c2 for c2, c4 in zip(y2k, y4k))
 
     def isoformat(self):
         """
@@ -274,23 +382,6 @@ class extended_date(object):
         """
 
         return self.strftime('0000-%m-%d')
-
-    def strftime(self, format):
-        """
-        Formats the date using strftime()
-
-        :param format:
-            The strftime() format string
-
-        :return:
-            The formatted date as a unicode string in Python 3 and a byte
-            string in Python 2
-        """
-
-        output = self._format(format)
-        if py2:
-            return output.encode('utf-8')
-        return output
 
     def replace(self, year=None, month=None, day=None):
         """
@@ -320,23 +411,40 @@ class extended_date(object):
         )
 
     def __str__(self):
-        if py2:
-            return self.__bytes__()
-        else:
-            return self.__unicode__()
+        """
+        :return:
+            A str representing this extended_date, e.g. "0000-01-01"
+        """
 
-    def __bytes__(self):
-        return self.__unicode__().encode('utf-8')
-
-    def __unicode__(self):
-        return self._format('%Y-%m-%d')
+        return self.strftime('%Y-%m-%d')
 
     def __eq__(self, other):
+        """
+        Compare two extended_date objects
+
+        :param other:
+            The other extended_date to compare to
+
+        :return:
+            A boolean
+        """
+
+        # datetime.date object wouldn't compare equal because it can't be year 0
         if not isinstance(other, self.__class__):
             return False
         return self.__cmp__(other) == 0
 
     def __ne__(self, other):
+        """
+        Compare two extended_date objects
+
+        :param other:
+            The other extended_date to compare to
+
+        :return:
+            A boolean
+        """
+
         return not self.__eq__(other)
 
     def _comparison_error(self, other):
@@ -349,26 +457,26 @@ class extended_date(object):
         ))
 
     def __cmp__(self, other):
+        """
+        Compare two extended_date or datetime.date objects
+
+        :param other:
+            The other extended_date object to compare to
+
+        :return:
+            An integer smaller than, equal to, or larger than 0
+        """
+
+        # self is year 0, other is >= year 1
         if isinstance(other, date):
             return -1
 
         if not isinstance(other, self.__class__):
             self._comparison_error(other)
 
-        st = (
-            self.year,
-            self.month,
-            self.day
-        )
-        ot = (
-            other.year,
-            other.month,
-            other.day
-        )
-
-        if st < ot:
+        if self._y2k < other._y2k:
             return -1
-        if st > ot:
+        if self._y2k > other._y2k:
             return 1
         return 0
 
@@ -387,72 +495,122 @@ class extended_date(object):
 
 class extended_datetime(object):
     """
-    A datetime.datetime-like object that can represent the year 0. This is just
-    to handle 0000-01-01 found in some certificates.
+    A datetime.datetime-like object that represents the year 0. This is just
+    to handle 0000-01-01 found in some certificates. Python's datetime does
+    not support year 0.
+
+    The proleptic gregorian calendar repeats itself every 400 years. Therefore,
+    the simplest way to format is to substitute year 2000.
     """
 
-    year = None
-    month = None
-    day = None
-    hour = None
-    minute = None
-    second = None
-    microsecond = None
-    tzinfo = None
+    # There are 97 leap days during 400 years.
+    DAYS_IN_400_YEARS = 400 * 365 + 97
+    DAYS_IN_2000_YEARS = 5 * DAYS_IN_400_YEARS
 
-    def __init__(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tzinfo=None):
+    def __init__(self, year, *args, **kwargs):
         """
         :param year:
             The integer 0
 
-        :param month:
-            An integer from 1 to 12
+        :param args:
+            Other positional arguments; see datetime.datetime.
 
-        :param day:
-            An integer from 1 to 31
-
-        :param hour:
-            An integer from 0 to 23
-
-        :param minute:
-            An integer from 0 to 59
-
-        :param second:
-            An integer from 0 to 59
-
-        :param microsecond:
-            An integer from 0 to 999999
+        :param kwargs:
+            Other keyword arguments; see datetime.datetime.
         """
 
         if year != 0:
             raise ValueError('year must be 0')
 
-        if month < 1 or month > 12:
-            raise ValueError('month is out of range')
+        self._y2k = datetime(2000, *args, **kwargs)
 
-        if day < 0 or day > _DAYS_PER_MONTH_YEAR_0[month]:
-            raise ValueError('day is out of range')
+    @property
+    def year(self):
+        """
+        :return:
+            The integer 0
+        """
 
-        if hour < 0 or hour > 23:
-            raise ValueError('hour is out of range')
+        return 0
 
-        if minute < 0 or minute > 59:
-            raise ValueError('minute is out of range')
+    @property
+    def month(self):
+        """
+        :return:
+            An integer from 1 to 12
+        """
 
-        if second < 0 or second > 59:
-            raise ValueError('second is out of range')
+        return self._y2k.month
 
-        if microsecond < 0 or microsecond > 999999:
-            raise ValueError('microsecond is out of range')
+    @property
+    def day(self):
+        """
+        :return:
+            An integer from 1 to 31
+        """
 
-        self.year = year
-        self.month = month
-        self.day = day
-        self.hour = hour
-        self.minute = minute
-        self.second = second
-        self.microsecond = microsecond
-        self.tzinfo = tzinfo
+        return self._y2k.day
+
+    @property
+    def hour(self):
+        """
+        :return:
+            An integer from 1 to 24
+        """
+
+        return self._y2k.hour
+
+    @property
+    def minute(self):
+        """
+        :return:
+            An integer from 1 to 60
+        """
+
+        return self._y2k.minute
+
+    @property
+    def second(self):
+        """
+        :return:
+            An integer from 1 to 60
+        """
+
+        return self._y2k.second
+
+    @property
+    def microsecond(self):
+        """
+        :return:
+            An integer from 0 to 999999
+        """
+
+        return self._y2k.microsecond
+
+    @property
+    def tzinfo(self):
+        """
+        :return:
+            If object is timezone aware, a datetime.tzinfo object, else None.
+        """
+
+        return self._y2k.tzinfo
+
+    def utcoffset(self):
+        """
+        :return:
+            If object is timezone aware, a datetime.timedelta object, else None.
+        """
+
+        return self._y2k.utcoffset()
+
+    def time(self):
+        """
+        :return:
+            A datetime.time object
+        """
+
+        return self._y2k.time()
 
     def date(self):
         """
@@ -460,85 +618,24 @@ class extended_datetime(object):
             An asn1crypto.util.extended_date of the date
         """
 
-        return extended_date(self.year, self.month, self.day)
+        return extended_date(0, self.month, self.day)
 
-    def time(self):
+    def strftime(self, format):
         """
-        :return:
-            A datetime.time object of the time
-        """
-
-        return time(self.hour, self.minute, self.second, self.microsecond, self.tzinfo)
-
-    def utcoffset(self):
-        """
-        :return:
-            None or a datetime.timedelta() of the offset from UTC
-        """
-
-        if self.tzinfo is None:
-            return None
-        return self.tzinfo.utcoffset(self.replace(year=2000))
-
-    def dst(self):
-        """
-        :return:
-            None or a datetime.timedelta() of the daylight savings time offset
-        """
-
-        if self.tzinfo is None:
-            return None
-        return self.tzinfo.dst(self.replace(year=2000))
-
-    def tzname(self):
-        """
-        :return:
-            None or the name of the timezone as a unicode string in Python 3
-            and a byte string in Python 2
-        """
-
-        if self.tzinfo is None:
-            return None
-        return self.tzinfo.tzname(self.replace(year=2000))
-
-    def _format(self, format):
-        """
-        Performs strftime(), always returning a unicode string
+        Performs strftime(), always returning a str
 
         :param format:
             A strftime() format string
 
         :return:
-            A unicode string of the formatted datetime
+            A str of the formatted datetime
         """
 
-        format = format.replace('%Y', '0000')
-        # Year 0 is 1BC and a leap year. Leap years repeat themselves
-        # every 28 years. Because of adjustments and the proleptic gregorian
-        # calendar, the simplest way to format is to substitute year 2000.
-        temp = datetime(
-            2000,
-            self.month,
-            self.day,
-            self.hour,
-            self.minute,
-            self.second,
-            self.microsecond,
-            self.tzinfo
-        )
-        if '%c' in format:
-            c_out = temp.strftime('%c')
-            # Handle full years
-            c_out = c_out.replace('2000', '0000')
-            c_out = c_out.replace('%', '%%')
-            format = format.replace('%c', c_out)
-        if '%x' in format:
-            x_out = temp.strftime('%x')
-            # Handle formats such as 08/16/2000 or 16.08.2000
-            x_out = x_out.replace('2000', '0000')
-            x_out = x_out.replace('%', '%%')
-            format = format.replace('%x', x_out)
-        return temp.strftime(format)
+        # Format the datetime twice, once with year 2000, once with year 4000.
+        # The only differences in the result will be in the millennium. Find them and replace by zeros.
+        y2k = self._y2k.strftime(format)
+        y4k = self._y2k.replace(year=4000).strftime(format)
+        return ''.join('0' if (c2, c4) == ('2', '4') else c2 for c2, c4 in zip(y2k, y4k))
 
     def isoformat(self, sep='T'):
         """
@@ -554,91 +651,97 @@ class extended_datetime(object):
             string in Python 2
         """
 
-        if self.microsecond == 0:
-            return self.strftime('0000-%%m-%%d%s%%H:%%M:%%S' % sep)
-        return self.strftime('0000-%%m-%%d%s%%H:%%M:%%S.%%f' % sep)
+        s = '0000-%02d-%02d%c%02d:%02d:%02d' % (self.month, self.day, sep, self.hour, self.minute, self.second)
+        if self.microsecond:
+            s += '.%06d' % self.microsecond
+        return s + _format_offset(self.utcoffset())
 
-    def strftime(self, format):
-        """
-        Formats the date using strftime()
-
-        :param format:
-            The strftime() format string
-
-        :return:
-            The formatted date as a unicode string in Python 3 and a byte
-            string in Python 2
-        """
-
-        output = self._format(format)
-        if py2:
-            return output.encode('utf-8')
-        return output
-
-    def replace(self, year=None, month=None, day=None, hour=None, minute=None,
-                second=None, microsecond=None, tzinfo=None):
+    def replace(self, year=None, *args, **kwargs):
         """
         Returns a new datetime.datetime or asn1crypto.util.extended_datetime
         object with the specified components replaced
+
+        :param year:
+            The new year to substitute. None to keep it.
+
+        :param args:
+            Other positional arguments; see datetime.datetime.replace.
+
+        :param kwargs:
+            Other keyword arguments; see datetime.datetime.replace.
 
         :return:
             A datetime.datetime or asn1crypto.util.extended_datetime object
         """
 
-        if year is None:
-            year = self.year
-        if month is None:
-            month = self.month
-        if day is None:
-            day = self.day
-        if hour is None:
-            hour = self.hour
-        if minute is None:
-            minute = self.minute
-        if second is None:
-            second = self.second
-        if microsecond is None:
-            microsecond = self.microsecond
-        if tzinfo is None:
-            tzinfo = self.tzinfo
+        if year:
+            return self._y2k.replace(year, *args, **kwargs)
 
-        if year > 0:
-            cls = datetime
-        else:
-            cls = extended_datetime
+        return extended_datetime.from_y2k(self._y2k.replace(2000, *args, **kwargs))
 
-        return cls(
-            year,
-            month,
-            day,
-            hour,
-            minute,
-            second,
-            microsecond,
-            tzinfo
-        )
+    def astimezone(self, tz):
+        """
+        Convert this extended_datetime to another timezone.
+
+        :param tz:
+            A datetime.tzinfo object.
+
+        :return:
+            A new extended_datetime or datetime.datetime object
+        """
+
+        return extended_datetime.from_y2k(self._y2k.astimezone(tz))
+
+    def timestamp(self):
+        """
+        Return POSIX timestamp. Only supported in python >= 3.3
+
+        :return:
+            A float representing the seconds since 1970-01-01 UTC. This will be a negative value.
+        """
+
+        return self._y2k.timestamp() - self.DAYS_IN_2000_YEARS * 86400
 
     def __str__(self):
-        if py2:
-            return self.__bytes__()
-        else:
-            return self.__unicode__()
+        """
+        :return:
+            A str representing this extended_datetime, e.g. "0000-01-01 00:00:00.000001-10:00"
+        """
 
-    def __bytes__(self):
-        return self.__unicode__().encode('utf-8')
-
-    def __unicode__(self):
-        format = '%Y-%m-%d %H:%M:%S'
-        if self.microsecond != 0:
-            format += '.%f'
-        return self._format(format)
+        return self.isoformat(sep=' ')
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
+        """
+        Compare two extended_datetime objects
+
+        :param other:
+            The other extended_datetime to compare to
+
+        :return:
+            A boolean
+        """
+
+        # Only compare against other datetime or extended_datetime objects
+        if not isinstance(other, (self.__class__, datetime)):
             return False
+
+        # Offset-naive and offset-aware datetimes are never the same
+        if (self.tzinfo is None) != (other.tzinfo is None):
+            return False
+
         return self.__cmp__(other) == 0
 
     def __ne__(self, other):
+        """
+        Compare two extended_datetime objects
+
+        :param other:
+            The other extended_datetime to compare to
+
+        :return:
+            A boolean
+        """
+
         return not self.__eq__(other)
 
     def _comparison_error(self, other):
@@ -660,42 +763,27 @@ class extended_datetime(object):
         ))
 
     def __cmp__(self, other):
-        so = self.utcoffset()
-        oo = other.utcoffset()
+        """
+        Compare two extended_datetime or datetime.datetime objects
 
-        if (so is not None and oo is None) or (so is None and oo is not None):
-            raise TypeError("can't compare offset-naive and offset-aware datetimes")
+        :param other:
+            The other extended_datetime or datetime.datetime object to compare to
 
-        if isinstance(other, datetime):
-            return -1
+        :return:
+            An integer smaller than, equal to, or larger than 0
+        """
 
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, (self.__class__, datetime)):
             self._comparison_error(other)
 
-        st = (
-            self.year,
-            self.month,
-            self.day,
-            self.hour,
-            self.minute,
-            self.second,
-            self.microsecond,
-            so
-        )
-        ot = (
-            other.year,
-            other.month,
-            other.day,
-            other.hour,
-            other.minute,
-            other.second,
-            other.microsecond,
-            oo
-        )
+        if (self.tzinfo is None) != (other.tzinfo is None):
+            raise TypeError("can't compare offset-naive and offset-aware datetimes")
 
-        if st < ot:
+        diff = self - other
+        zero = timedelta(0)
+        if diff < zero:
             return -1
-        if st > ot:
+        if diff > zero:
             return 1
         return 0
 
@@ -710,3 +798,71 @@ class extended_datetime(object):
 
     def __ge__(self, other):
         return self.__cmp__(other) >= 0
+
+    def __add__(self, other):
+        """
+        Adds a timedelta
+
+        :param other:
+            A datetime.timedelta object to add.
+
+        :return:
+            A new extended_datetime or datetime.datetime object.
+        """
+
+        return extended_datetime.from_y2k(self._y2k + other)
+
+    def __sub__(self, other):
+        """
+        Subtracts a timedelta or another datetime.
+
+        :param other:
+            A datetime.timedelta or datetime.datetime or extended_datetime object to subtract.
+
+        :return:
+            If a timedelta is passed, a new extended_datetime or datetime.datetime object.
+            Else a datetime.timedelta object.
+        """
+
+        if isinstance(other, timedelta):
+            return extended_datetime.from_y2k(self._y2k - other)
+
+        if isinstance(other, extended_datetime):
+            return self._y2k - other._y2k
+
+        if isinstance(other, datetime):
+            return self._y2k - other - timedelta(days=self.DAYS_IN_2000_YEARS)
+
+        return NotImplemented
+
+    def __rsub__(self, other):
+        return -(self - other)
+
+    @classmethod
+    def from_y2k(cls, value):
+        """
+        Revert substitution of year 2000.
+
+        :param value:
+            A datetime.datetime object which is 2000 years in the future.
+        :return:
+            A new extended_datetime or datetime.datetime object.
+        """
+
+        year = value.year - 2000
+
+        if year > 0:
+            new_cls = datetime
+        else:
+            new_cls = cls
+
+        return new_cls(
+            year,
+            value.month,
+            value.day,
+            value.hour,
+            value.minute,
+            value.second,
+            value.microsecond,
+            value.tzinfo
+        )

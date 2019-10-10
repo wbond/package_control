@@ -1,13 +1,14 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
+from .. import ffi
 from ._decode import _try_decode
-from .._ffi import FFIEngineError, buffer_from_bytes
+from .._ffi import buffer_from_bytes
 from .._types import str_cls
 
-try:
+if ffi() == 'cffi':
     from ._crypt32_cffi import crypt32, get_error
-except (FFIEngineError, ImportError):
+else:
     from ._crypt32_ctypes import crypt32, get_error
 
 

@@ -23,14 +23,15 @@ __all__ = [
 _backend_lock = threading.Lock()
 _module_values = {
     'backend': None,
-    'backend_config': None
+    'backend_config': None,
+    'ffi': None
 }
 
 
 def backend():
     """
     :return:
-        A unicode string of the backend being used: "openssl", "osx", "win",
+        A unicode string of the backend being used: "openssl", "mac", "win",
         "winlegacy"
     """
 
@@ -48,7 +49,7 @@ def backend():
             else:
                 _module_values['backend'] = 'win'
         elif sys.platform == 'darwin':
-            _module_values['backend'] = 'osx'
+            _module_values['backend'] = 'mac'
         else:
             _module_values['backend'] = 'openssl'
 
@@ -165,3 +166,54 @@ def use_winlegacy():
                 'Another part of oscrypto has already been imported, unable to force use of Windows legacy CryptoAPI'
             )
         _module_values['backend'] = 'winlegacy'
+
+
+def use_ctypes():
+    """
+    Forces use of ctypes instead of cffi for the FFI layer
+
+    :raises:
+        RuntimeError - when this function is called after another part of oscrypto has been imported
+    """
+
+    with _backend_lock:
+        if _module_values['backend'] is not None:
+            raise RuntimeError(
+                'Another part of oscrypto has already been imported, unable to force use of ctypes'
+            )
+        _module_values['ffi'] = 'ctypes'
+
+
+def ffi():
+    """
+    Returns the FFI module being used
+
+    :return:
+        A unicode string of "cffi" or "ctypes"
+    """
+
+    if _module_values['ffi'] is not None:
+        return _module_values['ffi']
+
+    with _backend_lock:
+        try:
+            import cffi  # noqa: F401
+            _module_values['ffi'] = 'cffi'
+        except (ImportError):
+            _module_values['ffi'] = 'ctypes'
+
+        return _module_values['ffi']
+
+
+def _record_ffi(module):
+    """
+    Record which FFI module is being used
+
+    :param module:
+        A unicode string of the ffi module - "cffi" or "ctypes"
+    """
+
+    with _backend_lock:
+        if _module_values['ffi'] is not None:
+            return
+        _module_values['ffi'] = module

@@ -71,7 +71,7 @@ from .util import int_to_bytes, int_from_bytes, inet_ntop, inet_pton
 class DNSName(IA5String):
 
     _encoding = 'idna'
-    _bad_tag = 19
+    _bad_tag = (12, 19)
 
     def __ne__(self, other):
         return not self == other
@@ -163,7 +163,7 @@ class URI(IA5String):
         if not isinstance(other, URI):
             return False
 
-        return iri_to_uri(self.native) == iri_to_uri(other.native)
+        return iri_to_uri(self.native, True) == iri_to_uri(other.native, True)
 
     def __unicode__(self):
         """
@@ -185,8 +185,8 @@ class EmailAddress(IA5String):
     # If the value has gone through the .set() method, thus normalizing it
     _normalized = False
 
-    # In the wild we've seen this encoded as a PrintableString
-    _bad_tag = 19
+    # In the wild we've seen this encoded as a UTF8String and PrintableString
+    _bad_tag = (12, 19)
 
     @property
     def contents(self):
@@ -377,7 +377,7 @@ class IPAddress(OctetString):
     @property
     def native(self):
         """
-        The a native Python datatype representation of this value
+        The native Python datatype representation of this value
 
         :return:
             A unicode string or None
@@ -389,6 +389,7 @@ class IPAddress(OctetString):
         if self._native is None:
             byte_string = self.__bytes__()
             byte_len = len(byte_string)
+            value = None
             cidr_int = None
             if byte_len in set([32, 16]):
                 value = inet_ntop(socket.AF_INET6, byte_string[0:16])
@@ -1697,6 +1698,8 @@ class KeyPurposeId(ObjectIdentifier):
         '1.3.6.1.5.5.7.3.29': 'cmc_archive',
         # https://tools.ietf.org/html/draft-ietf-sidr-bgpsec-pki-profiles-15#page-6
         '1.3.6.1.5.5.7.3.30': 'bgpspec_router',
+        # https://www.ietf.org/proceedings/44/I-D/draft-ietf-ipsec-pki-req-01.txt
+        '1.3.6.1.5.5.8.2.2': 'ike_intermediate',
         # https://msdn.microsoft.com/en-us/library/windows/desktop/aa378132(v=vs.85).aspx
         # and https://support.microsoft.com/en-us/kb/287547
         '1.3.6.1.4.1.311.10.3.1': 'microsoft_trust_list_signing',
@@ -2576,6 +2579,22 @@ class Certificate(Sequence):
         if self._issuer_serial is None:
             self._issuer_serial = self.issuer.sha256 + b':' + str_cls(self.serial_number).encode('ascii')
         return self._issuer_serial
+
+    @property
+    def not_valid_after(self):
+        """
+        :return:
+            A datetime of latest time when the certificate is still valid
+        """
+        return self['tbs_certificate']['validity']['not_after'].native
+
+    @property
+    def not_valid_before(self):
+        """
+        :return:
+            A datetime of the earliest time when the certificate is valid
+        """
+        return self['tbs_certificate']['validity']['not_before'].native
 
     @property
     def authority_key_identifier(self):

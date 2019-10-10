@@ -5,7 +5,7 @@ import sys
 import hashlib
 import math
 
-from ..asn1crypto.util import int_from_bytes, int_to_bytes
+from ._asn1 import int_from_bytes, int_to_bytes
 from ._errors import pretty_message
 from ._types import type_name, byte_cls, int_types
 

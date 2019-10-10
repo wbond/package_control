@@ -7,11 +7,10 @@ import socket as socket_
 import select
 import numbers
 
-from ...asn1crypto import x509
-
 from ._libssl import libssl, LibsslConst
 from ._libcrypto import libcrypto, libcrypto_version_info, handle_openssl_error, peek_openssl_error
 from .. import _backend_config
+from .._asn1 import Certificate as Asn1Certificate
 from .._errors import pretty_message
 from .._ffi import null, bytes_from_buffer, buffer_from_bytes, is_null, buffer_pointer
 from .._types import type_name, str_cls, byte_cls, int_types
@@ -33,6 +32,8 @@ from .._tls import (
     raise_self_signed,
     raise_verification,
     raise_weak_signature,
+    parse_tls_records,
+    parse_handshake_messages,
 )
 from .asymmetric import load_certificate, Certificate
 from ..keys import parse_certificate
@@ -40,6 +41,11 @@ from ..trust_list import get_path
 
 if sys.version_info < (3,):
     range = xrange  # noqa
+
+if sys.version_info < (3, 7):
+    Pattern = re._pattern_type
+else:
+    Pattern = re.Pattern
 
 
 __all__ = [
@@ -150,7 +156,7 @@ class TLSSession(object):
                 elif isinstance(extra_trust_root, str_cls):
                     with open(extra_trust_root, 'rb') as f:
                         extra_trust_root = parse_certificate(f.read())
-                elif not isinstance(extra_trust_root, x509.Certificate):
+                elif not isinstance(extra_trust_root, Asn1Certificate):
                     raise TypeError(pretty_message(
                         '''
                         extra_trust_roots must be a list of byte strings, unicode
@@ -505,30 +511,33 @@ class TLSSocket(object):
                 else:
                     info = peek_openssl_error()
 
-                    if libcrypto_version_info < (1, 1):
-                        dh_key_info = (
-                            20,
-                            LibsslConst.SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM,
-                            LibsslConst.SSL_R_DH_KEY_TOO_SMALL
-                        )
-                    else:
-                        dh_key_info = (
-                            20,
-                            LibsslConst.SSL_F_TLS_PROCESS_SKE_DHE,
-                            LibsslConst.SSL_R_DH_KEY_TOO_SMALL
-                        )
-                    if info == dh_key_info:
+                    dh_key_info_1 = (
+                        LibsslConst.ERR_LIB_SSL,
+                        LibsslConst.SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM,
+                        LibsslConst.SSL_R_DH_KEY_TOO_SMALL
+                    )
+                    dh_key_info_2 = (
+                        LibsslConst.ERR_LIB_SSL,
+                        LibsslConst.SSL_F_TLS_PROCESS_SKE_DHE,
+                        LibsslConst.SSL_R_DH_KEY_TOO_SMALL
+                    )
+                    dh_key_info_3 = (
+                        LibsslConst.ERR_LIB_SSL,
+                        LibsslConst.SSL_F_SSL3_GET_KEY_EXCHANGE,
+                        LibsslConst.SSL_R_BAD_DH_P_LENGTH
+                    )
+                    if info == dh_key_info_1 or info == dh_key_info_2 or info == dh_key_info_3:
                         raise_dh_params()
 
                     if libcrypto_version_info < (1, 1):
                         unknown_protocol_info = (
-                            20,
+                            LibsslConst.ERR_LIB_SSL,
                             LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
                             LibsslConst.SSL_R_UNKNOWN_PROTOCOL
                         )
                     else:
                         unknown_protocol_info = (
-                            20,
+                            LibsslConst.ERR_LIB_SSL,
                             LibsslConst.SSL_F_SSL3_GET_RECORD,
                             LibsslConst.SSL_R_WRONG_VERSION_NUMBER
                         )
@@ -536,7 +545,7 @@ class TLSSocket(object):
                         raise_protocol_error(handshake_server_bytes)
 
                     tls_version_info_error = (
-                        20,
+                        LibsslConst.ERR_LIB_SSL,
                         LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
                         LibsslConst.SSL_R_TLSV1_ALERT_PROTOCOL_VERSION
                     )
@@ -544,7 +553,7 @@ class TLSSocket(object):
                         raise_protocol_version()
 
                     handshake_error_info = (
-                        20,
+                        LibsslConst.ERR_LIB_SSL,
                         LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
                         LibsslConst.SSL_R_SSLV3_ALERT_HANDSHAKE_FAILURE
                     )
@@ -552,25 +561,52 @@ class TLSSocket(object):
                         raise_handshake()
 
                     handshake_failure_info = (
-                        20,
+                        LibsslConst.ERR_LIB_SSL,
                         LibsslConst.SSL_F_SSL3_READ_BYTES,
                         LibsslConst.SSL_R_SSLV3_ALERT_HANDSHAKE_FAILURE
                     )
                     if info == handshake_failure_info:
-                        raise_client_auth()
+                        saw_client_auth = False
+                        for record_type, _, record_data in parse_tls_records(handshake_server_bytes):
+                            if record_type != b'\x16':
+                                continue
+                            for message_type, message_data in parse_handshake_messages(record_data):
+                                if message_type == b'\x0d':
+                                    saw_client_auth = True
+                                    break
+                        if saw_client_auth:
+                            raise_client_auth()
+                        raise_handshake()
 
                     if libcrypto_version_info < (1, 1):
                         cert_verify_failed_info = (
-                            20,
+                            LibsslConst.ERR_LIB_SSL,
                             LibsslConst.SSL_F_SSL3_GET_SERVER_CERTIFICATE,
                             LibsslConst.SSL_R_CERTIFICATE_VERIFY_FAILED
                         )
                     else:
                         cert_verify_failed_info = (
-                            20,
+                            LibsslConst.ERR_LIB_SSL,
                             LibsslConst.SSL_F_TLS_PROCESS_SERVER_CERTIFICATE,
                             LibsslConst.SSL_R_CERTIFICATE_VERIFY_FAILED
                         )
+
+                    # It would appear that some versions of OpenSSL (such as on Fedora 30)
+                    # don't even have the MD5 digest algorithm included any longer? To
+                    # give a more useful error message we handle this specifically.
+                    unknown_hash_algo_info = (
+                        LibsslConst.ERR_LIB_ASN1,
+                        LibsslConst.ASN1_F_ASN1_ITEM_VERIFY,
+                        LibsslConst.ASN1_R_UNKNOWN_MESSAGE_DIGEST_ALGORITHM
+                    )
+
+                    if info == unknown_hash_algo_info:
+                        chain = extract_chain(handshake_server_bytes)
+                        if chain:
+                            cert = chain[0]
+                            oscrypto_cert = load_certificate(cert)
+                            if oscrypto_cert.asn1.hash_algo in set(['md5', 'md2']):
+                                raise_weak_signature(oscrypto_cert)
 
                     if info == cert_verify_failed_info:
                         verify_result = libssl.SSL_get_verify_result(self._ssl)
@@ -845,7 +881,7 @@ class TLSSocket(object):
             A byte string of the data read, including the marker
         """
 
-        if not isinstance(marker, byte_cls) and not isinstance(marker, re._pattern_type):
+        if not isinstance(marker, byte_cls) and not isinstance(marker, Pattern):
             raise TypeError(pretty_message(
                 '''
                 marker must be a byte string or compiled regex object, not %s
@@ -855,7 +891,7 @@ class TLSSocket(object):
 
         output = b''
 
-        is_regex = isinstance(marker, re._pattern_type)
+        is_regex = isinstance(marker, Pattern)
 
         while True:
             if len(self._decrypted_bytes) > 0:
@@ -1081,7 +1117,7 @@ class TLSSocket(object):
             handle_openssl_error(cert_length)
             cert_data = bytes_from_buffer(cert_buffer, cert_length)
 
-            cert = x509.Certificate.load(cert_data)
+            cert = Asn1Certificate.load(cert_data)
 
             if index == 0:
                 self._certificate = cert

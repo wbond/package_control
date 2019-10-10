@@ -1,16 +1,17 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
-from .._ffi import FFIEngineError, buffer_from_bytes, byte_string_from_buffer, null
+from .. import ffi
+from .._ffi import buffer_from_bytes, byte_string_from_buffer, null
 from .._types import str_cls
 
-try:
+if ffi() == 'cffi':
     from ._libcrypto_cffi import (
         libcrypto,
         version as libcrypto_version,
         version_info as libcrypto_version_info
     )
-except (FFIEngineError, ImportError):
+else:
     from ._libcrypto_ctypes import (
         libcrypto,
         version as libcrypto_version,

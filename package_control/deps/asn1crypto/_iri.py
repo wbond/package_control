@@ -34,12 +34,15 @@ else:
     )
 
 
-def iri_to_uri(value):
+def iri_to_uri(value, normalize=False):
     """
-    Normalizes and encodes a unicode IRI into an ASCII byte string URI
+    Encodes a unicode IRI into an ASCII byte string URI
 
     :param value:
         A unicode string of an IRI
+
+    :param normalize:
+        A bool that controls URI normalization
 
     :return:
         A byte string of the ASCII-encoded URI
@@ -91,7 +94,7 @@ def iri_to_uri(value):
     if port is not None:
         default_http = scheme == b'http' and port == b'80'
         default_https = scheme == b'https' and port == b'443'
-        if not default_http and not default_https:
+        if not normalize or (not default_http and not default_https):
             netloc += b':' + port
 
     # RFC 3986 allows a path to contain sub-delims, plus "@" and ":"
@@ -101,7 +104,7 @@ def iri_to_uri(value):
     # RFC 3986 allows the fragment to contain sub-delims, plus "@", ":" , "/" and "?"
     fragment = _urlquote(parsed.fragment, safe='/?!$&\'()*+,;=@:')
 
-    if query is None and fragment is None and path == b'/':
+    if normalize and query is None and fragment is None and path == b'/':
         path = None
 
     # Python 2.7 compat
