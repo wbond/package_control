@@ -537,6 +537,8 @@ class NameType(ObjectIdentifier):
         '1.3.6.1.4.1.311.60.2.1.1': 'incorporation_locality',
         '1.3.6.1.4.1.311.60.2.1.2': 'incorporation_state_or_province',
         '1.3.6.1.4.1.311.60.2.1.3': 'incorporation_country',
+        # https://tools.ietf.org/html/rfc4519#section-2.39
+        '0.9.2342.19200300.100.1.1': 'user_id',
         # https://tools.ietf.org/html/rfc2247#section-4
         '0.9.2342.19200300.100.1.25': 'domain_component',
         # http://www.alvestrand.no/objectid/0.2.262.1.10.7.20.html
@@ -561,6 +563,7 @@ class NameType(ObjectIdentifier):
         'organizational_unit_name',
         'title',
         'common_name',
+        'user_id',
         'initials',
         'generation_qualifier',
         'surname',
@@ -642,6 +645,7 @@ class NameType(ObjectIdentifier):
             'platform_manufacturer': 'Platform Manufacturer',
             'platform_model': 'Platform Model',
             'platform_version': 'Platform Version',
+            'user_id': 'User ID',
         }.get(self.native, self.native)
 
 
@@ -688,6 +692,7 @@ class NameTypeAndValue(Sequence):
         'platform_manufacturer': UTF8String,
         'platform_model': UTF8String,
         'platform_version': UTF8String,
+        'user_id': DirectoryString,
     }
 
     _prepped = None
