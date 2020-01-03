@@ -161,6 +161,16 @@ if sys.version_info <= (3,):
                 return False
             return self._offset == other._offset
 
+        def __getinitargs__(self):
+            """
+            Called by tzinfo.__reduce__ to support pickle and copy.
+
+            :return:
+                offset and name, to be used for __init__
+            """
+
+            return self._offset, self._name
+
         def tzname(self, dt):
             """
             :param dt:

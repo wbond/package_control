@@ -100,6 +100,8 @@ class CMSAttributeType(ObjectIdentifier):
         '1.2.840.113549.1.9.4': 'message_digest',
         '1.2.840.113549.1.9.5': 'signing_time',
         '1.2.840.113549.1.9.6': 'counter_signature',
+        # https://tools.ietf.org/html/rfc2633#page-26
+        '1.2.840.113549.1.9.16.2.11': 'encrypt_key_pref',
         # https://tools.ietf.org/html/rfc3161#page-20
         '1.2.840.113549.1.9.16.2.14': 'signature_time_stamp_token',
         # https://tools.ietf.org/html/rfc6211#page-5
@@ -924,6 +926,26 @@ class CompressedData(Sequence):
         return self._decompressed
 
 
+class RecipientKeyIdentifier(Sequence):
+    _fields = [
+        ('subjectKeyIdentifier', OctetString),
+        ('date', GeneralizedTime, {'optional': True}),
+        ('other', OtherKeyAttribute, {'optional': True}),
+    ]
+
+
+class SMIMEEncryptionKeyPreference(Choice):
+    _alternatives = [
+        ('issuer_and_serial_number', IssuerAndSerialNumber, {'implicit': 0}),
+        ('recipientKeyId', RecipientKeyIdentifier, {'implicit': 1}),
+        ('subjectAltKeyIdentifier', PublicKeyInfo, {'implicit': 2}),
+    ]
+
+
+class SMIMEEncryptionKeyPreferences(SetOf):
+    _child_spec = SMIMEEncryptionKeyPreference
+
+
 ContentInfo._oid_specs = {
     'data': OctetString,
     'signed_data': SignedData,
@@ -958,4 +980,5 @@ CMSAttribute._oid_specs = {
     'cms_algorithm_protection': SetOfCMSAlgorithmProtection,
     'microsoft_nested_signature': SetOfContentInfo,
     'microsoft_time_stamp_token': SetOfContentInfo,
+    'encrypt_key_pref': SMIMEEncryptionKeyPreferences,
 }

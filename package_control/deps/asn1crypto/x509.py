@@ -2145,7 +2145,7 @@ class Certificate(Sequence):
 
     _processed_extensions = False
     _critical_extensions = None
-    _subject_directory_attributes = None
+    _subject_directory_attributes_value = None
     _key_identifier_value = None
     _key_usage_value = None
     _subject_alt_name_value = None
@@ -2234,7 +2234,7 @@ class Certificate(Sequence):
 
         if not self._processed_extensions:
             self._set_extensions()
-        return self._subject_directory_attributes
+        return self._subject_directory_attributes_value
 
     @property
     def key_identifier_value(self):
