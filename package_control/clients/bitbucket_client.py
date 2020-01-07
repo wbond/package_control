@@ -174,11 +174,15 @@ class BitBucketClient(JSONApiClient):
 
         issues_url = u'https://bitbucket.org/%s/issues' % user_repo
 
+        author = info['owner'].get('nickname')
+        if author is None:
+            author = info['owner'].get('username')
+
         return {
             'name': info['name'],
             'description': info['description'] or 'No description provided',
             'homepage': info['website'] or url,
-            'author': info['owner']['nickname'],
+            'author': author,
             'donate': None,
             'readme': self._readme_url(user_repo, branch),
             'issues': issues_url if info['has_issues'] else None
