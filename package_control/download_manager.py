@@ -225,7 +225,7 @@ class DownloadManager(object):
             'downloader_precedence',
             {
                 "windows": ["wininet", "oscrypto"],
-                "osx": ["urllib", "oscrypto"],
+                "osx": ["urllib", "oscrypto", "curl"],
                 "linux": ["urllib", "oscrypto", "curl", "wget"]
             }
         )
