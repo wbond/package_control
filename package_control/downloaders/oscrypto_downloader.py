@@ -21,6 +21,9 @@ else:
     str_cls = str
     int_types = int
 
+from ..deps.oscrypto import use_ctypes
+use_ctypes()
+
 from ..deps.oscrypto import tls
 from ..deps.oscrypto import errors as oscrypto_errors
 from ..deps.asn1crypto.util import OrderedDict

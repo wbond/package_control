@@ -4,6 +4,10 @@ import sys
 
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
+
+from .deps.oscrypto import use_ctypes
+use_ctypes()
+
 from .deps.oscrypto import trust_list
 
 

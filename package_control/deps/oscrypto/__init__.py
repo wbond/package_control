@@ -132,15 +132,20 @@ def use_openssl(libcrypto_path, libssl_path, trust_list_path=None):
             raise OSError('trust_list_path does not exist at %s' % trust_list_path)
 
     with _backend_lock:
-        if _module_values['backend'] is not None:
-            raise RuntimeError('Another part of oscrypto has already been imported, unable to force use of OpenSSL')
-
-        _module_values['backend'] = 'openssl'
-        _module_values['backend_config'] = {
+        new_config = {
             'libcrypto_path': libcrypto_path,
             'libssl_path': libssl_path,
             'trust_list_path': trust_list_path,
         }
+
+        if _module_values['backend'] == 'openssl' and _module_values['backend_config'] == new_config:
+            return
+
+        if _module_values['backend'] is not None:
+            raise RuntimeError('Another part of oscrypto has already been imported, unable to force use of OpenSSL')
+
+        _module_values['backend'] = 'openssl'
+        _module_values['backend_config'] = new_config
 
 
 def use_winlegacy():
@@ -164,10 +169,14 @@ def use_winlegacy():
         raise EnvironmentError('The winlegacy backend can only be used on Windows, not %s' % plat)
 
     with _backend_lock:
+        if _module_values['backend'] == 'winlegacy':
+            return
+
         if _module_values['backend'] is not None:
             raise RuntimeError(
                 'Another part of oscrypto has already been imported, unable to force use of Windows legacy CryptoAPI'
             )
+
         _module_values['backend'] = 'winlegacy'
 
 
@@ -180,10 +189,14 @@ def use_ctypes():
     """
 
     with _backend_lock:
+        if _module_values['ffi'] == 'ctypes':
+            return
+
         if _module_values['backend'] is not None:
             raise RuntimeError(
                 'Another part of oscrypto has already been imported, unable to force use of ctypes'
             )
+
         _module_values['ffi'] = 'ctypes'
 
 
@@ -206,20 +219,6 @@ def ffi():
             _module_values['ffi'] = 'ctypes'
 
         return _module_values['ffi']
-
-
-def _record_ffi(module):
-    """
-    Record which FFI module is being used
-
-    :param module:
-        A unicode string of the ffi module - "cffi" or "ctypes"
-    """
-
-    with _backend_lock:
-        if _module_values['ffi'] is not None:
-            return
-        _module_values['ffi'] = module
 
 
 def load_order():
