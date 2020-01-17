@@ -12,6 +12,7 @@ Other type classes are defined that help compose the types listed above.
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 
+from ._errors import unwrap
 from .algos import DigestAlgorithm, SignedDigestAlgorithm
 from .core import (
     Boolean,
@@ -319,6 +320,56 @@ class ResponderId(Choice):
     ]
 
 
+# Custom class to return a meaningful .native attribute from CertStatus()
+class StatusGood(Null):
+    def set(self, value):
+        """
+        Sets the value of the object
+
+        :param value:
+            None or 'good'
+        """
+
+        if value is not None and value != 'good' and not isinstance(value, Null):
+            raise ValueError(unwrap(
+                '''
+                value must be one of None, "good", not %s
+                ''',
+                repr(value)
+            ))
+
+        self.contents = b''
+
+    @property
+    def native(self):
+        return 'good'
+
+
+# Custom class to return a meaningful .native attribute from CertStatus()
+class StatusUnknown(Null):
+    def set(self, value):
+        """
+        Sets the value of the object
+
+        :param value:
+            None or 'unknown'
+        """
+
+        if value is not None and value != 'unknown' and not isinstance(value, Null):
+            raise ValueError(unwrap(
+                '''
+                value must be one of None, "unknown", not %s
+                ''',
+                repr(value)
+            ))
+
+        self.contents = b''
+
+    @property
+    def native(self):
+        return 'unknown'
+
+
 class RevokedInfo(Sequence):
     _fields = [
         ('revocation_time', GeneralizedTime),
@@ -328,9 +379,9 @@ class RevokedInfo(Sequence):
 
 class CertStatus(Choice):
     _alternatives = [
-        ('good', Null, {'implicit': 0}),
+        ('good', StatusGood, {'implicit': 0}),
         ('revoked', RevokedInfo, {'implicit': 1}),
-        ('unknown', Null, {'implicit': 2}),
+        ('unknown', StatusUnknown, {'implicit': 2}),
     ]
 
 

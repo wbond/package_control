@@ -3,12 +3,10 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 
 import sys
 import hashlib
-import math
 import hmac
 import struct
 
-from ..asn1crypto.util import int_from_bytes, int_to_bytes
-
+from ._asn1 import int_from_bytes, int_to_bytes
 from ._errors import pretty_message
 from ._types import type_name, byte_cls, int_types
 
@@ -117,25 +115,26 @@ def pbkdf2(hash_algorithm, password, salt, iterations, key_length):
         'sha512': 64
     }[hash_algorithm]
 
-    blocks = int(math.ceil(key_length / hash_length))
-
     original_hmac = hmac.new(password, None, algo)
 
-    int_pack = struct.Struct(b'>I').pack
-
+    block = 1
     output = b''
-    for block in range(1, blocks + 1):
+
+    while len(output) < key_length:
         prf = original_hmac.copy()
-        prf.update(salt + int_pack(block))
+        prf.update(salt + struct.pack(b'>I', block))
         last = prf.digest()
+
         u = int_from_bytes(last)
-        for _ in range(2, iterations + 1):
+
+        for _ in range(iterations-1):
             prf = original_hmac.copy()
             prf.update(last)
             last = prf.digest()
             u ^= int_from_bytes(last)
-        t = int_to_bytes(u)
-        output += t
+
+        output += int_to_bytes(u, width=hash_length)
+        block += 1
 
     return output[0:key_length]
 

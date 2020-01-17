@@ -3,9 +3,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 
 import os
 
-from ...asn1crypto.pem import unarmor
-from ...asn1crypto.x509 import TrustedCertificate, Certificate
-
+from .._asn1 import Certificate, TrustedCertificate, unarmor
 from .._errors import pretty_message
 
 

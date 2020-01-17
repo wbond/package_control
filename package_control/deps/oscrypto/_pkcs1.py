@@ -8,14 +8,17 @@ import platform
 import struct
 import os
 
-from ..asn1crypto.util import int_from_bytes, int_to_bytes
-from ..asn1crypto.keys import PrivateKeyInfo, PublicKeyInfo
-from ..asn1crypto.x509 import Certificate
-
 from . import backend
-from ._int import fill_width
 from .util import constant_compare, rand_bytes
+from ._asn1 import (
+    Certificate,
+    int_from_bytes,
+    int_to_bytes,
+    PrivateKeyInfo,
+    PublicKeyInfo,
+)
 from ._errors import pretty_message
+from ._int import fill_width
 from ._types import type_name, byte_cls, int_types
 
 if sys.version_info < (3,):

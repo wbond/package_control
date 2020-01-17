@@ -4,11 +4,10 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import hashlib
 import sys
 
+from .._asn1 import Certificate
 from .._ffi import new, unwrap
 from ._core_foundation import CoreFoundation, CFHelpers
 from ._security import Security, SecurityConst, handle_sec_error
-
-from ...asn1crypto import x509
 
 if sys.version_info < (3,):
     range = xrange  # noqa
@@ -179,7 +178,7 @@ def _cert_callback(callback, der_cert, reason):
 
     if not callback:
         return
-    callback(x509.Certificate.load(der_cert), reason)
+    callback(Certificate.load(der_cert), reason)
 
 
 def _cert_details(cert_pointer):

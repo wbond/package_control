@@ -603,7 +603,25 @@ def _encrypt(cipher, key, data, iv, padding):
         ))
 
     if cipher != 'rc4' and not padding:
-        raise ValueError('padding must be specified')
+        # AES in CBC mode can be allowed with no padding if
+        # the data is an exact multiple of the key size
+        aes128_no_padding = (
+            cipher == 'aes128' and
+            padding is False and
+            len(data) % 16 == 0
+        )
+        aes192_no_padding = (
+            cipher == 'aes192' and
+            padding is False and
+            len(data) % 24 == 0
+        )
+        aes256_no_padding = (
+            cipher == 'aes256' and
+            padding is False and
+            len(data) % 32 == 0
+        )
+        if aes128_no_padding is False and aes192_no_padding is False and aes256_no_padding is False:
+            raise ValueError('padding must be specified')
 
     evp_cipher_ctx = None
 

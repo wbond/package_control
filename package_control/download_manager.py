@@ -208,8 +208,8 @@ class DownloadManager(object):
             'downloader_precedence',
             {
                 "windows": ["wininet", "oscrypto"],
-                "osx": ["oscrypto", "urllib"],
-                "linux": ["oscrypto", "urllib", "curl", "wget"]
+                "osx": ["urllib", "oscrypto", "curl"],
+                "linux": ["urllib", "oscrypto", "curl", "wget"]
             }
         )
         downloader_list = downloader_precedence.get(platform, [])

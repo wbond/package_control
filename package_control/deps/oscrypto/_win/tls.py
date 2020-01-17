@@ -7,8 +7,7 @@ import socket as socket_
 import select
 import numbers
 
-from ...asn1crypto import x509
-
+from .._asn1 import Certificate as Asn1Certificate
 from .._errors import pretty_message
 from .._ffi import (
     buffer_from_bytes,
@@ -60,6 +59,11 @@ if sys.version_info < (3,):
     socket_error_cls = socket_.error
 else:
     socket_error_cls = WindowsError
+
+if sys.version_info < (3, 7):
+    Pattern = re._pattern_type
+else:
+    Pattern = re.Pattern
 
 
 __all__ = [
@@ -179,7 +183,7 @@ class TLSSession(object):
                 elif isinstance(extra_trust_root, str_cls):
                     with open(extra_trust_root, 'rb') as f:
                         extra_trust_root = parse_certificate(f.read())
-                elif not isinstance(extra_trust_root, x509.Certificate):
+                elif not isinstance(extra_trust_root, Asn1Certificate):
                     raise TypeError(pretty_message(
                         '''
                         extra_trust_roots must be a list of byte strings, unicode
@@ -606,7 +610,7 @@ class TLSSocket(object):
                     last_element_cert.pbCertEncoded,
                     native(int, last_element_cert.cbCertEncoded)
                 )
-                last_cert = x509.Certificate.load(last_element_cert_data)
+                last_cert = Asn1Certificate.load(last_element_cert_data)
                 if last_cert.sha256 in cert_hashes:
                     cert_chain_policy_para_flags |= Crypt32Const.CERT_CHAIN_POLICY_ALLOW_UNKNOWN_CA_FLAG
 
@@ -641,7 +645,7 @@ class TLSSocket(object):
 
             cert_context = unwrap(cert_context_pointer)
             cert_data = bytes_from_buffer(cert_context.pbCertEncoded, native(int, cert_context.cbCertEncoded))
-            cert = x509.Certificate.load(cert_data)
+            cert = Asn1Certificate.load(cert_data)
 
             error = cert_chain_policy_status.dwError
             if error:
@@ -1180,7 +1184,7 @@ class TLSSocket(object):
             A byte string of the data read
         """
 
-        if not isinstance(marker, byte_cls) and not isinstance(marker, re._pattern_type):
+        if not isinstance(marker, byte_cls) and not isinstance(marker, Pattern):
             raise TypeError(pretty_message(
                 '''
                 marker must be a byte string or compiled regex object, not %s
@@ -1190,7 +1194,7 @@ class TLSSocket(object):
 
         output = b''
 
-        is_regex = isinstance(marker, re._pattern_type)
+        is_regex = isinstance(marker, Pattern)
 
         while True:
             if len(self._decrypted_bytes) > 0:
@@ -1447,7 +1451,7 @@ class TLSSocket(object):
         cert_context = unwrap(cert_context_pointer)
 
         cert_data = bytes_from_buffer(cert_context.pbCertEncoded, native(int, cert_context.cbCertEncoded))
-        self._certificate = x509.Certificate.load(cert_data)
+        self._certificate = Asn1Certificate.load(cert_data)
 
         self._intermediates = []
 
@@ -1461,7 +1465,7 @@ class TLSSocket(object):
                 # The cert store seems to include the end-entity certificate as
                 # the last entry, but we already have that from the struct.
                 if data != cert_data:
-                    self._intermediates.append(x509.Certificate.load(data))
+                    self._intermediates.append(Asn1Certificate.load(data))
                 context_pointer = crypt32.CertEnumCertificatesInStore(store_handle, context_pointer)
 
         finally:

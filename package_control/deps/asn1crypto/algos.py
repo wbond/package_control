@@ -114,6 +114,10 @@ class HmacAlgorithmId(ObjectIdentifier):
         '1.2.840.113549.2.11': 'sha512',
         '1.2.840.113549.2.12': 'sha512_224',
         '1.2.840.113549.2.13': 'sha512_256',
+        '2.16.840.1.101.3.4.2.13': 'sha3_224',
+        '2.16.840.1.101.3.4.2.14': 'sha3_256',
+        '2.16.840.1.101.3.4.2.15': 'sha3_384',
+        '2.16.840.1.101.3.4.2.16': 'sha3_512',
     }
 
 
@@ -135,6 +139,14 @@ class DigestAlgorithmId(ObjectIdentifier):
         '2.16.840.1.101.3.4.2.3': 'sha512',
         '2.16.840.1.101.3.4.2.5': 'sha512_224',
         '2.16.840.1.101.3.4.2.6': 'sha512_256',
+        '2.16.840.1.101.3.4.2.7': 'sha3_224',
+        '2.16.840.1.101.3.4.2.8': 'sha3_256',
+        '2.16.840.1.101.3.4.2.9': 'sha3_384',
+        '2.16.840.1.101.3.4.2.10': 'sha3_512',
+        '2.16.840.1.101.3.4.2.11': 'shake128',
+        '2.16.840.1.101.3.4.2.12': 'shake256',
+        '2.16.840.1.101.3.4.2.17': 'shake128_len',
+        '2.16.840.1.101.3.4.2.18': 'shake256_len',
     }
 
 
@@ -240,6 +252,10 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
         '1.2.840.10045.4.3.2': 'sha256_ecdsa',
         '1.2.840.10045.4.3.3': 'sha384_ecdsa',
         '1.2.840.10045.4.3.4': 'sha512_ecdsa',
+        '2.16.840.1.101.3.4.3.9': 'sha3_224_ecdsa',
+        '2.16.840.1.101.3.4.3.10': 'sha3_256_ecdsa',
+        '2.16.840.1.101.3.4.3.11': 'sha3_384_ecdsa',
+        '2.16.840.1.101.3.4.3.12': 'sha3_512_ecdsa',
         # For when the digest is specified elsewhere in a Sequence
         '1.2.840.113549.1.1.1': 'rsassa_pkcs1v15',
         '1.2.840.10040.4.1': 'dsa',
@@ -266,6 +282,10 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
         'sha384_rsa': '1.2.840.113549.1.1.12',
         'sha512_ecdsa': '1.2.840.10045.4.3.4',
         'sha512_rsa': '1.2.840.113549.1.1.13',
+        'sha3_224_ecdsa': '2.16.840.1.101.3.4.3.9',
+        'sha3_256_ecdsa': '2.16.840.1.101.3.4.3.10',
+        'sha3_384_ecdsa': '2.16.840.1.101.3.4.3.11',
+        'sha3_512_ecdsa': '2.16.840.1.101.3.4.3.12',
     }
 
 
@@ -309,6 +329,10 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
             'sha256_ecdsa': 'ecdsa',
             'sha384_ecdsa': 'ecdsa',
             'sha512_ecdsa': 'ecdsa',
+            'sha3_224_ecdsa': 'ecdsa',
+            'sha3_256_ecdsa': 'ecdsa',
+            'sha3_384_ecdsa': 'ecdsa',
+            'sha3_512_ecdsa': 'ecdsa',
             'ecdsa': 'ecdsa',
         }
         if algorithm in algo_map:
@@ -572,6 +596,7 @@ class EncryptionAlgorithmId(ObjectIdentifier):
         '1.3.14.3.2.7': 'des',
         '1.2.840.113549.3.7': 'tripledes_3key',
         '1.2.840.113549.3.2': 'rc2',
+        '1.2.840.113549.3.4': 'rc4',
         '1.2.840.113549.3.9': 'rc5',
         # From http://csrc.nist.gov/groups/ST/crypto_apps_infra/csor/algorithms.html#AES
         '2.16.840.1.101.3.4.1.1': 'aes128_ecb',

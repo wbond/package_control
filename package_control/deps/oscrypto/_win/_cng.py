@@ -1,11 +1,12 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
-from .._ffi import FFIEngineError, new, null, unwrap
+from .. import ffi
+from .._ffi import new, null, unwrap
 
-try:
+if ffi() == 'cffi':
     from ._cng_cffi import bcrypt
-except (FFIEngineError, ImportError):
+else:
     from ._cng_ctypes import bcrypt
 
 

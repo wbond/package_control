@@ -4,9 +4,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import re
 from datetime import datetime
 
-from ..asn1crypto.util import int_from_bytes, timezone
-from ..asn1crypto.x509 import Certificate
-
+from ._asn1 import Certificate, int_from_bytes, timezone
 from ._cipher_suites import CIPHER_SUITE_MAP
 from .errors import TLSVerificationError, TLSDisconnectError, TLSError
 

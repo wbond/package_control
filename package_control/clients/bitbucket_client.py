@@ -171,11 +171,15 @@ class BitBucketClient(JSONApiClient):
 
         issues_url = 'https://bitbucket.org/%s/issues' % user_repo
 
+        author = info['owner'].get('nickname')
+        if author is None:
+            author = info['owner'].get('username')
+
         return {
             'name': info['name'],
             'description': info['description'] or 'No description provided',
             'homepage': info['website'] or url,
-            'author': info['owner']['nickname'],
+            'author': author,
             'donate': None,
             'readme': self._readme_url(user_repo, branch),
             'issues': issues_url if info['has_issues'] else None
@@ -239,9 +243,9 @@ class BitBucketClient(JSONApiClient):
         """
 
         listing_url = self._make_api_url(user_repo, '/src/%s/' % branch)
-        root_dir_info = self.fetch_json(listing_url, prefer_cached)['values']
+        root_dir_info = self.fetch_json(listing_url, prefer_cached)
 
-        for entry in root_dir_info:
+        for entry in root_dir_info['values']:
             if entry['path'].lower() in _README_FILENAMES:
                 return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
 

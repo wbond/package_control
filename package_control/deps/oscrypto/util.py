@@ -7,7 +7,7 @@ from ._errors import pretty_message
 from ._types import type_name, byte_cls
 
 if sys.platform == 'darwin':
-    from ._osx.util import rand_bytes
+    from ._mac.util import rand_bytes
 elif sys.platform == 'win32':
     from ._win.util import rand_bytes
 else:

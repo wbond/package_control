@@ -7,8 +7,8 @@ from . import backend
 _backend = backend()
 
 
-if _backend == 'osx':
-    from ._osx.symmetric import (
+if _backend == 'mac':
+    from ._mac.symmetric import (
         aes_cbc_no_padding_decrypt,
         aes_cbc_no_padding_encrypt,
         aes_cbc_pkcs7_decrypt,

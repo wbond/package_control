@@ -7,8 +7,8 @@ from . import backend
 _backend = backend()
 
 
-if _backend == 'osx':
-    from ._osx.tls import (
+if _backend == 'mac':
+    from ._mac.tls import (
         TLSSession,
         TLSSocket,
     )

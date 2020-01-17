@@ -13,6 +13,9 @@ from urllib.parse import urlparse
 from urllib.request import parse_http_list
 from urllib.request import parse_keqv_list
 
+from ..deps.oscrypto import use_ctypes
+use_ctypes()
+
 from ..deps.oscrypto import tls
 from ..deps.oscrypto import errors as oscrypto_errors
 from ..deps.asn1crypto.util import OrderedDict

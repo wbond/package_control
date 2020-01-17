@@ -7,16 +7,14 @@ import sys
 import tempfile
 import threading
 
-from ..asn1crypto.pem import armor
-from ..asn1crypto.x509 import Certificate
-
+from ._asn1 import armor, Certificate
 from ._errors import pretty_message
 from .errors import CACertsError
 
 if sys.platform == 'win32':
     from ._win.trust_list import extract_from_system, system_path
 elif sys.platform == 'darwin':
-    from ._osx.trust_list import extract_from_system, system_path
+    from ._mac.trust_list import extract_from_system, system_path
 else:
     from ._linux_bsd.trust_list import extract_from_system, system_path
 

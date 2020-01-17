@@ -32,6 +32,7 @@ from .algos import (
     EncryptionAlgorithm,
     HmacAlgorithm,
     KdfAlgorithm,
+    RSAESOAEPParams,
     SignedDigestAlgorithm,
 )
 from .core import (
@@ -99,10 +100,20 @@ class CMSAttributeType(ObjectIdentifier):
         '1.2.840.113549.1.9.4': 'message_digest',
         '1.2.840.113549.1.9.5': 'signing_time',
         '1.2.840.113549.1.9.6': 'counter_signature',
+        # https://tools.ietf.org/html/rfc2633#page-26
+        '1.2.840.113549.1.9.16.2.11': 'encrypt_key_pref',
         # https://tools.ietf.org/html/rfc3161#page-20
         '1.2.840.113549.1.9.16.2.14': 'signature_time_stamp_token',
         # https://tools.ietf.org/html/rfc6211#page-5
         '1.2.840.113549.1.9.52': 'cms_algorithm_protection',
+        # https://docs.microsoft.com/en-us/previous-versions/hh968145(v%3Dvs.85)
+        '1.3.6.1.4.1.311.2.4.1': 'microsoft_nested_signature',
+        # Some places refer to this as SPC_RFC3161_OBJID, others szOID_RFC3161_counterSign.
+        # https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-crypt_algorithm_identifier
+        # refers to szOID_RFC3161_counterSign as "1.2.840.113549.1.9.16.1.4",
+        # but that OID is also called szOID_TIMESTAMP_TOKEN. Because of there being
+        # no canonical source for this OID, we give it our own name
+        '1.3.6.1.4.1.311.3.3.1': 'microsoft_time_stamp_token',
     }
 
 
@@ -649,7 +660,8 @@ class RecipientIdentifier(Choice):
 
 class KeyEncryptionAlgorithmId(ObjectIdentifier):
     _map = {
-        '1.2.840.113549.1.1.1': 'rsa',
+        '1.2.840.113549.1.1.1': 'rsaes_pkcs1v15',
+        '1.2.840.113549.1.1.7': 'rsaes_oaep',
         '2.16.840.1.101.3.4.1.5': 'aes128_wrap',
         '2.16.840.1.101.3.4.1.8': 'aes128_wrap_pad',
         '2.16.840.1.101.3.4.1.25': 'aes192_wrap',
@@ -658,12 +670,29 @@ class KeyEncryptionAlgorithmId(ObjectIdentifier):
         '2.16.840.1.101.3.4.1.48': 'aes256_wrap_pad',
     }
 
+    _reverse_map = {
+        'rsa': '1.2.840.113549.1.1.1',
+        'rsaes_pkcs1v15': '1.2.840.113549.1.1.1',
+        'rsaes_oaep': '1.2.840.113549.1.1.7',
+        'aes128_wrap': '2.16.840.1.101.3.4.1.5',
+        'aes128_wrap_pad': '2.16.840.1.101.3.4.1.8',
+        'aes192_wrap': '2.16.840.1.101.3.4.1.25',
+        'aes192_wrap_pad': '2.16.840.1.101.3.4.1.28',
+        'aes256_wrap': '2.16.840.1.101.3.4.1.45',
+        'aes256_wrap_pad': '2.16.840.1.101.3.4.1.48',
+    }
+
 
 class KeyEncryptionAlgorithm(_ForceNullParameters, Sequence):
     _fields = [
         ('algorithm', KeyEncryptionAlgorithmId),
         ('parameters', Any, {'optional': True}),
     ]
+
+    _oid_pair = ('algorithm', 'parameters')
+    _oid_specs = {
+        'rsaes_oaep': RSAESOAEPParams,
+    }
 
 
 class KeyTransRecipientInfo(Sequence):
@@ -897,6 +926,26 @@ class CompressedData(Sequence):
         return self._decompressed
 
 
+class RecipientKeyIdentifier(Sequence):
+    _fields = [
+        ('subjectKeyIdentifier', OctetString),
+        ('date', GeneralizedTime, {'optional': True}),
+        ('other', OtherKeyAttribute, {'optional': True}),
+    ]
+
+
+class SMIMEEncryptionKeyPreference(Choice):
+    _alternatives = [
+        ('issuer_and_serial_number', IssuerAndSerialNumber, {'implicit': 0}),
+        ('recipientKeyId', RecipientKeyIdentifier, {'implicit': 1}),
+        ('subjectAltKeyIdentifier', PublicKeyInfo, {'implicit': 2}),
+    ]
+
+
+class SMIMEEncryptionKeyPreferences(SetOf):
+    _child_spec = SMIMEEncryptionKeyPreference
+
+
 ContentInfo._oid_specs = {
     'data': OctetString,
     'signed_data': SignedData,
@@ -929,4 +978,7 @@ CMSAttribute._oid_specs = {
     'counter_signature': SignerInfos,
     'signature_time_stamp_token': SetOfContentInfo,
     'cms_algorithm_protection': SetOfCMSAlgorithmProtection,
+    'microsoft_nested_signature': SetOfContentInfo,
+    'microsoft_time_stamp_token': SetOfContentInfo,
+    'encrypt_key_pref': SMIMEEncryptionKeyPreferences,
 }

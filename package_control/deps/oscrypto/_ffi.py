@@ -7,6 +7,8 @@ Exceptions and compatibility shims for consistently using ctypes and cffi
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import sys
+
+from . import ffi
 from ._types import str_cls, byte_cls, int_types, bytes_to_list
 
 
@@ -40,7 +42,7 @@ __all__ = [
 ]
 
 
-try:
+if ffi() == 'cffi':
     from cffi import FFI
 
     _ffi_registry = {}
@@ -185,7 +187,7 @@ try:
 
     engine = 'cffi'
 
-except (ImportError):
+else:
 
     import ctypes
     from ctypes import pointer, c_int, c_char_p, c_uint, c_void_p, c_wchar_p
@@ -339,6 +341,8 @@ except (ImportError):
         return output
 
     def ref(value, offset=0):
+        if offset == 0:
+            return ctypes.byref(value)
         return ctypes.cast(ctypes.addressof(value) + offset, ctypes.POINTER(ctypes.c_byte))
 
     def native(type_, value):

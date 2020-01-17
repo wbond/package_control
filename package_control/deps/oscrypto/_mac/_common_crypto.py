@@ -1,11 +1,11 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
-from .._ffi import FFIEngineError
+from .. import ffi
 
-try:
+if ffi() == 'cffi':
     from ._common_crypto_cffi import CommonCrypto
-except (FFIEngineError, ImportError):
+else:
     from ._common_crypto_ctypes import CommonCrypto
 
 

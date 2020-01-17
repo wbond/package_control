@@ -5,8 +5,7 @@ import datetime
 import hashlib
 import struct
 
-from ...asn1crypto.x509 import Certificate
-
+from .._asn1 import Certificate
 from .._ffi import (
     array_from_pointer,
     buffer_from_bytes,
@@ -97,7 +96,7 @@ def extract_from_system(cert_callback=None, callback_only_on_failure=False):
                     if cert_callback:
                         cert_callback(Certificate.load(data), 'not yet valid')
                     continue
-            except (ValueError, OSError) as e:
+            except (ValueError, OSError):
                 # If there is an error converting the not before timestamp,
                 # it is almost certainly because it is from too long ago,
                 # which means the cert is definitely valid by now.

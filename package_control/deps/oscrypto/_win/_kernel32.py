@@ -1,13 +1,13 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
+from .. import ffi
 from ._decode import _try_decode
-from .._ffi import FFIEngineError
 from .._types import str_cls
 
-try:
+if ffi() == 'cffi':
     from ._kernel32_cffi import kernel32, get_error
-except (FFIEngineError, ImportError):
+else:
     from ._kernel32_ctypes import kernel32, get_error
 
 

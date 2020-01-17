@@ -121,6 +121,11 @@ try:
     ]
     CoreFoundation.CFRelease.restype = None
 
+    CoreFoundation.CFRetain.argtypes = [
+        CFTypeRef
+    ]
+    CoreFoundation.CFRetain.restype = None
+
     CoreFoundation.CFErrorCopyDescription.argtypes = [
         CFErrorRef
     ]

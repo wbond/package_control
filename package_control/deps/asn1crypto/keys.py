@@ -19,18 +19,9 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import hashlib
 import math
 
-from ._elliptic_curve import (
-    SECP192R1_BASE_POINT,
-    SECP224R1_BASE_POINT,
-    SECP256R1_BASE_POINT,
-    SECP384R1_BASE_POINT,
-    SECP521R1_BASE_POINT,
-    PrimeCurve,
-    PrimePoint,
-)
-from ._errors import unwrap
-from ._types import type_name, str_cls, byte_cls
-from .algos import _ForceNullParameters, DigestAlgorithm, EncryptionAlgorithm, RSAESOAEPParams
+from ._errors import unwrap, APIException
+from ._types import type_name, byte_cls
+from .algos import _ForceNullParameters, DigestAlgorithm, EncryptionAlgorithm, RSAESOAEPParams, RSASSAPSSParams
 from .core import (
     Any,
     Asn1Value,
@@ -363,22 +354,161 @@ class NamedCurve(ObjectIdentifier):
         '1.2.840.10045.3.1.5': 'prime239v2',
         '1.2.840.10045.3.1.6': 'prime239v3',
         # https://tools.ietf.org/html/rfc5480#page-5
-        '1.3.132.0.1': 'sect163k1',
-        '1.3.132.0.15': 'sect163r2',
+        # http://www.secg.org/SEC2-Ver-1.0.pdf
         '1.2.840.10045.3.1.1': 'secp192r1',
-        '1.3.132.0.33': 'secp224r1',
-        '1.3.132.0.26': 'sect233k1',
         '1.2.840.10045.3.1.7': 'secp256r1',
-        '1.3.132.0.27': 'sect233r1',
+        '1.3.132.0.1': 'sect163k1',
+        '1.3.132.0.2': 'sect163r1',
+        '1.3.132.0.3': 'sect239k1',
+        '1.3.132.0.4': 'sect113r1',
+        '1.3.132.0.5': 'sect113r2',
+        '1.3.132.0.6': 'secp112r1',
+        '1.3.132.0.7': 'secp112r2',
+        '1.3.132.0.8': 'secp160r1',
+        '1.3.132.0.9': 'secp160k1',
+        '1.3.132.0.10': 'secp256k1',
+        '1.3.132.0.15': 'sect163r2',
         '1.3.132.0.16': 'sect283k1',
         '1.3.132.0.17': 'sect283r1',
+        '1.3.132.0.22': 'sect131r1',
+        '1.3.132.0.23': 'sect131r2',
+        '1.3.132.0.24': 'sect193r1',
+        '1.3.132.0.25': 'sect193r2',
+        '1.3.132.0.26': 'sect233k1',
+        '1.3.132.0.27': 'sect233r1',
+        '1.3.132.0.28': 'secp128r1',
+        '1.3.132.0.29': 'secp128r2',
+        '1.3.132.0.30': 'secp160r2',
+        '1.3.132.0.31': 'secp192k1',
+        '1.3.132.0.32': 'secp224k1',
+        '1.3.132.0.33': 'secp224r1',
         '1.3.132.0.34': 'secp384r1',
+        '1.3.132.0.35': 'secp521r1',
         '1.3.132.0.36': 'sect409k1',
         '1.3.132.0.37': 'sect409r1',
-        '1.3.132.0.35': 'secp521r1',
         '1.3.132.0.38': 'sect571k1',
         '1.3.132.0.39': 'sect571r1',
+        # https://tools.ietf.org/html/rfc5639#section-4.1
+        '1.3.36.3.3.2.8.1.1.1': 'brainpoolp160r1',
+        '1.3.36.3.3.2.8.1.1.2': 'brainpoolp160t1',
+        '1.3.36.3.3.2.8.1.1.3': 'brainpoolp192r1',
+        '1.3.36.3.3.2.8.1.1.4': 'brainpoolp192t1',
+        '1.3.36.3.3.2.8.1.1.5': 'brainpoolp224r1',
+        '1.3.36.3.3.2.8.1.1.6': 'brainpoolp224t1',
+        '1.3.36.3.3.2.8.1.1.7': 'brainpoolp256r1',
+        '1.3.36.3.3.2.8.1.1.8': 'brainpoolp256t1',
+        '1.3.36.3.3.2.8.1.1.9': 'brainpoolp320r1',
+        '1.3.36.3.3.2.8.1.1.10': 'brainpoolp320t1',
+        '1.3.36.3.3.2.8.1.1.11': 'brainpoolp384r1',
+        '1.3.36.3.3.2.8.1.1.12': 'brainpoolp384t1',
+        '1.3.36.3.3.2.8.1.1.13': 'brainpoolp512r1',
+        '1.3.36.3.3.2.8.1.1.14': 'brainpoolp512t1',
     }
+
+    _key_sizes = {
+        # Order values used to compute these sourced from
+        # http://cr.openjdk.java.net/~vinnie/7194075/webrev-3/src/share/classes/sun/security/ec/CurveDB.java.html
+        '1.2.840.10045.3.0.1': 21,
+        '1.2.840.10045.3.0.2': 21,
+        '1.2.840.10045.3.0.3': 21,
+        '1.2.840.10045.3.0.4': 21,
+        '1.2.840.10045.3.0.5': 24,
+        '1.2.840.10045.3.0.6': 24,
+        '1.2.840.10045.3.0.7': 24,
+        '1.2.840.10045.3.0.8': 24,
+        '1.2.840.10045.3.0.9': 24,
+        '1.2.840.10045.3.0.10': 25,
+        '1.2.840.10045.3.0.11': 30,
+        '1.2.840.10045.3.0.12': 30,
+        '1.2.840.10045.3.0.13': 30,
+        '1.2.840.10045.3.0.14': 30,
+        '1.2.840.10045.3.0.15': 30,
+        '1.2.840.10045.3.0.16': 33,
+        '1.2.840.10045.3.0.17': 37,
+        '1.2.840.10045.3.0.18': 45,
+        '1.2.840.10045.3.0.19': 45,
+        '1.2.840.10045.3.0.20': 53,
+        '1.2.840.10045.3.1.2': 24,
+        '1.2.840.10045.3.1.3': 24,
+        '1.2.840.10045.3.1.4': 30,
+        '1.2.840.10045.3.1.5': 30,
+        '1.2.840.10045.3.1.6': 30,
+        # Order values used to compute these sourced from
+        # http://www.secg.org/SEC2-Ver-1.0.pdf
+        # ceil(n.bit_length() / 8)
+        '1.2.840.10045.3.1.1': 24,
+        '1.2.840.10045.3.1.7': 32,
+        '1.3.132.0.1': 21,
+        '1.3.132.0.2': 21,
+        '1.3.132.0.3': 30,
+        '1.3.132.0.4': 15,
+        '1.3.132.0.5': 15,
+        '1.3.132.0.6': 14,
+        '1.3.132.0.7': 14,
+        '1.3.132.0.8': 21,
+        '1.3.132.0.9': 21,
+        '1.3.132.0.10': 32,
+        '1.3.132.0.15': 21,
+        '1.3.132.0.16': 36,
+        '1.3.132.0.17': 36,
+        '1.3.132.0.22': 17,
+        '1.3.132.0.23': 17,
+        '1.3.132.0.24': 25,
+        '1.3.132.0.25': 25,
+        '1.3.132.0.26': 29,
+        '1.3.132.0.27': 30,
+        '1.3.132.0.28': 16,
+        '1.3.132.0.29': 16,
+        '1.3.132.0.30': 21,
+        '1.3.132.0.31': 24,
+        '1.3.132.0.32': 29,
+        '1.3.132.0.33': 28,
+        '1.3.132.0.34': 48,
+        '1.3.132.0.35': 66,
+        '1.3.132.0.36': 51,
+        '1.3.132.0.37': 52,
+        '1.3.132.0.38': 72,
+        '1.3.132.0.39': 72,
+        # Order values used to compute these sourced from
+        # https://tools.ietf.org/html/rfc5639#section-3
+        # ceil(q.bit_length() / 8)
+        '1.3.36.3.3.2.8.1.1.1': 20,
+        '1.3.36.3.3.2.8.1.1.2': 20,
+        '1.3.36.3.3.2.8.1.1.3': 24,
+        '1.3.36.3.3.2.8.1.1.4': 24,
+        '1.3.36.3.3.2.8.1.1.5': 28,
+        '1.3.36.3.3.2.8.1.1.6': 28,
+        '1.3.36.3.3.2.8.1.1.7': 32,
+        '1.3.36.3.3.2.8.1.1.8': 32,
+        '1.3.36.3.3.2.8.1.1.9': 40,
+        '1.3.36.3.3.2.8.1.1.10': 40,
+        '1.3.36.3.3.2.8.1.1.11': 48,
+        '1.3.36.3.3.2.8.1.1.12': 48,
+        '1.3.36.3.3.2.8.1.1.13': 64,
+        '1.3.36.3.3.2.8.1.1.14': 64,
+    }
+
+    @classmethod
+    def register(cls, name, oid, key_size):
+        """
+        Registers a new named elliptic curve that is not included in the
+        default list of named curves
+
+        :param name:
+            A unicode string of the curve name
+
+        :param oid:
+            A unicode string of the dotted format OID
+
+        :param key_size:
+            An integer of the number of bytes the private key should be
+            encoded to
+        """
+
+        cls._map[oid] = name
+        if cls._reverse_map is not None:
+            cls._reverse_map[name] = oid
+        cls._key_sizes[oid] = key_size
 
 
 class ECDomainParameters(Choice):
@@ -391,6 +521,31 @@ class ECDomainParameters(Choice):
         ('named', NamedCurve),
         ('implicit_ca', Null),
     ]
+
+    @property
+    def key_size(self):
+        if self.name == 'implicit_ca':
+            raise ValueError(unwrap(
+                '''
+                Unable to calculate key_size from ECDomainParameters
+                that are implicitly defined by the CA key
+                '''
+            ))
+
+        if self.name == 'specified':
+            order = self.chosen['order'].native
+            return math.ceil(math.log(order, 2.0) / 8.0)
+
+        oid = self.chosen.dotted
+        if oid not in NamedCurve._key_sizes:
+            raise ValueError(unwrap(
+                '''
+                The asn1crypto.keys.NamedCurve %s does not have a registered key length,
+                please call asn1crypto.keys.NamedCurve.register()
+                ''',
+                repr(oid)
+            ))
+        return NamedCurve._key_sizes[oid]
 
 
 class ECPrivateKeyVersion(Integer):
@@ -415,6 +570,48 @@ class ECPrivateKey(Sequence):
         ('parameters', ECDomainParameters, {'explicit': 0, 'optional': True}),
         ('public_key', ECPointBitString, {'explicit': 1, 'optional': True}),
     ]
+
+    # Ensures the key is set to the correct length when encoding
+    _key_size = None
+
+    # This is necessary to ensure the private_key IntegerOctetString is encoded properly
+    def __setitem__(self, key, value):
+        res = super(ECPrivateKey, self).__setitem__(key, value)
+
+        if key == 'private_key':
+            if self._key_size is None:
+                # Infer the key_size from the existing private key if possible
+                pkey_contents = self['private_key'].contents
+                if isinstance(pkey_contents, byte_cls) and len(pkey_contents) > 1:
+                    self.set_key_size(len(self['private_key'].contents))
+
+            elif self._key_size is not None:
+                self._update_key_size()
+
+        elif key == 'parameters' and isinstance(self['parameters'], ECDomainParameters) and \
+                self['parameters'].name != 'implicit_ca':
+            self.set_key_size(self['parameters'].key_size)
+
+        return res
+
+    def set_key_size(self, key_size):
+        """
+        Sets the key_size to ensure the private key is encoded to the proper length
+
+        :param key_size:
+            An integer byte length to encode the private_key to
+        """
+
+        self._key_size = key_size
+        self._update_key_size()
+
+    def _update_key_size(self):
+        """
+        Ensure the private_key explicit encoding width is set
+        """
+
+        if self._key_size is not None and isinstance(self['private_key'], IntegerOctetString):
+            self['private_key'].set_encoded_width(self._key_size)
 
 
 class DSAParams(Sequence):
@@ -463,6 +660,8 @@ class PrivateKeyAlgorithmId(ObjectIdentifier):
     _map = {
         # https://tools.ietf.org/html/rfc3279#page-19
         '1.2.840.113549.1.1.1': 'rsa',
+        # https://tools.ietf.org/html/rfc4055#page-8
+        '1.2.840.113549.1.1.10': 'rsassa_pss',
         # https://tools.ietf.org/html/rfc3279#page-18
         '1.2.840.10040.4.1': 'dsa',
         # https://tools.ietf.org/html/rfc3279#page-13
@@ -485,6 +684,7 @@ class PrivateKeyAlgorithm(_ForceNullParameters, Sequence):
     _oid_specs = {
         'dsa': DSAParams,
         'ec': ECDomainParameters,
+        'rsassa_pss': RSASSAPSSParams,
     }
 
 
@@ -504,6 +704,7 @@ class PrivateKeyInfo(Sequence):
         algorithm = self['private_key_algorithm']['algorithm'].native
         return {
             'rsa': RSAPrivateKey,
+            'rsassa_pss': RSAPrivateKey,
             'dsa': Integer,
             'ec': ECPrivateKey,
         }[algorithm]
@@ -585,78 +786,24 @@ class PrivateKeyInfo(Sequence):
 
         return container
 
-    def _compute_public_key(self):
-        """
-        Computes the public key corresponding to the current private key.
+    # This is necessary to ensure any contained ECPrivateKey is the
+    # correct size
+    def __setitem__(self, key, value):
+        res = super(PrivateKeyInfo, self).__setitem__(key, value)
 
-        :return:
-            For RSA keys, an RSAPublicKey object. For DSA keys, an Integer
-            object. For EC keys, an ECPointBitString.
-        """
+        algorithm = self['private_key_algorithm']
 
-        if self.algorithm == 'dsa':
-            params = self['private_key_algorithm']['parameters']
-            return Integer(pow(
-                params['g'].native,
-                self['private_key'].parsed.native,
-                params['p'].native
-            ))
+        # When possible, use the parameter info to make sure the private key encoding
+        # retains any necessary leading bytes, instead of them being dropped
+        if (key == 'private_key_algorithm' or key == 'private_key') and \
+                algorithm['algorithm'].native == 'ec' and \
+                isinstance(algorithm['parameters'], ECDomainParameters) and \
+                algorithm['parameters'].name != 'implicit_ca' and \
+                isinstance(self['private_key'], ParsableOctetString) and \
+                isinstance(self['private_key'].parsed, ECPrivateKey):
+            self['private_key'].parsed.set_key_size(algorithm['parameters'].key_size)
 
-        if self.algorithm == 'rsa':
-            key = self['private_key'].parsed
-            return RSAPublicKey({
-                'modulus': key['modulus'],
-                'public_exponent': key['public_exponent'],
-            })
-
-        if self.algorithm == 'ec':
-            curve_type, details = self.curve
-
-            if curve_type == 'implicit_ca':
-                raise ValueError(unwrap(
-                    '''
-                    Unable to compute public key for EC key using Implicit CA
-                    parameters
-                    '''
-                ))
-
-            if curve_type == 'specified':
-                if details['field_id']['field_type'] == 'characteristic_two_field':
-                    raise ValueError(unwrap(
-                        '''
-                        Unable to compute public key for EC key over a
-                        characteristic two field
-                        '''
-                    ))
-
-                curve = PrimeCurve(
-                    details['field_id']['parameters'],
-                    int_from_bytes(details['curve']['a']),
-                    int_from_bytes(details['curve']['b'])
-                )
-                base_x, base_y = self['private_key_algorithm']['parameters'].chosen['base'].to_coords()
-                base_point = PrimePoint(curve, base_x, base_y)
-
-            elif curve_type == 'named':
-                if details not in ('secp192r1', 'secp224r1', 'secp256r1', 'secp384r1', 'secp521r1'):
-                    raise ValueError(unwrap(
-                        '''
-                        Unable to compute public key for EC named curve %s,
-                        parameters not currently included
-                        ''',
-                        details
-                    ))
-
-                base_point = {
-                    'secp192r1': SECP192R1_BASE_POINT,
-                    'secp224r1': SECP224R1_BASE_POINT,
-                    'secp256r1': SECP256R1_BASE_POINT,
-                    'secp384r1': SECP384R1_BASE_POINT,
-                    'secp521r1': SECP521R1_BASE_POINT,
-                }[details]
-
-            public_point = base_point * self['private_key'].parsed['private_key'].native
-            return ECPointBitString.from_coords(public_point.x, public_point.y)
+        return res
 
     def unwrap(self):
         """
@@ -667,25 +814,9 @@ class PrivateKeyInfo(Sequence):
             An RSAPrivateKey, DSAPrivateKey or ECPrivateKey object
         """
 
-        if self.algorithm == 'rsa':
-            return self['private_key'].parsed
-
-        if self.algorithm == 'dsa':
-            params = self['private_key_algorithm']['parameters']
-            return DSAPrivateKey({
-                'version': 0,
-                'p': params['p'],
-                'q': params['q'],
-                'g': params['g'],
-                'public_key': self.public_key,
-                'private_key': self['private_key'].parsed,
-            })
-
-        if self.algorithm == 'ec':
-            output = self['private_key'].parsed
-            output['parameters'] = self['private_key_algorithm']['parameters']
-            output['public_key'] = self.public_key
-            return output
+        raise APIException(
+            'asn1crypto.keys.PrivateKeyInfo().unwrap() has been removed, '
+            'please use oscrypto.asymmetric.PrivateKey().unwrap() instead')
 
     @property
     def curve(self):
@@ -795,17 +926,9 @@ class PrivateKeyInfo(Sequence):
             object. If an EC key, an ECPointBitString object.
         """
 
-        if self._public_key is None:
-            if self.algorithm == 'ec':
-                key = self['private_key'].parsed
-                if key['public_key']:
-                    self._public_key = key['public_key'].untag()
-                else:
-                    self._public_key = self._compute_public_key()
-            else:
-                self._public_key = self._compute_public_key()
-
-        return self._public_key
+        raise APIException(
+            'asn1crypto.keys.PrivateKeyInfo().public_key has been removed, '
+            'please use oscrypto.asymmetric.PrivateKey().public_key.unwrap() instead')
 
     @property
     def public_key_info(self):
@@ -814,13 +937,9 @@ class PrivateKeyInfo(Sequence):
             A PublicKeyInfo object derived from this private key.
         """
 
-        return PublicKeyInfo({
-            'algorithm': {
-                'algorithm': self.algorithm,
-                'parameters': self['private_key_algorithm']['parameters']
-            },
-            'public_key': self.public_key
-        })
+        raise APIException(
+            'asn1crypto.keys.PrivateKeyInfo().public_key_info has been removed, '
+            'please use oscrypto.asymmetric.PrivateKey().public_key.asn1 instead')
 
     @property
     def fingerprint(self):
@@ -836,51 +955,9 @@ class PrivateKeyInfo(Sequence):
             on the key type)
         """
 
-        if self._fingerprint is None:
-            params = self['private_key_algorithm']['parameters']
-            key = self['private_key'].parsed
-
-            if self.algorithm == 'rsa':
-                to_hash = '%d:%d' % (
-                    key['modulus'].native,
-                    key['public_exponent'].native,
-                )
-
-            elif self.algorithm == 'dsa':
-                public_key = self.public_key
-                to_hash = '%d:%d:%d:%d' % (
-                    params['p'].native,
-                    params['q'].native,
-                    params['g'].native,
-                    public_key.native,
-                )
-
-            elif self.algorithm == 'ec':
-                public_key = key['public_key'].native
-                if public_key is None:
-                    public_key = self.public_key.native
-
-                if params.name == 'named':
-                    to_hash = '%s:' % params.chosen.native
-                    to_hash = to_hash.encode('utf-8')
-                    to_hash += public_key
-
-                elif params.name == 'implicit_ca':
-                    to_hash = public_key
-
-                elif params.name == 'specified':
-                    to_hash = '%s:' % params.chosen['field_id']['parameters'].native
-                    to_hash = to_hash.encode('utf-8')
-                    to_hash += b':' + params.chosen['curve']['a'].native
-                    to_hash += b':' + params.chosen['curve']['b'].native
-                    to_hash += public_key
-
-            if isinstance(to_hash, str_cls):
-                to_hash = to_hash.encode('utf-8')
-
-            self._fingerprint = hashlib.sha256(to_hash).digest()
-
-        return self._fingerprint
+        raise APIException(
+            'asn1crypto.keys.PrivateKeyInfo().fingerprint has been removed, '
+            'please use oscrypto.asymmetric.PrivateKey().fingerprint instead')
 
 
 class EncryptedPrivateKeyInfo(Sequence):
@@ -932,6 +1009,8 @@ class PublicKeyAlgorithmId(ObjectIdentifier):
         '1.2.840.113549.1.1.1': 'rsa',
         # https://tools.ietf.org/html/rfc3447#page-47
         '1.2.840.113549.1.1.7': 'rsaes_oaep',
+        # https://tools.ietf.org/html/rfc4055#page-8
+        '1.2.840.113549.1.1.10': 'rsassa_pss',
         # https://tools.ietf.org/html/rfc3279#page-18
         '1.2.840.10040.4.1': 'dsa',
         # https://tools.ietf.org/html/rfc3279#page-13
@@ -958,6 +1037,7 @@ class PublicKeyAlgorithm(_ForceNullParameters, Sequence):
         'ec': ECDomainParameters,
         'dh': DomainParameters,
         'rsaes_oaep': RSAESOAEPParams,
+        'rsassa_pss': RSASSAPSSParams,
     }
 
 
@@ -977,6 +1057,7 @@ class PublicKeyInfo(Sequence):
         return {
             'rsa': RSAPublicKey,
             'rsaes_oaep': RSAPublicKey,
+            'rsassa_pss': RSAPublicKey,
             'dsa': Integer,
             # We override the field spec with ECPoint so that users can easily
             # decompose the byte string into the constituent X and Y coords
@@ -1046,19 +1127,9 @@ class PublicKeyInfo(Sequence):
             An RSAPublicKey object
         """
 
-        if self.algorithm == 'rsa':
-            return self['public_key'].parsed
-
-        key_type = self.algorithm.upper()
-        a_an = 'an' if key_type == 'EC' else 'a'
-        raise ValueError(unwrap(
-            '''
-            Only RSA public keys may be unwrapped - this key is %s %s public
-            key
-            ''',
-            a_an,
-            key_type
-        ))
+        raise APIException(
+            'asn1crypto.keys.PublicKeyInfo().unwrap() has been removed, '
+            'please use oscrypto.asymmetric.PublicKey().unwrap() instead')
 
     @property
     def curve(self):
@@ -1203,47 +1274,6 @@ class PublicKeyInfo(Sequence):
             on the key type)
         """
 
-        if self._fingerprint is None:
-            key_type = self['algorithm']['algorithm'].native
-            params = self['algorithm']['parameters']
-
-            if key_type == 'rsa':
-                key = self['public_key'].parsed
-                to_hash = '%d:%d' % (
-                    key['modulus'].native,
-                    key['public_exponent'].native,
-                )
-
-            elif key_type == 'dsa':
-                key = self['public_key'].parsed
-                to_hash = '%d:%d:%d:%d' % (
-                    params['p'].native,
-                    params['q'].native,
-                    params['g'].native,
-                    key.native,
-                )
-
-            elif key_type == 'ec':
-                key = self['public_key']
-
-                if params.name == 'named':
-                    to_hash = '%s:' % params.chosen.native
-                    to_hash = to_hash.encode('utf-8')
-                    to_hash += key.native
-
-                elif params.name == 'implicit_ca':
-                    to_hash = key.native
-
-                elif params.name == 'specified':
-                    to_hash = '%s:' % params.chosen['field_id']['parameters'].native
-                    to_hash = to_hash.encode('utf-8')
-                    to_hash += b':' + params.chosen['curve']['a'].native
-                    to_hash += b':' + params.chosen['curve']['b'].native
-                    to_hash += key.native
-
-            if isinstance(to_hash, str_cls):
-                to_hash = to_hash.encode('utf-8')
-
-            self._fingerprint = hashlib.sha256(to_hash).digest()
-
-        return self._fingerprint
+        raise APIException(
+            'asn1crypto.keys.PublicKeyInfo().fingerprint has been removed, '
+            'please use oscrypto.asymmetric.PublicKey().fingerprint instead')

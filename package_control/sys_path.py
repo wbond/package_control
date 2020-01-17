@@ -48,15 +48,16 @@ if installed_packages_path is None:
             _data_base = os.path.expanduser('~/.config')
 
     if _data_base is not None:
-        _config_leaf = 'Sublime Text 3 Development'
-        if sys.platform not in ('win32', 'darwin'):
-            _config_leaf = 'sublime-text-3-development'
-        _possible_data_dir = os.path.join(_data_base, _config_leaf)
-        if os.path.exists(_possible_data_dir):
-            data_dir = _possible_data_dir
-            _possible_installed_packages_path = os.path.join(data_dir, 'Installed Packages')
-            if os.path.exists(_possible_installed_packages_path):
-                installed_packages_path = _possible_installed_packages_path
+        for _leaf in ['Sublime Text Development', 'Sublime Text 3 Development']:
+            if sys.platform not in set(['win32', 'darwin']):
+                _leaf = _leaf.lower().replace(' ', '-')
+            _possible_data_dir = os.path.join(_data_base, _leaf)
+            if os.path.exists(_possible_data_dir):
+                data_dir = _possible_data_dir
+                _possible_installed_packages_path = os.path.join(data_dir, u'Installed Packages')
+                if os.path.exists(_possible_installed_packages_path):
+                    installed_packages_path = _possible_installed_packages_path
+                break
 
 if installed_packages_path and data_dir is None:
     data_dir = os.path.dirname(installed_packages_path)
