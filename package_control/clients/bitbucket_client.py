@@ -99,11 +99,17 @@ class BitBucketClient(JSONApiClient):
         output = []
         if tags_match:
             user_repo = tags_match.group(1)
-            tags_url = self._make_api_url(user_repo, '/refs/tags')
-            tags_list = {
-                tag['name']: tag['target']['date'][0:19].replace('T', ' ')
-                for tag in self.fetch_json(tags_url)['values']
-            }
+            
+            tags_list = {}
+            tags_url = self._make_api_url(user_repo, '/refs/tags?pagelen=100')
+            while tags_url:
+                tags_json = self.fetch_json(tags_url)
+                tags_list.update({
+                    tag['name']: tag['target']['date'][0:19].replace('T', ' ')
+                    for tag in tags_json['values']
+                })
+                tags_url = tags_json['next'] if 'next' in tags_json else None
+            
             tag_info = version_process(tags_list.keys(), tag_prefix)
             tag_info = version_sort(tag_info, reverse=True)
             if not tag_info:
@@ -245,12 +251,16 @@ class BitBucketClient(JSONApiClient):
             The URL to the readme file, or None
         """
 
-        listing_url = self._make_api_url(user_repo, '/src/%s/' % branch)
-        root_dir_info = self.fetch_json(listing_url, prefer_cached)
+        listing_url = self._make_api_url(user_repo, '/src/%s/?pagelen=100' % branch)
+        
+        while listing_url:
+            root_dir_info = self.fetch_json(listing_url, prefer_cached)
 
-        for entry in root_dir_info['values']:
-            if entry['path'].lower() in _readme_filenames:
-                return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
+            for entry in root_dir_info['values']:
+                if entry['path'].lower() in _readme_filenames:
+                    return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
+
+            listing_url = root_dir_info['next'] if 'next' in root_dir_info else None
 
         return None
 
