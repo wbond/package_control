@@ -106,7 +106,7 @@ else:
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
         try:
-            os.path.exists(os.path.join(sublime.packages_path(), u"fran\u00e7ais"))
+            os.path.exists(os.path.join(sublime.packages_path(), u"fran\u2013ais"))
         except (UnicodeEncodeError):
             message = text.format(
                 u'''
