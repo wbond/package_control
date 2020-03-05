@@ -89,7 +89,7 @@ try:
 
             hosts = self.get_valid_hosts_for_cert(cert)
             for host in hosts:
-                host_re = host.replace('.', '\.').replace('*', '[^.]*')
+                host_re = host.replace('.', r'\.').replace('*', r'[^.]*')
                 if re.search('^%s$' % (host_re,), hostname, re.I):
                     return True
             return False

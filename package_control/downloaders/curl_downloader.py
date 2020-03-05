@@ -158,8 +158,8 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 headers = {}
                 for header in headers_str.splitlines():
                     if header[0:5] == 'HTTP/':
-                        message = re.sub('^HTTP/\d(?:\.\d)?\s+\d+\s*', '', header)
-                        status = int(re.sub('^HTTP/\d(?:\.\d)?\s+(\d+)(\s+.*)?$', '\\1', header))
+                        message = re.sub(r'^HTTP/\d(?:\.\d)?\s+\d+\s*', '', header)
+                        status = int(re.sub(r'^HTTP/\d(?:\.\d)?\s+(\d+)(\s+.*)?$', '\\1', header))
                         continue
                     if header.strip() == '':
                         continue
@@ -204,7 +204,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                 download_error = e.stderr.rstrip()
 
                 if e.returncode == 22:
-                    code = re.sub('^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
+                    code = re.sub(r'^.*?(\d+)([\w\s]+)?$', '\\1', e.stderr)
                     if code == '503' and tries != 0:
                         # GitHub and BitBucket seem to rate limit via 503
                         if tries and debug:
@@ -225,7 +225,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     # it, but their ISP won't actually route it.
                     full_debug = u"\n".join([section['contents'] for section in debug_sections])
                     ipv6_error = re.search(
-                        '^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable',
+                        r'^\s*connect to ([0-9a-f]+(:+[0-9a-f]+)+) port \d+ failed: Network is unreachable',
                         full_debug,
                         re.I | re.M
                     )

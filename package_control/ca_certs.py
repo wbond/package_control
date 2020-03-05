@@ -7,8 +7,7 @@ from .open_compat import open_compat, read_compat
 
 from .deps.oscrypto import use_ctypes
 use_ctypes()
-
-from .deps.oscrypto import trust_list
+from .deps.oscrypto import trust_list  # noqa
 
 
 # Have somewhere to store the CA bundle, even when not running in Sublime Text
@@ -234,4 +233,4 @@ def ensure_ca_bundle_dir():
         except PermissionError:
             ca_bundle_dir = '/var/tmp/package_control'
             if not os.path.exists(ca_bundle_dir):
-                 os.mkdir(ca_bundle_dir)
+                os.mkdir(ca_bundle_dir)

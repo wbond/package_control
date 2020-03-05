@@ -161,7 +161,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                 return result
 
-            except (NonCleanExitError) as e:
+            except (NonCleanExitError):
 
                 try:
                     general, headers = self.parse_output(False)
@@ -327,18 +327,18 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         """
 
         # Skip date lines
-        if re.match('--\d{4}-\d{2}-\d{2}', line):
+        if re.match(r'--\d{4}-\d{2}-\d{2}', line):
             return True
-        if re.match('\d{4}-\d{2}-\d{2}', line):
+        if re.match(r'\d{4}-\d{2}-\d{2}', line):
             return True
         # Skip HTTP status code lines since we already have that info
-        if re.match('\d{3} ', line):
+        if re.match(r'\d{3} ', line):
             return True
         # Skip Saving to and progress lines
-        if re.match('(Saving to:|\s*\d+K)', line):
+        if re.match(r'(Saving to:|\s*\d+K)', line):
             return True
         # Skip notice about ignoring body on HTTP error
-        if re.match('Skipping \d+ byte', line):
+        if re.match(r'Skipping \d+ byte', line):
             return True
 
     def parse_headers(self, output):
@@ -369,7 +369,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             # a safe operation to perform
             line = line.lstrip()
             if line.find('HTTP/') == 0:
-                match = re.match('HTTP/(\d\.\d)\s+(\d+)(?:\s+(.*))?$', line)
+                match = re.match(r'HTTP/(\d\.\d)\s+(\d+)(?:\s+(.*))?$', line)
                 general['version'] = match.group(1)
                 general['status'] = int(match.group(2))
                 general['message'] = match.group(3) or ''

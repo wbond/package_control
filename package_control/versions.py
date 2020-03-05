@@ -38,20 +38,20 @@ def semver_compat(v):
     # minor and patch, and then the rest as a numeric build version
     # with four different parts. The result looks like:
     # 0.2012.11+10.31.23.59
-    date_match = re.match('(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
+    date_match = re.match(r'(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$', v)
     if date_match:
         v = '0.0.1+%s.%s.%s.%s.%s.%s' % date_match.groups()
 
     # This handles version that were valid pre-semver with 4+ dotted
     # groups, such as 1.6.9.0
-    four_plus_match = re.match('(\d+\.\d+\.\d+)[T\.](\d+(\.\d+)*)$', v)
+    four_plus_match = re.match(r'(\d+\.\d+\.\d+)[T\.](\d+(\.\d+)*)$', v)
     if four_plus_match:
         v = '%s+%s' % (four_plus_match.group(1), four_plus_match.group(2))
 
     # Semver must have major, minor, patch
-    elif re.match('^\d+$', v):
+    elif re.match(r'^\d+$', v):
         v += '.0.0'
-    elif re.match('^\d+\.\d+$', v):
+    elif re.match(r'^\d+\.\d+$', v):
         v += '.0'
     return v
 

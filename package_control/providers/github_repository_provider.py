@@ -36,7 +36,7 @@ class GitHubRepositoryProvider():
     def __init__(self, repo, settings):
         self.cache = {}
         # Clean off the trailing .git to be more forgiving
-        self.repo = re.sub('\.git$', '', repo)
+        self.repo = re.sub(r'\.git$', '', repo)
         self.settings = settings
         self.failed_sources = {}
 

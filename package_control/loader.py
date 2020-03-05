@@ -48,8 +48,6 @@ non_local = {
 }
 
 
-
-
 loader_package_name = u'0_package_control_loader'
 if sys.version_info < (3,):
     loader_package_path = path.join(sys_path.packages_path, loader_package_name)
@@ -438,7 +436,7 @@ def remove(name):
     if not swap_event.in_process():
         swap_event.start()
         sublime.set_timeout(_do_swap, 700)
-    
+
     loader_lock.release()
 
 

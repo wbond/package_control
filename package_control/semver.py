@@ -182,16 +182,16 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
                 Invalid semantic version or option 2 parameters unconvertable.
         """
         ver, clean, comps = None, False, None
-        kw, l = kwargs.copy(), len(args) + len(kwargs)
+        kw, length = kwargs.copy(), len(args) + len(kwargs)
 
         def inv():
             raise TypeError("Invalid parameter combination: args=%s; kwargs=%s" % (args, kwargs))
 
         # Do validation and parse the parameters
-        if l == 0 or l > 5:
-            raise TypeError("SemVer accepts at least 1 and at most 5 arguments (%d given)" % l)
+        if length == 0 or length > 5:
+            raise TypeError("SemVer accepts at least 1 and at most 5 arguments (%d given)" % length)
 
-        elif l < 3:
+        elif length < 3:
             if len(args) == 2:
                 ver, clean = args
             else:
@@ -796,7 +796,7 @@ class SemSel(tuple):
                     # If these result in exceptions, you know you're doing it wrong
                     t = tokens[i]
                     c = and_chunk[-1]
-                except:
+                except (Exception):
                     raise SelParseError("Invalid ' - ' range position")
 
                 # If there is an op in front of one of the bound versions

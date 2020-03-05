@@ -129,7 +129,7 @@ class GitHubClient(JSONApiClient):
             timestamp = commit_info[0]['commit']['committer']['date'][0:19].replace('T', ' ')
 
             if 'version' not in release:
-                release['version'] = re.sub('[\-: ]', '.', timestamp)
+                release['version'] = re.sub(r'[\-: ]', '.', timestamp)
             release['date'] = timestamp
 
             del release['commit']

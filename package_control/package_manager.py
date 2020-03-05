@@ -418,7 +418,7 @@ class PackageManager():
         updated_channels = []
         found_default = False
         for channel in channels:
-            if re.match('https?://([^.]+\.)*package-control.io', channel):
+            if re.match(r'https?://([^.]+\.)*package-control\.io', channel):
                 console_write('Removed malicious channel %s' % channel)
                 continue
             if channel in OLD_DEFAULT_CHANNELS:
@@ -562,7 +562,7 @@ class PackageManager():
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
         for repo in repositories[::-1]:
-            if re.match('https?://([^.]+\.)*package-control.io', repo):
+            if re.match(r'https?://([^.]+\.)*package-control\.io', repo):
                 console_write('Removed malicious repository %s' % repo)
                 continue
 
@@ -817,7 +817,7 @@ class PackageManager():
         if not os.path.exists(path):
             return output
         for filename in os.listdir(path):
-            if not re.search('\.sublime-package$', filename):
+            if not re.search(r'\.sublime-package$', filename):
                 continue
             output.add(filename.replace('.sublime-package', ''))
         return output
@@ -1310,7 +1310,7 @@ class PackageManager():
                     return False
 
                 if os.name == 'nt':
-                    regex = ':|\*|\?|"|<|>|\|'
+                    regex = r':|\*|\?|"|<|>|\|'
                     if re.search(regex, dest) is not None:
                         console_write(
                             u'''
@@ -1910,7 +1910,7 @@ class PackageManager():
         try:
             if os.path.exists(installed_package_path):
                 os.remove(installed_package_path)
-        except (OSError, IOError) as e:
+        except (OSError, IOError):
             cleanup_complete = False
 
         try:

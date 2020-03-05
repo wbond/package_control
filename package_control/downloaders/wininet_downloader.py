@@ -125,7 +125,6 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         422: "Unprocessable Entity",
         423: "Locked",
         424: "Failed Dependency",
-        424: "Method Failure",
         425: "Unordered Collection",
         426: "Upgrade Required",
         428: "Precondition Required",
@@ -856,14 +855,14 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         for line in output:
             line = line.lstrip()
             if line.find('HTTP/') == 0:
-                match = re.match('HTTP/(\d\.\d)\s+(\d+)\s+(.*)$', line)
+                match = re.match(r'HTTP/(\d\.\d)\s+(\d+)\s+(.*)$', line)
                 if match:
                     general['version'] = match.group(1)
                     general['status'] = int(match.group(2))
                     general['message'] = match.group(3)
                 # The user's proxy is sending bad HTTP headers :-(
                 else:
-                    match = re.match('HTTP/(\d\.\d)\s+(\d+)$', line)
+                    match = re.match(r'HTTP/(\d\.\d)\s+(\d+)$', line)
                     general['version'] = match.group(1)
                     general['status'] = int(match.group(2))
                     # Since the header didn't include the message, use our copy

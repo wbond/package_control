@@ -49,8 +49,8 @@ class ReadmeClient(JSONApiClient):
         # Try to grab the contents of a GitHub-based readme by grabbing the cached
         # content of the readme API call
         github_match = re.match(
-            'https://raw\.github(?:usercontent)?\.com/([^/]+/[^/]+)/([^/]+)/'
-            'readme(\.(md|mkd|mdown|markdown|textile|creole|rst|txt))?$',
+            r'https://raw\.github(?:usercontent)?\.com/([^/]+/[^/]+)/([^/]+)/'
+            r'readme(\.(md|mkd|mdown|markdown|textile|creole|rst|txt))?$',
             url,
             re.I
         )

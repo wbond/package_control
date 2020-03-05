@@ -8,7 +8,7 @@ try:
     str_cls = unicode  # noqa
     from cStringIO import StringIO as BytesIO
     package_control_dir = os.getcwd()
-except (ImportError) as e:
+except (ImportError):
     from urllib.parse import urlparse
     str_cls = str
     from io import BytesIO

@@ -21,11 +21,11 @@ if sys.version_info < (3,):
 if sys.version_info < (3,):
     from package_control.bootstrap import bootstrap_dependency, mark_bootstrapped
     from package_control.package_manager import PackageManager
-    from package_control import loader, text, sys_path
+    from package_control import loader, text
 else:
     from .package_control.bootstrap import bootstrap_dependency, mark_bootstrapped
     from .package_control.package_manager import PackageManager
-    from .package_control import loader, text, sys_path
+    from .package_control import loader, text
 
 
 def plugin_loaded():
@@ -188,6 +188,7 @@ def _background_bootstrap(settings):
 
     else:
         sublime.set_timeout(mark_bootstrapped, 10)
+
 
 # ST2 compat
 if sys.version_info < (3,):

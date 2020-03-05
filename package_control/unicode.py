@@ -52,7 +52,7 @@ def unicode_from_os(e):
         for encoding in _fallback_encodings:
             try:
                 return str_cls(e, encoding, errors='strict')
-            except:
+            except (Exception):
                 pass
     return str_cls(e, errors='replace')
 

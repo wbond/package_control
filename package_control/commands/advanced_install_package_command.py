@@ -47,7 +47,7 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
     def split(self, packages):
         if isinstance(packages, bytes_cls):
             packages = packages.decode('utf-8')
-        return re.split(u'\s*,\s*', packages)
+        return re.split(r'\s*,\s*', packages)
 
     def on_done(self, input):
         """

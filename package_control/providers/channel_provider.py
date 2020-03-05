@@ -221,7 +221,7 @@ class ChannelProvider():
         output = []
         repositories = self.channel_info.get('repositories', [])
         for repository in repositories:
-            if re.match('^\./|\.\./', repository):
+            if re.match(r'^\./|\.\./', repository):
                 if is_http:
                     repository = urljoin(self.channel, repository)
                 else:

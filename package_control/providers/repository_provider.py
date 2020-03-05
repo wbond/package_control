@@ -141,7 +141,7 @@ class RepositoryProvider():
         includes = self.repo_info.get('includes', [])
         del self.repo_info['includes']
         for include in includes:
-            if re.match('^\./|\.\./', include):
+            if re.match(r'^\./|\.\./', include):
                 if is_http:
                     include = urljoin(self.repo, include)
                 else:

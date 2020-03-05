@@ -9,6 +9,24 @@ import os
 import hashlib
 import socket
 
+from ..console_write import console_write
+from ..unicode import unicode_from_os
+from ..open_compat import open_compat, read_compat
+from .downloader_exception import DownloaderException
+from .oscrypto_downloader_exception import OscryptoDownloaderException
+from ..ca_certs import get_user_ca_bundle_path
+from .decoding_downloader import DecodingDownloader
+from .limiting_downloader import LimitingDownloader
+from .caching_downloader import CachingDownloader
+from .. import text
+
+from ..deps.asn1crypto.util import OrderedDict
+from ..deps.asn1crypto import pem, x509
+from ..deps.oscrypto import use_ctypes
+use_ctypes()
+from ..deps.oscrypto import tls  # noqa
+from ..deps.oscrypto import errors as oscrypto_errors  # noqa
+
 if sys.version_info < (3,):
     from urlparse import urlparse
 
@@ -20,25 +38,6 @@ else:
     from urllib.request import parse_keqv_list, parse_http_list
     str_cls = str
     int_types = int
-
-from ..deps.oscrypto import use_ctypes
-use_ctypes()
-
-from ..deps.oscrypto import tls
-from ..deps.oscrypto import errors as oscrypto_errors
-from ..deps.asn1crypto.util import OrderedDict
-from ..deps.asn1crypto import pem, x509
-
-from ..console_write import console_write
-from ..unicode import unicode_from_os
-from ..open_compat import open_compat, read_compat
-from .downloader_exception import DownloaderException
-from .oscrypto_downloader_exception import OscryptoDownloaderException
-from ..ca_certs import get_ca_bundle_path, get_user_ca_bundle_path
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
-from .caching_downloader import CachingDownloader
-from .. import text
 
 
 class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
@@ -208,7 +207,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     (error_message, str_cls(e), url)
                 )
 
-            except (oscrypto_errors.TLSDisconnectError) as e:
+            except (oscrypto_errors.TLSDisconnectError):
                 error_string = text.format(
                     '''
                     %s TLS was gracefully closed while downloading %s, trying again.
@@ -598,7 +597,9 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     cert.subject.human_friendly,
                     cert.serial_number,
                     cert.issuer.human_friendly,
-                    cert['tbs_certificate']['validity']['not_after'].chosen.native.strftime('%Y-%m-%d %H:%M:%S %z').strip(),
+                    cert['tbs_certificate']['validity']['not_after'].chosen.native.strftime(
+                        '%Y-%m-%d %H:%M:%S %z'
+                    ).strip(),
                     ', '.join(cert.valid_domains),
                     public_key_algo,
                     signature_algo,
@@ -622,8 +623,6 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
         if not response:
             raise OscryptoDownloaderException('Unable to parse response headers')
         version, code, message, resp_headers = response
-
-        content_length = self.parse_content_length(resp_headers)
 
         close = False
         for header in ('connection', 'proxy-connection'):
