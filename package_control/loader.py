@@ -31,10 +31,10 @@ class SwapEvent():
         return not self._ev.is_set()
 
     def start(self):
-        self._ev.set()
+        self._ev.clear()
 
     def end(self):
-        self._ev.clear()
+        self._ev.set()
 
     def wait(self):
         self._ev.wait()
