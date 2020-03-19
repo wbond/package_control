@@ -96,7 +96,7 @@ try:
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
         try:
-            os.path.exists(unpacked_package_path("fran\u00e7ais"))
+            os.path.exists(unpacked_package_path("fran\u2013ais"))
         except UnicodeEncodeError:
             message = text.format(
                 '''

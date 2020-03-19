@@ -28,10 +28,10 @@ class SwapEvent():
         return not self._ev.is_set()
 
     def start(self):
-        self._ev.set()
+        self._ev.clear()
 
     def end(self):
-        self._ev.clear()
+        self._ev.set()
 
     def wait(self):
         self._ev.wait()
@@ -379,21 +379,36 @@ def remove(name):
     # hitting a race condition where files are overwritten and rename operations
     # fail because the source file doesn't exist.
     if not swap_event.in_process():
-        def do_swap():
-            loader_lock.acquire()
-
-            os.remove(loader_package_path)
-            os.rename(new_loader_package_path, loader_package_path)
-
-            def do_reenable():
-                disabler.reenable_package(loader_package_name, 'loader')
-                swap_event.end()
-                loader_lock.release()
-            sublime.set_timeout(do_reenable, 10)
-
-        sublime.set_timeout(do_swap, 700)
         swap_event.start()
+        sublime.set_timeout(_do_swap, 700)
 
+    loader_lock.release()
+
+
+def _do_swap():
+    """
+    Swap the loader package with the new version
+    """
+
+    if not loader_lock.acquire(blocking=False):
+        sublime.set_timeout(_do_swap, 500)
+        return
+
+    if os.path.exists(loader_package_path) and os.path.exists(new_loader_package_path):
+        os.remove(loader_package_path)
+        os.rename(new_loader_package_path, loader_package_path)
+
+    sublime.set_timeout(_do_reenable, 10)
+
+
+def _do_reenable():
+    """
+    Re-enable the loader package after a swap has been done
+    """
+
+    disabler = PackageDisabler()
+    disabler.reenable_package(loader_package_name, 'loader')
+    swap_event.end()
     loader_lock.release()
 
 

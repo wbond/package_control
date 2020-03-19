@@ -414,7 +414,7 @@ class PackageManager():
         updated_channels = []
         found_default = False
         for channel in channels:
-            if re.match(r'https?://([^.]+\.)*package-control.io', channel):
+            if re.match(r'https?://([^.]+\.)*package-control\.io', channel):
                 console_write('Removed malicious channel %s' % channel)
                 continue
             if channel in OLD_DEFAULT_CHANNELS:
@@ -558,7 +558,7 @@ class PackageManager():
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
         for repo in repositories[::-1]:
-            if re.match(r'https?://([^.]+\.)*package-control.io', repo):
+            if re.match(r'https?://([^.]+\.)*package-control\.io', repo):
                 console_write('Removed malicious repository %s' % repo)
                 continue
 

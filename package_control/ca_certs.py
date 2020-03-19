@@ -6,8 +6,7 @@ from .console_write import console_write
 
 from .deps.oscrypto import use_ctypes
 use_ctypes()
-
-from .deps.oscrypto import trust_list
+from .deps.oscrypto import trust_list  # noqa
 
 # Have somewhere to store the CA bundle, even when not running in Sublime Text
 try:

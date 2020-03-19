@@ -151,7 +151,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                 return result
 
-            except (NonCleanExitError) as e:
+            except (NonCleanExitError):
 
                 try:
                     general, headers = self.parse_output(False)
@@ -325,7 +325,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         if re.match(r'\d{3} ', line):
             return True
         # Skip Saving to and progress lines
-        if re.match(r'(?:Saving to:|\s*\d+K)', line):
+        if re.match(r'(Saving to:|\s*\d+K)', line):
             return True
         # Skip notice about ignoring body on HTTP error
         if re.match(r'Skipping \d+ byte', line):

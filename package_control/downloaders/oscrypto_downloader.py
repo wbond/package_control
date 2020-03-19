@@ -198,7 +198,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     (error_message, str(e), url)
                 )
 
-            except (oscrypto_errors.TLSDisconnectError) as e:
+            except (oscrypto_errors.TLSDisconnectError):
                 error_string = text.format(
                     '''
                     %s TLS was gracefully closed while downloading %s, trying again.
@@ -588,7 +588,9 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                     cert.subject.human_friendly,
                     cert.serial_number,
                     cert.issuer.human_friendly,
-                    cert['tbs_certificate']['validity']['not_after'].chosen.native.strftime('%Y-%m-%d %H:%M:%S %z').strip(),
+                    cert['tbs_certificate']['validity']['not_after'].chosen.native.strftime(
+                        '%Y-%m-%d %H:%M:%S %z'
+                    ).strip(),
                     ', '.join(cert.valid_domains),
                     public_key_algo,
                     signature_algo,
@@ -612,8 +614,6 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
         if not response:
             raise OscryptoDownloaderException('Unable to parse response headers')
         version, code, message, resp_headers = response
-
-        content_length = self.parse_content_length(resp_headers)
 
         close = False
         for header in ('connection', 'proxy-connection'):
