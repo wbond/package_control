@@ -179,6 +179,8 @@ class PackageCleanup(threading.Thread):
             reinstall = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall):
                 metadata_path = os.path.join(package_dir, 'package-metadata.json')
+                # No need to handle symlinks here as that was already handled in earlier step
+                # that has attempted to re-install the package initially.
                 if not clear_directory(package_dir, [metadata_path]):
                     if not os.path.exists(reinstall):
                         open_compat(reinstall, 'w').close()
