@@ -16,7 +16,7 @@ except (ImportError):
 
 import sublime
 
-from .clear_directory import clear_directory, is_directory_symlink
+from .clear_directory import clear_directory, delete_directory, is_directory_symlink
 from .download_manager import downloader
 from .downloaders.downloader_exception import DownloaderException
 from .console_write import console_write
@@ -137,7 +137,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         return
 
     if is_directory_symlink(package_dir):
-        os.unlink(package_dir)
+        delete_directory(package_dir)
 
     if not path.exists(package_dir):
         os.makedirs(package_dir, 0o755)

@@ -1246,7 +1246,7 @@ class PackageManager():
             if os.path.exists(unpacked_metadata_file) and not unpack:
                 self.backup_package_dir(package_name)
                 if is_directory_symlink(unpacked_package_dir):
-                    os.unlink(unpacked_package_dir)
+                    delete_directory(unpacked_package_dir)
                 elif not clear_directory(unpacked_package_dir):
                     # If deleting failed, queue the package to upgrade upon next start
                     # where it will be disabled
