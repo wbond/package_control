@@ -1967,10 +1967,7 @@ class PackageManager():
             sublime.set_timeout(save_names, 1)
 
         if os.path.exists(package_dir) and can_delete_dir:
-            if is_directory_symlink(package_dir):
-                os.unlink(package_dir)
-            else:
-                delete_directory(package_dir)
+            delete_directory(package_dir)
 
         if is_dependency:
             loader.remove(package_name)

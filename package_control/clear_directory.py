@@ -143,7 +143,10 @@ def delete_directory(path):
 
     if is_directory_symlink(path):
         try:
-            os.unlink(path)
+            if sys.platform == 'win32':
+                os.rmdir(path)
+            else:
+                os.unlink(path)
             return True
         except OSError:
             # Fall back to non-symlink handling
