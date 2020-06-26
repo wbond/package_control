@@ -20,7 +20,7 @@ version = platform.mac_ver()[0]
 version_info = tuple(map(int, version.split('.')))
 
 if version_info >= (10, 16):
-    core_foundation_path =  "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation"
+    core_foundation_path =  "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
 else:
     core_foundation_path = find_library('CoreFoundation')
     if not core_foundation_path:

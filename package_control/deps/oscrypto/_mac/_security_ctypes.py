@@ -24,7 +24,7 @@ if version_info < (10, 7):
     raise OSError('Only OS X 10.7 and newer are supported, not %s.%s' % (version_info[0], version_info[1]))
 
 if version_info >= (10, 16):
-    security_path = "/System/Library/Frameworks/Security.framework/Versions/A/Security"
+    security_path = "/System/Library/Frameworks/Security.framework/Security"
 else:
     security_path = find_library('Security')
     if not security_path:
