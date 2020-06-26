@@ -23,9 +23,12 @@ version_info = tuple(map(int, version.split('.')))
 if version_info < (10, 7):
     raise OSError('Only OS X 10.7 and newer are supported, not %s.%s' % (version_info[0], version_info[1]))
 
-security_path = find_library('Security')
-if not security_path:
-    raise LibraryNotFoundError('The library Security could not be found')
+if version_info >= (10, 16):
+    security_path = "/System/Library/Frameworks/Security.framework/Versions/A/Security"
+else:
+    security_path = find_library('Security')
+    if not security_path:
+        raise LibraryNotFoundError('The library Security could not be found')
 
 Security = CDLL(security_path, use_errno=True)
 

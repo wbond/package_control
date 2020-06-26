@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
+import platform
 from ctypes.util import find_library
 from ctypes import c_void_p, c_long, c_uint32, c_char_p, c_byte, c_ulong, c_bool
 from ctypes import CDLL, string_at, cast, POINTER, byref
@@ -15,10 +16,15 @@ __all__ = [
     'CoreFoundation',
 ]
 
+version = platform.mac_ver()[0]
+version_info = tuple(map(int, version.split('.')))
 
-core_foundation_path = find_library('CoreFoundation')
-if not core_foundation_path:
-    raise LibraryNotFoundError('The library CoreFoundation could not be found')
+if version_info >= (10, 16):
+    core_foundation_path =  "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation"
+else:
+    core_foundation_path = find_library('CoreFoundation')
+    if not core_foundation_path:
+        raise LibraryNotFoundError('The library CoreFoundation could not be found')
 
 CoreFoundation = CDLL(core_foundation_path, use_errno=True)
 
