@@ -2,12 +2,10 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import platform
-from ctypes.util import find_library
 from ctypes import c_void_p, c_int32, c_char_p, c_size_t, c_byte, c_int, c_uint32, c_uint64, c_ulong, c_long, c_bool
 from ctypes import CDLL, POINTER, CFUNCTYPE, Structure
 
 from .._ffi import FFIEngineError
-from ..errors import LibraryNotFoundError
 
 
 __all__ = [
@@ -18,14 +16,12 @@ __all__ = [
 
 
 version = platform.mac_ver()[0]
-version_info = tuple(map(int, version.split('.')))
+version_info = tuple(map(int,  platform.mac_ver()[0].split('.')))
 
 if version_info < (10, 7):
     raise OSError('Only OS X 10.7 and newer are supported, not %s.%s' % (version_info[0], version_info[1]))
 
-security_path = find_library('Security')
-if not security_path:
-    raise LibraryNotFoundError('The library Security could not be found')
+security_path = '/System/Library/Frameworks/Security.framework/Security'
 
 Security = CDLL(security_path, use_errno=True)
 
