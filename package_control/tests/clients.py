@@ -164,15 +164,14 @@ class GitlabClientTests(unittest.TestCase):
         self.assertEqual(
             {
                 'name': 'package_control-tester',
-                'description':
-                'A test of Package Control upgrade messages with '
-                'explicit versions, but date-based releases.',
-                'homepage':
-                'https://gitlab.com/packagecontrol-test/package_control-tester',
-                'author': 'packagecontrol-test',
+                'description': 'A test of Package Control upgrade messages with'
+                ' explicit versions, but date-based releases.',
+                'homepage': 'https://gitlab.com/packagecontrol-test/'
+                'package_control-tester',
                 'readme': 'https://gitlab.com/packagecontrol-test/'
-                'package_control-tester/-/raw/master/readme.md',
-                'issues': 'https://gitlab.com/api/v4/projects/19972046/issues',
+                'package_control-tester/-/package_control-tester/readme.md',
+                'author': 'packagecontrol-test',
+                'issues': None,
                 'donate': None
             },
             client.repo_info(
@@ -181,23 +180,16 @@ class GitlabClientTests(unittest.TestCase):
 
     def test_gitlab_client_user_info(self):
         client = GitlabClient(self.gitlab_settings())
-
-        self.assertEqual(
-            [{
+        self.assertEqual([{
                 'name': 'package_control-tester',
-                'description':
-                'A test of Package Control upgrade messages with '
-                'explicit versions, but date-based releases.',
-                'homepage':
-                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                'description': 'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
+                'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
+                'readme': 'https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md',
                 'author': 'packagecontrol-test',
-                'readme': 'https://gitlab.com/packagecontrol-test/'
-                'package_control-tester/-/raw/master/readme.md',
-                'issues': 'https://gitlab.com/api/v4/projects/19972046/issues',
+                'issues': None,
                 'donate': None
-            }],
-            client.user_info(
-                'https://gitlab.com/packagecontrol-test/package_control-tester'
+            }], client.user_info(
+                'https://gitlab.com/packagecontrol-test'
             ))
 
     def test_gitlab_readme(self):
@@ -213,7 +205,8 @@ class GitlabClientTests(unittest.TestCase):
                 'markdown'
             },
             client.readme_info(
-                'https://gitlab.com/packagecontrol-test/package_control-tester/-/blob/master/readme.md'
+                'https://gitlab.com/packagecontrol-test/package_control-tester'
+                '/-/raw/master/readme.md'
             ))
 
     def test_gitlab_client_branch_downloads(self):
@@ -221,12 +214,12 @@ class GitlabClientTests(unittest.TestCase):
         self.assertEqual(
             [{
                 'date':
-                LAST_COMMIT_TIMESTAMP,
+                '2020-07-15 10:50:38',
                 'version':
-                LAST_COMMIT_VERSION,
+                '2020.07.15.10.50.38',
                 'url':
                 'https://gitlab.com/packagecontrol-test/package_control-tester'
-                '/-/archive/1.0.1/package_control-tester-1.0.1.zip'
+                '/-/archive/master/package_control-tester-master.zip'
             }],
             client.download_info(
                 'https://gitlab.com/packagecontrol-test/package_control-tester'
@@ -248,20 +241,21 @@ class GitlabClientTests(unittest.TestCase):
                 'https://gitlab.com/packagecontrol-test/package_control-tester/-/tags'
             ))
 
-    # def test_gitlab_client_tags_prefix_downloads(self):
-    #     client = GitlabClient(self.gitlab_settings())
-    #     self.assertEqual(
-    #         [{
-    #             'date':
-    #             '2014-11-28 20:54:15',
-    #             'version':
-    #             '1.0.2',
-    #             'url':
-    #             'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/win-1.0.2'
-    #         }],
-    #         client.download_info(
-    #             'https://github.com/packagecontrol-test/package_control-tester/tags',
-    #             'win-'))
+    def test_gitlab_client_tags_prefix_downloads(self):
+        client = GitlabClient(self.gitlab_settings())
+        self.assertEqual(
+            [{
+                'date':
+                '2020-07-15 10:50:38',
+                'version':
+                '1.0.1',
+                'url':
+                'https://gitlab.com/packagecontrol-test/package_control-tester/'
+                '-/archive/win-1.0.1/package_control-tester-win-1.0.1.zip'
+            }],
+            client.download_info(
+                'https://gitlab.com/packagecontrol-test/package_control-tester/-/tags',
+                'win-'))
 
 
 class BitBucketClientTests(unittest.TestCase):
