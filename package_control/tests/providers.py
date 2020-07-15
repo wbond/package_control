@@ -4,6 +4,7 @@ from ..providers.repository_provider import RepositoryProvider
 from ..providers.channel_provider import ChannelProvider
 from ..providers.github_repository_provider import GitHubRepositoryProvider
 from ..providers.github_user_provider import GitHubUserProvider
+from ..providers.gitlab_user_provider import GitlabUserProvider
 from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
 from ..http_cache import HttpCache
 
@@ -206,6 +207,86 @@ class GitHubUserProviderTests(unittest.TestCase):
         provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
         self.assertEqual(list(), list(provider.get_broken_dependencies()))
 
+class GitlabUserProviderTests(unittest.TestCase):
+    maxDiff = None
+
+    def gitlab_settings(self):
+        return {
+            'debug': True,
+            'cache': HttpCache(604800),
+        }
+
+    def test_match_url(self):
+        self.assertEqual(
+            True,
+            GitlabUserProvider.match_url('https://gitlab.com/packagecontrol-test')
+        )
+        self.assertEqual(
+            False,
+            GitHubUserProvider.match_url(
+                'https://github.com/packagecontrol-test/package_control-tester/tree/master'
+            )
+        )
+        self.assertEqual(
+            False,
+            GitHubUserProvider.match_url('https://bitbucket.org/packagecontrol')
+        )
+
+    def test_get_packages(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        packages = [package for package in provider.get_packages()]
+        self.assertEqual(
+            [(
+                'package_control-tester',
+                {
+                    'name': 'package_control-tester',
+                    'description': 'A test of Package Control upgrade messages with '
+                                   'explicit versions, but date-based releases.',
+                    'homepage': 'https://github.com/packagecontrol-test/package_control-tester',
+                    'author': 'packagecontrol-test',
+                    'readme': 'https://raw.githubusercontent.com/packagecontrol-test'
+                              '/package_control-tester/master/readme.md',
+                    'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
+                    'donate': None,
+                    'buy': None,
+                    'sources': ['https://github.com/packagecontrol-test'],
+                    'labels': [],
+                    'previous_names': [],
+                    'releases': [
+                        {
+                            'date': LAST_COMMIT_TIMESTAMP,
+                            'version': LAST_COMMIT_VERSION,
+                            'url': 'https://codeload.github.com/packagecontrol-test'
+                                   '/package_control-tester/zip/master',
+                            'sublime_text': '*',
+                            'platforms': ['*']
+                        }
+                    ],
+                    'last_modified': LAST_COMMIT_TIMESTAMP
+                }
+            )],
+            packages
+        )
+
+    def test_get_sources(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        self.assertEqual(['https://github.com/packagecontrol-test'], provider.get_sources())
+
+    def test_get_renamed_packages(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        self.assertEqual({}, provider.get_renamed_packages())
+
+    def test_get_broken_packages(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        self.assertEqual(list(), list(provider.get_broken_packages()))
+
+    def test_get_dependencies(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        self.assertEqual(list(), list(provider.get_dependencies()))
+
+    def test_get_broken_dependencies(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        self.assertEqual(list(), list(provider.get_broken_dependencies()))
 
 class BitBucketRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
