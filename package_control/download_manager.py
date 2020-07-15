@@ -29,6 +29,7 @@ from .downloaders.downloader_exception import DownloaderException
 from .downloaders.win_downloader_exception import WinDownloaderException
 from .downloaders.oscrypto_downloader_exception import OscryptoDownloaderException
 from .http_cache import HttpCache
+from .settings import pc_settings_filename
 
 
 # A dict of domains - each points to a list of downloaders
@@ -46,6 +47,8 @@ _timer = None
 
 @contextmanager
 def downloader(url, settings):
+    pc_settings = sublime.load_settings(pc_settings_filename())
+    settings['user_agent'] = pc_settings.get('user_agent', 'Package Control Unversioned')
     try:
         manager = None
         manager = _grab(url, settings)
