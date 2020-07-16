@@ -15,7 +15,7 @@ class GitlabRepositoryProvider():
     :param repo:
         The public web URL to the Gitlab repository. Should be in the format
         `https://gitlab.com/user/package` for the master branch, or
-        `https://gitlab.com/user/package/tree/{branch_name}` for any other
+        `https://gitlab.com/user/package/-/tree/{branch_name}` for any other
         branch.
 
     :param settings:
@@ -43,7 +43,7 @@ class GitlabRepositoryProvider():
         """Indicates if this provider can handle the provided repo"""
 
         master = re.search('^https?://gitlab.com/[^/]+/[^/]+/?$', repo)
-        branch = re.search('^https?://gitlab.com/[^/]+/[^/]+/tree/[^/]+/?$',
+        branch = re.search('^https?://gitlab.com/[^/]+/[^/]+/-/tree/[^/]+/?$',
                            repo)
         return master is not None or branch is not None
 

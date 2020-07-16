@@ -28,7 +28,6 @@ class GitlabUserProvider:
           `proxy_password`,
           `query_string_params`
     """
-
     def __init__(self, repo, settings):
         self.cache = {}
         self.repo = repo
@@ -79,13 +78,13 @@ class GitlabUserProvider:
         return {}.items()
 
     def get_dependencies(self, ):
-        'For API-compatibility with RepositoryProvider"
+        '''For API-compatibility with RepositoryProvider'''
 
         return {}.items()
 
     def get_packages(self, invalid_sources=None):
         """
-        Uses the GitHub API to construct necessary info for all packages
+        Uses the lab API to construct necessary info for all packages
 
         :param invalid_sources:
             A list of URLs that should be ignored
@@ -151,26 +150,24 @@ class GitlabUserProvider:
 
                 releases = []
                 for download in client.download_info(repo_url):
-                    print(download)
-                    download['sublime_text'] = '*"
+                    download['sublime_text'] = '*'
                     download['platforms'] = ['*']
                     releases.append(download)
 
                 details = {
                     'name': name,
                     'description': repo_info['description'],
-                    'homepage': repo_info['web_url'],
-                    'author': repo_info['owner']['username'] if repo_info.get('owner') else repo_info['namespace']['name'],
-                    'last_modified': releases[0].get('last_activity_at'),
-                    'releases':  releases,
+                    'homepage': repo_info['homepage'],
+                    'author': repo_info['author'],
+                    'last_modified': releases[0].get('date'),
+                    'releases': releases,
                     'previous_names': [],
                     'labels': [],
                     'sources': [self.repo],
-                    'readme': repo_info['readme_url'],
-                    'issues': repo_info.get('issues', None) if repo_info.get('_links') else None,
-                    'donate': repo_info.get('donate', None),
-                    'buy':
-                    None,
+                    'readme': repo_info['readme'],
+                    'issues': repo_info['issues'],
+                    'donate': repo_info['donate'],
+                    'buy': None,
                 }
                 output[name] = details
                 yield (name, details)
@@ -192,6 +189,6 @@ class GitlabUserProvider:
         return [self.repo]
 
     def get_renamed_packages(self):
-        ""'For API-compatibility with RepositoryProvider"""
+        ''''For API-compatibility with RepositoryProvider'''
 
         return {}

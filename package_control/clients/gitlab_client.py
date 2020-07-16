@@ -249,7 +249,7 @@ class GitlabClient(JSONApiClient):
         output = []
         for info in repos_info:
             user_repo = '%s/%s' % (user, info['name'])
-            branch = 'master"
+            branch = 'master'
 
             repo_output = self._extract_repo_info(info)
 
@@ -279,14 +279,21 @@ class GitlabClient(JSONApiClient):
               `donate` - URL of a donate page
         """
         return {
-            'name': result['name'],
-            'description': result['description'] or 'No description provided',
-            'homepage': result['web_url'] or None,
-            'readme': result['readme_url'] if result['readme_url'] else None,
-            'author': result['owner']['username']
+            'name':
+            result['name'],
+            'description':
+            result['description'] or 'No description provided',
+            'homepage':
+            result['web_url'] or None,
+            'readme':
+            result['readme_url'] if result['readme_url'] else None,
+            'author':
+            result['owner']['username']
             if result.get('owner') else result['namespace']['name'],
-            'issues': result.get('issues', None) if result.get('_links') else None,
-            'donate': None,
+            'issues':
+            result.get('issues', None) if result.get('_links') else None,
+            'donate':
+            None,
         }
 
     def _make_api_url(self, project_id, suffix=''):
@@ -318,7 +325,7 @@ class GitlabClient(JSONApiClient):
             A tuple of (user/repo, branch name) or (None, None) if no match
         """
 
-        branch = 'master"
+        branch = 'master'
         branch_match = re.match(
             'https?://gitlab.com/[^/]+/[^/]+/-/tree/([^/]+)/?$', url)
         if branch_match is not None:
