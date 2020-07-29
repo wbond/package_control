@@ -1,19 +1,19 @@
 import re
 
-from ..clients.gitlab_client import GitlabClient
+from ..clients.gitlab_client import GitLabClient
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from .provider_exception import ProviderException
 
 
-class GitlabRepositoryProvider():
+class GitLabRepositoryProvider():
     """
-    Allows using a public Gitlab repository as the source for a single package.
+    Allows using a public GitLab repository as the source for a single package.
     For legacy purposes, this can also be treated as the source for a Package
     Control "repository".
 
     :param repo:
-        The public web URL to the Gitlab repository. Should be in the format
+        The public web URL to the GitLab repository. Should be in the format
         `https://gitlab.com/user/package` for the master branch, or
         `https://gitlab.com/user/package/-/tree/{branch_name}` for any other
         branch.
@@ -89,7 +89,7 @@ class GitlabRepositoryProvider():
 
     def get_packages(self, invalid_sources=None):
         """
-        Uses the Gitlab API to construct necessary info for a package
+        Uses the GitLab API to construct necessary info for a package
 
         :param invalid_sources:
             A list of URLs that should be ignored
@@ -134,7 +134,7 @@ class GitlabRepositoryProvider():
                 yield (key, value)
             return
 
-        client = GitlabClient(self.settings)
+        client = GitLabClient(self.settings)
 
         if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()

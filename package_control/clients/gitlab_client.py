@@ -16,17 +16,17 @@ except (ImportError):
     str_cls = unicode  # noqa
 
 
-class GitlabClient(JSONApiClient):
+class GitLabClient(JSONApiClient):
     def make_tags_url(self, repo):
         """
-        Generate the tags URL for a Gitlab repo if the value passed is a Gitlab
+        Generate the tags URL for a GitLab repo if the value passed is a GitLab
         repository URL
 
         :param repo:
             The repository URL
 
         :return:
-            The tags URL if repo was a Gitlab repo, otherwise False
+            The tags URL if repo was a GitLab repo, otherwise False
         """
 
         match = re.match('https?://gitlab.com/([^/]+/[^/]+)/?$', repo)
@@ -37,7 +37,7 @@ class GitlabClient(JSONApiClient):
 
     def make_branch_url(self, repo, branch):
         """
-        Generate the branch URL for a Gitlab repo if the value passed is a Gitlab
+        Generate the branch URL for a GitLab repo if the value passed is a GitLab
         repository URL
 
         :param repo:
@@ -47,7 +47,7 @@ class GitlabClient(JSONApiClient):
             The branch name
 
         :return:
-            The branch URL if repo was a Gitlab repo, otherwise False
+            The branch URL if repo was a GitLab repo, otherwise False
         """
 
         match = re.match('https?://gitlab.com/([^/]+/[^/]+)/?$', repo)
@@ -267,7 +267,7 @@ class GitlabClient(JSONApiClient):
         Extracts information about a repository from the API result
 
         :param result:
-            A dict representing the data returned from the Gitlab API
+            A dict representing the data returned from the GitLab API
 
         :return:
             A dict with the following keys:
@@ -298,7 +298,7 @@ class GitlabClient(JSONApiClient):
 
     def _make_api_url(self, project_id, suffix=''):
         """
-        Generate a URL for the Gitlab API
+        Generate a URL for the GitLab API
 
         :param user_repo:
             The user/repo of the repository

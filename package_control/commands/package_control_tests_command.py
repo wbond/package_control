@@ -8,8 +8,8 @@ from ..tests.providers import (
     ChannelProviderTests,
     GitHubRepositoryProviderTests,
     GitHubUserProviderTests,
-    GitlabRepositoryProviderTests,
-    GitlabUserProviderTests,
+    GitLabRepositoryProviderTests,
+    GitLabUserProviderTests,
     RepositoryProviderTests,
 )
 
@@ -22,8 +22,8 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
         runner(self.window, [
             GitHubClientTests, BitBucketClientTests,
             GitHubRepositoryProviderTests, BitBucketRepositoryProviderTests,
-            GitHubUserProviderTests, GitlabRepositoryProviderTests,
-            GitlabUserProviderTests, RepositoryProviderTests,
+            GitHubUserProviderTests, GitLabRepositoryProviderTests,
+            GitLabUserProviderTests, RepositoryProviderTests,
             ChannelProviderTests
         ])
 

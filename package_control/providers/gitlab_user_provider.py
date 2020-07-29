@@ -1,14 +1,14 @@
 import re
 
 from ..clients.client_exception import ClientException
-from ..clients.gitlab_client import GitlabClient
+from ..clients.gitlab_client import GitLabClient
 from ..downloaders.downloader_exception import DownloaderException
 from .provider_exception import ProviderException
 
 
-class GitlabUserProvider:
+class GitLabUserProvider:
     """
-    Allows using a Gitlab user/organization as the source for multiple packages,
+    Allows using a GitLab user/organization as the source for multiple packages,
     or in Package Control terminology, a 'repository'.
 
     :param repo:
@@ -129,7 +129,7 @@ class GitlabUserProvider:
                 yield (key, value)
             return
 
-        client = GitlabClient(self.settings)
+        client = GitLabClient(self.settings)
 
         if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()

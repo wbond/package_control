@@ -2,7 +2,7 @@ import unittest
 
 from ..clients.readme_client import ReadmeClient
 from ..clients.github_client import GitHubClient
-from ..clients.gitlab_client import GitlabClient
+from ..clients.gitlab_client import GitLabClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..http_cache import HttpCache
 
@@ -150,7 +150,7 @@ class GitHubClientTests(unittest.TestCase):
                 'win-'))
 
 
-class GitlabClientTests(unittest.TestCase):
+class GitLabClientTests(unittest.TestCase):
     maxDiff = None
 
     def gitlab_settings(self):
@@ -160,7 +160,7 @@ class GitlabClientTests(unittest.TestCase):
         }
 
     def test_gitlab_client_repo_info(self):
-        client = GitlabClient(self.gitlab_settings())
+        client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             {
                 'name': 'package_control-tester',
@@ -179,7 +179,7 @@ class GitlabClientTests(unittest.TestCase):
             ))
 
     def test_gitlab_client_user_info(self):
-        client = GitlabClient(self.gitlab_settings())
+        client = GitLabClient(self.gitlab_settings())
         self.assertEqual([{
                 'name': 'package_control-tester',
                 'description': 'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
@@ -210,7 +210,7 @@ class GitlabClientTests(unittest.TestCase):
             ))
 
     def test_gitlab_client_branch_downloads(self):
-        client = GitlabClient(self.gitlab_settings())
+        client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             [{
                 'date':
@@ -226,7 +226,7 @@ class GitlabClientTests(unittest.TestCase):
             ))
 
     def test_gitlab_client_tags_downloads(self):
-        client = GitlabClient(self.gitlab_settings())
+        client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             [{
                 'date':
@@ -242,7 +242,7 @@ class GitlabClientTests(unittest.TestCase):
             ))
 
     def test_gitlab_client_tags_prefix_downloads(self):
-        client = GitlabClient(self.gitlab_settings())
+        client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             [{
                 'date':
