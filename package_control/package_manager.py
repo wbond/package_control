@@ -28,7 +28,7 @@ from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .file_not_found_error import FileNotFoundError
 from .unicode import unicode_from_os
-from .clear_directory import clear_directory, delete_directory, is_directory_symlink
+from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
@@ -1246,7 +1246,7 @@ class PackageManager():
             if os.path.exists(unpacked_metadata_file) and not unpack:
                 self.backup_package_dir(package_name)
                 if is_directory_symlink(unpacked_package_dir):
-                    delete_directory(unpacked_package_dir)
+                    unlink_or_delete_directory(unpacked_package_dir)
                 elif not clear_directory(unpacked_package_dir):
                     # If deleting failed, queue the package to upgrade upon next start
                     # where it will be disabled
@@ -1267,7 +1267,7 @@ class PackageManager():
                     )
                     return None
                 else:
-                    delete_directory(unpacked_package_dir)
+                    unlink_or_delete_directory(unpacked_package_dir)
 
             # If we determined it should be unpacked, we extract directly
             # into the Packages/{package_name}/ folder
@@ -1539,7 +1539,7 @@ class PackageManager():
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
+            sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
 
     def install_dependencies(self, dependencies, fail_early=True):
         """
@@ -1714,7 +1714,7 @@ class PackageManager():
             )
             try:
                 if os.path.exists(package_backup_dir):
-                    delete_directory(package_backup_dir)
+                    unlink_or_delete_directory(package_backup_dir)
             except (UnboundLocalError):
                 pass  # Exeption occurred before package_backup_dir defined
             return False
@@ -1967,7 +1967,7 @@ class PackageManager():
             sublime.set_timeout(save_names, 1)
 
         if os.path.exists(package_dir) and can_delete_dir:
-            delete_directory(package_dir)
+            unlink_or_delete_directory(package_dir)
 
         if is_dependency:
             loader.remove(package_name)

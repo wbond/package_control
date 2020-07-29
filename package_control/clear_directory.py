@@ -131,14 +131,14 @@ def _on_error(function, path, excinfo):
             pass
 
 
-def delete_directory(path):
+def unlink_or_delete_directory(path):
     """
     Tries to delete a folder, changing files from read-only if such files
-    are encountered. If a directory symlink, the symlink will be removed and not
-    the contests of symlinked directory.
+    are encountered. If a folder is a symlink, the symlink will be removed and not
+    the contents of symlinked folder.
 
     :param path:
-        The path to the folder to be deleted
+        The path to the folder to be deleted or unlinked
     """
 
     if is_directory_symlink(path):
