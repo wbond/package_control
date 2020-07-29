@@ -28,6 +28,7 @@ class GitLabUserProvider:
           `proxy_password`,
           `query_string_params`
     """
+
     def __init__(self, repo, settings):
         self.cache = {}
         self.repo = repo
@@ -189,6 +190,6 @@ class GitLabUserProvider:
         return [self.repo]
 
     def get_renamed_packages(self):
-        ''''For API-compatibility with RepositoryProvider'''
+        """For API-compatibility with RepositoryProvider"""
 
         return {}

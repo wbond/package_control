@@ -31,6 +31,7 @@ class GitLabRepositoryProvider():
           `proxy_password`,
           `query_string_params`
     """
+
     def __init__(self, repo, settings):
         self.cache = {}
         # Clean off the trailing .git to be more forgiving
@@ -43,8 +44,7 @@ class GitLabRepositoryProvider():
         """Indicates if this provider can handle the provided repo"""
 
         master = re.search('^https?://gitlab.com/[^/]+/[^/]+/?$', repo)
-        branch = re.search('^https?://gitlab.com/[^/]+/[^/]+/-/tree/[^/]+/?$',
-                           repo)
+        branch = re.search('^https?://gitlab.com/[^/]+/[^/]+/-/tree/[^/]+/?$', repo)
         return master is not None or branch is not None
 
     def prefetch(self):
@@ -83,7 +83,7 @@ class GitLabRepositoryProvider():
         return {}.items()
 
     def get_dependencies(self, ):
-        "For API-compatibility with RepositoryProvider"
+        """For API-compatibility with RepositoryProvider"""
 
         return {}.items()
 
