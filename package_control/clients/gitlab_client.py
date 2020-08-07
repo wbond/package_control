@@ -93,11 +93,15 @@ class GitLabClient(JSONApiClient):
         output = []
         if tags_match:
             (user_id, user_repo_type) = self._extract_user_id(tags_match.group(1))
+
             repo_id = self._extract_repo_id(
                 user_id,
                 tags_match.group(2),
                 'users' if user_repo_type else 'groups'
             )
+            if repo_id is None:
+                return None
+
             user_repo = '%s/%s' % (tags_match.group(1), tags_match.group(2))
             tags_url = self._make_api_url(
                 repo_id,
@@ -136,6 +140,9 @@ class GitLabClient(JSONApiClient):
                 branch,
                 'users' if user_repo_type else 'groups'
             )
+            if repo_id is None:
+                return None
+
             repo_name = user_repo.split('/')[1]
             output.append({
                 'url': url_pattern % (user_repo, commit, repo_name, commit),
@@ -198,6 +205,8 @@ class GitLabClient(JSONApiClient):
             branch,
             'users' if user_repo_type else 'groups'
         )
+        if repo_id is None:
+            return None
 
         api_url = self._make_api_url(repo_id)
         info = self.fetch_json(api_url)
