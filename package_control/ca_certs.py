@@ -230,7 +230,7 @@ def ensure_ca_bundle_dir():
     if not os.path.exists(ca_bundle_dir):
         try:
             os.mkdir(ca_bundle_dir)
-        except PermissionError:
+        except EnvironmentError:
             ca_bundle_dir = '/var/tmp/package_control'
             if not os.path.exists(ca_bundle_dir):
                 os.mkdir(ca_bundle_dir)

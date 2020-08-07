@@ -24,6 +24,12 @@ if sys.version_info >= (3,):
     def encode(path):
         return path
 
+    # flake8 fix for Python 2.6
+    try:
+        __loader__
+    except NameError:
+        __loader__ = None
+
     # Unpacked install of Sublime Text
     if not isinstance(__loader__, zipimporter):
         pc_package_path = dirname(dirname(__file__))

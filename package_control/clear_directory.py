@@ -62,7 +62,7 @@ def clear_directory(directory, ignore_paths=None):
                         if os.name == 'nt' and not os.access(path, os.W_OK):
                             try:
                                 os.chmod(path, stat.S_IWUSR)
-                            except (PermissionError):
+                            except EnvironmentError:
                                 pass
                         os.remove(path)
                     except OSError:
