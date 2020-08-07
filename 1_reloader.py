@@ -205,6 +205,7 @@ mods_load_order = [
     '.clients.client_exception',
     '.clients.bitbucket_client',
     '.clients.github_client',
+    '.clients.gitlab_client',
     '.clients.readme_client',
     '.clients.json_api_client',
 
@@ -212,6 +213,8 @@ mods_load_order = [
     '.providers.bitbucket_repository_provider',
     '.providers.github_repository_provider',
     '.providers.github_user_provider',
+    '.providers.gitlab_repository_provider',
+    '.providers.gitlab_user_provider',
     '.providers.schema_compat',
     '.providers.release_selector',
     '.providers.channel_provider',
