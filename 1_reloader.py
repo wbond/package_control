@@ -203,11 +203,11 @@ mods_load_order = [
 
     '.clients',
     '.clients.client_exception',
+    '.clients.json_api_client',
     '.clients.bitbucket_client',
     '.clients.github_client',
     '.clients.gitlab_client',
     '.clients.readme_client',
-    '.clients.json_api_client',
 
     '.providers.provider_exception',
     '.providers.bitbucket_repository_provider',
