@@ -417,7 +417,7 @@ class GitLabClient(JSONApiClient):
             raise
 
         repo_info = next(
-            (repo for repo in repos_info if repo['name'] == repo_name), None)
+            (repo for repo in repos_info if repo['name'].lower() == repo_name.lower()), None)
 
         if not repo_info:
             return None
