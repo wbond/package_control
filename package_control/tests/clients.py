@@ -2,6 +2,7 @@ import unittest
 
 from ..clients.readme_client import ReadmeClient
 from ..clients.github_client import GitHubClient
+from ..clients.gitlab_client import GitLabClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..http_cache import HttpCache
 
@@ -124,6 +125,122 @@ class GitHubClientTests(unittest.TestCase):
                 }
             ],
             client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags', 'win-')
+        )
+
+
+class GitLabClientTests(unittest.TestCase):
+    maxDiff = None
+
+    def gitlab_settings(self):
+        return {
+            'debug': True,
+            'cache': HttpCache(604800),
+        }
+
+    def test_gitlab_client_repo_info(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            {
+                'name': 'package_control-tester',
+                'description':
+                    'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
+                'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
+                'readme':
+                    'https://gitlab.com/packagecontrol-test/package_control-tester/-/package_control-tester/readme.md',
+                'author': 'packagecontrol-test',
+                'issues': None,
+                'donate': None
+            },
+            client.repo_info(
+                'https://gitlab.com/packagecontrol-test/package_control-tester'
+            )
+        )
+
+    def test_gitlab_client_user_info(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            [
+                {
+                    'name': 'package_control-tester',
+                    'description':
+                        'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
+                    'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
+                    'readme': 'https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md',
+                    'author': 'packagecontrol-test',
+                    'issues': None,
+                    'donate': None
+                }
+            ],
+            client.user_info(
+                'https://gitlab.com/packagecontrol-test'
+            )
+        )
+
+    def test_gitlab_readme(self):
+        client = ReadmeClient(self.gitlab_settings())
+        self.assertEqual(
+            {
+                'filename': 'readme.md',
+                'contents':
+                    '# Package Control Tester\n\nThis repo is used to test the '
+                    'various clients and providers that are part of\nPackage Control.\n',
+                'format': 'markdown'
+            },
+            client.readme_info(
+                'https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md'
+            )
+        )
+
+    def test_gitlab_client_branch_downloads(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2020-07-15 10:50:38',
+                    'version': '2020.07.15.10.50.38',
+                    'url':
+                        'https://gitlab.com/packagecontrol-test/package_control-tester'
+                        '/-/archive/master/package_control-tester-master.zip'
+                }
+            ],
+            client.download_info(
+                'https://gitlab.com/packagecontrol-test/package_control-tester'
+            )
+        )
+
+    def test_gitlab_client_tags_downloads(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2020-07-15 10:50:38',
+                    'version': '1.0.1',
+                    'url':
+                        'https://gitlab.com/packagecontrol-test/package_control-tester'
+                        '/-/archive/1.0.1/package_control-tester-1.0.1.zip'
+                }
+            ],
+            client.download_info(
+                'https://gitlab.com/packagecontrol-test/package_control-tester/-/tags'
+            )
+        )
+
+    def test_gitlab_client_tags_prefix_downloads(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2020-07-15 10:50:38',
+                    'version': '1.0.1',
+                    'url':
+                        'https://gitlab.com/packagecontrol-test/package_control-tester/'
+                        '-/archive/win-1.0.1/package_control-tester-win-1.0.1.zip'
+                }
+            ],
+            client.download_info(
+                'https://gitlab.com/packagecontrol-test/package_control-tester/-/tags',
+                'win-'
+            )
         )
 
 
