@@ -3104,6 +3104,21 @@ class ObjectIdentifier(Primitive, ValueMap):
                 first = part
                 continue
             elif index == 1:
+                if first > 2:
+                    raise ValueError(unwrap(
+                        '''
+                        First arc must be one of 0, 1 or 2, not %s
+                        ''',
+                        repr(first)
+                    ))
+                elif first < 2 and part >= 40:
+                    raise ValueError(unwrap(
+                        '''
+                        Second arc must be less than 40 if first arc is 0 or
+                        1, not %s
+                        ''',
+                        repr(part)
+                    ))
                 part = (first * 40) + part
 
             encoded_part = chr_cls(0x7F & part)
@@ -3145,8 +3160,15 @@ class ObjectIdentifier(Primitive, ValueMap):
                 # Last byte in subidentifier has the eighth bit set to 0
                 if byte & 0x80 == 0:
                     if len(output) == 0:
-                        output.append(str_cls(part // 40))
-                        output.append(str_cls(part % 40))
+                        if part >= 80:
+                            output.append(str_cls(2))
+                            output.append(str_cls(part - 80))
+                        elif part >= 40:
+                            output.append(str_cls(1))
+                            output.append(str_cls(part - 40))
+                        else:
+                            output.append(str_cls(0))
+                            output.append(str_cls(part))
                     else:
                         output.append(str_cls(part))
                     part = 0

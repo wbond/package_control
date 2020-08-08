@@ -1216,7 +1216,7 @@ class PublicKeyInfo(Sequence):
 
         if self._bit_size is None:
             if self.algorithm == 'ec':
-                self._bit_size = ((len(self['public_key'].native) - 1) / 2) * 8
+                self._bit_size = int(((len(self['public_key'].native) - 1) / 2) * 8)
             else:
                 if self.algorithm == 'rsa':
                     prime = self['public_key'].parsed['modulus'].native

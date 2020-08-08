@@ -4,7 +4,6 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from ctypes import CDLL, c_uint32, c_char_p, c_size_t, c_int, c_uint
 
 from .._ffi import FFIEngineError
-from ..errors import LibraryNotFoundError
 
 
 __all__ = [
@@ -13,8 +12,6 @@ __all__ = [
 
 
 common_crypto_path = '/usr/lib/system/libcommonCrypto.dylib'
-if not common_crypto_path:
-    raise LibraryNotFoundError('The library libcommonCrypto could not be found')
 
 CommonCrypto = CDLL(common_crypto_path, use_errno=True)
 
