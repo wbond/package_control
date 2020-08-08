@@ -7,7 +7,7 @@ import sublime
 from .show_error import show_error
 from .console_write import console_write
 from .unicode import unicode_from_os
-from .clear_directory import clear_directory, delete_directory, clean_old_files
+from .clear_directory import clear_directory, unlink_or_delete_directory, clean_old_files
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
 from .open_compat import open_compat
@@ -122,7 +122,7 @@ class PackageCleanup(threading.Thread):
         # end up having required dependencies added to it
         for dependency in extra_dependencies:
             dependency_dir = os.path.join(sublime.packages_path(), dependency)
-            if delete_directory(dependency_dir):
+            if unlink_or_delete_directory(dependency_dir):
                 console_write(
                     u'''
                     Removed directory for unneeded dependency %s
@@ -155,7 +155,7 @@ class PackageCleanup(threading.Thread):
             # Cleanup packages/dependencies that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
-                if delete_directory(package_dir):
+                if unlink_or_delete_directory(package_dir):
                     console_write(
                         u'''
                         Removed old directory %s
@@ -179,6 +179,8 @@ class PackageCleanup(threading.Thread):
             reinstall = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall):
                 metadata_path = os.path.join(package_dir, 'package-metadata.json')
+                # No need to handle symlinks here as that was already handled in earlier step
+                # that has attempted to re-install the package initially.
                 if not clear_directory(package_dir, [metadata_path]):
                     if not os.path.exists(reinstall):
                         open_compat(reinstall, 'w').close()
@@ -218,7 +220,7 @@ class PackageCleanup(threading.Thread):
                 # being synced.
                 elif self.remove_orphaned and package_name not in installed_packages_at_start:
                     self.manager.backup_package_dir(package_name)
-                    if delete_directory(package_dir):
+                    if unlink_or_delete_directory(package_dir):
                         console_write(
                             u'''
                             Removed directory for orphaned package %s
@@ -244,7 +246,7 @@ class PackageCleanup(threading.Thread):
                     ''',
                     package_name
                 )
-                delete_directory(package_dir)
+                unlink_or_delete_directory(package_dir)
 
             # Skip over dependencies since we handle them separately
             if (package_file_exists(package_name, 'dependency-metadata.json')

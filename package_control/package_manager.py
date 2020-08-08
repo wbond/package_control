@@ -28,7 +28,7 @@ from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .file_not_found_error import FileNotFoundError
 from .unicode import unicode_from_os
-from .clear_directory import clear_directory, delete_directory
+from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
@@ -1245,7 +1245,9 @@ class PackageManager():
             unpacked_metadata_file = os.path.join(unpacked_package_dir, metadata_filename)
             if os.path.exists(unpacked_metadata_file) and not unpack:
                 self.backup_package_dir(package_name)
-                if not clear_directory(unpacked_package_dir):
+                if is_directory_symlink(unpacked_package_dir):
+                    unlink_or_delete_directory(unpacked_package_dir)
+                elif not clear_directory(unpacked_package_dir):
                     # If deleting failed, queue the package to upgrade upon next start
                     # where it will be disabled
                     reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
@@ -1265,7 +1267,7 @@ class PackageManager():
                     )
                     return None
                 else:
-                    os.rmdir(unpacked_package_dir)
+                    unlink_or_delete_directory(unpacked_package_dir)
 
             # If we determined it should be unpacked, we extract directly
             # into the Packages/{package_name}/ folder
@@ -1400,7 +1402,9 @@ class PackageManager():
 
                 # Don't delete the metadata file, that way we have it
                 # when the reinstall happens, and the appropriate
-                # usage info can be sent back to the server
+                # usage info can be sent back to the server.
+                # No need to handle symlink at this stage it was already removed
+                # and we are not working with symlink here anymore.
                 clear_directory(package_dir, [reinstall_file, package_metadata_file])
 
                 show_error(
@@ -1415,6 +1419,8 @@ class PackageManager():
             # Here we clean out any files that were not just overwritten. It is ok
             # if there is an error removing a file. The next time there is an
             # upgrade, it should be cleaned out successfully then.
+            # No need to handle symlink at this stage it was already removed
+            # and we are not working with symlink here anymore.
             clear_directory(package_dir, extracted_paths)
 
             new_version = release['version']
@@ -1534,7 +1540,7 @@ class PackageManager():
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
+            sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
 
     def install_dependencies(self, dependencies, fail_early=True):
         """
@@ -1709,7 +1715,7 @@ class PackageManager():
             )
             try:
                 if os.path.exists(package_backup_dir):
-                    delete_directory(package_backup_dir)
+                    unlink_or_delete_directory(package_backup_dir)
             except (UnboundLocalError):
                 pass  # Exeption occurred before package_backup_dir defined
             return False
@@ -1933,7 +1939,11 @@ class PackageManager():
             # We don't delete the actual package dir immediately due to a bug
             # in sublime_plugin.py
             can_delete_dir = True
-            if not clear_directory(package_dir):
+            if is_directory_symlink(package_dir):
+                # Assuming that deleting symlink won't fail in later step so
+                # not having any cleanup handling here
+                pass
+            elif not clear_directory(package_dir):
                 # If there is an error deleting now, we will mark it for
                 # cleanup the next time Sublime Text starts
                 open_compat(os.path.join(package_dir, 'package-control.cleanup'), 'w').close()
@@ -1958,7 +1968,7 @@ class PackageManager():
             sublime.set_timeout(save_names, 1)
 
         if os.path.exists(package_dir) and can_delete_dir:
-            os.rmdir(package_dir)
+            unlink_or_delete_directory(package_dir)
 
         if is_dependency:
             loader.remove(package_name)

@@ -1,8 +1,28 @@
 import os
 import stat
 import shutil
+import sys
 from .console_write import console_write
 from .unicode import unicode_from_os
+
+
+try:
+    str_cls = unicode
+except (NameError):
+    str_cls = str
+
+
+def is_directory_symlink(path):
+    if sys.platform == 'win32':
+        import ctypes
+
+        if os.path.isdir(path):
+            FILE_ATTRIBUTE_REPARSE_POINT = 0x0400
+            attributes = ctypes.windll.kernel32.GetFileAttributesW(str_cls(path))
+            return (attributes & FILE_ATTRIBUTE_REPARSE_POINT) > 0
+        return False
+    else:
+        return os.path.isdir(path) and os.path.islink(path)
 
 
 def clean_old_files(directory):
@@ -111,14 +131,26 @@ def _on_error(function, path, excinfo):
             pass
 
 
-def delete_directory(path):
+def unlink_or_delete_directory(path):
     """
     Tries to delete a folder, changing files from read-only if such files
-    are encountered
+    are encountered. If a folder is a symlink, the symlink will be removed and not
+    the contents of symlinked folder.
 
     :param path:
-        The path to the folder to be deleted
+        The path to the folder to be deleted or unlinked
     """
+
+    if is_directory_symlink(path):
+        try:
+            if sys.platform == 'win32':
+                os.rmdir(path)
+            else:
+                os.unlink(path)
+            return True
+        except OSError:
+            # Fall back to non-symlink handling
+            pass
 
     shutil.rmtree(path, onerror=_on_error)
     return not os.path.exists(path)
