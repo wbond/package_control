@@ -4,6 +4,8 @@ from ..providers.repository_provider import RepositoryProvider
 from ..providers.channel_provider import ChannelProvider
 from ..providers.github_repository_provider import GitHubRepositoryProvider
 from ..providers.github_user_provider import GitHubUserProvider
+from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
+from ..providers.gitlab_user_provider import GitLabUserProvider
 from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
 from ..http_cache import HttpCache
 
@@ -204,6 +206,190 @@ class GitHubUserProviderTests(unittest.TestCase):
 
     def test_get_broken_dependencies(self):
         provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+
+
+class GitLabRepositoryProviderTests(unittest.TestCase):
+    maxDiff = None
+
+    def gitlab_settings(self):
+        return {
+            'debug': True,
+            'cache': HttpCache(604800),
+        }
+
+    def test_match_url(self):
+        self.assertEqual(
+            True,
+            GitLabRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester')
+        )
+        self.assertEqual(
+            True,
+            GitLabRepositoryProvider.match_url(
+                'https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master'
+            )
+        )
+        self.assertEqual(
+            False,
+            GitLabRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test')
+        )
+
+    def test_get_packages(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.gitlab_settings()
+        )
+        packages = [package for package in provider.get_packages()]
+        self.assertEqual(
+            [(
+                'package_control-tester',
+                {
+                    'name': 'package_control-tester',
+                    'description': 'A test of Package Control upgrade messages with '
+                                   'explicit versions, but date-based releases.',
+                    'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
+                    'author': 'packagecontrol-test',
+                    'readme': 'https://gitlab.com/packagecontrol-test/'
+                              'package_control-tester/-/package_control-tester/readme.md',
+                    'issues': None,
+                    'donate': None,
+                    'buy': None,
+                    'sources': ['https://gitlab.com/packagecontrol-test/package_control-tester'],
+                    'labels': [],
+                    'previous_names': [],
+                    'releases': [
+                        {
+                            'date': '2020-07-15 10:50:38',
+                            'version': '2020.07.15.10.50.38',
+                            'url': 'https://gitlab.com/packagecontrol-test/'
+                                   'package_control-tester/-/archive/master/'
+                                   'package_control-tester-master.zip',
+                            'sublime_text': '*',
+                            'platforms': ['*']
+                        }
+                    ],
+                    'last_modified': '2020-07-15 10:50:38'
+                }
+            )],
+            packages
+        )
+
+    def test_get_sources(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.gitlab_settings()
+        )
+        self.assertEqual(
+            ['https://gitlab.com/packagecontrol-test/package_control-tester'],
+            provider.get_sources()
+        )
+
+    def test_get_renamed_packages(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.gitlab_settings()
+        )
+        self.assertEqual({}, provider.get_renamed_packages())
+
+    def test_get_broken_packages(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.gitlab_settings()
+        )
+        self.assertEqual(list(), list(provider.get_broken_packages()))
+
+    def test_get_dependencies(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.gitlab_settings()
+        )
+        self.assertEqual(list(), list(provider.get_dependencies()))
+
+    def test_get_broken_dependencies(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.gitlab_settings()
+        )
+        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+
+
+class GitLabUserProviderTests(unittest.TestCase):
+    maxDiff = None
+
+    def gitlab_settings(self):
+        return {
+            'debug': True,
+            'cache': HttpCache(604800),
+        }
+
+    def test_match_url(self):
+        self.assertEqual(
+            True,
+            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test')
+        )
+        self.assertEqual(
+            False,
+            GitLabUserProvider.match_url(
+                'https://github.com/packagecontrol-test/package_control-tester/tree/master'
+            )
+        )
+        self.assertEqual(
+            False,
+            GitLabUserProvider.match_url('https://bitbucket.org/packagecontrol')
+        )
+
+    def test_get_packages(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
+        packages = [package for package in provider.get_packages()]
+        self.assertEqual(
+            [(
+                'package_control-tester',
+                {
+                    'name': 'package_control-tester',
+                    'description': 'A test of Package Control upgrade messages with '
+                                   'explicit versions, but date-based releases.',
+                    'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
+                    'author': 'packagecontrol-test',
+                    'readme': 'https://gitlab.com/packagecontrol-test/'
+                              'package_control-tester/-/raw/master/readme.md',
+                    'issues': None,
+                    'donate': None,
+                    'buy': None,
+                    'sources': ['https://gitlab.com/packagecontrol-test'],
+                    'labels': [],
+                    'previous_names': [],
+                    'releases': [{
+                        'sublime_text': '*',
+                        'date': '2020-07-15 10:50:38',
+                        'version': '2020.07.15.10.50.38',
+                        'platforms': ['*'],
+                        'url': 'https://gitlab.com/packagecontrol-test/'
+                        'package_control-tester/-/archive/master/package_control-tester-master.zip'
+                        }],
+                    'last_modified': '2020-07-15 10:50:38'
+                }
+            )],
+            packages
+        )
+
+    def test_get_sources(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
+        self.assertEqual(['https://gitlab.com/packagecontrol-test'], provider.get_sources())
+
+    def test_get_renamed_packages(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
+        self.assertEqual({}, provider.get_renamed_packages())
+
+    def test_get_broken_packages(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
+        self.assertEqual(list(), list(provider.get_broken_packages()))
+
+    def test_get_dependencies(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
+        self.assertEqual(list(), list(provider.get_dependencies()))
+
+    def test_get_broken_dependencies(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
         self.assertEqual(list(), list(provider.get_broken_dependencies()))
 
 

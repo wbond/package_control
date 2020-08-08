@@ -7,6 +7,9 @@ Exceptions and compatibility shims for consistently using ctypes and cffi
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import sys
+import platform
+
+from ctypes.util import find_library
 
 from . import ffi
 from ._types import str_cls, byte_cls, int_types, bytes_to_list
@@ -26,6 +29,7 @@ __all__ = [
     'deref',
     'errno',
     'FFIEngineError',
+    'get_library',
     'is_null',
     'native',
     'new',
@@ -384,6 +388,44 @@ else:
         return getattr(library, signature_type)(func)
 
     engine = 'ctypes'
+
+
+def get_library(name, dylib_name, version):
+    """
+    Retrieve the C library path with special handling for Mac
+
+    :param name:
+        A unicode string of the library to search the system for
+
+    :param dylib_name:
+        Mac only - a unicode string of the unversioned dylib name
+
+    :param version:
+        Mac only - a unicode string of the dylib version to use. Used on macOS
+        10.15+ when the unversioned dylib is found, since unversioned
+        OpenSSL/LibreSSL are just placeholders, and a versioned dylib must be
+        imported. Used on macOS 10.16+ when find_library() doesn't return a
+        result, due to system dylibs not being present on the filesystem any
+        longer.
+
+    :return:
+        A unicode string of the path to the library
+    """
+
+    library = find_library(name)
+
+    if sys.platform == 'darwin':
+        unversioned = '/usr/lib/%s' % dylib_name
+        versioned = unversioned.replace('.dylib', '.%s.dylib' % version)
+        mac_ver = tuple(map(int, platform.mac_ver()[0].split('.')))
+        if not library and mac_ver >= (10, 16):
+            # On macOS 10.16+, find_library doesn't work, so we set a static path
+            library = versioned
+        elif mac_ver >= (10, 15) and library == unversioned:
+            # On macOS 10.15+, we want to strongly version since unversioned libcrypto has a non-stable ABI
+            library = versioned
+
+    return library
 
 
 class FFIEngineError(Exception):

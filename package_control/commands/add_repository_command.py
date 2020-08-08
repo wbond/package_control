@@ -15,7 +15,7 @@ class AddRepositoryCommand(sublime_plugin.WindowCommand):
 
     def run(self):
         self.window.show_input_panel(
-            'GitHub or BitBucket Web URL, or Custom JSON Repository URL',
+            'GitHub, GitLab or BitBucket Web URL, or Custom JSON Repository URL',
             '',
             self.on_done,
             self.on_change,

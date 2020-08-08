@@ -8,12 +8,13 @@ from ..tests.providers import (
     ChannelProviderTests,
     GitHubRepositoryProviderTests,
     GitHubUserProviderTests,
+    GitLabRepositoryProviderTests,
+    GitLabUserProviderTests,
     RepositoryProviderTests,
 )
 
 
 class PackageControlTestsCommand(sublime_plugin.WindowCommand):
-
     """
     A command to run the tests for Package Control
     """
@@ -27,6 +28,8 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
                 GitHubRepositoryProviderTests,
                 BitBucketRepositoryProviderTests,
                 GitHubUserProviderTests,
+                GitLabRepositoryProviderTests,
+                GitLabUserProviderTests,
                 RepositoryProviderTests,
                 ChannelProviderTests
             ]

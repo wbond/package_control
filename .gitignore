@@ -1,3 +1,4 @@
+dev/.lint-deps/
 *.pyc
 *.sublime-project
 *.thTheme.cache

@@ -1,13 +1,11 @@
 # coding: utf-8
 from __future__ import unicode_literals, division, absolute_import, print_function
 
-from ctypes.util import find_library
 from ctypes import c_void_p, c_long, c_uint32, c_char_p, c_byte, c_ulong, c_bool
 from ctypes import CDLL, string_at, cast, POINTER, byref
 import ctypes
 
 from .._ffi import FFIEngineError, buffer_from_bytes, byte_string_from_buffer
-from ..errors import LibraryNotFoundError
 
 
 __all__ = [
@@ -16,9 +14,7 @@ __all__ = [
 ]
 
 
-core_foundation_path = find_library('CoreFoundation')
-if not core_foundation_path:
-    raise LibraryNotFoundError('The library CoreFoundation could not be found')
+core_foundation_path = '/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation'
 
 CoreFoundation = CDLL(core_foundation_path, use_errno=True)
 

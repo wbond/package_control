@@ -749,6 +749,10 @@ class TLSSocket(object):
                 # Handle ECONNRESET and EPIPE
                 if e.errno == 104 or e.errno == 32:
                     raise_disconnect = True
+                # Handle EPROTOTYPE. Newer versions of macOS will return this
+                # if we try to call send() while the socket is being torn down
+                elif sys.platform == 'darwin' and e.errno == 41:
+                    raise_disconnect = True
                 else:
                     raise
 

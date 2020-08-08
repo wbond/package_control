@@ -1136,7 +1136,7 @@ class Name(Choice):
         """
 
         if isinstance(value, list):
-            return', '.join(
+            return ', '.join(
                 reversed([self._recursive_humanize(sub_value) for sub_value in value])
             )
         return value.native

@@ -1294,8 +1294,9 @@ class PackageManager():
 
             # Here we don't use .extractall() since it was having issues on OS X
             overwrite_failed = False
-            extracted_paths = []
-            for path in package_zip.namelist():
+            extracted_paths = set()
+            for info in package_zip.infolist():
+                path = info.filename
                 dest = path
 
                 try:
@@ -1351,7 +1352,7 @@ class PackageManager():
 
                 def add_extracted_dirs(dir_):
                     while dir_ not in extracted_paths:
-                        extracted_paths.append(dir_)
+                        extracted_paths.add(dir_)
                         dir_ = os.path.dirname(dir_)
                         if dir_ == package_dir:
                             break
@@ -1365,7 +1366,7 @@ class PackageManager():
                     if not os.path.exists(dest_dir):
                         os.makedirs(dest_dir)
                     add_extracted_dirs(dest_dir)
-                    extracted_paths.append(dest)
+                    extracted_paths.add(dest)
                     try:
                         with open_compat(dest, 'wb') as f:
                             f.write(package_zip.read(path))
