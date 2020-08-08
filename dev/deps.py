@@ -29,7 +29,7 @@ def run():
     Installs required development dependencies.
     """
 
-    deps_dir = os.path.join(PACKAGE_ROOT, '.deps')
+    deps_dir = os.path.join(PACKAGE_ROOT, 'dev', '.lint-deps')
     if os.path.exists(deps_dir):
         shutil.rmtree(deps_dir, ignore_errors=True)
     os.mkdir(deps_dir)

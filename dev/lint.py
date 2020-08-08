@@ -9,7 +9,7 @@ import sys
 PACKAGE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
-DEPS_DIR = os.path.join(PACKAGE_ROOT, '.deps')
+DEPS_DIR = os.path.join(PACKAGE_ROOT, 'dev', '.lint-deps')
 if os.path.exists(DEPS_DIR):
     site.addsitedir(DEPS_DIR)
 
