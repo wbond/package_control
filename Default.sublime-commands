@@ -72,6 +72,10 @@
         "command": "satisfy_dependencies"
     },
     {
+        "caption": "Package Control: Export Package List",
+        "command": "export_package_list"
+    },
+    {
         "caption": "Preferences: Package Control Settings – Default",
         "command": "open_file", "args":
         {
