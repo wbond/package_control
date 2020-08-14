@@ -249,6 +249,12 @@ class DownloadManager(object):
             for downloader_name in downloader_list:
 
                 if downloader_name not in DOWNLOADERS:
+                    # We ignore oscrypto not being present on Linux since it
+                    # can't be used with on Linux with Sublime Text 3
+                    if sys.version_info[:2] == (3, 3) and \
+                            sys.platform == 'linux' and \
+                            downloader_name == 'oscrypto':
+                        continue
                     error_string = text.format(
                         u'''
                         The downloader "%s" from the "downloader_precedence"

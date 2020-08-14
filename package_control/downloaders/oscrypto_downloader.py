@@ -22,8 +22,25 @@ from .. import text
 
 from ..deps.asn1crypto.util import OrderedDict
 from ..deps.asn1crypto import pem, x509
-from ..deps.oscrypto import use_ctypes
+from ..deps.oscrypto import use_ctypes, use_openssl
+
 use_ctypes()
+
+# On Linux we need to use the version of OpenSSL included with Sublime Text
+# to prevent conflicts between two different versions of OpenSSL being
+# dynamically linked. On ST3, we can't use oscrypto for OpenSSL stuff since
+# it has OpenSSL statically linked, and we can't dlopen() that.
+# ST 4081 broke sys.executable to return "sublime_text", but other 4xxx builds
+# will contain "plugin_host".
+if sys.version_info == (3, 8) and sys.platform == 'linux' and (
+        'sublime_text' in sys.executable or
+        'plugin_host' in sys.executable):
+    install_dir = os.path.dirname(sys.executable)
+    use_openssl(
+        os.path.join(install_dir, 'libcrypto.so.1.1'),
+        os.path.join(install_dir, 'libssl.so.1.1')
+    )
+
 from ..deps.oscrypto import tls  # noqa
 from ..deps.oscrypto import errors as oscrypto_errors  # noqa
 
