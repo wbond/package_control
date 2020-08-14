@@ -73,17 +73,15 @@
     },
     {
         "caption": "Preferences: Package Control Settings – Default",
-        "command": "open_file", "args":
-        {
-            "file": "${packages}/Package Control/Package Control.sublime-settings"
-        }
+        "command": "package_control_open_default_settings"
     },
     {
         "caption": "Preferences: Package Control Settings – User",
-        "command": "open_file", "args":
-        {
-            "file": "${packages}/User/Package Control.sublime-settings"
-        }
+        "command": "package_control_open_user_settings"
+    },
+    {
+        "caption": "Preferences: Package Control Settings",
+        "command": "package_control_edit_settings"
     },
     {
         "caption": "Package Control: Tests",

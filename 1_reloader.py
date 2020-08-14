@@ -259,6 +259,9 @@ mods_load_order = [
     '.commands.package_control_insert_command',
     '.commands.satisfy_dependencies_command',
     '.commands.package_control_tests_command',
+    '.commands.package_control_edit_settings_command',
+    '.commands.package_control_open_default_settings_command',
+    '.commands.package_control_open_user_settings_command',
 
     '.automatic_upgrader',
     '.package_cleanup'
