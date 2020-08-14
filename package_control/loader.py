@@ -6,6 +6,7 @@ from os import path
 import zipfile
 import zipimport
 import shutil
+import time
 from textwrap import dedent
 from threading import Event, Lock
 
@@ -44,7 +45,8 @@ loader_lock = Lock()
 # These variables should only be touched while loader_lock is acquired
 swap_event = SwapEvent()
 non_local = {
-    'loaders': None
+    'loaders': None,
+    'last_action': 0.0
 }
 
 
@@ -435,8 +437,9 @@ def remove(name):
     # fail because the source file doesn't exist.
     if not swap_event.in_process():
         swap_event.start()
-        sublime.set_timeout(_do_swap, 700)
+        sublime.set_timeout(_do_swap, 1000)
 
+    non_local['last_action'] = time.time()
     loader_lock.release()
 
 
@@ -449,11 +452,16 @@ def _do_swap():
         sublime.set_timeout(_do_swap, 500)
         return
 
+    if time.time() - non_local['last_action'] < 0.9:
+        sublime.set_timeout(_do_swap, 500)
+        loader_lock.release()
+        return
+
     if os.path.exists(loader_package_path) and os.path.exists(new_loader_package_path):
         os.remove(loader_package_path)
         os.rename(new_loader_package_path, loader_package_path)
 
-    sublime.set_timeout(_do_reenable, 10)
+    sublime.set_timeout(_do_reenable, 500)
 
 
 def _do_reenable():
