@@ -239,7 +239,6 @@ mods_load_order = [
     '.tests.clients',
     '.tests.providers',
 
-    '.commands',
     '.commands.add_channel_command',
     '.commands.add_repository_command',
     '.commands.create_package_command',
@@ -261,7 +260,9 @@ mods_load_order = [
     '.commands.package_control_tests_command',
     '.commands.package_control_edit_settings_command',
     '.commands.package_control_open_default_settings_command',
-    '.commands.package_control_open_user_settings_command',
+    '.commands.package_control_disable_debug_mode_command',
+    '.commands.package_control_enable_debug_mode_command',
+    '.commands',
 
     '.automatic_upgrader',
     '.package_cleanup'

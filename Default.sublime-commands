@@ -72,6 +72,14 @@
         "command": "satisfy_dependencies"
     },
     {
+        "caption": "Package Control: Enable Debug Mode",
+        "command": "package_control_enable_debug_mode"
+    },
+    {
+        "caption": "Package Control: Disable Debug Mode",
+        "command": "package_control_disable_debug_mode"
+    },
+    {
         "caption": "Preferences: Package Control Settings – Default",
         "command": "package_control_open_default_settings"
     },
