@@ -144,13 +144,34 @@
 
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [
-		".hg", ".git", ".svn", "_darcs", "CVS"
+		".circleci",
+		".git",
+		".github",
+		".hg",
+		".svn",
+		"_darcs",
+		"CVS"
 	],
 
 	// Files to ignore when creating a package
 	"files_to_ignore": [
-		"*.pyc", ".hgignore", ".gitignore", ".bzrignore",
-		"*.sublime-project", "*.sublime-workspace", "*.tmTheme.cache"
+		"*.sublime-project",
+		"*.sublime-workspace",
+		"*.tmTheme.cache",
+		".bzrignore",
+		".gitignore",
+		".gitattributes",
+		".hgignore",
+		".codecov.yml",
+		".travis.yml",
+		"appveyor.yml",
+		"codecov.yml",
+		"*.pyc",
+		".coveragerc",
+		".flake8",
+		"pyproject.toml",
+		"tox.ini",
+		"mypy.ini"
 	],
 
 	// Files to include, even if they match a pattern in files_to_ignore
@@ -179,8 +200,23 @@
 		"Binaries Only": {
 			// Exclude all .py files, but consequently include all .pyc files
 			"files_to_ignore": [
-				"*.py", ".hgignore", ".gitignore", ".bzrignore",
-				"*.sublime-project", "*.sublime-workspace", "*.tmTheme.cache"
+				"*.sublime-project",
+				"*.sublime-workspace",
+				"*.tmTheme.cache",
+				".bzrignore",
+				".gitignore",
+				".gitattributes",
+				".hgignore",
+				".codecov.yml",
+				".travis.yml",
+				"appveyor.yml",
+				"codecov.yml",
+				"*.py",
+				".coveragerc",
+				".flake8",
+				"pyproject.toml",
+				"tox.ini",
+				"mypy.ini"
 			],
 
 			// Include __init__.py so Sublime Text will load the package
