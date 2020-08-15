@@ -46,6 +46,11 @@ class AutomaticUpgrader(threading.Thread):
         self.auto_upgrade = self.settings.get('auto_upgrade')
         self.auto_upgrade_ignore = self.settings.get('auto_upgrade_ignore')
 
+        self.last_version = self.settings.get('last_st_version', 0)
+        if not isinstance(self.last_version, int):
+            self.last_version = 0
+        self.current_version = int(sublime.version())
+
         self.load_last_run()
         self.determine_next_run()
 
@@ -110,11 +115,24 @@ class AutomaticUpgrader(threading.Thread):
     def run(self):
         self.install_missing()
 
-        if self.next_run > time.time():
+        if self.next_run > time.time() and \
+                self.last_version == self.current_version:
             self.print_skip()
             return
 
+        if self.last_version != self.current_version and self.last_version != 0:
+            console_write(
+                u'''
+                Detected Sublime Text update, looking for package updates
+                '''
+            )
+
         self.upgrade_packages()
+
+        def update_last_version():
+            self.settings.set('last_st_version', self.current_version)
+            sublime.save_settings(pc_settings_filename())
+        sublime.set_timeout(update_last_version, 10)
 
     def install_missing(self):
         """
