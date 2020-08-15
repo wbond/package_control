@@ -12,6 +12,9 @@ New features include:
 
  - Preferences now use the side-by-side edit mode
 
+ - Added command palette entries to enable and disable debug mode for
+   troubleshooting and bug reports
+
 Bug fixes include:
 
  - Fixed operation on macOS 11.0 Big Sur - by TheSecEng
