@@ -1,0 +1,38 @@
+Version 3.4.0 Beta Release Notes
+
+* NOTICE: This will be the final release supporting Sublime Text 2 *
+
+New features include:
+
+ - Support for repositories hosted on https://gitlab.com - by TheSecEng
+
+ - An alternative TLS implementation based on the oscrypto Python
+   library, which uses native operating system TLS libraries and
+   certificate handling. See the "downloader_precedence" setting to enable.
+
+ - Preferences now use the side-by-side edit mode
+
+Bug fixes include:
+
+ - Fixed operation on macOS 11.0 Big Sur - by TheSecEng
+
+ - Improved handling of invalid dependencies - by deathaxe
+
+ - Corrected handling of unsuccessful downloads with wget - by deathaxe
+
+ - Fixed various issues with the HTTP caching - by deathaxe
+
+ - Updated the BitBucket provider to use the 2.0 API - deathaxe
+
+ - Packages installed via symlinks are now unlinked instead of being
+   deleted when being removed or cleaned up - by rchl
+
+ - Improved install performance of packages with large numbers of
+   files - by BenjaminSchaaf
+
+ - Fixed handling of auth with the wininet downloader - by NicholasBuse
+
+ - Fixed handling BitBucket repositories without a nickname
+
+ - Resolved deadlocks and ignored packages occuring when removing multiple
+   dependencies at once
