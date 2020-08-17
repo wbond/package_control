@@ -130,6 +130,13 @@ else:
         # This handles fixing unicode issues with tempdirs on ST2 for Windows
         tempfile_unicode_patch()
 
+        # Ensure we have a Cache dir we can use for temporary data
+        if st_version == 2:
+            if not os.path.exists(sys_path.cache_dir):
+                os.mkdir(sys_path.cache_dir)
+        if not os.path.exists(sys_path.pc_cache_dir):
+            os.mkdir(sys_path.pc_cache_dir)
+
         pc_settings = sublime.load_settings(pc_settings_filename())
 
         if not pc_settings.get('bootstrapped'):

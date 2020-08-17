@@ -14,8 +14,11 @@ except (NameError):
     from zipimport import zipimporter
 
 data_dir = None
+cache_dir = None
 packages_path = None
 installed_packages_path = None
+pc_package_path = None
+pc_cache_dir = None
 
 if sys.version_info >= (3,):
     def decode(path):
@@ -84,6 +87,18 @@ if sys.version_info >= (3,):
     if installed_packages_path and data_dir is None:
         data_dir = dirname(installed_packages_path)
 
+    config_dir_name = os.path.basename(data_dir.rstrip(u'/\\'))
+    if sys.platform == 'win32':
+        # Windows XP doesn't have LOCALAPPDATA
+        if sys.getwindowsversion()[0] < 6:
+            local_data_dir = data_dir
+        else:
+            local_data_dir = os.environ.get(u'LOCALAPPDATA')
+        cache_dir = os.path.join(local_data_dir, config_dir_name, u'Cache')
+    else:
+        cache_dir = os.path.join(data_dir, u'Cache')
+    pc_cache_dir = os.path.join(cache_dir, u'Package Control')
+
 else:
     def decode(path):
         if not isinstance(path, str_cls):
@@ -98,6 +113,8 @@ else:
     pc_package_path = decode(os.getcwd())
     packages_path = dirname(pc_package_path)
     data_dir = dirname(packages_path)
+    cache_dir = os.path.join(data_dir, 'Cache')
+    pc_cache_dir = os.path.join(cache_dir, 'Package Control')
     installed_packages_path = os.path.join(data_dir, u'Installed Packages')
     st_version = u'2'
 
