@@ -1,6 +1,7 @@
 import sublime
 import sys
 import os
+import shutil
 
 
 st_version = 2 if sys.version_info < (3,) else 3
@@ -136,6 +137,24 @@ else:
                 os.mkdir(sys_path.cache_dir)
         if not os.path.exists(sys_path.pc_cache_dir):
             os.mkdir(sys_path.pc_cache_dir)
+
+        legacy_http_cache = os.path.join(sublime.packages_path(), u'User', u'Package Control.cache')
+        http_cache = os.path.join(sys_path.pc_cache_dir, 'http_cache')
+        if os.path.exists(legacy_http_cache):
+            if not os.path.exists(http_cache):
+                console_write(
+                    u'''
+                    Moving HTTP cache data into "Cache/Package Control/http_cache/"
+                    '''
+                )
+                shutil.move(legacy_http_cache, http_cache)
+            else:
+                console_write(
+                    u'''
+                    Removing old HTTP cache data"
+                    '''
+                )
+                shutil.rmtree(legacy_http_cache)
 
         pc_settings = sublime.load_settings(pc_settings_filename())
 
