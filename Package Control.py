@@ -138,6 +138,7 @@ else:
         if not os.path.exists(sys_path.pc_cache_dir):
             os.mkdir(sys_path.pc_cache_dir)
 
+        # Clean up the old HTTP cache dir
         legacy_http_cache = os.path.join(sublime.packages_path(), u'User', u'Package Control.cache')
         http_cache = os.path.join(sys_path.pc_cache_dir, 'http_cache')
         if os.path.exists(legacy_http_cache):
@@ -155,6 +156,17 @@ else:
                     '''
                 )
                 shutil.rmtree(legacy_http_cache)
+
+        # Clean up old CA bundle paths
+        legacy_ca_filenames = [
+            'Package Control.system-ca-bundle',
+            'Package Control.merged-ca-bundle',
+            'oscrypto-ca-bundle.crt'
+        ]
+        for legacy_ca_filename in legacy_ca_filenames:
+            legacy_ca_path = os.path.join(sublime.packages_path(), 'User', legacy_ca_filename)
+            if os.path.exists(legacy_ca_path):
+                os.unlink(legacy_ca_path)
 
         pc_settings = sublime.load_settings(pc_settings_filename())
 

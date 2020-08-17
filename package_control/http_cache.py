@@ -1,8 +1,6 @@
 import os
 import time
 
-import sublime
-
 from .file_not_found_error import FileNotFoundError
 from .open_compat import open_compat, read_compat
 from .sys_path import pc_cache_dir
