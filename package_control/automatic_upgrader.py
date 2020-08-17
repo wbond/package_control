@@ -1,5 +1,6 @@
 import threading
 import os
+import json
 import datetime
 # To prevent import errors in thread with datetime
 import locale  # noqa
@@ -8,6 +9,7 @@ import functools
 
 import sublime
 
+from .sys_path import pc_cache_dir
 from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
@@ -46,20 +48,21 @@ class AutomaticUpgrader(threading.Thread):
         self.auto_upgrade = self.settings.get('auto_upgrade')
         self.auto_upgrade_ignore = self.settings.get('auto_upgrade_ignore')
 
-        self.last_version = self.settings.get('last_st_version', 0)
-        if not isinstance(self.last_version, int):
-            self.last_version = 0
+        now = int(time.time())
+
+        self.last_run = None
+        self.last_version = 0
+        self.next_run = now
         self.current_version = int(sublime.version())
 
         self.load_last_run()
-        self.determine_next_run()
 
         # Detect if a package is missing that should be installed
         self.missing_packages = list(set(self.installed_packages) - set(found_packages))
         self.missing_dependencies = list(set(self.manager.find_required_dependencies()) - set(found_dependencies))
 
-        if self.auto_upgrade and self.next_run <= time.time():
-            self.save_last_run(time.time())
+        if self.auto_upgrade and self.next_run <= now:
+            self.save_last_run(now)
 
         threading.Thread.__init__(self)
 
@@ -68,29 +71,27 @@ class AutomaticUpgrader(threading.Thread):
         Loads the last run time from disk into memory
         """
 
-        self.last_run = None
-
-        self.last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
+        legacy_last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
+        if os.path.exists(legacy_last_run_file):
+            try:
+                with open_compat(legacy_last_run_file) as fobj:
+                    self.last_run = int(read_compat(fobj))
+                os.unlink(legacy_last_run_file)
+            except (FileNotFoundError, ValueError):
+                pass
 
         try:
-            with open_compat(self.last_run_file) as fobj:
-                self.last_run = int(read_compat(fobj))
-        except (FileNotFoundError, ValueError):
+            with open_compat(os.path.join(pc_cache_dir, 'last_run.json')) as fobj:
+                last_run_data = json.loads(read_compat(fobj))
+            self.last_run = int(last_run_data['timestamp'])
+            self.last_version = int(last_run_data['st_version'])
+        except (FileNotFoundError, ValueError, TypeError):
             pass
-
-    def determine_next_run(self):
-        """
-        Figure out when the next run should happen
-        """
-
-        self.next_run = int(time.time())
 
         frequency = self.settings.get('auto_upgrade_frequency')
         if frequency:
             if self.last_run:
                 self.next_run = int(self.last_run) + (frequency * 60 * 60)
-            else:
-                self.next_run = time.time()
 
     def save_last_run(self, last_run):
         """
@@ -100,8 +101,14 @@ class AutomaticUpgrader(threading.Thread):
             The unix timestamp of when to record the last run as
         """
 
-        with open_compat(self.last_run_file, 'w') as fobj:
-            write_compat(fobj, int(last_run))
+        with open_compat(os.path.join(pc_cache_dir, 'last_run.json'), 'w') as fobj:
+            write_compat(
+                fobj,
+                json.dumps({
+                    'timestamp': last_run,
+                    'st_version': self.current_version
+                })
+            )
 
     def load_settings(self):
         """
@@ -115,7 +122,7 @@ class AutomaticUpgrader(threading.Thread):
     def run(self):
         self.install_missing()
 
-        if self.next_run > time.time() and \
+        if self.next_run > int(time.time()) and \
                 self.last_version == self.current_version:
             self.print_skip()
             return
@@ -128,11 +135,6 @@ class AutomaticUpgrader(threading.Thread):
             )
 
         self.upgrade_packages()
-
-        def update_last_version():
-            self.settings.set('last_st_version', self.current_version)
-            sublime.save_settings(pc_settings_filename())
-        sublime.set_timeout(update_last_version, 10)
 
     def install_missing(self):
         """
