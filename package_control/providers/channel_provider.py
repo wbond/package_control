@@ -211,7 +211,8 @@ class ChannelProvider():
 
         # Determine a relative root so repositories can be defined
         # relative to the location of the channel file.
-        if re.match('https?://', self.channel, re.I) is None:
+        scheme_match = re.match('(https?:)//', self.channel, re.I)
+        if scheme_match is None:
             relative_base = os.path.dirname(self.channel)
             is_http = False
         else:
@@ -221,7 +222,15 @@ class ChannelProvider():
         output = []
         repositories = self.channel_info.get('repositories', [])
         for repository in repositories:
-            if re.match(r'^\./|\.\./', repository):
+            if repository.startswith('//'):
+                if scheme_match is not None:
+                    repository = scheme_match.group(1) + repository
+                else:
+                    repository = 'https:' + repository
+            elif repository.startswith('/'):
+                # We don't allow absolute repositories
+                continue
+            elif repository.startswith('./') or repository.startswith('../'):
                 if is_http:
                     repository = urljoin(self.channel, repository)
                 else:

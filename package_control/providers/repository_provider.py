@@ -132,7 +132,8 @@ class RepositoryProvider():
             return
 
         # Allow repositories to include other repositories
-        if re.match('https?://', self.repo, re.I) is None:
+        scheme_match = re.match('(https?:)//', self.repo, re.I)
+        if scheme_match is None:
             relative_base = os.path.dirname(self.repo)
             is_http = False
         else:
@@ -141,7 +142,15 @@ class RepositoryProvider():
         includes = self.repo_info.get('includes', [])
         del self.repo_info['includes']
         for include in includes:
-            if re.match(r'^\./|\.\./', include):
+            if include.startswith('//'):
+                if scheme_match is not None:
+                    include = scheme_match.group(1) + include
+                else:
+                    include = 'https:' + include
+            elif include.startswith('/'):
+                # We don't allow absolute includes
+                continue
+            elif include.startswith('./') or include.startswith('../'):
                 if is_http:
                     include = urljoin(self.repo, include)
                 else:
