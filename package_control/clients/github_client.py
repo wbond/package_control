@@ -112,13 +112,17 @@ class GitHubClient(JSONApiClient):
                 used_versions[version] = True
 
         else:
-            user_repo, commit = self._user_repo_branch(url)
+            user_repo, branch = self._user_repo_branch(url)
             if not user_repo:
                 return user_repo
 
+            if branch is None:
+                repo_info = self.fetch_json(self._make_api_url(user_repo))
+                branch = repo_info.get('default_branch', 'master')
+
             output.append({
-                'url': url_pattern % (user_repo, commit),
-                'commit': commit
+                'url': url_pattern % (user_repo, branch),
+                'commit': branch
             })
 
         for release in output:
@@ -167,6 +171,8 @@ class GitHubClient(JSONApiClient):
         api_url = self._make_api_url(user_repo)
 
         info = self.fetch_json(api_url)
+        if branch is None:
+            branch = info.get('default_branch', 'master')
 
         output = self._extract_repo_info(info)
         output['readme'] = None
@@ -215,7 +221,7 @@ class GitHubClient(JSONApiClient):
         output = []
         for info in repos_info:
             user_repo = '%s/%s' % (user, info['name'])
-            branch = 'master'
+            branch = info.get('default_branch', 'master')
 
             repo_output = self._extract_repo_info(info)
             repo_output['readme'] = None
@@ -315,7 +321,7 @@ class GitHubClient(JSONApiClient):
             A tuple of (user/repo, branch name) or (None, None) if no match
         """
 
-        branch = 'master'
+        branch = None
         branch_match = re.match('https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', url)
         if branch_match is not None:
             branch = branch_match.group(1)
