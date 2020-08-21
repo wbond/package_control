@@ -1,4 +1,5 @@
 import json
+import threading
 
 import sublime
 
@@ -69,6 +70,9 @@ class PackageDisabler():
         :return:
             A list of package names that were disabled
         """
+
+        if not isinstance(threading.current_thread(), threading._MainThread):
+            raise RuntimeError('disable_packages called on a background thread')
 
         global events
 
@@ -161,6 +165,9 @@ class PackageDisabler():
              - "enable"
              - "loader"
         """
+
+        if not isinstance(threading.current_thread(), threading._MainThread):
+            raise RuntimeError('reenable_package called on a background thread')
 
         global events
 
