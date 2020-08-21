@@ -420,8 +420,10 @@ def remove(name):
         loader_lock.release()
         return
 
-    disabler = PackageDisabler()
-    disabler.disable_packages(loader_package_name, 'loader')
+    def _do_disable():
+        disabler = PackageDisabler()
+        disabler.disable_packages(loader_package_name, 'loader')
+    sublime.set_timeout(_do_disable, 10)
 
     # Note: If we "manually" loaded the dependency loader before it will not
     # be unloaded automatically when the package is disabled. Since it is
