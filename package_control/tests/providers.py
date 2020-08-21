@@ -250,7 +250,7 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
                     'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                     'author': 'packagecontrol-test',
                     'readme': 'https://gitlab.com/packagecontrol-test/'
-                              'package_control-tester/-/package_control-tester/readme.md',
+                              'package_control-tester/-/master/readme.md',
                     'issues': None,
                     'donate': None,
                     'buy': None,
