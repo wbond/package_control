@@ -81,7 +81,7 @@ class AutomaticUpgrader(threading.Thread):
                 pass
 
         try:
-            with open_compat(os.path.join(pc_cache_dir, 'last_run.json')) as fobj:
+            with open_compat(os.path.join(pc_cache_dir(), 'last_run.json')) as fobj:
                 last_run_data = json.loads(read_compat(fobj))
             self.last_run = int(last_run_data['timestamp'])
             self.last_version = int(last_run_data['st_version'])
@@ -101,7 +101,7 @@ class AutomaticUpgrader(threading.Thread):
             The unix timestamp of when to record the last run as
         """
 
-        with open_compat(os.path.join(pc_cache_dir, 'last_run.json'), 'w') as fobj:
+        with open_compat(os.path.join(pc_cache_dir(), 'last_run.json'), 'w') as fobj:
             write_compat(
                 fobj,
                 json.dumps({

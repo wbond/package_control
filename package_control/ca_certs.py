@@ -226,7 +226,7 @@ def ensure_ca_bundle_dir():
     global user_ca_bundle_dir
 
     if not ca_bundle_dir:
-        ca_bundle_dir = pc_cache_dir
+        ca_bundle_dir = pc_cache_dir()
     if not user_ca_bundle_dir:
         user_ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
     if not os.path.exists(ca_bundle_dir):

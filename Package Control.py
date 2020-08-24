@@ -132,15 +132,12 @@ else:
         tempfile_unicode_patch()
 
         # Ensure we have a Cache dir we can use for temporary data
-        if st_version == 2:
-            if not os.path.exists(sys_path.cache_dir):
-                os.mkdir(sys_path.cache_dir)
-        if not os.path.exists(sys_path.pc_cache_dir):
-            os.mkdir(sys_path.pc_cache_dir)
+        if not os.path.exists(sys_path.pc_cache_dir()):
+            os.mkdir(sys_path.pc_cache_dir())
 
         # Clean up the old HTTP cache dir
         legacy_http_cache = os.path.join(sublime.packages_path(), u'User', u'Package Control.cache')
-        http_cache = os.path.join(sys_path.pc_cache_dir, 'http_cache')
+        http_cache = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         if os.path.exists(legacy_http_cache):
             if not os.path.exists(http_cache):
                 console_write(
