@@ -60,16 +60,19 @@ class ExistingPackagesCommand():
             homepage_display= re.sub('^https?://', '', homepage)
 
             if USE_QUICK_PANEL_ITEM:
-                final_line = '<em>' + action + installed_version + '</em>'
+                final_line = '<em>' + action + installed_version + ';</em>'
                 if final_line and homepage:
                     final_line += ' '
                 final_line += '<a href="%s">%s</a>' % (homepage, homepage_display)
                 package_entry = sublime.QuickPanelItem(package, [description, final_line])
             else:
-                homepage_display = '; ' + homepage_display
                 package_entry = [package]
                 package_entry.append(description)
-                package_entry.append(action + installed_version + homepage_display)
+                final_line = action + installed_version + ';'
+                if final_line and homepage_display:
+                    final_line += ' '
+                final_line += homepage_display
+                package_entry.append(final_line)
             package_list.append(package_entry)
 
         return package_list
