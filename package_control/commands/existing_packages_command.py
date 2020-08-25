@@ -5,6 +5,7 @@ import sublime
 
 from ..package_manager import PackageManager
 
+USE_QUICK_PANEL_ITEM = int(sublime.version()) > 4080
 
 class ExistingPackagesCommand():
 
@@ -38,14 +39,14 @@ class ExistingPackagesCommand():
 
         package_list = []
         for package in sorted(packages, key=lambda s: s.lower()):
-            package_entry = [package]
             metadata = self.manager.get_metadata(package)
             package_dir = os.path.join(sublime.packages_path(), package)
 
             description = metadata.get('description')
             if not description:
                 description = 'No description provided'
-            package_entry.append(description)
+                if USE_QUICK_PANEL_ITEM:
+                    description = '<em>%s</em>' % description
 
             version = metadata.get('version')
             if not version and os.path.exists(os.path.join(package_dir, '.git')):
@@ -55,13 +56,20 @@ class ExistingPackagesCommand():
             else:
                 installed_version = 'v' + version if version else 'unknown version'
 
-            url = metadata.get('url')
-            if url:
-                url = '; ' + re.sub('^https?://', '', url)
-            else:
-                url = ''
+            homepage = metadata.get('url', '')
+            homepage_display= re.sub('^https?://', '', homepage)
 
-            package_entry.append(action + installed_version + url)
+            if USE_QUICK_PANEL_ITEM:
+                final_line = '<em>' + action + installed_version + '</em>'
+                if final_line and homepage:
+                    final_line += ' '
+                final_line += '<a href="%s">%s</a>' % (homepage, homepage_display)
+                package_entry = sublime.QuickPanelItem(package, [description, final_line])
+            else:
+                homepage_display = '; ' + homepage_display
+                package_entry = [package]
+                package_entry.append(description)
+                package_entry.append(action + installed_version + homepage_display)
             package_list.append(package_entry)
 
         return package_list
