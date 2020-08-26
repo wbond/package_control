@@ -11,6 +11,7 @@ from ..thread_progress import ThreadProgress
 from ..package_disabler import PackageDisabler
 from ..package_manager import PackageManager
 
+USE_QUICK_PANEL_ITEM = int(sublime.version()) > 4080
 
 class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand, PackageDisabler):
 
@@ -53,7 +54,10 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
 
         if picked == -1:
             return
-        package = self.package_list[picked][0]
+        if USE_QUICK_PANEL_ITEM:
+            package = self.package_list[picked].trigger
+        else:
+            package = self.package_list[picked][0]
 
         self.disable_packages(package, 'remove')
 
