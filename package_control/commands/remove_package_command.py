@@ -53,7 +53,11 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
 
         if picked == -1:
             return
-        package = self.package_list[picked][0]
+
+        if self.use_quick_panel_item:
+            package = self.package_list[picked].trigger
+        else:
+            package = self.package_list[picked][0]
 
         self.disable_packages(package, 'remove')
 
@@ -64,6 +68,12 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
             'Removing package %s' % package,
             'Package %s successfully removed' % package
         )
+
+    @property
+    def use_quick_panel_item(self):
+        if self.manager:
+            return self.manager.USE_QUICK_PANEL_ITEM
+        return False
 
 
 class RemovePackageThread(threading.Thread, PackageDisabler):

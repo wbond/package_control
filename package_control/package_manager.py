@@ -67,6 +67,8 @@ class PackageManager():
     the usage server.
     """
 
+    USE_QUICK_PANEL_ITEM = int(sublime.version()) > 4080
+
     def __init__(self):
         # Here we manually copy the settings since sublime doesn't like
         # code accessing settings from threads

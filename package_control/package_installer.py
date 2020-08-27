@@ -10,9 +10,6 @@ from .package_disabler import PackageDisabler
 from .versions import version_comparable
 
 
-USE_QUICK_PANEL_ITEM = int(sublime.version()) > 4080
-
-
 class PackageInstaller(PackageDisabler):
 
     """
@@ -134,13 +131,13 @@ class PackageInstaller(PackageDisabler):
             description = info.get('description')
             if not description:
                 description = 'No description provided'
-                if USE_QUICK_PANEL_ITEM:
+                if self.use_quick_panel_item:
                     description = '<em>%s</em>' % description
 
             homepage = info['homepage']
             homepage_display = re.sub('^https?://', '', homepage)
 
-            if USE_QUICK_PANEL_ITEM:
+            if self.use_quick_panel_item:
                 final_line = '<em>' + action + extra + '</em>'
                 if final_line and homepage_display:
                     final_line += ' '
@@ -170,7 +167,7 @@ class PackageInstaller(PackageDisabler):
 
         if picked == -1:
             return
-        if USE_QUICK_PANEL_ITEM:
+        if self.use_quick_panel_item:
             name = self.package_list[picked].trigger
         else:
             name = self.package_list[picked][0]
@@ -188,6 +185,12 @@ class PackageInstaller(PackageDisabler):
             'Installing package %s' % name,
             'Package %s successfully %s' % (name, self.completion_type)
         )
+
+    @property
+    def use_quick_panel_item(self):
+        if self.manager:
+            return self.manager.USE_QUICK_PANEL_ITEM
+        return False
 
 
 class PackageInstallerThread(threading.Thread):

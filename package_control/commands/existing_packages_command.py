@@ -19,11 +19,9 @@ class ExistingPackagesCommand():
         """
         Returns a list of installed packages suitable for displaying in the
         quick panel.
-
         :param action:
             An action to display at the beginning of the third element of the
             list returned for each package
-
         :return:
             A list of lists, each containing three strings:
               0 - package name
@@ -38,14 +36,14 @@ class ExistingPackagesCommand():
 
         package_list = []
         for package in sorted(packages, key=lambda s: s.lower()):
-            package_entry = [package]
             metadata = self.manager.get_metadata(package)
             package_dir = os.path.join(sublime.packages_path(), package)
 
             description = metadata.get('description')
             if not description:
                 description = 'No description provided'
-            package_entry.append(description)
+                if self.use_quick_panel_item:
+                    description = '<em>%s</em>' % description
 
             version = metadata.get('version')
             if not version and os.path.exists(os.path.join(package_dir, '.git')):
@@ -55,13 +53,30 @@ class ExistingPackagesCommand():
             else:
                 installed_version = 'v' + version if version else 'unknown version'
 
-            url = metadata.get('url')
-            if url:
-                url = '; ' + re.sub('^https?://', '', url)
-            else:
-                url = ''
+            homepage = metadata.get('url', '')
+            homepage_display= re.sub('^https?://', '', homepage)
 
-            package_entry.append(action + installed_version + url)
+            if self.use_quick_panel_item:
+                final_line = '<em>' + action + installed_version + ';</em>'
+                if final_line and homepage:
+                    final_line += ' '
+                final_line += '<a href="%s">%s</a>' % (homepage, homepage_display)
+                package_entry = sublime.QuickPanelItem(package, [description, final_line])
+            else:
+                package_entry = [package]
+                package_entry.append(description)
+                final_line = action + installed_version + ';'
+                if final_line and homepage_display:
+                    final_line += ' '
+                final_line += homepage_display
+                package_entry.append(final_line)
             package_list.append(package_entry)
 
         return package_list
+
+
+    @property
+    def use_quick_panel_item(self):
+        if self.manager:
+            return self.manager.USE_QUICK_PANEL_ITEM
+        return False

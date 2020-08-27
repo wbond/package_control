@@ -18,7 +18,6 @@ from .file_not_found_error import FileNotFoundError
 from .open_compat import open_compat, read_compat, write_compat
 from .settings import pc_settings_filename, load_list_setting
 
-
 class AutomaticUpgrader(threading.Thread):
 
     """
@@ -279,8 +278,12 @@ class AutomaticUpgrader(threading.Thread):
 
         # If Package Control is being upgraded, just do that and restart
         for package in package_list:
-            if package[0] != 'Package Control':
-                continue
+            if self.installer.use_quick_panel_item:
+                if package.trigger != 'Package Control':
+                    continue
+            else:
+                if package[0] != 'Package Control':
+                    continue
 
             if self.last_run:
                 def reset_last_run():
