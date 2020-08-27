@@ -18,6 +18,7 @@ from .file_not_found_error import FileNotFoundError
 from .open_compat import open_compat, read_compat, write_compat
 from .settings import pc_settings_filename, load_list_setting
 
+
 class AutomaticUpgrader(threading.Thread):
 
     """

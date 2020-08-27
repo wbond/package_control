@@ -19,9 +19,11 @@ class ExistingPackagesCommand():
         """
         Returns a list of installed packages suitable for displaying in the
         quick panel.
+
         :param action:
             An action to display at the beginning of the third element of the
             list returned for each package
+
         :return:
             A list of lists, each containing three strings:
               0 - package name
