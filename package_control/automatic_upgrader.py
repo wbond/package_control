@@ -324,7 +324,10 @@ class AutomaticUpgrader(threading.Thread):
         time.sleep(0.7)
 
         for info in package_list:
-            package_name = info[0]
+            if self.installer.use_quick_panel_item:
+                package_name = package.trigger
+            else:
+                package_name = info[0]
 
             if self.installer.manager.install_package(package_name):
                 if package_name in disabled_packages:
