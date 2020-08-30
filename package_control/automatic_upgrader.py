@@ -316,7 +316,10 @@ class AutomaticUpgrader(threading.Thread):
         # in the main thread. We then then wait a bit and continue with the
         # upgrades.
         def disable_packages():
-            packages = [info[0] for info in package_list]
+            if self.installer.use_quick_panel_item:
+                packages = [info.trigger for info in package_list]
+            else:
+                packages = [info[0] for info in package_list]
             disabled_packages.extend(self.installer.disable_packages(packages, 'upgrade'))
         sublime.set_timeout(disable_packages, 1)
 
