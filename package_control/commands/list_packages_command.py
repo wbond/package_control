@@ -9,6 +9,8 @@ from ..show_quick_panel import show_quick_panel
 from ..package_manager import PackageManager
 from .existing_packages_command import ExistingPackagesCommand
 
+USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+
 
 class ListPackagesCommand(sublime_plugin.WindowCommand):
 
@@ -78,7 +80,11 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
 
         if picked == -1:
             return
-        package_name = self.package_list[picked][0]
+
+        if USE_QUICK_PANEL_ITEM:
+            package_name = self.package_list[picked].trigger
+        else:
+            package_name = self.package_list[picked][0]
 
         def open_dir():
             package_dir = self.manager.get_package_dir(package_name)
