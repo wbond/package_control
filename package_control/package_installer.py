@@ -9,8 +9,7 @@ from .package_manager import PackageManager
 from .package_disabler import PackageDisabler
 from .versions import version_comparable
 
-
-USE_QUICK_PANEL_ITEM = int(sublime.version()) > 4080
+USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
 class PackageInstaller(PackageDisabler):

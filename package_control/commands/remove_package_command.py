@@ -11,6 +11,8 @@ from ..thread_progress import ThreadProgress
 from ..package_disabler import PackageDisabler
 from ..package_manager import PackageManager
 
+USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+
 
 class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand, PackageDisabler):
 
@@ -53,16 +55,20 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
 
         if picked == -1:
             return
-        package = self.package_list[picked][0]
 
-        self.disable_packages(package, 'remove')
+        if USE_QUICK_PANEL_ITEM:
+            package_name = self.package_list[picked].trigger
+        else:
+            package_name = self.package_list[picked][0]
 
-        thread = RemovePackageThread(self.manager, package)
+        self.disable_packages(package_name, 'remove')
+
+        thread = RemovePackageThread(self.manager, package_name)
         thread.start()
         ThreadProgress(
             thread,
-            'Removing package %s' % package,
-            'Package %s successfully removed' % package
+            'Removing package %s' % package_name,
+            'Package %s successfully removed' % package_name
         )
 
 

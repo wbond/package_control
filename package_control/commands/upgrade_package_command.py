@@ -9,6 +9,8 @@ from ..thread_progress import ThreadProgress
 from ..package_installer import PackageInstaller, PackageInstallerThread
 from ..package_renamer import PackageRenamer
 
+USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+
 
 class UpgradePackageCommand(sublime_plugin.WindowCommand):
 
@@ -76,18 +78,22 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
         if picked == -1:
             return
-        name = self.package_list[picked][0]
 
-        if name in self.disable_packages(name, 'upgrade'):
+        if USE_QUICK_PANEL_ITEM:
+            package_name = self.package_list[picked].trigger
+        else:
+            package_name = self.package_list[picked][0]
+
+        if package_name in self.disable_packages(package_name, 'upgrade'):
             def on_complete():
-                self.reenable_package(name)
+                self.reenable_package(package_name)
         else:
             on_complete = None
 
-        thread = PackageInstallerThread(self.manager, name, on_complete, pause=True)
+        thread = PackageInstallerThread(self.manager, package_name, on_complete, pause=True)
         thread.start()
         ThreadProgress(
             thread,
-            'Upgrading package %s' % name,
-            'Package %s successfully %s' % (name, self.completion_type)
+            'Upgrading package %s' % package_name,
+            'Package %s successfully %s' % (package_name, self.completion_type)
         )
