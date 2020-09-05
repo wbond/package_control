@@ -18,6 +18,8 @@ from .file_not_found_error import FileNotFoundError
 from .open_compat import open_compat, read_compat, write_compat
 from .settings import pc_settings_filename, load_list_setting
 
+USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+
 
 class AutomaticUpgrader(threading.Thread):
 
@@ -277,19 +279,20 @@ class AutomaticUpgrader(threading.Thread):
             ignore_packages=self.auto_upgrade_ignore
         )
 
-        # If Package Control is being upgraded, just do that and restart
-        for package in package_list:
-            if package[0] != 'Package Control':
-                continue
+        if USE_QUICK_PANEL_ITEM:
+            package_list = [info.trigger for info in package_list]
+        else:
+            package_list = [info[0] for info in package_list]
 
+        # If Package Control is being upgraded, just do that and restart
+        if 'Package Control' in package_list:
             if self.last_run:
                 def reset_last_run():
                     # Re-save the last run time so it runs again after PC has
                     # been updated
                     self.save_last_run(self.last_run)
                 sublime.set_timeout(reset_last_run, 1)
-            package_list = [package]
-            break
+            package_list = ['Package Control']
 
         if not package_list:
             console_write(
@@ -312,16 +315,14 @@ class AutomaticUpgrader(threading.Thread):
         # in the main thread. We then then wait a bit and continue with the
         # upgrades.
         def disable_packages():
-            packages = [info[0] for info in package_list]
-            disabled_packages.extend(self.installer.disable_packages(packages, 'upgrade'))
+            disabled_packages.extend(self.installer.disable_packages(package_list, 'upgrade'))
+
         sublime.set_timeout(disable_packages, 1)
 
         # Wait so that the ignored packages can be "unloaded"
         time.sleep(0.7)
 
-        for info in package_list:
-            package_name = info[0]
-
+        for package_name in package_list:
             if self.installer.manager.install_package(package_name):
                 if package_name in disabled_packages:
                     # We use a functools.partial to generate the on-complete callback in
