@@ -133,17 +133,17 @@ class PackageInstaller(PackageDisabler):
             description = info.get('description')
             if not description:
                 description = 'No description provided'
-                if USE_QUICK_PANEL_ITEM:
-                    description = '<em>%s</em>' % description
 
             homepage = info['homepage']
             homepage_display = re.sub('^https?://', '', homepage)
 
             if USE_QUICK_PANEL_ITEM:
+                description = '<em>%s</em>' % sublime.html_format_command(description)
                 final_line = '<em>' + action + extra + '</em>'
-                if final_line and homepage_display:
-                    final_line += ' '
-                final_line += '<a href="%s">%s</a>' % (homepage, homepage_display)
+                if homepage_display:
+                    if action or extra:
+                        final_line += ' '
+                    final_line += '<a href="%s">%s</a>' % (homepage, homepage_display)
                 package_entry = sublime.QuickPanelItem(package, [description, final_line])
             else:
                 package_entry = [package]
