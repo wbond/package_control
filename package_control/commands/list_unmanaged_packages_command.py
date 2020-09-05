@@ -3,6 +3,8 @@ import sublime_plugin
 
 from .list_packages_command import ListPackagesThread
 
+USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+
 
 class ListUnmanagedPackagesCommand(sublime_plugin.WindowCommand):
 
@@ -19,6 +21,8 @@ class ListUnmanagedPackagesCommand(sublime_plugin.WindowCommand):
         ignored_packages.extend(settings.get('installed_packages', []))
 
         def filter_packages(package):
+            if USE_QUICK_PANEL_ITEM:
+                return package.trigger not in ignored_packages
             return package[0] not in ignored_packages
 
         ListPackagesThread(self.window, filter_packages).start()
