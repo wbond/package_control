@@ -4,21 +4,15 @@ import sys
 
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
-from .sys_path import pc_cache_dir
+from .sys_path import pc_cache_dir, user_config_dir
 
 from .deps.oscrypto import use_ctypes
 use_ctypes()
 from .deps.oscrypto import trust_list  # noqa
 
 
-# Have somewhere to store the CA bundle, even when not running in Sublime Text
-try:
-    import sublime
-    ca_bundle_dir = None
-    user_ca_bundle_dir = None
-except (ImportError):
-    ca_bundle_dir = os.path.join(os.path.expanduser('~'), '.package_control')
-    user_ca_bundle_dir = ca_bundle_dir
+ca_bundle_dir = None
+user_ca_bundle_dir = None
 
 
 def get_ca_bundle_path(settings):
@@ -228,7 +222,7 @@ def ensure_ca_bundle_dir():
     if not ca_bundle_dir:
         ca_bundle_dir = pc_cache_dir()
     if not user_ca_bundle_dir:
-        user_ca_bundle_dir = os.path.join(sublime.packages_path(), 'User')
+        user_ca_bundle_dir = user_config_dir()
     if not os.path.exists(ca_bundle_dir):
         try:
             os.mkdir(ca_bundle_dir)

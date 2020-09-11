@@ -228,3 +228,14 @@ def pc_cache_dir():
             cache_dir = sublime.cache_path()
 
     return os.path.join(cache_dir, u'Package Control')
+
+
+def user_config_dir():
+    """
+    Returns the directory for the user's config
+
+    :return:
+        A unicode string of the user's config dir
+    """
+
+    return os.path.join(sublime.packages_path(), 'User')
