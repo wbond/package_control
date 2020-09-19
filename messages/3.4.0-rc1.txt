@@ -1,6 +1,10 @@
 Version 3.4.0 RC1 Release Notes
 
-* NOTICE: This will be the final release supporting Sublime Text 2 *
+ ---------------------------------------------------
+| NOTICE: This will be the final release supporting |
+| - Sublime Text 2                                  |
+| - Sublime Text 3 beta builds (<3143)              |
+ ---------------------------------------------------
 
 New features include:
 
