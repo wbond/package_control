@@ -1,4 +1,4 @@
-Version 3.4.0 Beta Release Notes
+Version 3.4.0 RC1 Release Notes
 
 * NOTICE: This will be the final release supporting Sublime Text 2 *
 
@@ -39,3 +39,6 @@ Bug fixes include:
 
  - Resolved deadlocks and ignored packages occuring when removing multiple
    dependencies at once
+
+ - Package messages are no longer printed with trailing whitespace on lines
+   with no text - by dnicolson
