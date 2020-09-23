@@ -100,7 +100,6 @@ else:
     pc_package_path = decode(os.getcwd())
     packages_path = dirname(pc_package_path)
     data_dir = dirname(packages_path)
-    cache_dir = os.path.join(data_dir, 'Cache')
     installed_packages_path = os.path.join(data_dir, u'Installed Packages')
     st_version = u'2'
 
