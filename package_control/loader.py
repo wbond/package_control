@@ -1,4 +1,3 @@
-import sys
 import os
 import re
 import json
@@ -9,11 +8,6 @@ import shutil
 import time
 from textwrap import dedent
 from threading import Event, Lock
-
-try:
-    str_cls = unicode
-except (NameError):
-    str_cls = str
 
 import sublime
 
@@ -51,10 +45,7 @@ non_local = {
 
 
 loader_package_name = u'0_package_control_loader'
-if sys.version_info < (3,):
-    loader_package_path = path.join(sys_path.packages_path, loader_package_name)
-else:
-    loader_package_path = path.join(sys_path.installed_packages_path, u'%s.sublime-package' % loader_package_name)
+loader_package_path = path.join(sys_path.installed_packages_path, u'%s.sublime-package' % loader_package_name)
 
 # With the zipfile module there is no way to delete a file from a zip, so we
 # must instead copy the other files to a new zipfile and swap the filenames.
@@ -74,7 +65,7 @@ def __update_loaders(z):
 
     non_local['loaders'] = []
     for filename in z.namelist():
-        if not isinstance(filename, str_cls):
+        if not isinstance(filename, str):
             filename = filename.decode('utf-8')
         non_local['loaders'].append(filename)
 
@@ -127,18 +118,6 @@ def _existing_info(name, return_code):
 
     load_order = None
     code = None
-
-    if sys.version_info < (3,):
-        for filename in os.listdir(loader_package_path):
-            match = re.match(loader_filename_regex, filename)
-            if match:
-                load_order = match.group(1)
-                if return_code:
-                    loader_path = os.path.join(loader_package_path, filename)
-                    with open(loader_path, 'rb') as f:
-                        code = f.read().decode('utf-8')
-                break
-        return (load_order, code)
 
     # We acquire a lock so that multiple removals don't stomp on each other
     loader_lock.acquire()
@@ -241,67 +220,55 @@ def add(priority, name, code=None):
     }
     loader_metadata_enc = json.dumps(loader_metadata).encode('utf-8')
 
-    if sys.version_info < (3,):
-        if not path.exists(loader_package_path):
-            just_created_loader = True
-            os.mkdir(loader_package_path, 0o755)
-            with open(path.join(loader_package_path, 'dependency-metadata.json'), 'wb') as f:
-                f.write(loader_metadata_enc)
+    # Make sure Python doesn't use the old file listing for the loader
+    # when trying to import modules
+    if loader_package_path in zipimport._zip_directory_cache:
+        del zipimport._zip_directory_cache[loader_package_path]
 
-        loader_path = path.join(loader_package_path, loader_filename)
-        with open(loader_path, 'wb') as f:
-            f.write(code.encode('utf-8'))
+    try:
+        loader_lock.acquire()
 
-    else:
-        # Make sure Python doesn't use the old file listing for the loader
-        # when trying to import modules
-        if loader_package_path in zipimport._zip_directory_cache:
-            del zipimport._zip_directory_cache[loader_package_path]
+        # If a swap of the loader .sublime-package was queued because of a
+        # file being removed, we need to add the new loader code the the
+        # .sublime-package that will be swapped into place shortly.
+        if swap_event.in_process() and os.path.exists(new_loader_package_path):
+            package_to_update = new_loader_package_path
+        else:
+            package_to_update = loader_package_path
 
-        try:
-            loader_lock.acquire()
+        mode = 'w'
+        just_created_loader = True
 
-            # If a swap of the loader .sublime-package was queued because of a
-            # file being removed, we need to add the new loader code the the
-            # .sublime-package that will be swapped into place shortly.
-            if swap_event.in_process() and os.path.exists(new_loader_package_path):
-                package_to_update = new_loader_package_path
-            else:
-                package_to_update = loader_package_path
+        # Only append if the file exists and is a valid zip file
+        if os.path.exists(package_to_update):
+            # Even if the loader was invalid, it still won't show up as a
+            # "new" file via filesystem notifications, so we have to
+            # manually load the code.
+            just_created_loader = False
+            try:
+                with zipfile.ZipFile(package_to_update, 'r') as rz:
+                    # Make sure the zip file can be read
+                    res = rz.testzip()
+                    if res is not None:
+                        raise zipfile.BadZipfile('zip test failed')
+                    mode = 'a'
+            except (zipfile.BadZipfile, OSError):
+                os.unlink(package_to_update)
 
-            mode = 'w'
-            just_created_loader = True
+        with zipfile.ZipFile(package_to_update, mode) as z:
+            if mode == 'w':
+                z.writestr('dependency-metadata.json', loader_metadata_enc)
+            z.writestr(loader_filename, code.encode('utf-8'))
+            __update_loaders(z)
 
-            # Only append if the file exists and is a valid zip file
-            if os.path.exists(package_to_update):
-                # Even if the loader was invalid, it still won't show up as a
-                # "new" file via filesystem notifications, so we have to
-                # manually load the code.
-                just_created_loader = False
-                try:
-                    with zipfile.ZipFile(package_to_update, 'r') as rz:
-                        # Make sure the zip file can be read
-                        res = rz.testzip()
-                        if res is not None:
-                            raise zipfile.BadZipfile('zip test failed')
-                        mode = 'a'
-                except (zipfile.BadZipfile, OSError):
-                    os.unlink(package_to_update)
+    finally:
+        loader_lock.release()
 
-            with zipfile.ZipFile(package_to_update, mode) as z:
-                if mode == 'w':
-                    z.writestr('dependency-metadata.json', loader_metadata_enc)
-                z.writestr(loader_filename, code.encode('utf-8'))
-                __update_loaders(z)
-
-        finally:
-            loader_lock.release()
-
-        if not just_created_loader and not swap_event.in_process():
-            # Manually execute the loader code because Sublime Text does not
-            # detect changes to the zip archive, only if the file is new.
-            importer = zipimport.zipimporter(loader_package_path)
-            importer.load_module(loader_filename[0:-3])
+    if not just_created_loader and not swap_event.in_process():
+        # Manually execute the loader code because Sublime Text does not
+        # detect changes to the zip archive, only if the file is new.
+        importer = zipimport.zipimporter(loader_package_path)
+        importer.load_module(loader_filename[0:-3])
 
     # Clean things up for people who were tracking the master branch
     if just_created_loader:
@@ -367,12 +334,6 @@ def remove(name):
 
     loader_filename_regex = u'^\\d\\d-%s.pyc?$' % re.escape(name)
 
-    if sys.version_info < (3,):
-        for filename in os.listdir(loader_package_path):
-            if re.match(loader_filename_regex, filename):
-                os.remove(path.join(loader_package_path, filename))
-        return
-
     removed = False
 
     # We acquire a lock so that multiple removals don't stomp on each other
@@ -394,7 +355,7 @@ def remove(name):
 
         new_loader_z = zipfile.ZipFile(new_loader_package_path, 'w')
         for enc_filename in old_loader_z.namelist():
-            if not isinstance(enc_filename, str_cls):
+            if not isinstance(enc_filename, str):
                 filename = enc_filename.decode('utf-8')
             else:
                 filename = enc_filename

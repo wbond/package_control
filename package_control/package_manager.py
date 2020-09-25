@@ -1,4 +1,3 @@
-import sys
 import os
 import re
 import json
@@ -9,17 +8,9 @@ import datetime
 import tempfile
 # To prevent import errors in thread with datetime
 import locale  # noqa
+from urllib.parse import urlencode, urlparse
+import compileall
 
-try:
-    # Python 3
-    from urllib.parse import urlencode, urlparse
-    import compileall
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urllib import urlencode
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
 
 import sublime
 
@@ -27,7 +18,6 @@ from .show_error import show_error
 from .console_write import console_write
 from .open_compat import open_compat, read_compat
 from .file_not_found_error import FileNotFoundError
-from .unicode import unicode_from_os
 from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .versions import version_comparable, version_sort
@@ -719,8 +709,7 @@ class PackageManager():
         output = []
 
         # This is seeded since it is in a .sublime-package with ST3
-        if sys.version_info >= (3,):
-            output.append('0_package_control_loader')
+        output.append('0_package_control_loader')
 
         for name in self._list_visible_dirs(self.settings['packages_path']):
             if not self._is_dependency(name):
@@ -932,7 +921,7 @@ class PackageManager():
 
                 %s
                 ''',
-                (package_filename, package_destination, unicode_from_os(e))
+                (package_filename, package_destination, str(e))
             )
             return False
 
@@ -1145,7 +1134,7 @@ class PackageManager():
             last_path = None
             for path in package_zip.namelist():
                 try:
-                    if not isinstance(path, str_cls):
+                    if not isinstance(path, str):
                         path = path.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
                     console_write(
@@ -1300,7 +1289,7 @@ class PackageManager():
                 dest = path
 
                 try:
-                    if not isinstance(dest, str_cls):
+                    if not isinstance(dest, str):
                         dest = dest.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
                     console_write(
@@ -1371,7 +1360,7 @@ class PackageManager():
                         with open_compat(dest, 'wb') as f:
                             f.write(package_zip.read(path))
                     except (IOError) as e:
-                        message = unicode_from_os(e)
+                        message = str(e)
                         if re.search('[Ee]rrno 13', message):
                             overwrite_failed = True
                             break
@@ -1489,7 +1478,7 @@ class PackageManager():
 
                         %s
                         ''',
-                        (package_filename, tmp_dir, unicode_from_os(e))
+                        (package_filename, tmp_dir, str(e))
                     )
                     return False
 
@@ -1711,7 +1700,7 @@ class PackageManager():
 
                 %s
                 ''',
-                (package_name, unicode_from_os(e))
+                (package_name, str(e))
             )
             try:
                 if os.path.exists(package_backup_dir):
@@ -1932,7 +1921,7 @@ class PackageManager():
 
                 %s
                 ''',
-                (package_name, unicode_from_os(e))
+                (package_name, str(e))
             )
             return False
 
@@ -2005,7 +1994,7 @@ class PackageManager():
 
         # For Python 2, we need to explicitly encoding the params
         for param in params:
-            if isinstance(params[param], str_cls):
+            if isinstance(params[param], str):
                 params[param] = params[param].encode('utf-8')
 
         url = self.settings.get('submit_url') + '?' + urlencode(params)

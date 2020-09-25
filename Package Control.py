@@ -1,27 +1,16 @@
 import sublime
-import sys
 import os
 import shutil
 
 
-st_version = 2 if sys.version_info < (3,) else 3
+from .package_control import text, sys_path
 
+installed_dir, _ = __name__.split('.')
 
-if st_version == 3:
-    from .package_control import text, sys_path
-
-    installed_dir, _ = __name__.split('.')
-
-    package_path = os.path.join(sys_path.installed_packages_path, 'Package Control.sublime-package')
-    pc_python_path = os.path.join(sys_path.packages_path, 'Package Control', 'Package Control.py')
-    has_packed = os.path.exists(package_path)
-    has_unpacked = os.path.exists(pc_python_path)
-
-elif st_version == 2:
-    from package_control import text, sys_path
-
-    installed_dir = os.path.basename(os.getcwd())
-
+package_path = os.path.join(sys_path.installed_packages_path, 'Package Control.sublime-package')
+pc_python_path = os.path.join(sys_path.packages_path, 'Package Control', 'Package Control.py')
+has_packed = os.path.exists(package_path)
+has_unpacked = os.path.exists(pc_python_path)
 
 # Ensure the user has installed Package Control properly
 if installed_dir != 'Package Control':
@@ -65,7 +54,7 @@ if installed_dir != 'Package Control':
         )
     sublime.error_message(message)
 
-elif st_version == 3 and has_packed and has_unpacked:
+elif has_packed and has_unpacked:
     message = text.format(
         u'''
         Package Control
@@ -85,19 +74,10 @@ elif st_version == 3 and has_packed and has_unpacked:
 
 # Normal execution will finish setting up the package
 else:
-    if st_version == 3:
-        from .package_control.commands import *  # noqa
-        from .package_control.package_cleanup import PackageCleanup
-        from .package_control.unicode import tempfile_unicode_patch
-        from .package_control.console_write import console_write
-        from .package_control.settings import pc_settings_filename
-
-    else:
-        from package_control.commands import *  # noqa
-        from package_control.package_cleanup import PackageCleanup
-        from package_control.unicode import tempfile_unicode_patch
-        from package_control.console_write import console_write
-        from package_control.settings import pc_settings_filename
+    from .package_control.commands import *  # noqa
+    from .package_control.package_cleanup import PackageCleanup
+    from .package_control.console_write import console_write
+    from .package_control.settings import pc_settings_filename
 
     def plugin_loaded():
         # Make sure the user's locale can handle non-ASCII. A whole bunch of
@@ -127,9 +107,6 @@ else:
             )
             sublime.error_message(message)
             return
-
-        # This handles fixing unicode issues with tempdirs on ST2 for Windows
-        tempfile_unicode_patch()
 
         # Ensure we have a Cache dir we can use for temporary data
         if not os.path.exists(sys_path.pc_cache_dir()):
@@ -177,6 +154,3 @@ else:
             # Start shortly after Sublime starts so package renames don't cause errors
             # with keybindings, settings, etc disappearing in the middle of parsing
             sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
-
-    if st_version == 2:
-        plugin_loaded()

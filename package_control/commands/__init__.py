@@ -17,8 +17,6 @@ from .package_control_edit_settings_command import PackageControlEditSettingsCom
 from .package_control_enable_debug_mode_command import PackageControlEnableDebugModeCommand
 from .package_control_insert_command import PackageControlInsertCommand
 from .package_control_tests_command import PackageControlTestsCommand
-from .package_control_open_default_settings_command import PackageControlOpenDefaultSettingsCommand
-from .package_control_open_user_settings_command import PackageControlOpenUserSettingsCommand
 from .remove_channel_command import RemoveChannelCommand
 from .remove_repository_command import RemoveRepositoryCommand
 from .satisfy_dependencies_command import SatisfyDependenciesCommand
@@ -44,8 +42,6 @@ __all__ = [
     'PackageControlEnableDebugModeCommand',
     'PackageControlInsertCommand',
     'PackageControlTestsCommand',
-    'PackageControlOpenDefaultSettingsCommand',
-    'PackageControlOpenUserSettingsCommand',
     'RemoveChannelCommand',
     'RemoveRepositoryCommand',
     'SatisfyDependenciesCommand'

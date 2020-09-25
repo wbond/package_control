@@ -11,13 +11,6 @@ from ..package_manager import PackageManager
 from ..package_disabler import PackageDisabler
 from ..thread_progress import ThreadProgress
 
-try:
-    str_cls = unicode
-    bytes_cls = str
-except (NameError):
-    str_cls = str
-    bytes_cls = bytes
-
 
 class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
 
@@ -27,8 +20,8 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self, packages=None):
-        is_str = isinstance(packages, str_cls)
-        is_bytes = isinstance(packages, bytes_cls)
+        is_str = isinstance(packages, str)
+        is_bytes = isinstance(packages, bytes)
 
         if packages and (is_str or is_bytes):
             packages = self.split(packages)
@@ -45,7 +38,7 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
         )
 
     def split(self, packages):
-        if isinstance(packages, bytes_cls):
+        if isinstance(packages, bytes):
             packages = packages.decode('utf-8')
         return re.split(r'\s*,\s*', packages)
 

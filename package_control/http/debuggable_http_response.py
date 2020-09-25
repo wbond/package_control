@@ -1,11 +1,4 @@
-try:
-    # Python 3
-    from http.client import HTTPResponse, IncompleteRead
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from httplib import HTTPResponse, IncompleteRead
-    str_cls = unicode  # noqa
+from http.client import HTTPResponse, IncompleteRead
 
 from ..console_write import console_write
 
@@ -43,7 +36,7 @@ class DebuggableHTTPResponse(HTTPResponse):
                 10: u'HTTP/1.0',
                 11: u'HTTP/1.1'
             }
-            status_line = u'%s %s %s' % (versions[self.version], str_cls(self.status), self.reason)
+            status_line = u'%s %s %s' % (versions[self.version], str(self.status), self.reason)
             headers.insert(0, status_line)
 
             indented_headers = u'\n  '.join(headers)

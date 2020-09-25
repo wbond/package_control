@@ -1,13 +1,5 @@
 import re
-
-try:
-    # Python 3
-    from urllib.parse import urlencode, quote
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urllib import urlencode, quote
-    str_cls = unicode  # noqa
+from urllib.parse import urlencode, quote
 
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
@@ -304,7 +296,7 @@ class GitHubClient(JSONApiClient):
         try:
             return self.fetch_json(readme_url, prefer_cached)
         except (DownloaderException) as e:
-            if str_cls(e).find('HTTP error 404') != -1:
+            if str(e).find('HTTP error 404') != -1:
                 return None
             raise
 

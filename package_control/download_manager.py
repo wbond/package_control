@@ -3,22 +3,13 @@ import socket
 from threading import Lock, Timer
 from contextlib import contextmanager
 import sys
-
-try:
-    # Python 3
-    from urllib.parse import urlparse
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
+from urllib.parse import urlparse
 
 from . import __version__
 
 from .show_error import show_error
 from .console_write import console_write
 from .cache import set_cache, get_cache
-from .unicode import unicode_from_os
 from . import text
 
 from .downloaders import DOWNLOADERS
@@ -317,7 +308,7 @@ class DownloadManager(object):
             try:
                 ip = socket.gethostbyname(hostname)
             except (socket.gaierror) as e:
-                ip = unicode_from_os(e)
+                ip = str(e)
             except (TypeError):
                 ip = None
 
@@ -328,7 +319,7 @@ class DownloadManager(object):
                   Timeout: %s
                   Resolved IP: %s
                 ''',
-                (url, str_cls(timeout), ip)
+                (url, str(timeout), ip)
             )
             if ipv6:
                 console_write(
@@ -369,7 +360,7 @@ class DownloadManager(object):
                 u'''
                 Attempting to use Urllib downloader due to Oscrypto error: %s
                 ''',
-                str_cls(e)
+                str(e)
             )
 
             self.downloader = UrlLibDownloader(self.settings)

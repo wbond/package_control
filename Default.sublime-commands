@@ -80,14 +80,6 @@
         "command": "package_control_disable_debug_mode"
     },
     {
-        "caption": "Preferences: Package Control Settings – Default",
-        "command": "package_control_open_default_settings"
-    },
-    {
-        "caption": "Preferences: Package Control Settings – User",
-        "command": "package_control_open_user_settings"
-    },
-    {
         "caption": "Preferences: Package Control Settings",
         "command": "package_control_edit_settings"
     },

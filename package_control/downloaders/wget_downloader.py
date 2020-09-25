@@ -2,15 +2,7 @@ import tempfile
 import re
 import os
 
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
-
 from ..console_write import console_write
-from ..unicode import unicode_from_os
 from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
@@ -84,7 +76,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         self.tmp_file = tempfile.NamedTemporaryFile().name
         command = [
             self.wget,
-            '--connect-timeout=' + str_cls(int(timeout)),
+            '--connect-timeout=' + str(int(timeout)),
             '-o',
             self.tmp_file,
             '-O',
@@ -185,7 +177,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
                 except (NonHttpError) as e:
 
-                    download_error = unicode_from_os(e)
+                    download_error = str(e)
 
                     # GitHub and BitBucket seem to time out a lot
                     if download_error.find('timed out') != -1:

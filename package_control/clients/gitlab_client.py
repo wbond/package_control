@@ -1,19 +1,9 @@
 import re
+from urllib.parse import urlencode, quote
 
 from ..downloaders.downloader_exception import DownloaderException
 from ..versions import version_process, version_sort
 from .json_api_client import JSONApiClient
-
-try:
-    # Python 3
-    from urllib.parse import urlencode, quote
-
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urllib import urlencode, quote
-
-    str_cls = unicode  # noqa
 
 
 class GitLabClient(JSONApiClient):
@@ -372,7 +362,7 @@ class GitLabClient(JSONApiClient):
         try:
             repos_info = self.fetch_json(user_url)
         except (DownloaderException) as e:
-            if str_cls(e).find('HTTP error 404') != -1:
+            if str(e).find('HTTP error 404') != -1:
                 return self._extract_group_id(username)
             raise
 
@@ -396,7 +386,7 @@ class GitLabClient(JSONApiClient):
         try:
             repos_info = self.fetch_json(group_url)
         except (DownloaderException) as e:
-            if str_cls(e).find('HTTP error 404') != -1:
+            if str(e).find('HTTP error 404') != -1:
                 return (None, None)
             raise
 
@@ -427,7 +417,7 @@ class GitLabClient(JSONApiClient):
         try:
             repos_info = self.fetch_json(user_url)
         except (DownloaderException) as e:
-            if str_cls(e).find('HTTP error 404') != -1:
+            if str(e).find('HTTP error 404') != -1:
                 return (None, None)
             raise
 

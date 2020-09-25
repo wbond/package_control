@@ -2,13 +2,6 @@ import tempfile
 import re
 import os
 
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
-
 from ..console_write import console_write
 from ..open_compat import open_compat, read_compat
 from .cli_downloader import CliDownloader
@@ -82,7 +75,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         command = [
             self.curl,
             '--connect-timeout',
-            str_cls(int(timeout)),
+            str(int(timeout)),
             '-sSL',
             '--tlsv1',
             # We have to capture the headers to check for rate limit info

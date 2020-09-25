@@ -4,13 +4,6 @@ import hashlib
 
 from ..console_write import console_write
 
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
-
 
 class CachingDownloader(object):
 
@@ -191,7 +184,7 @@ class CachingDownloader(object):
             A string key for the URL
         """
 
-        if isinstance(url, str_cls):
+        if isinstance(url, str):
             url = url.encode('utf-8')
 
         key = hashlib.md5(url).hexdigest()

@@ -6,7 +6,6 @@ import sublime
 
 from .show_error import show_error
 from .console_write import console_write
-from .unicode import unicode_from_os
 from .clear_directory import clear_directory, unlink_or_delete_directory, clean_old_files
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
@@ -348,7 +347,7 @@ class PackageCleanup(threading.Thread):
                     Unable to remove orphaned package %s - deferring until
                     next start: %s
                     ''',
-                    (name, unicode_from_os(e))
+                    (name, str(e))
                 )
 
             finally:

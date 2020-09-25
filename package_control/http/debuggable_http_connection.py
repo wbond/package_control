@@ -1,11 +1,5 @@
 import socket
-
-try:
-    # Python 3
-    from http.client import HTTPConnection
-except (ImportError):
-    # Python 2
-    from httplib import HTTPConnection
+from http.client import HTTPConnection
 
 from ..console_write import console_write
 from .debuggable_http_response import DebuggableHTTPResponse
@@ -23,10 +17,6 @@ class DebuggableHTTPConnection(HTTPConnection):
     def __init__(self, host, port=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, **kwargs):
         self.passwd = kwargs.get('passwd')
 
-        # Python 2.6.1 on OS X 10.6 does not include these
-        self._tunnel_host = None
-        self._tunnel_port = None
-        self._tunnel_headers = {}
         if 'debug' in kwargs and kwargs['debug']:
             self.debuglevel = 5
         elif 'debuglevel' in kwargs:

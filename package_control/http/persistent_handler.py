@@ -1,13 +1,5 @@
-import sys
 import socket
-
-try:
-    # Python 3
-    from urllib.error import URLError
-except ImportError:
-    # Python 2
-    from urllib2 import URLError
-    from urllib import addinfourl
+from urllib.error import URLError
 
 from ..console_write import console_write
 
@@ -41,10 +33,7 @@ class PersistentHandler:
         # Large portions from Python 3.3 Lib/urllib/request.py and
         # Python 2.6 Lib/urllib2.py
 
-        if sys.version_info >= (3,):
-            host = req.host
-        else:
-            host = req.get_host()
+        host = req.host
 
         if not host:
             raise URLError('no host given')
@@ -67,19 +56,10 @@ class PersistentHandler:
                     (h._debug_protocol, h.host, h.port, self.use_count)
                 )
 
-        if sys.version_info >= (3,):
-            headers = dict(req.unredirected_hdrs)
-            headers.update(dict((k, v) for k, v in req.headers.items()
-                                if k not in headers))
-            headers = dict((name.title(), val) for name, val in headers.items())
-
-        else:
-            h.set_debuglevel(self._debuglevel)
-
-            headers = dict(req.headers)
-            headers.update(req.unredirected_hdrs)
-            headers = dict(
-                (name.title(), val) for name, val in headers.items())
+        headers = dict(req.unredirected_hdrs)
+        headers.update(dict((k, v) for k, v in req.headers.items()
+                            if k not in headers))
+        headers = dict((name.title(), val) for name, val in headers.items())
 
         if req._tunnel_host and not self.connection:
             tunnel_headers = {}
@@ -88,16 +68,10 @@ class PersistentHandler:
                 tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
                 del headers[proxy_auth_hdr]
 
-            if sys.version_info >= (3,):
-                h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
-            else:
-                h._set_tunnel(req._tunnel_host, headers=tunnel_headers)
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
 
         try:
-            if sys.version_info >= (3,):
-                h.request(req.get_method(), req.selector, req.data, headers)
-            else:
-                h.request(req.get_method(), req.get_selector(), req.data, headers)
+            h.request(req.get_method(), req.selector, req.data, headers)
         except socket.error as err:  # timeout error
             h.close()
             raise URLError(err)
@@ -120,15 +94,6 @@ class PersistentHandler:
             self.use_count = 0
             self.connection = None
 
-        if sys.version_info >= (3,):
-            r.url = req.get_full_url()
-            r.msg = r.reason
-            return r
-
-        r.recv = r.read
-        fp = socket._fileobject(r, close=True)
-
-        resp = addinfourl(fp, r.msg, req.get_full_url())
-        resp.code = r.status
-        resp.msg = r.reason
-        return resp
+        r.url = req.get_full_url()
+        r.msg = r.reason
+        return r

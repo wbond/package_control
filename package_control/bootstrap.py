@@ -3,16 +3,8 @@ import os
 import hashlib
 import json
 from os import path
-try:
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
-    from cStringIO import StringIO as BytesIO
-    package_control_dir = os.getcwd()
-except (ImportError):
-    from urllib.parse import urlparse
-    str_cls = str
-    from io import BytesIO
-    package_control_dir = path.dirname(path.dirname(__file__))
+from urllib.parse import urlparse
+from io import BytesIO
 
 import sublime
 
@@ -148,7 +140,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     for zip_path in data_zip.namelist():
         dest = zip_path
 
-        if not isinstance(dest, str_cls):
+        if not isinstance(dest, str):
             dest = dest.decode('utf-8', 'strict')
 
         dest = dest.replace('\\', '/')

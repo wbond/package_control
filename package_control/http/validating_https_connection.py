@@ -4,17 +4,8 @@ import base64
 import hashlib
 import os
 import sys
-
-try:
-    # Python 3
-    from http.client import HTTPS_PORT
-    from urllib.request import parse_keqv_list, parse_http_list
-    x509 = None
-except (ImportError):
-    # Python 2
-    from httplib import HTTPS_PORT
-    from urllib2 import parse_keqv_list, parse_http_list
-    from ..deps.asn1crypto import x509
+from http.client import HTTPS_PORT
+from urllib.request import parse_keqv_list, parse_http_list
 
 from ..console_write import console_write
 from .debuggable_https_response import DebuggableHTTPSResponse
@@ -114,8 +105,7 @@ try:
                 request += "%s: %s\r\n" % (header, value)
             request += "\r\n"
 
-            if sys.version_info >= (3,):
-                request = bytes(request, 'iso-8859-1')
+            request = bytes(request, 'iso-8859-1')
 
             self.send(request)
 
@@ -130,8 +120,7 @@ try:
             while True:
                 line = response.fp.readline()
 
-                if sys.version_info >= (3,):
-                    line = line.decode('iso-8859-1')
+                line = line.decode('iso-8859-1')
 
                 if line == '\r\n':
                     break
@@ -305,43 +294,31 @@ try:
 
             hostname = self.host.split(':', 0)[0]
 
-            # Python 3 supports SNI when using an SSLContext
-            if sys.version_info >= (3,):
-                proto = ssl.PROTOCOL_SSLv23
-                if sys.version_info >= (3, 6):
-                    proto = ssl.PROTOCOL_TLS
-                self.ctx = ssl.SSLContext(proto)
-                if sys.version_info < (3, 7):
-                    self.ctx.options = ssl.OP_ALL | ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3
-                else:
-                    self.ctx.minimum_version = ssl.TLSVersion.TLSv1
-                self.ctx.verify_mode = self.cert_reqs
-                self.ctx.load_verify_locations(self.ca_certs)
-                # We don't call load_cert_chain() with self.key_file and self.cert_file
-                # since that is for servers, and this code only supports client mode
-                if self.debuglevel == -1:
-                    console_write(
-                        u'''
-                          Using hostname "%s" for TLS SNI extension
-                        ''',
-                        hostname,
-                        indent='  ',
-                        prefix=False
-                    )
-                self.sock = self.ctx.wrap_socket(
-                    self.sock,
-                    server_hostname=hostname
-                )
-
+            proto = ssl.PROTOCOL_SSLv23
+            if sys.version_info >= (3, 6):
+                proto = ssl.PROTOCOL_TLS
+            self.ctx = ssl.SSLContext(proto)
+            if sys.version_info < (3, 7):
+                self.ctx.options = ssl.OP_ALL | ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3
             else:
-                self.sock = ssl.wrap_socket(
-                    self.sock,
-                    keyfile=self.key_file,
-                    certfile=self.cert_file,
-                    cert_reqs=self.cert_reqs,
-                    ca_certs=self.ca_certs,
-                    ssl_version=ssl.PROTOCOL_SSLv23
+                self.ctx.minimum_version = ssl.TLSVersion.TLSv1
+            self.ctx.verify_mode = self.cert_reqs
+            self.ctx.load_verify_locations(self.ca_certs)
+            # We don't call load_cert_chain() with self.key_file and self.cert_file
+            # since that is for servers, and this code only supports client mode
+            if self.debuglevel == -1:
+                console_write(
+                    u'''
+                      Using hostname "%s" for TLS SNI extension
+                    ''',
+                    hostname,
+                    indent='  ',
+                    prefix=False
                 )
+            self.sock = self.ctx.wrap_socket(
+                self.sock,
+                server_hostname=hostname
+            )
 
             if self.debuglevel == -1:
                 cipher_info = self.sock.cipher()
@@ -358,20 +335,6 @@ try:
             # This debugs and validates the SSL certificate
             if self.cert_reqs & ssl.CERT_REQUIRED:
                 cert = self.sock.getpeercert()
-                # Python 2.6 doesn't seem to parse the subject alt name, so
-                # we parse the raw DER certificate and grab the info ourself
-                if x509:
-                    der_cert = self.sock.getpeercert(True)
-                    cert_object = x509.Certificate.load(der_cert)
-                    if cert_object.subject_alt_name_value:
-                        subject_alt_names = []
-                        for general_name in cert_object.subject_alt_name_value:
-                            if general_name.name != 'dns_name':
-                                continue
-                            if 'commonName' not in cert or general_name.native != cert['commonName']:
-                                subject_alt_names.append(('DNS', general_name.native))
-                        if subject_alt_names:
-                            cert['subjectAltName'] = tuple(subject_alt_names)
 
                 if self.debuglevel == -1:
                     subjectMap = {

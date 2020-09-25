@@ -1,12 +1,8 @@
 import re
+from urllib.parse import quote
 
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
-
-try:
-    from urllib import quote
-except (ImportError):
-    from urllib.parse import quote
 
 
 # A predefined list of readme filenames to look for

@@ -1,12 +1,6 @@
 import gzip
 import zlib
-
-try:
-    # Python 3
-    from io import BytesIO as StringIO
-except (ImportError):
-    # Python 2
-    from StringIO import StringIO
+from io import BytesIO
 
 try:
     import bz2
@@ -57,7 +51,7 @@ class DecodingDownloader(object):
             else:
                 raise DownloaderException(u'Received bzip2 file contents, but was unable to import the bz2 module')
         elif encoding == 'gzip':
-            return gzip.GzipFile(fileobj=StringIO(response)).read()
+            return gzip.GzipFile(fileobj=BytesIO(response)).read()
         elif encoding == 'deflate':
             decompresser = zlib.decompressobj(-zlib.MAX_WBITS)
             return decompresser.decompress(response) + decompresser.flush()

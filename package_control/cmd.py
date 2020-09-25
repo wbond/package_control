@@ -1,10 +1,8 @@
 import os
 import subprocess
 import re
-import sys
 
 from .console_write import console_write
-from .unicode import unicode_from_os
 from .show_error import show_error
 from . import text
 
@@ -17,13 +15,6 @@ try:
     import sublime
 except (ImportError):
     sublime = None
-
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
 
 
 def create_cmd(args, basename_binary=False):
@@ -126,8 +117,6 @@ class Cli(object):
             )
 
         try:
-            if sys.platform == 'win32' and sys.version_info < (3,):
-                cwd = cwd.encode('mbcs')
             proc = subprocess.Popen(
                 args,
                 stdin=subprocess.PIPE,
@@ -138,7 +127,7 @@ class Cli(object):
                 env=os.environ
             )
 
-            if input and isinstance(input, str_cls):
+            if input and isinstance(input, str):
                 input = input.encode(encoding)
 
             stuck = True
@@ -230,7 +219,7 @@ class Cli(object):
 
                 Try checking your "%s_binary" setting?
                 ''',
-                (create_cmd(args), unicode_from_os(e), self.cli_name)
+                (create_cmd(args), str(e), self.cli_name)
             )
             return False
 

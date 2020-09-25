@@ -1,12 +1,5 @@
 import json
-
-try:
-    # Python 3
-    from urllib.parse import urlencode, urlparse
-except (ImportError):
-    # Python 2
-    from urllib import urlencode
-    from urlparse import urlparse
+from urllib.parse import urlencode, urlparse
 
 from .client_exception import ClientException
 from ..download_manager import downloader
