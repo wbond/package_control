@@ -172,7 +172,7 @@ class BitBucketClient(JSONApiClient):
 
         info = self.fetch_json(api_url)
 
-        issues_url = u'https://bitbucket.org/%s/issues' % user_repo
+        issues_url = 'https://bitbucket.org/%s/issues' % user_repo
 
         author = info['owner'].get('nickname')
         if author is None:

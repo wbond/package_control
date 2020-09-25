@@ -103,7 +103,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         secure_url_match = re.match('^https://([^/]+)', url)
         if secure_url_match is not None:
             bundle_path = get_ca_bundle_path(self.settings)
-            command.append(u'--ca-certificate=' + bundle_path)
+            command.append('--ca-certificate=' + bundle_path)
 
         if self.debug:
             command.append('-d')
@@ -116,13 +116,13 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         proxy_password = self.settings.get('proxy_password')
 
         if proxy_username:
-            command.append(u"--proxy-user=%s" % proxy_username)
+            command.append("--proxy-user=%s" % proxy_username)
         if proxy_password:
-            command.append(u"--proxy-password=%s" % proxy_password)
+            command.append("--proxy-password=%s" % proxy_password)
 
         if self.debug:
             console_write(
-                u'''
+                '''
                 Wget Debug Proxy
                   http_proxy: %s
                   https_proxy: %s
@@ -166,7 +166,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                         # GitHub and BitBucket seem to rate limit via 503
                         if tries and self.debug:
                             console_write(
-                                u'''
+                                '''
                                 Downloading %s was rate limited, trying again
                                 ''',
                                 url
@@ -183,14 +183,14 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     if download_error.find('timed out') != -1:
                         if tries and self.debug:
                             console_write(
-                                u'''
+                                '''
                                 Downloading %s timed out, trying again
                                 ''',
                                 url
                             )
                         continue
 
-                error_string = u'%s %s downloading %s.' % (error_message, download_error, url)
+                error_string = '%s %s downloading %s.' % (error_message, download_error, url)
 
             break
 
@@ -273,12 +273,12 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     continue
 
                 if section != last_section:
-                    console_write(u'Wget HTTP Debug %s', section)
+                    console_write('Wget HTTP Debug %s', section)
 
                 if section == 'Read':
                     header_lines.append(line)
 
-                console_write(u'  %s', line, prefix=False)
+                console_write('  %s', line, prefix=False)
                 last_section = section
 
         else:

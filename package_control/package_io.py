@@ -96,7 +96,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             An error occurred while trying to unzip the sublime-package file
             for %s.
             ''',
@@ -115,7 +115,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to the
             package file being corrupt
             ''',
@@ -124,7 +124,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (IOError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
             invalid filename
             ''',
@@ -133,7 +133,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (UnicodeDecodeError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
             invalid filename or character encoding issue
             ''',
@@ -160,7 +160,7 @@ def _zip_file_exists(package, relative_path):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             An error occurred while trying to unzip the sublime-package file
             for %s.
             ''',

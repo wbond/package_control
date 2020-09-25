@@ -74,7 +74,7 @@ def show_results(panel, output):
     def write_to_panel(chars):
         sublime.set_timeout(lambda: panel.run_command('package_control_insert', {'string': chars}), 10)
 
-    write_to_panel(u'Running Package Control Tests\n\n')
+    write_to_panel('Running Package Control Tests\n\n')
 
     while True:
         chars = output.get()

@@ -130,7 +130,7 @@ class PackageManager():
 
         if filtered_settings != previous_settings and previous_settings != {}:
             console_write(
-                u'''
+                '''
                 Settings change detected, clearing cache
                 '''
             )
@@ -166,7 +166,7 @@ class PackageManager():
                     return json.loads(metadata_json)
                 except (ValueError):
                     console_write(
-                        u'''
+                        '''
                         An error occurred while trying to parse the package
                         metadata for %s.
                         ''',
@@ -194,7 +194,7 @@ class PackageManager():
                     return self.select_dependencies(json.loads(dep_info_json))
                 except (ValueError):
                     console_write(
-                        u'''
+                        '''
                         An error occurred while trying to parse the
                         dependencies.json for %s.
                         ''',
@@ -526,7 +526,7 @@ class PackageManager():
 
         if self.settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Fetching list of available packages and dependencies
                   Platform: %s-%s
                   Sublime Text Version: %s
@@ -895,7 +895,7 @@ class PackageManager():
 
         if not os.path.exists(package_dir):
             show_error(
-                u'''
+                '''
                 The folder for the package name specified, %s,
                 does not exists in %s
                 ''',
@@ -916,7 +916,7 @@ class PackageManager():
             package_file = zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED)
         except (OSError, IOError) as e:
             show_error(
-                u'''
+                '''
                 An error occurred creating the package file %s in %s.
 
                 %s
@@ -1012,7 +1012,7 @@ class PackageManager():
 
         if is_unavailable and not is_available:
             console_write(
-                u'''
+                '''
                 The %s "%s" is either not available on this platform or for
                 this version of Sublime Text
                 ''',
@@ -1025,7 +1025,7 @@ class PackageManager():
             return False
 
         if not is_available:
-            message = u"The %s '%s' is not available"
+            message = "The %s '%s' is not available"
             params = (package_type, package_name)
             if is_dependency:
                 console_write(message, params)
@@ -1046,7 +1046,7 @@ class PackageManager():
         url = release['url']
         package_filename = package_name + '.sublime-package'
 
-        tmp_dir = tempfile.mkdtemp(u'')
+        tmp_dir = tempfile.mkdtemp('')
 
         try:
             # This is refers to the zipfile later on, so we define it here so we can
@@ -1069,7 +1069,7 @@ class PackageManager():
 
                 if to_ignore is True:
                     show_error(
-                        u'''
+                        '''
                         Skipping %s package %s since the setting
                         "ignore_vcs_packages" is set to true
                         ''',
@@ -1079,7 +1079,7 @@ class PackageManager():
 
                 if isinstance(to_ignore, list) and package_name in to_ignore:
                     show_error(
-                        u'''
+                        '''
                         Skipping %s package %s since it is listed in the
                         "ignore_vcs_packages" setting
                         ''',
@@ -1105,7 +1105,7 @@ class PackageManager():
             except (DownloaderException) as e:
                 console_write(e)
                 show_error(
-                    u'''
+                    '''
                     Unable to download %s. Please view the console for
                     more details.
                     ''',
@@ -1121,7 +1121,7 @@ class PackageManager():
                 package_zip = zipfile.ZipFile(tmp_package_path, 'r')
             except (zipfile.BadZipfile):
                 show_error(
-                    u'''
+                    '''
                     An error occurred while trying to unzip the package file
                     for %s. Please try installing the package again.
                     ''',
@@ -1138,7 +1138,7 @@ class PackageManager():
                         path = path.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
                     console_write(
-                        u'''
+                        '''
                         One or more of the zip file entries in %s is not
                         encoded using UTF-8, aborting
                         ''',
@@ -1153,7 +1153,7 @@ class PackageManager():
                 # Make sure there are no paths that look like security vulnerabilities
                 if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
                     show_error(
-                        u'''
+                        '''
                         The package specified, %s, contains files outside of
                         the package dir and cannot be safely installed.
                         ''',
@@ -1205,7 +1205,7 @@ class PackageManager():
                         dep_info = json.loads(dep_info_json.decode('utf-8'))
                     except (ValueError):
                         console_write(
-                            u'''
+                            '''
                             An error occurred while trying to parse the
                             dependencies.json for %s.
                             ''',
@@ -1248,7 +1248,7 @@ class PackageManager():
                     clear_directory(unpacked_package_dir, [reinstall_file, unpacked_metadata_file])
 
                     show_error(
-                        u'''
+                        '''
                         An error occurred while trying to upgrade %s. Please
                         restart Sublime Text to finish the upgrade.
                         ''',
@@ -1293,7 +1293,7 @@ class PackageManager():
                         dest = dest.decode('utf-8', 'strict')
                 except (UnicodeDecodeError):
                     console_write(
-                        u'''
+                        '''
                         One or more of the zip file entries in %s is not
                         encoded using UTF-8, aborting
                         ''',
@@ -1305,7 +1305,7 @@ class PackageManager():
                     regex = r':|\*|\?|"|<|>|\|'
                     if re.search(regex, dest) is not None:
                         console_write(
-                            u'''
+                            '''
                             Skipping file from package named %s due to an
                             invalid filename
                             ''',
@@ -1365,7 +1365,7 @@ class PackageManager():
                             overwrite_failed = True
                             break
                         console_write(
-                            u'''
+                            '''
                             Skipping file from package named %s due to an
                             invalid filename
                             ''',
@@ -1374,7 +1374,7 @@ class PackageManager():
 
                     except (UnicodeDecodeError):
                         console_write(
-                            u'''
+                            '''
                             Skipping file from package named %s due to an
                             invalid filename
                             ''',
@@ -1397,7 +1397,7 @@ class PackageManager():
                 clear_directory(package_dir, [reinstall_file, package_metadata_file])
 
                 show_error(
-                    u'''
+                    '''
                     An error occurred while trying to upgrade %s. Please restart
                     Sublime Text to finish the upgrade.
                     ''',
@@ -1473,7 +1473,7 @@ class PackageManager():
                     package_zip = zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED)
                 except (OSError, IOError) as e:
                     show_error(
-                        u'''
+                        '''
                         An error occurred creating the package file %s in %s.
 
                         %s
@@ -1504,7 +1504,7 @@ class PackageManager():
                     new_package_path = package_path.replace('.sublime-package', '.sublime-package-new')
                     shutil.move(tmp_package_path, new_package_path)
                     show_error(
-                        u'''
+                        '''
                         An error occurred while trying to upgrade %s. Please restart
                         Sublime Text to finish the upgrade.
                         ''',
@@ -1567,7 +1567,7 @@ class PackageManager():
             available_version = version_comparable(available_version) if available_version else None
 
             def dependency_write(msg):
-                msg = u"The dependency '{dependency}' " + msg
+                msg = "The dependency '{dependency}' " + msg
                 msg = msg.format(
                     dependency=dependency,
                     installed_version=installed_version,
@@ -1582,44 +1582,44 @@ class PackageManager():
             install_dependency = False
             if not os.path.exists(dependency_dir):
                 install_dependency = True
-                dependency_write(u'is not currently installed; installing...')
+                dependency_write('is not currently installed; installing...')
             elif os.path.exists(dependency_git_dir):
-                dependency_write_debug(u'is installed via git; leaving alone')
+                dependency_write_debug('is installed via git; leaving alone')
             elif os.path.exists(dependency_hg_dir):
-                dependency_write_debug(u'is installed via hg; leaving alone')
+                dependency_write_debug('is installed via hg; leaving alone')
             elif not dependency_metadata:
-                dependency_write_debug(u'appears to be installed, but is missing metadata; leaving alone')
+                dependency_write_debug('appears to be installed, but is missing metadata; leaving alone')
             elif not dependency_releases:
-                dependency_write(u'is installed, but there are no available releases; leaving alone')
+                dependency_write('is installed, but there are no available releases; leaving alone')
             elif not available_version:
                 dependency_write(
-                    u'is installed, but the latest available release '
-                    u'could not be determined; leaving alone'
+                    'is installed, but the latest available release '
+                    'could not be determined; leaving alone'
                 )
             elif not installed_version:
                 install_dependency = True
                 dependency_write(
-                    u'is installed, but its version is not known; '
-                    u'upgrading to latest release {available_version}...'
+                    'is installed, but its version is not known; '
+                    'upgrading to latest release {available_version}...'
                 )
             elif installed_version < available_version:
                 install_dependency = True
                 dependency_write(
-                    u'is installed, but out of date; upgrading to latest '
-                    u'release {available_version} from {installed_version}...'
+                    'is installed, but out of date; upgrading to latest '
+                    'release {available_version} from {installed_version}...'
                 )
             else:
-                dependency_write_debug(u'is installed and up to date ({installed_version}); leaving alone')
+                dependency_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
             if install_dependency:
                 dependency_result = self.install_package(dependency, True)
                 if not dependency_result:
-                    dependency_write(u'could not be installed or updated')
+                    dependency_write('could not be installed or updated')
                     if fail_early:
                         return False
                     error = True
                 else:
-                    dependency_write(u'has successfully been installed or updated')
+                    dependency_write('has successfully been installed or updated')
 
         return not error
 
@@ -1650,7 +1650,7 @@ class PackageManager():
         for dependency in orphaned_dependencies:
             if self.remove_package(dependency, is_dependency=True):
                 console_write(
-                    u'''
+                    '''
                     The orphaned dependency %s has been removed
                     ''',
                     dependency
@@ -1684,7 +1684,7 @@ class PackageManager():
             package_backup_dir = os.path.join(backup_dir, package_name)
             if os.path.exists(package_backup_dir):
                 console_write(
-                    u'''
+                    '''
                     Backup folder "%s" already exists!
                     ''',
                     package_backup_dir
@@ -1694,7 +1694,7 @@ class PackageManager():
 
         except (OSError, IOError) as e:
             show_error(
-                u'''
+                '''
                 An error occurred while trying to backup the package directory
                 for %s.
 
@@ -1741,7 +1741,7 @@ class PackageManager():
             return
         except (ValueError):
             console_write(
-                u'''
+                '''
                 Error parsing messages.json for %s
                 ''',
                 package
@@ -1761,7 +1761,7 @@ class PackageManager():
                 output += read_message(install_path)
             except (FileNotFoundError):
                 console_write(
-                    u'''
+                    '''
                     Error opening install message for %s from %s
                     ''',
                     (package, install_file)
@@ -1788,7 +1788,7 @@ class PackageManager():
                     output += read_message(upgrade_path)
                 except (FileNotFoundError):
                     console_write(
-                        u'''
+                        '''
                         Error opening %s message for %s from %s
                         ''',
                         (version, package, upgrade_file)
@@ -1833,7 +1833,7 @@ class PackageManager():
 
             if not view.size():
                 write(text.format(
-                    u'''
+                    '''
                     Package Control Messages
                     ========================
                     '''
@@ -1882,7 +1882,7 @@ class PackageManager():
 
         if package_name not in installed_packages:
             show_error(
-                u'''
+                '''
                 The %s specified, %s, is not installed
                 ''',
                 (package_type, package_name)
@@ -1915,7 +1915,7 @@ class PackageManager():
                 os.remove(pristine_package_path)
         except (OSError, IOError) as e:
             show_error(
-                u'''
+                '''
                 An error occurred while trying to remove the pristine package
                 file for %s.
 
@@ -1964,9 +1964,9 @@ class PackageManager():
             loader.remove(package_name)
 
         else:
-            message = u'The package %s has been removed' % package_name
+            message = 'The package %s has been removed' % package_name
             if not cleanup_complete:
-                message += u' and will be cleaned up on the next restart'
+                message += ' and will be cleaned up on the next restart'
             console_write(message)
 
             # Remove dependencies that are no longer needed
@@ -2012,7 +2012,7 @@ class PackageManager():
                 raise ValueError()
         except (ValueError):
             console_write(
-                u'''
+                '''
                 Error submitting usage information for %s
                 ''',
                 params['package']

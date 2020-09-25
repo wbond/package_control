@@ -58,7 +58,7 @@ def _grab(url, settings):
 
         parsed = urlparse(url)
         if not parsed or not parsed.hostname:
-            raise DownloaderException(u'The URL "%s" is malformed' % url)
+            raise DownloaderException('The URL "%s" is malformed' % url)
         hostname = parsed.hostname.lower()
         if hostname not in _managers:
             _managers[hostname] = []
@@ -150,7 +150,7 @@ def update_url(url, debug):
 
     if debug and url != original_url:
         console_write(
-            u'''
+            '''
             Fixed URL from %s to %s
             ''',
             (original_url, url)
@@ -224,7 +224,7 @@ class DownloadManager(object):
 
         if not isinstance(downloader_list, list) or len(downloader_list) == 0:
             error_string = text.format(
-                u'''
+                '''
                 No list of preferred downloaders specified in the
                 "downloader_precedence" setting for the platform "%s"
                 ''',
@@ -247,7 +247,7 @@ class DownloadManager(object):
                             downloader_name == 'oscrypto':
                         continue
                     error_string = text.format(
-                        u'''
+                        '''
                         The downloader "%s" from the "downloader_precedence"
                         setting for the platform "%s" is invalid
                         ''',
@@ -269,7 +269,7 @@ class DownloadManager(object):
 
         if not self.downloader:
             error_string = text.format(
-                u'''
+                '''
                 None of the preferred downloaders can download %s.
 
                 This is usually either because the ssl module is unavailable
@@ -313,7 +313,7 @@ class DownloadManager(object):
                 ip = None
 
             console_write(
-                u'''
+                '''
                 Download Debug
                   URL: %s
                   Timeout: %s
@@ -323,16 +323,16 @@ class DownloadManager(object):
             )
             if ipv6:
                 console_write(
-                    u'  Resolved IPv6: %s',
+                    '  Resolved IPv6: %s',
                     ipv6,
                     prefix=False
                 )
 
         if hostname in rate_limited_domains:
-            error_string = u'Skipping due to hitting rate limit for %s' % hostname
+            error_string = 'Skipping due to hitting rate limit for %s' % hostname
             if self.settings.get('debug'):
                 console_write(
-                    u'  %s',
+                    '  %s',
                     error_string,
                     prefix=False
                 )
@@ -347,7 +347,7 @@ class DownloadManager(object):
             set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
 
             console_write(
-                u'''
+                '''
                 Hit rate limit of %s for %s. Skipping all futher download
                 requests for this domain.
                 ''',
@@ -357,7 +357,7 @@ class DownloadManager(object):
 
         except (OscryptoDownloaderException) as e:
             console_write(
-                u'''
+                '''
                 Attempting to use Urllib downloader due to Oscrypto error: %s
                 ''',
                 str(e)
@@ -370,7 +370,7 @@ class DownloadManager(object):
         except (WinDownloaderException) as e:
 
             console_write(
-                u'''
+                '''
                 Attempting to use Urllib downloader due to WinINet error: %s
                 ''',
                 e

@@ -49,7 +49,7 @@ class DecodingDownloader(object):
             if bz2:
                 return bz2.decompress(response)
             else:
-                raise DownloaderException(u'Received bzip2 file contents, but was unable to import the bz2 module')
+                raise DownloaderException('Received bzip2 file contents, but was unable to import the bz2 module')
         elif encoding == 'gzip':
             return gzip.GzipFile(fileobj=BytesIO(response)).read()
         elif encoding == 'deflate':

@@ -15,7 +15,7 @@ has_unpacked = os.path.exists(pc_python_path)
 # Ensure the user has installed Package Control properly
 if installed_dir != 'Package Control':
     message = text.format(
-        u'''
+        '''
         Package Control
 
         This package appears to be installed incorrectly.
@@ -35,7 +35,7 @@ if installed_dir != 'Package Control':
     # If installed unpacked
     if os.path.exists(os.path.join(sys_path.packages_path, installed_dir)):
         message += text.format(
-            u'''
+            '''
             3. Rename the folder "%s" to "Package Control"
             4. Restart Sublime Text
             ''',
@@ -44,7 +44,7 @@ if installed_dir != 'Package Control':
     # If installed as a .sublime-package file
     else:
         message += text.format(
-            u'''
+            '''
             3. Browse up a folder
             4. Browse into the "Installed Packages/" folder
             5. Rename "%s.sublime-package" to "Package Control.sublime-package"
@@ -56,7 +56,7 @@ if installed_dir != 'Package Control':
 
 elif has_packed and has_unpacked:
     message = text.format(
-        u'''
+        '''
         Package Control
 
         It appears you have Package Control installed as both a
@@ -87,10 +87,10 @@ else:
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
         try:
-            os.path.exists(os.path.join(sublime.packages_path(), u"fran\u2013ais"))
+            os.path.exists(os.path.join(sublime.packages_path(), "fran\u2013ais"))
         except (UnicodeEncodeError):
             message = text.format(
-                u'''
+                '''
                 Package Control
 
                 Your system's locale is set to a value that can not handle
@@ -113,19 +113,19 @@ else:
             os.mkdir(sys_path.pc_cache_dir())
 
         # Clean up the old HTTP cache dir
-        legacy_http_cache = os.path.join(sublime.packages_path(), u'User', u'Package Control.cache')
+        legacy_http_cache = os.path.join(sublime.packages_path(), 'User', 'Package Control.cache')
         http_cache = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         if os.path.exists(legacy_http_cache):
             if not os.path.exists(http_cache):
                 console_write(
-                    u'''
+                    '''
                     Moving HTTP cache data into "Cache/Package Control/http_cache/"
                     '''
                 )
                 shutil.move(legacy_http_cache, http_cache)
             else:
                 console_write(
-                    u'''
+                    '''
                     Removing old HTTP cache data"
                     '''
                 )
@@ -146,7 +146,7 @@ else:
 
         if not pc_settings.get('bootstrapped'):
             console_write(
-                u'''
+                '''
                 Not running package cleanup since bootstrapping is not yet complete
                 '''
             )

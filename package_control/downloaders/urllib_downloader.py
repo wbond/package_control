@@ -135,7 +135,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
 
                 exception_type = e.__class__.__name__
                 error_string = text.format(
-                    u'''
+                    '''
                     %s HTTP exception %s (%s) downloading %s.
                     ''',
                     (error_message, exception_type, str(e), url)
@@ -157,7 +157,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 if str(e.code) == '503' and tries != 0:
                     if tries and debug:
                         console_write(
-                            u'''
+                            '''
                             Downloading %s was rate limited, trying again
                             ''',
                             url
@@ -165,7 +165,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     continue
 
                 error_string = text.format(
-                    u'''
+                    '''
                     %s HTTP error %s downloading %s.
                     ''',
                     (error_message, str(e.code), url)
@@ -178,7 +178,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                         or str(e.reason) == 'timed out':
                     if tries and debug:
                         console_write(
-                            u'''
+                            '''
                             Downloading %s timed out, trying again
                             ''',
                             url
@@ -186,7 +186,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     continue
 
                 error_string = text.format(
-                    u'''
+                    '''
                     %s URL error %s downloading %s.
                     ''',
                     (error_message, str(e.reason), url)
@@ -197,7 +197,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 # thus getting new handlers and a new connection
                 if debug:
                     console_write(
-                        u'''
+                        '''
                         Connection went away while trying to download %s, trying again
                         ''',
                         url
@@ -211,8 +211,8 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             break
 
         if error_string is None:
-            plural = u's' if tried > 1 else u''
-            error_string = u'Unable to download %s after %d attempt%s' % (url, tried, plural)
+            plural = 's' if tried > 1 else ''
+            error_string = 'Unable to download %s after %d attempt%s' % (url, tried, plural)
 
         raise DownloaderException(error_string)
 
@@ -276,7 +276,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
 
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Urllib Debug Proxy
                       http_proxy: %s
                       https_proxy: %s

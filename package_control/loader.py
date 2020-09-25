@@ -44,14 +44,14 @@ non_local = {
 }
 
 
-loader_package_name = u'0_package_control_loader'
-loader_package_path = path.join(sys_path.installed_packages_path, u'%s.sublime-package' % loader_package_name)
+loader_package_name = '0_package_control_loader'
+loader_package_path = path.join(sys_path.installed_packages_path, '%s.sublime-package' % loader_package_name)
 
 # With the zipfile module there is no way to delete a file from a zip, so we
 # must instead copy the other files to a new zipfile and swap the filenames.
 # These files are used in that process.
-new_loader_package_path = loader_package_path + u'-new'
-intermediate_loader_package_path = loader_package_path + u'-intermediate'
+new_loader_package_path = loader_package_path + '-new'
+intermediate_loader_package_path = loader_package_path + '-intermediate'
 
 
 def __update_loaders(z):
@@ -114,7 +114,7 @@ def _existing_info(name, return_code):
     if not path.exists(loader_package_path):
         return (None, None)
 
-    loader_filename_regex = u'^(\\d\\d)-%s.py$' % re.escape(name)
+    loader_filename_regex = r'^(\d\d)-%s.py$' % re.escape(name)
 
     load_order = None
     code = None
@@ -290,7 +290,7 @@ def add(priority, name, code=None):
 
         if removed_old_loader:
             console_write(
-                u'''
+                '''
                 Cleaning up remenants of old loaders
                 '''
             )
@@ -332,7 +332,7 @@ def remove(name):
     if not path.exists(loader_package_path):
         return
 
-    loader_filename_regex = u'^\\d\\d-%s.pyc?$' % re.escape(name)
+    loader_filename_regex = r'^\d\d-%s.pyc?$' % re.escape(name)
 
     removed = False
 

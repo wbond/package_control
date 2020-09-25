@@ -54,7 +54,7 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
 
         if not input:
             show_error(
-                u'''
+                '''
                 No package names were entered
                 '''
             )

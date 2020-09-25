@@ -48,14 +48,14 @@ def _background_bootstrap(settings):
         st_dir = dirname(dirname(loader_dir))
 
         found = False
-        installed_packages_dir = os.path.join(st_dir, u'Installed Packages')
-        pc_package_path = os.path.join(installed_packages_dir, u'Package Control.sublime-package')
+        installed_packages_dir = os.path.join(st_dir, 'Installed Packages')
+        pc_package_path = os.path.join(installed_packages_dir, 'Package Control.sublime-package')
         if os.path.exists(encode(pc_package_path)):
             found = True
 
         if not found:
-            packages_dir = os.path.join(st_dir, u'Packages')
-            pc_package_path = os.path.join(packages_dir, u'Package Control')
+            packages_dir = os.path.join(st_dir, 'Packages')
+            pc_package_path = os.path.join(packages_dir, 'Package Control')
             if os.path.exists(encode(pc_package_path)):
                 found = True
 
@@ -64,7 +64,7 @@ def _background_bootstrap(settings):
             import Default.sort
             if os.path.basename(Default.sort.__file__) == 'sort.py':
                 packages_dir = dirname(dirname(Default.sort.__file__))
-                pc_package_path = os.path.join(packages_dir, u'Package Control')
+                pc_package_path = os.path.join(packages_dir, 'Package Control')
                 if os.path.exists(encode(pc_package_path)):
                     found = True
 
@@ -82,7 +82,7 @@ def _background_bootstrap(settings):
             sys.path.remove(encode(pc_package_path))
 
         else:
-            print(u'Package Control: Error finding main directory from loader')
+            print('Package Control: Error finding main directory from loader')
     """
     base_loader_code = dedent(base_loader_code).lstrip()
     loader.add_or_update('00', 'package_control', base_loader_code)

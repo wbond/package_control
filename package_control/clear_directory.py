@@ -35,7 +35,7 @@ def clean_old_files(directory):
                     os.remove(path)
                 except (OSError) as e:
                     console_write(
-                        u'''
+                        '''
                         Error removing old file "%s": %s
                         ''',
                         (path, str(e))

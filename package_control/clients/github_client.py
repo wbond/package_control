@@ -243,7 +243,7 @@ class GitHubClient(JSONApiClient):
               `donate` - URL of a donate page
         """
 
-        issues_url = u'https://github.com/%s/%s/issues' % (result['owner']['login'], result['name'])
+        issues_url = 'https://github.com/%s/%s/issues' % (result['owner']['login'], result['name'])
 
         return {
             'name': result['name'],

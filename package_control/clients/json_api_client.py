@@ -53,5 +53,5 @@ class JSONApiClient():
         try:
             return json.loads(repository_json.decode('utf-8'))
         except (ValueError):
-            error_string = u'Error parsing JSON from URL %s.' % url
+            error_string = 'Error parsing JSON from URL %s.' % url
             raise ClientException(error_string)

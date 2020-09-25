@@ -25,7 +25,7 @@ class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
         self.package_list = sorted(self.package_list, key=lambda s: s.lower())
         if not self.package_list:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no enabled packages to disable

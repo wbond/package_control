@@ -76,7 +76,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
                 return
 
             console_write(
-                u'''
+                '''
                 Upgrading bootstrapped dependency %s to %s from %s
                 ''',
                 (package_basename, version, old_version)
@@ -89,14 +89,14 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     with downloader(url, settings) as manager:
         try:
             console_write(
-                u'''
+                '''
                 Downloading bootstrapped dependency %s
                 ''',
                 package_basename
             )
             data = manager.fetch(url, 'Error downloading bootstrapped dependency %s.' % package_basename)
             console_write(
-                u'''
+                '''
                 Successfully downloaded bootstraped dependency %s
                 ''',
                 package_basename
@@ -110,7 +110,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     data_hash = hashlib.sha256(data).hexdigest()
     if data_hash != hash_:
         console_write(
-            u'''
+            '''
             Error validating bootstrapped dependency %s (got %s instead of %s)
             ''',
             (package_basename, data_hash, hash_)
@@ -121,7 +121,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         data_zip = zipfile.ZipFile(data_io, 'r')
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             Error unzipping bootstrapped dependency %s
             ''',
             package_filename
@@ -153,9 +153,9 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
         # conflict and there will be errors when Sublime Text tries to
         # initialize plugins. By using loader.code, developers can git clone a
         # dependency into their Packages folder without issue.
-        if dest in set([u'loader.py', u'loader.code']):
+        if dest in set(['loader.py', 'loader.code']):
             code = data_zip.read(zip_path).decode('utf-8')
-            if dest == u'loader.py':
+            if dest == 'loader.py':
                 continue
 
         dest = path.join(package_dir, dest)
@@ -176,7 +176,7 @@ def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
     loader.add_or_update(priority, package_basename, code)
 
     console_write(
-        u'''
+        '''
         Successfully installed bootstrapped dependency %s
         ''',
         package_basename

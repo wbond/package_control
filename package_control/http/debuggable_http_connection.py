@@ -27,7 +27,7 @@ class DebuggableHTTPConnection(HTTPConnection):
     def connect(self):
         if self.debuglevel == -1:
             console_write(
-                u'''
+                '''
                 Urllib %s Debug General
                   Connecting to %s on port %s
                 ''',
@@ -48,9 +48,9 @@ class DebuggableHTTPConnection(HTTPConnection):
         if reset_debug or self.debuglevel == -1:
             if len(string.strip()) > 0:
                 unicode_string = string.strip().decode('iso-8859-1')
-                indented_headers = u'\n  '.join(unicode_string.splitlines())
+                indented_headers = '\n  '.join(unicode_string.splitlines())
                 console_write(
-                    u'''
+                    '''
                     Urllib %s Debug Write
                       %s
                     ''',

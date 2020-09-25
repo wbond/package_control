@@ -30,7 +30,7 @@ if not isinstance(__loader__, zipimporter):
     packages_path = dirname(pc_package_path)
     # For a non-development build, the Installed Packages are next
     # to the Packages dir
-    _possible_installed_packages_path = os.path.join(dirname(packages_path), u'Installed Packages')
+    _possible_installed_packages_path = os.path.join(dirname(packages_path), 'Installed Packages')
     if os.path.exists(_possible_installed_packages_path):
         installed_packages_path = _possible_installed_packages_path
 
@@ -41,10 +41,10 @@ else:
     installed_packages_path = dirname(pc_package_path)
     # For a non-development build, the Packages are next
     # to the Installed Packages dir
-    _possible_packages_path = os.path.join(dirname(installed_packages_path), u'Packages')
+    _possible_packages_path = os.path.join(dirname(installed_packages_path), 'Packages')
     if os.path.exists(_possible_packages_path):
         packages_path = _possible_packages_path
-st_version = u'3'
+st_version = '3'
 
 if packages_path is None:
     import Default.sort
@@ -55,22 +55,22 @@ if packages_path is None:
 if installed_packages_path is None:
     _data_base = None
     if sys.platform == 'darwin':
-        _data_base = os.path.expanduser(u'~/Library/Application Support')
+        _data_base = os.path.expanduser('~/Library/Application Support')
     elif sys.platform == 'win32':
-        _data_base = os.environ.get(u'APPDATA')
+        _data_base = os.environ.get('APPDATA')
     else:
-        _data_base = os.environ.get(u'XDG_CONFIG_HOME')
+        _data_base = os.environ.get('XDG_CONFIG_HOME')
         if _data_base is None:
             _data_base = os.path.expanduser('~/.config')
 
     if _data_base is not None:
-        for _leaf in [u'Sublime Text Development', u'Sublime Text 3 Development']:
+        for _leaf in ['Sublime Text Development', 'Sublime Text 3 Development']:
             if sys.platform not in set(['win32', 'darwin']):
                 _leaf = _leaf.lower().replace(' ', '-')
             _possible_data_dir = os.path.join(_data_base, _leaf)
             if os.path.exists(_possible_data_dir):
                 data_dir = _possible_data_dir
-                _possible_installed_packages_path = os.path.join(data_dir, u'Installed Packages')
+                _possible_installed_packages_path = os.path.join(data_dir, 'Installed Packages')
                 if os.path.exists(_possible_installed_packages_path):
                     installed_packages_path = _possible_installed_packages_path
                 break
@@ -151,15 +151,15 @@ def generate_dependency_paths(name):
 
     dependency_dir = os.path.join(packages_path, name)
 
-    ver = u'st%s' % st_version
+    ver = 'st%s' % st_version
     plat = sublime.platform()
     arch = sublime.arch()
 
     return {
-        'all': os.path.join(dependency_dir, u'all'),
+        'all': os.path.join(dependency_dir, 'all'),
         'ver': os.path.join(dependency_dir, ver),
-        'plat': os.path.join(dependency_dir, u'%s_%s' % (ver, plat)),
-        'arch': os.path.join(dependency_dir, u'%s_%s_%s' % (ver, plat, arch))
+        'plat': os.path.join(dependency_dir, '%s_%s' % (ver, plat)),
+        'arch': os.path.join(dependency_dir, '%s_%s_%s' % (ver, plat, arch))
     }
 
 
@@ -194,14 +194,14 @@ def pc_cache_dir():
     global cache_dir
 
     if cache_dir is None:
-        if st_version == u'2':
-            cache_dir = os.path.join(data_dir, u'Cache')
+        if st_version == '2':
+            cache_dir = os.path.join(data_dir, 'Cache')
             if not os.path.exists(cache_dir):
                 os.mkdir(cache_dir)
         else:
             cache_dir = sublime.cache_path()
 
-    return os.path.join(cache_dir, u'Package Control')
+    return os.path.join(cache_dir, 'Package Control')
 
 
 def user_config_dir():

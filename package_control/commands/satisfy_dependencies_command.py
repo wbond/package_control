@@ -45,7 +45,7 @@ class SatisfyDependenciesThread(threading.Thread):
 
         if not self.manager.install_dependencies(required_dependencies, fail_early=False):
             self.show_error(
-                u'''
+                '''
                 One or more dependencies could not be installed or updated.
 
                 Please check the console for details.
@@ -55,7 +55,7 @@ class SatisfyDependenciesThread(threading.Thread):
 
         if not self.manager.cleanup_dependencies(required_dependencies=required_dependencies):
             self.show_error(
-                u'''
+                '''
                 One or more orphaned dependencies could not be removed.
 
                 Please check the console for details.
@@ -64,4 +64,4 @@ class SatisfyDependenciesThread(threading.Thread):
             error = True
 
         if not error:
-            console_write(u'All dependencies have been satisfied')
+            console_write('All dependencies have been satisfied')

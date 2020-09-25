@@ -32,16 +32,16 @@ class DebuggableHTTPResponse(HTTPResponse):
                     headers.append("%s: %s" % (header, self.msg[header]))
 
             versions = {
-                9: u'HTTP/0.9',
-                10: u'HTTP/1.0',
-                11: u'HTTP/1.1'
+                9: 'HTTP/0.9',
+                10: 'HTTP/1.0',
+                11: 'HTTP/1.1'
             }
-            status_line = u'%s %s %s' % (versions[self.version], str(self.status), self.reason)
+            status_line = '%s %s %s' % (versions[self.version], str(self.status), self.reason)
             headers.insert(0, status_line)
 
-            indented_headers = u'\n  '.join(headers)
+            indented_headers = '\n  '.join(headers)
             console_write(
-                u'''
+                '''
                 Urllib %s Debug Read
                   %s
                 ''',

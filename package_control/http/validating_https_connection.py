@@ -96,7 +96,7 @@ try:
             self._proxy_port = self.port
             self._set_hostport(self._tunnel_host, self._tunnel_port)
 
-            self._tunnel_headers['Host'] = u"%s:%s" % (self.host, self.port)
+            self._tunnel_headers['Host'] = "%s:%s" % (self.host, self.port)
             self._tunnel_headers['User-Agent'] = self.user_agent
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
@@ -112,7 +112,7 @@ try:
             response = self.response_class(self.sock, method=self._method)
             (version, code, message) = response._read_status()
 
-            status_line = u"%s %s %s" % (version, code, message.rstrip())
+            status_line = "%s %s %s" % (version, code, message.rstrip())
             headers = [status_line]
 
             content_length = 0
@@ -137,9 +137,9 @@ try:
                     close_connection = True
 
             if self.debuglevel in [-1, 5]:
-                indented_headers = u'\n  '.join(headers)
+                indented_headers = '\n  '.join(headers)
                 console_write(
-                    u'''
+                    '''
                     Urllib %s Debug Read
                       %s
                     ''',
@@ -166,12 +166,12 @@ try:
                     response_value = self.build_digest_response(
                         supported_auth_methods['digest'], username, password)
                     if response_value:
-                        self._tunnel_headers['Proxy-Authorization'] = u"Digest %s" % response_value
+                        self._tunnel_headers['Proxy-Authorization'] = "Digest %s" % response_value
 
                 elif 'basic' in supported_auth_methods:
-                    response_value = u"%s:%s" % (username, password)
+                    response_value = "%s:%s" % (username, password)
                     response_value = base64.b64encode(response_value.encode('utf-8')).decode('utf-8')
-                    self._tunnel_headers['Proxy-Authorization'] = u"Basic %s" % response_value.strip()
+                    self._tunnel_headers['Proxy-Authorization'] = "Basic %s" % response_value.strip()
 
                 if 'Proxy-Authorization' in self._tunnel_headers:
                     self.host = self._proxy_host
@@ -231,7 +231,7 @@ try:
             else:
                 return None
 
-            host_port = u"%s:%s" % (self.host, self.port)
+            host_port = "%s:%s" % (self.host, self.port)
 
             a1 = "%s:%s:%s" % (username, realm, password)
             a2 = "CONNECT:%s" % host_port
@@ -239,11 +239,11 @@ try:
             ha2 = hash(a2)
 
             if qop is None:
-                response = hash(u"%s:%s:%s" % (ha1, nonce, ha2))
+                response = hash("%s:%s:%s" % (ha1, nonce, ha2))
             elif qop == 'auth':
                 nc = '00000001'
                 cnonce = hash(os.urandom(8))[:8]
-                response = hash(u"%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
+                response = hash("%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
             else:
                 return None
 
@@ -263,7 +263,7 @@ try:
             if opaque:
                 response_fields['opaque'] = opaque
 
-            return ', '.join([u"%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
+            return ', '.join(["%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
 
         def connect(self):
             """
@@ -272,7 +272,7 @@ try:
 
             if self.debuglevel == -1:
                 console_write(
-                    u'''
+                    '''
                     Urllib HTTPS Debug General
                       Connecting to %s on port %s
                     ''',
@@ -285,7 +285,7 @@ try:
 
             if self.debuglevel == -1:
                 console_write(
-                    u'''
+                    '''
                     Urllib HTTPS Debug General
                       Upgrading connection to SSL using CA certs file at %s
                     ''',
@@ -308,7 +308,7 @@ try:
             # since that is for servers, and this code only supports client mode
             if self.debuglevel == -1:
                 console_write(
-                    u'''
+                    '''
                       Using hostname "%s" for TLS SNI extension
                     ''',
                     hostname,
@@ -323,7 +323,7 @@ try:
             if self.debuglevel == -1:
                 cipher_info = self.sock.cipher()
                 console_write(
-                    u'''
+                    '''
                       Successfully upgraded connection to %s:%s with SSL
                       Using %s with cipher %s
                     ''',
@@ -360,7 +360,7 @@ try:
                         subject_parts.append(field_name + '=' + pair[0][1])
 
                     console_write(
-                        u'''
+                        '''
                           Server SSL certificate:
                             subject: %s
                         ''',
@@ -371,18 +371,18 @@ try:
                     if 'subjectAltName' in cert:
                         alt_names = [c[1] for c in cert['subjectAltName']]
                         alt_names = ', '.join(alt_names)
-                        console_write(u'    subject alt name: %s', alt_names, prefix=False)
+                        console_write('    subject alt name: %s', alt_names, prefix=False)
                     if 'notAfter' in cert:
-                        console_write(u'    expire date: %s', cert['notAfter'], prefix=False)
+                        console_write('    expire date: %s', cert['notAfter'], prefix=False)
 
                 if not self.validate_cert_host(cert, hostname):
                     if self.debuglevel == -1:
-                        console_write(u'  Certificate INVALID', prefix=False)
+                        console_write('  Certificate INVALID', prefix=False)
 
                     raise InvalidCertificateException(hostname, cert, 'hostname mismatch')
 
                 if self.debuglevel == -1:
-                    console_write(u'  Certificate validated for %s', hostname, prefix=False)
+                    console_write('  Certificate validated for %s', hostname, prefix=False)
 
 except (ImportError):
     pass

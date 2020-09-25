@@ -80,7 +80,7 @@ class PackageCleanup(threading.Thread):
                         os.remove(package_file)
                     os.rename(os.path.join(installed_path, file), package_file)
                     console_write(
-                        u'''
+                        '''
                         Finished replacing %s.sublime-package
                         ''',
                         package_name
@@ -123,7 +123,7 @@ class PackageCleanup(threading.Thread):
             dependency_dir = os.path.join(sublime.packages_path(), dependency)
             if unlink_or_delete_directory(dependency_dir):
                 console_write(
-                    u'''
+                    '''
                     Removed directory for unneeded dependency %s
                     ''',
                     dependency
@@ -133,7 +133,7 @@ class PackageCleanup(threading.Thread):
                 if not os.path.exists(cleanup_file):
                     open_compat(cleanup_file, 'w').close()
                 console_write(
-                    u'''
+                    '''
                     Unable to remove directory for unneeded dependency %s -
                     deferring until next start
                     ''',
@@ -156,7 +156,7 @@ class PackageCleanup(threading.Thread):
             if os.path.exists(cleanup_file):
                 if unlink_or_delete_directory(package_dir):
                     console_write(
-                        u'''
+                        '''
                         Removed old directory %s
                         ''',
                         package_name

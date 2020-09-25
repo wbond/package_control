@@ -58,7 +58,7 @@ class ListPackagesThread(threading.Thread, ExistingPackagesCommand):
         def show_panel():
             if not self.package_list:
                 sublime.message_dialog(text.format(
-                    u'''
+                    '''
                     Package Control
 
                     There are no packages to list

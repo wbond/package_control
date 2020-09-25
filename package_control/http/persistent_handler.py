@@ -13,7 +13,7 @@ class PersistentHandler:
             if self._debuglevel == 5:
                 s = '' if self.use_count == 1 else 's'
                 console_write(
-                    u'''
+                    '''
                     Urllib %s Debug General
                       Closing connection to %s on port %s after %s request%s
                     ''',
@@ -49,7 +49,7 @@ class PersistentHandler:
             h = self.connection
             if self._debuglevel == 5:
                 console_write(
-                    u'''
+                    '''
                     Urllib %s Debug General
                       Re-using connection to %s on port %s for request #%s
                     ''',
@@ -85,7 +85,7 @@ class PersistentHandler:
             if self._debuglevel == 5:
                 s = '' if self.use_count == 1 else 's'
                 console_write(
-                    u'''
+                    '''
                     Urllib %s Debug General
                       Closing connection to %s on port %s after %s request%s
                     ''',

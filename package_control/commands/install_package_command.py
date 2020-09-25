@@ -47,7 +47,7 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
         def show_panel():
             if not self.package_list:
                 sublime.message_dialog(text.format(
-                    u'''
+                    '''
                     Package Control
 
                     There are no packages available for installation

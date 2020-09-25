@@ -149,7 +149,7 @@ def version_sort(sortable, *fields, **kwargs):
         return sorted(sortable, key=_version_sort_key, **kwargs)
     except (ValueError) as e:
         console_write(
-            u'''
+            '''
             Error sorting versions - %s
             ''',
             e
