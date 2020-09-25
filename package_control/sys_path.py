@@ -44,7 +44,6 @@ else:
     _possible_packages_path = os.path.join(dirname(installed_packages_path), 'Packages')
     if os.path.exists(_possible_packages_path):
         packages_path = _possible_packages_path
-st_version = '3'
 
 if packages_path is None:
     import Default.sort
@@ -151,7 +150,7 @@ def generate_dependency_paths(name):
 
     dependency_dir = os.path.join(packages_path, name)
 
-    ver = 'st%s' % st_version
+    ver = 'st3'
     plat = sublime.platform()
     arch = sublime.arch()
 
@@ -194,12 +193,7 @@ def pc_cache_dir():
     global cache_dir
 
     if cache_dir is None:
-        if st_version == '2':
-            cache_dir = os.path.join(data_dir, 'Cache')
-            if not os.path.exists(cache_dir):
-                os.mkdir(cache_dir)
-        else:
-            cache_dir = sublime.cache_path()
+        cache_dir = sublime.cache_path()
 
     return os.path.join(cache_dir, 'Package Control')
 
