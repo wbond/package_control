@@ -166,7 +166,7 @@ class PackageCleanup(threading.Thread):
                     if not os.path.exists(cleanup_file):
                         open_compat(cleanup_file, 'w').close()
                     console_write(
-                        u'''
+                        '''
                         Unable to remove old directory %s - deferring until next
                         start
                         ''',
@@ -186,7 +186,7 @@ class PackageCleanup(threading.Thread):
 
                     def show_still_locked(package_name):
                         show_error(
-                            u'''
+                            '''
                             An error occurred while trying to finish the upgrade of
                             %s. You will most likely need to restart your computer
                             to complete the upgrade.
@@ -221,7 +221,7 @@ class PackageCleanup(threading.Thread):
                     self.manager.backup_package_dir(package_name)
                     if unlink_or_delete_directory(package_dir):
                         console_write(
-                            u'''
+                            '''
                             Removed directory for orphaned package %s
                             ''',
                             package_name
@@ -231,7 +231,7 @@ class PackageCleanup(threading.Thread):
                         if not os.path.exists(cleanup_file):
                             open_compat(cleanup_file, 'w').close()
                         console_write(
-                            u'''
+                            '''
                             Unable to remove directory for orphaned package %s -
                             deferring until next start
                             ''',
@@ -240,7 +240,7 @@ class PackageCleanup(threading.Thread):
 
             if package_name[-20:] == '.package-control-old':
                 console_write(
-                    u'''
+                    '''
                     Removed old directory %s
                     ''',
                     package_name
@@ -281,7 +281,7 @@ class PackageCleanup(threading.Thread):
                 if invalid_packages:
                     package_s = 's were' if len(invalid_packages) != 1 else ' was'
                     message += text.format(
-                        u'''
+                        '''
                         The following incompatible package%s found installed:
 
                         %s
@@ -292,7 +292,7 @@ class PackageCleanup(threading.Thread):
                 if invalid_dependencies:
                     dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
                     message += text.format(
-                        u'''
+                        '''
                         The following incompatible dependenc%s found installed:
 
                         %s
@@ -301,7 +301,7 @@ class PackageCleanup(threading.Thread):
                         (dependency_s, '\n'.join(invalid_dependencies))
                     )
                 message += text.format(
-                    u'''
+                    '''
                     This is usually due to syncing packages across different
                     machines in a way that does not check package metadata for
                     compatibility.
@@ -335,7 +335,7 @@ class PackageCleanup(threading.Thread):
             try:
                 os.remove(filename)
                 console_write(
-                    u'''
+                    '''
                     Removed orphaned package %s
                     ''',
                     name
@@ -343,7 +343,7 @@ class PackageCleanup(threading.Thread):
 
             except (OSError) as e:
                 console_write(
-                    u'''
+                    '''
                     Unable to remove orphaned package %s - deferring until
                     next start: %s
                     ''',
@@ -447,7 +447,7 @@ class PackageCleanup(threading.Thread):
                     if loader.loader_package_name == package and loader.is_swapping():
                         continue
                     console_write(
-                        u'''
+                        '''
                         The package %s is being re-enabled after a Package
                         Control operation was interrupted
                         ''',
