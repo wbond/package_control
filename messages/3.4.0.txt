@@ -1,10 +1,12 @@
-Version 3.4.0 RC1 Release Notes
+Version 3.4.0 Release Notes
 
- ---------------------------------------------------
-| NOTICE: This will be the final release supporting |
-| - Sublime Text 2                                  |
-| - Sublime Text 3 beta builds (<3143)              |
- ---------------------------------------------------
+ -----------------------------------------------------------------------
+| NOTICE: This will be the final release of Package Control supporting  |
+| - Sublime Text 2                                                      |
+| - Sublime Text 3 beta builds (<3143)                                  |
+ -----------------------------------------------------------------------
+| Please see https://sublimetext.com for an updated build               |
+ -----------------------------------------------------------------------
 
 New features include:
 
