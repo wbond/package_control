@@ -10,6 +10,7 @@ try:
     from urllib.request import (
         build_opener,
         HTTPPasswordMgrWithDefaultRealm,
+        HTTPRedirectHandler,
         ProxyBasicAuthHandler,
         ProxyDigestAuthHandler,
         ProxyHandler,
@@ -292,7 +293,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 if https_proxy:
                     password_manager.add_password(None, https_proxy, proxy_username, proxy_password)
 
-            handlers = [proxy_handler]
+            handlers = [HTTPRedirectHandler(), proxy_handler]
 
             basic_auth_handler = ProxyBasicAuthHandler(password_manager)
             digest_auth_handler = ProxyDigestAuthHandler(password_manager)
