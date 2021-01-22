@@ -144,7 +144,7 @@ else:
 
         pc_settings = sublime.load_settings(pc_settings_filename())
 
-        if not pc_settings.get('bootstrapped'):
+        if pc_settings.get('bootstrapped') != 4:
             console_write(
                 '''
                 Not running package cleanup since bootstrapping is not yet complete

@@ -29,6 +29,8 @@ mods_load_order = [
     '',
 
     '.sys_path',
+    '.wheel',
+    '.dependency',
     '.text',
     '.cache',
     '.file_not_found_error',
@@ -195,7 +197,6 @@ mods_load_order = [
     '.package_renamer',
 
     '.loader',
-    '.bootstrap',
 
     '.tests',
     '.tests.clients',
