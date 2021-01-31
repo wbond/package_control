@@ -328,12 +328,14 @@ class RepositoryProvider():
         output = {}
         for dependency in self.repo_info['dependencies']:
             info = {
+                'releases': [],
                 'sources': [self.repo]
             }
 
-            for field in ['name', 'description', 'author', 'issues', 'load_order']:
-                if dependency.get(field):
-                    info[field] = dependency.get(field)
+            for field in ('name', 'description', 'author', 'issues', 'load_order'):
+                field_value = dependency.get(field)
+                if field_value:
+                    info[field] = field_value
 
             if 'name' not in info:
                 self.failed_sources[self.repo] = ProviderException(text.format(
@@ -344,41 +346,40 @@ class RepositoryProvider():
                 ))
                 continue
 
-            releases = dependency.get('releases', [])
+            try:
+                releases = dependency.get('releases', [])
+                if releases and not isinstance(releases, list):
+                    raise ProviderException(text.format(
+                        '''
+                        The "releases" value is not an array for the dependency "%s" in the repository %s.
+                        ''',
+                        (info['name'], self.repo)
+                    ))
 
-            if releases and not isinstance(releases, list):
-                self.broken_dependencies[info['name']] = ProviderException(text.format(
-                    '''
-                    The "releases" value is not an array for the dependency "%s" in the repository %s.
-                    ''',
-                    (info['name'], self.repo)
-                ))
-                continue
+                for release in releases:
+                    download_info = {}
 
-            for release in releases:
-                if 'releases' not in info:
-                    info['releases'] = []
+                    # Make sure that explicit fields are copied over
+                    for field in ('sublime_text', 'version', 'sha256'):
+                        value = release.get(field)
+                        if value:
+                            download_info[field] = value
 
-                download_info = {}
+                    # Validate url
+                    value = release.get('url')
+                    if value:
+                        download_info['url'] = update_url(value, debug)
 
-                # Make sure that explicit fields are copied over
-                for field in ['platforms', 'sublime_text', 'version', 'url', 'sha256']:
-                    if field in release:
-                        value = release[field]
-                        if field == 'url':
-                            value = update_url(value, debug)
-                        if field == 'platforms' and not isinstance(release['platforms'], list):
-                            value = [value]
-                        download_info[field] = value
+                    # Validate supported platforms
+                    value = release.get('platforms', ['*'])
+                    if not isinstance(value, list):
+                        value = [value]
+                    download_info['platforms'] = value
 
-                if 'platforms' not in download_info:
-                    download_info['platforms'] = ['*']
+                    tags = release.get('tags')
+                    branch = release.get('branch')
 
-                tags = release.get('tags')
-                branch = release.get('branch')
-
-                if tags or branch:
-                    try:
+                    if tags or branch:
                         base = None
                         if 'base' in release:
                             base = release['base']
@@ -435,59 +436,46 @@ class RepositoryProvider():
                             new_download.update(download)
                             info['releases'].append(new_download)
 
-                    except (DownloaderException, ClientException, ProviderException) as e:
-                        self.broken_dependencies[info['name']] = e
-                        continue
-
-                elif download_info:
-                    if 'url' in download_info:
+                    elif 'url' in download_info:
                         is_http = urlparse(download_info['url']).scheme == 'http'
                         if is_http and 'sha256' not in download_info:
-                            self.broken_dependencies[info['name']] = ProviderException(text.format(
+                            raise ProviderException(text.format(
                                 '''
                                 No "sha256" key for the non-secure "url" value in one of the
                                 releases of the dependency "%s" in the repository %s.
                                 ''',
                                 (info['name'], self.repo)
                             ))
-                            continue
 
-                    info['releases'].append(download_info)
-
-            if info['name'] in self.broken_dependencies:
-                continue
-
-            # Make sure the dependency has the appropriate keys. We use a
-            # function here so that we can break out of multiple loops.
-            def is_missing_keys():
-                for key in ['author', 'releases', 'issues', 'description', 'load_order']:
-                    if key not in info:
-                        self.broken_dependencies[info['name']] = ProviderException(text.format(
-                            '''
-                            No "%s" key for the dependency "%s" in the repository %s.
-                            ''',
-                            (key, info['name'], self.repo)
-                        ))
-                        return True
-                for release in info.get('releases', []):
-                    for key in ['version', 'url', 'sublime_text', 'platforms']:
-                        if key not in release:
-                            self.broken_dependencies[info['name']] = ProviderException(text.format(
+                    # check required releases keys
+                    for key in ('version', 'url', 'sublime_text', 'platforms'):
+                        if key not in download_info:
+                            raise ProviderException(text.format(
                                 '''
                                 Missing "%s" key for one of the releases of the dependency "%s" in the repository %s.
                                 ''',
                                 (key, info['name'], self.repo)
                             ))
-                            return True
-                return False
 
-            if is_missing_keys():
-                continue
+                    info['releases'].append(download_info)
 
-            info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
+                # check required dependency keys
+                for key in ('author', 'releases', 'issues', 'description', 'load_order'):
+                    if key not in info:
+                        raise ProviderException(text.format(
+                            '''
+                            No "%s" key for the dependency "%s" in the repository %s.
+                            ''',
+                            (key, info['name'], self.repo)
+                        ))
 
-            output[info['name']] = info
-            yield (info['name'], info)
+                info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
+
+                output[info['name']] = info
+                yield (info['name'], info)
+
+            except (DownloaderException, ClientException, ProviderException) as e:
+                self.broken_dependencies[info['name']] = e
 
         self.cache['get_dependencies'] = output
 
