@@ -1,0 +1,22 @@
+name: Lint Pull Requests
+
+on: 
+  pull_request:
+    branches:
+    - '*'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: pip install flake8 lintly
+    - name: Lint with flake8
+      run: flake8 --config=tox.ini . | lintly
+      env:
+        LINTLY_API_KEY: ${{ secrets.GITHUB_TOKEN }}
