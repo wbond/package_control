@@ -351,7 +351,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         general = {
             'version': '0.9',
-            'status':  200,
+            'status': 200,
             'message': 'OK'
         }
         headers = {}

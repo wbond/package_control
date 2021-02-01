@@ -127,7 +127,7 @@ def pbkdf2(hash_algorithm, password, salt, iterations, key_length):
 
         u = int_from_bytes(last)
 
-        for _ in range(iterations-1):
+        for _ in range(iterations - 1):
             prf = original_hmac.copy()
             prf.update(last)
             last = prf.digest()

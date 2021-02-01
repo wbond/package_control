@@ -841,7 +841,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
         general = {
             'version': '0.9',
-            'status':  200,
+            'status': 200,
             'message': 'OK'
         }
         headers = {}

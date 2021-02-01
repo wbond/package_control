@@ -16,7 +16,7 @@ __all__ = [
 
 
 version = platform.mac_ver()[0]
-version_info = tuple(map(int,  platform.mac_ver()[0].split('.')))
+version_info = tuple(map(int, platform.mac_ver()[0].split('.')))
 
 if version_info < (10, 7):
     raise OSError('Only OS X 10.7 and newer are supported, not %s.%s' % (version_info[0], version_info[1]))
