@@ -365,7 +365,7 @@ class GitLabUserProviderTests(unittest.TestCase):
                         'platforms': ['*'],
                         'url': 'https://gitlab.com/packagecontrol-test/'
                         'package_control-tester/-/archive/master/package_control-tester-master.zip'
-                        }],
+                    }],
                     'last_modified': '2020-07-15 10:50:38'
                 }
             )],
