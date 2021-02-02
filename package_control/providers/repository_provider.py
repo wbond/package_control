@@ -19,6 +19,7 @@ from .schema_compat import platforms_to_releases
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
+from ..clients.gitlab_client import GitLabClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..download_manager import downloader, update_url
 from ..versions import version_sort
@@ -325,8 +326,9 @@ class RepositoryProvider():
 
         debug = self.settings.get('debug')
 
-        github_client = GitHubClient(self.settings)
-        bitbucket_client = BitBucketClient(self.settings)
+        clients = [
+            Client(self.settings) for Client in (GitHubClient, GitLabClient, BitBucketClient)
+        ]
 
         if self.schema_major_version < 3:
             self.repo_info['dependencies'] = []
@@ -398,27 +400,25 @@ class RepositoryProvider():
                                 (info['name'], self.repo)
                             ))
 
-                        github_url = False
-                        bitbucket_url = False
+                        client = None
                         extra = None
+                        url = None
 
                         if tags:
-                            github_url = github_client.make_tags_url(base)
-                            bitbucket_url = bitbucket_client.make_tags_url(base)
                             if tags is not True:
                                 extra = tags
+                            for client in clients:
+                                url = client.make_tags_url(base)
+                                if url:
+                                    break
 
                         if branch:
-                            github_url = github_client.make_branch_url(base, branch)
-                            bitbucket_url = bitbucket_client.make_branch_url(base, branch)
+                            for client in clients:
+                                url = client.make_branch_url(base, branch)
+                                if url:
+                                    break
 
-                        if github_url:
-                            downloads = github_client.download_info(github_url, extra)
-                            url = github_url
-                        elif bitbucket_url:
-                            downloads = bitbucket_client.download_info(bitbucket_url, extra)
-                            url = bitbucket_url
-                        else:
+                        if not url:
                             raise ProviderException(text.format(
                                 u'''
                                 Invalid "base" value "%s" for one of the releases of the
@@ -427,6 +427,7 @@ class RepositoryProvider():
                                 (base, info['name'], self.repo)
                             ))
 
+                        downloads = client.download_info(url, extra)
                         if downloads is False:
                             raise ProviderException(text.format(
                                 u'''
@@ -555,8 +556,9 @@ class RepositoryProvider():
 
         debug = self.settings.get('debug')
 
-        github_client = GitHubClient(self.settings)
-        bitbucket_client = BitBucketClient(self.settings)
+        clients = [
+            Client(self.settings) for Client in (GitHubClient, GitLabClient, BitBucketClient)
+        ]
 
         # Backfill the "previous_names" keys for old schemas
         previous_names = {}
@@ -606,22 +608,24 @@ class RepositoryProvider():
                     info['sources'].append(details)
 
                     try:
-                        github_repo_info = github_client.repo_info(details)
-                        bitbucket_repo_info = bitbucket_client.repo_info(details)
+                        repo_info = None
 
-                        # When grabbing details, prefer explicit field values over the values
-                        # from the GitHub or BitBucket API
-                        if github_repo_info:
-                            info = dict(chain(github_repo_info.items(), info.items()))
-                        elif bitbucket_repo_info:
-                            info = dict(chain(bitbucket_repo_info.items(), info.items()))
-                        else:
+                        for client in clients:
+                            repo_info = client.repo_info(details)
+                            if repo_info:
+                                break
+
+                        if not repo_info:
                             raise ProviderException(text.format(
                                 u'''
                                 Invalid "details" value "%s" for one of the packages in the repository %s.
                                 ''',
                                 (details, self.repo)
                             ))
+
+                        # When grabbing details, prefer explicit field values over the values
+                        # from the GitHub or BitBucket API
+                        info = dict(chain(repo_info.items(), info.items()))
 
                     except (DownloaderException, ClientException, ProviderException) as e:
                         if 'name' in info:
@@ -693,22 +697,14 @@ class RepositoryProvider():
                             download_details = release['details']
 
                             try:
-                                github_downloads = github_client.download_info(download_details)
-                                bitbucket_downloads = bitbucket_client.download_info(download_details)
+                                downloads = False
 
-                                if github_downloads is False or bitbucket_downloads is False:
-                                    raise ProviderException(text.format(
-                                        u'''
-                                        No valid semver tags found at %s for the package "%s" in the repository %s.
-                                        ''',
-                                        (download_details, info['name'], self.repo)
-                                    ))
+                                for client in clients:
+                                    downloads = client.download_info(download_details)
+                                    if downloads:
+                                        break
 
-                                if github_downloads:
-                                    downloads = github_downloads
-                                elif bitbucket_downloads:
-                                    downloads = bitbucket_downloads
-                                else:
+                                if downloads is False:
                                     raise ProviderException(text.format(
                                         u'''
                                         Invalid "details" value "%s" under the "releases" key
@@ -749,27 +745,25 @@ class RepositoryProvider():
                                         (info['name'], self.repo)
                                     ))
 
-                                github_url = False
-                                bitbucket_url = False
+                                client = None
                                 extra = None
+                                url = None
 
                                 if tags:
-                                    github_url = github_client.make_tags_url(base)
-                                    bitbucket_url = bitbucket_client.make_tags_url(base)
                                     if tags is not True:
                                         extra = tags
+                                    for client in clients:
+                                        url = client.make_tags_url(base)
+                                        if url:
+                                            break
 
                                 if branch:
-                                    github_url = github_client.make_branch_url(base, branch)
-                                    bitbucket_url = bitbucket_client.make_branch_url(base, branch)
+                                    for client in clients:
+                                        url = client.make_branch_url(base, branch)
+                                        if url:
+                                            break
 
-                                if github_url:
-                                    downloads = github_client.download_info(github_url, extra)
-                                    url = github_url
-                                elif bitbucket_url:
-                                    downloads = bitbucket_client.download_info(bitbucket_url, extra)
-                                    url = bitbucket_url
-                                else:
+                                if not url:
                                     raise ProviderException(text.format(
                                         u'''
                                         Invalid "base" value "%s" for one of the releases of the
@@ -778,6 +772,7 @@ class RepositoryProvider():
                                         (base, info['name'], self.repo)
                                     ))
 
+                                downloads = client.download_info(url, extra)
                                 if downloads is False:
                                     raise ProviderException(text.format(
                                         u'''
