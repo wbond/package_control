@@ -7,6 +7,7 @@ from .. import text
 from ..console_write import console_write
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
+from .schema_compat import SchemaVersion
 from ..download_manager import downloader, update_url
 from ..versions import version_sort
 
@@ -40,8 +41,7 @@ class ChannelProvider():
 
     def __init__(self, channel, settings):
         self.channel_info = None
-        self.schema_version = '0.0'
-        self.schema_major_version = 0
+        self.schema_version = None
         self.channel = channel
         self.settings = settings
 
@@ -100,34 +100,20 @@ class ChannelProvider():
         except (ValueError):
             raise ProviderException('Error parsing JSON from channel %s.' % self.channel)
 
-        schema_error = 'Channel %s does not appear to be a valid channel file because ' % self.channel
-
-        if 'schema_version' not in channel_info:
-            raise ProviderException('%s the "schema_version" JSON key is missing.' % schema_error)
+        def fail(message):
+            raise ProviderException(
+                'Channel %s does not appear to be a valid channel file because %s' % (self.channel, message))
 
         try:
-            self.schema_version = channel_info.get('schema_version')
-            if isinstance(self.schema_version, int):
-                self.schema_version = float(self.schema_version)
-            if isinstance(self.schema_version, float):
-                self.schema_version = str(self.schema_version)
-        except (ValueError):
-            raise ProviderException('%s the "schema_version" is not a valid number.' % schema_error)
-
-        if self.schema_version not in ['1.0', '1.1', '1.2', '2.0', '3.0.0']:
-            raise ProviderException(text.format(
-                '''
-                %s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2, 2.0 or 3.0.0.
-                ''',
-                schema_error
-            ))
-
-        version_parts = self.schema_version.split('.')
-        self.schema_major_version = int(version_parts[0])
+            self.schema_version = SchemaVersion(channel_info['schema_version'])
+        except KeyError:
+            fail('the "schema_version" JSON key is missing.')
+        except ValueError as e:
+            fail(e)
 
         # Fix any out-dated repository URLs in the package cache
         debug = self.settings.get('debug')
-        packages_key = 'packages_cache' if self.schema_major_version >= 2 else 'packages'
+        packages_key = 'packages_cache' if self.schema_version.major >= 2 else 'packages'
         if packages_key in channel_info:
             original_cache = channel_info[packages_key]
             new_cache = {}
@@ -149,7 +135,7 @@ class ChannelProvider():
 
         self.fetch()
 
-        if self.schema_major_version >= 2:
+        if self.schema_version.major >= 2:
             return {}
 
         return self.channel_info.get('package_name_map', {})
@@ -166,7 +152,7 @@ class ChannelProvider():
 
         self.fetch()
 
-        if self.schema_major_version >= 2:
+        if self.schema_version.major >= 2:
             output = {}
             if 'packages_cache' in self.channel_info:
                 for repo in self.channel_info['packages_cache']:
@@ -289,7 +275,7 @@ class ChannelProvider():
 
         # The 2.0 channel schema renamed the key cached package info was
         # stored under in order to be more clear to new users.
-        packages_key = 'packages_cache' if self.schema_major_version >= 2 else 'packages'
+        packages_key = 'packages_cache' if self.schema_version.major >= 2 else 'packages'
 
         if self.channel_info.get(packages_key, False) is False:
             return {}
@@ -305,7 +291,7 @@ class ChannelProvider():
             # about all available releases. These include "version" and
             # "platforms" keys that are used to pick the download for the
             # current machine.
-            if self.schema_major_version < 2:
+            if self.schema_version.major < 2:
                 copy['releases'] = platforms_to_releases(copy, self.settings.get('debug'))
                 del copy['platforms']
             else:

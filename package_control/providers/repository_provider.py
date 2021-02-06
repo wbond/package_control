@@ -8,6 +8,7 @@ from .. import text
 from ..console_write import console_write
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
+from .schema_compat import SchemaVersion
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
@@ -49,8 +50,7 @@ class RepositoryProvider():
     def __init__(self, repo, settings):
         self.cache = {}
         self.repo_info = None
-        self.schema_version = '0.0'
-        self.schema_major_version = 0
+        self.schema_version = None
         self.repo = repo
         self.settings = settings
         self.failed_sources = {}
@@ -169,60 +169,29 @@ class RepositoryProvider():
         if self.repo_info is not None:
             return True
 
+        def fail(message):
+            raise ProviderException(
+                'Repository %s does not appear to be a valid repository file because %s' % (self.repo, message))
+
         try:
             self.fetch()
+
+            try:
+                self.schema_version = SchemaVersion(self.repo_info['schema_version'])
+            except KeyError:
+                fail('the "schema_version" JSON key is missing.')
+            except ValueError as e:
+                fail(e)
+
+            if 'packages' not in self.repo_info:
+                fail('the "packages" JSON key is missing.')
+
+            if isinstance(self.repo_info['packages'], dict):
+                fail('the "packages" key is an object, not an array. This indicates it is a channel not a repository.')
+
         except (DownloaderException, ProviderException) as e:
             self.failed_sources[self.repo] = e
             self.cache['get_packages'] = {}
-            return False
-
-        def fail(message):
-            exception = ProviderException(message)
-            self.failed_sources[self.repo] = exception
-            self.cache['get_packages'] = {}
-            return
-        schema_error = 'Repository %s does not appear to be a valid repository file because ' % self.repo
-
-        if 'schema_version' not in self.repo_info:
-            error_string = '%s the "schema_version" JSON key is missing.' % schema_error
-            fail(error_string)
-            return False
-
-        try:
-            self.schema_version = self.repo_info.get('schema_version')
-            if isinstance(self.schema_version, int):
-                self.schema_version = float(self.schema_version)
-            if isinstance(self.schema_version, float):
-                self.schema_version = str(self.schema_version)
-        except (ValueError):
-            error_string = '%s the "schema_version" is not a valid number.' % schema_error
-            fail(error_string)
-            return False
-
-        if self.schema_version not in ['1.0', '1.1', '1.2', '2.0', '3.0.0']:
-            fail(text.format(
-                '''
-                %s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2, 2.0 or 3.0.0.
-                ''',
-                schema_error
-            ))
-            return False
-
-        version_parts = self.schema_version.split('.')
-        self.schema_major_version = int(version_parts[0])
-
-        if 'packages' not in self.repo_info:
-            error_string = '%s the "packages" JSON key is missing.' % schema_error
-            fail(error_string)
-            return False
-
-        if isinstance(self.repo_info['packages'], dict):
-            fail(text.format(
-                '''
-                %s the "packages" key is an object, not an array. This indicates it is a channel not a repository.
-                ''',
-                schema_error
-            ))
             return False
 
         return True
@@ -322,7 +291,7 @@ class RepositoryProvider():
             Client(self.settings) for Client in (GitHubClient, GitLabClient, BitBucketClient)
         ]
 
-        if self.schema_major_version < 3:
+        if self.schema_version.major < 3:
             self.repo_info['dependencies'] = []
 
         output = {}
@@ -542,7 +511,7 @@ class RepositoryProvider():
 
         # Backfill the "previous_names" keys for old schemas
         previous_names = {}
-        if self.schema_major_version < 2:
+        if self.schema_version.major < 2:
             renamed = self.get_renamed_packages()
             for old_name in renamed:
                 new_name = renamed[old_name]
@@ -576,7 +545,7 @@ class RepositoryProvider():
             # Schema version 2.0 allows for grabbing details about a package, or its
             # download from "details" urls. See the GitHubClient and BitBucketClient
             # classes for valid URLs.
-            if self.schema_major_version >= 2:
+            if self.schema_version.major >= 2:
                 details = package.get('details')
                 releases = package.get('releases')
 
@@ -623,12 +592,12 @@ class RepositoryProvider():
                 continue
 
             info['releases'] = []
-            if self.schema_major_version == 2:
+            if self.schema_version.major == 2:
                 # If no releases info was specified, also grab the download info from GH or BB
                 if not releases and details:
                     releases = [{'details': details}]
 
-            if self.schema_major_version >= 2:
+            if self.schema_version.major >= 2:
                 if not releases:
                     e = ProviderException(text.format(
                         '''
@@ -669,7 +638,7 @@ class RepositoryProvider():
                     if 'platforms' not in download_info:
                         download_info['platforms'] = ['*']
 
-                    if self.schema_major_version == 2:
+                    if self.schema_version.major == 2:
                         if 'sublime_text' not in download_info:
                             download_info['sublime_text'] = '<3000'
 
@@ -704,7 +673,7 @@ class RepositoryProvider():
                         elif download_info:
                             info['releases'].append(download_info)
 
-                    elif self.schema_major_version == 3:
+                    elif self.schema_version.major == 3:
                         tags = release.get('tags')
                         branch = release.get('branch')
 
@@ -861,7 +830,7 @@ class RepositoryProvider():
             return []
 
         output = [self.repo]
-        if self.schema_major_version >= 2:
+        if self.schema_version.major >= 2:
             for package in self.repo_info['packages']:
                 details = package.get('details')
                 if details:
@@ -874,7 +843,7 @@ class RepositoryProvider():
         if not self.fetch_and_validate():
             return {}
 
-        if self.schema_major_version < 2:
+        if self.schema_version.major < 2:
             return self.repo_info.get('renamed_packages', {})
 
         output = {}
