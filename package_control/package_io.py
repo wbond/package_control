@@ -32,12 +32,7 @@ def read_package_file(package, relative_path, binary=False):
     if os.path.exists(package_dir) and _regular_file_exists(package, relative_path):
         return _read_regular_file(package, relative_path, binary)
 
-    if int(sublime.version()) >= 3000:
-        result = _read_zip_file(package, relative_path, binary)
-        if result is not False:
-            return result
-
-    return False
+    return _read_zip_file(package, relative_path, binary)
 
 
 def package_file_exists(package, relative_path):
@@ -65,10 +60,7 @@ def package_file_exists(package, relative_path):
         if result:
             return result
 
-    if int(sublime.version()) >= 3000:
-        return _zip_file_exists(package, relative_path)
-
-    return False
+    return _zip_file_exists(package, relative_path)
 
 
 def _get_package_dir(package):

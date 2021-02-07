@@ -13,7 +13,6 @@ from .remove_package_command import RemovePackageCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
 from .package_control_disable_debug_mode_command import PackageControlDisableDebugModeCommand
-from .package_control_edit_settings_command import PackageControlEditSettingsCommand
 from .package_control_enable_debug_mode_command import PackageControlEnableDebugModeCommand
 from .package_control_insert_command import PackageControlInsertCommand
 from .package_control_tests_command import PackageControlTestsCommand
@@ -38,7 +37,6 @@ __all__ = [
     'UpgradeAllPackagesCommand',
     'UpgradePackageCommand',
     'PackageControlDisableDebugModeCommand',
-    'PackageControlEditSettingsCommand',
     'PackageControlEnableDebugModeCommand',
     'PackageControlInsertCommand',
     'PackageControlTestsCommand',
