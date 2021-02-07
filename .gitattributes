@@ -6,5 +6,6 @@
 
 # development utilities
 /dev/ export-ignore
+tests/ export-ignore
 .travis.yml export-ignore
 tox.ini export-ignore
