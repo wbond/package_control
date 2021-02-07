@@ -3,6 +3,7 @@ dev/.lint-deps/
 
 # linter cache
 .mypy_cache/
+.pytest_cache/
 .ropeproject/
 
 # python cache
