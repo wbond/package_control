@@ -2,7 +2,7 @@
 	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
 	// COMMENTS ARE NOT ALLOWED IN JSON
 
-	"schema_version": "3.0.0",
+	"schema_version": "3.1.0",
 
 	// Packages can be specified with a simple URL to a GitHub or BitBucket
 	// repository, but details can be overridden for every field. It is also
@@ -388,7 +388,8 @@
 				{
 					"base": "https://github.com/codexns/sublime-bz2",
 					"tags": true,
-					"sublime_text": "*"
+					"sublime_text": "*",
+					"python_versions": ["3.3", "3.8"]
 				}
 			]
 		},
@@ -404,6 +405,7 @@
 					"url": "http://packagecontrol.io/ssl-linux.sublime-package",
 					"sublime_text": "*",
 					"platforms": ["linux"],
+					"python_versions": ["3.3", "3.8"],
 					"sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
 				}
 			]
@@ -420,6 +422,7 @@
 					"url": "http://packagecontrol.io/ssl-windows.sublime-package",
 					"sublime_text": "<3000",
 					"platforms": ["windows"],
+					"python_versions": ["3.3", "3.8"],
 					"sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
 				}
 			]

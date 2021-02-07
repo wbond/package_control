@@ -373,7 +373,7 @@ class GitLabUserProviderTests(unittest.TestCase):
                         'platforms': ['*'],
                         'url': 'https://gitlab.com/packagecontrol-test/'
                         'package_control-tester/-/archive/master/package_control-tester-master.zip'
-                        }],
+                    }],
                     'last_modified': '2020-07-15 10:50:38'
                 }
             )],
@@ -941,7 +941,8 @@ class RepositoryProviderTests(unittest.TestCase):
                                 "version": "1.0.0",
                                 "url": "https://packagecontrol.io/bz2.sublime-package",
                                 "sublime_text": "*",
-                                "platforms": ["*"]
+                                "platforms": ["*"],
+                                "python_versions": ["3.3"]
                             }
                         ]
                     }
@@ -964,6 +965,7 @@ class RepositoryProviderTests(unittest.TestCase):
                                 "url": "http://packagecontrol.io/ssl-linux.sublime-package",
                                 "sublime_text": "*",
                                 "platforms": ["linux"],
+                                "python_versions": ["3.3"],
                                 "sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
                             }
                         ]
@@ -987,6 +989,7 @@ class RepositoryProviderTests(unittest.TestCase):
                                 "url": "http://packagecontrol.io/ssl-windows.sublime-package",
                                 "sublime_text": "<3000",
                                 "platforms": ["windows"],
+                                "python_versions": ["3.3"],
                                 "sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
                             }
                         ]
@@ -1456,6 +1459,132 @@ class RepositoryProviderTests(unittest.TestCase):
                     }
                 )
             ],
+            packages
+        )
+
+    def test_get_dependencies_310_explicit(self):
+        provider = RepositoryProvider(
+            'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.1.0-explicit.json',
+            self.settings()
+        )
+        dependencies = [dependency for dependency in provider.get_dependencies()]
+        self.assertEqual(
+            [
+                (
+                    'bz2',
+                    {
+                        "name": "bz2",
+                        "load_order": "02",
+                        "author": "wbond",
+                        "description": "Python bz2 module",
+                        "issues": "https://github.com/wbond/package_control/issues",
+                        "sources": [
+                            'https://raw.githubusercontent.com/wbond/package_control-json'
+                            '/master/repository-3.1.0-explicit.json'
+                        ],
+                        "releases": [
+                            {
+                                "version": "1.0.0",
+                                "url": "https://packagecontrol.io/bz2.sublime-package",
+                                "sublime_text": "*",
+                                "platforms": ["*"],
+                                "python_versions": ["3.3"]
+                            }
+                        ]
+                    }
+                ),
+                (
+                    'ssl-linux',
+                    {
+                        "name": "ssl-linux",
+                        "load_order": "01",
+                        "description": "Python _ssl module for Linux",
+                        "author": "wbond",
+                        "issues": "https://github.com/wbond/package_control/issues",
+                        "sources": [
+                            'https://raw.githubusercontent.com/wbond/package_control-json'
+                            '/master/repository-3.1.0-explicit.json'
+                        ],
+                        "releases": [
+                            {
+                                "version": "1.0.0",
+                                "url": "http://packagecontrol.io/ssl-linux.sublime-package",
+                                "sublime_text": "*",
+                                "platforms": ["linux"],
+                                "python_versions": ["3.3", "3.8"],
+                                "sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
+                            }
+                        ]
+                    }
+                ),
+                # Note: 'ssl-windows' is expected to not be present because of missing python_versions!
+            ],
+            dependencies
+        )
+
+    def test_get_packages_310_explicit(self):
+        provider = RepositoryProvider(
+            'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.1.0-explicit.json',
+            self.settings()
+        )
+        packages = [package for package in provider.get_packages()]
+        self.assertEqual(
+            [(
+                'package_control-tester-3.1.0',
+                {
+                    "name": "package_control-tester-3.1.0",
+                    "author": ["packagecontrol", "wbond"],
+                    "description": "A test of Package Control upgrade messages with "
+                                   "explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol-test/package_control-tester",
+                    "issues": None,
+                    "donate": "https://gratipay.com/wbond/",
+                    "buy": "https://example.com",
+                    "readme": None,
+                    "previous_names": [],
+                    "labels": [],
+                    "sources": [
+                        'https://raw.githubusercontent.com/wbond/package_control-json'
+                        '/master/repository-3.1.0-explicit.json'
+                    ],
+                    "last_modified": "2014-11-12 15:52:35",
+                    "releases": [
+                        {
+                            "version": "1.0.1",
+                            "date": "2014-11-12 15:52:35",
+                            "url": "https://codeload.github.com/packagecontrol-test"
+                                   "/package_control-tester/zip/1.0.1",
+                            "sublime_text": "*",
+                            "platforms": ["windows"],
+                            "dependencies": ["bz2"]
+                        },
+                        {
+                            "version": "1.0.1-beta",
+                            "date": "2014-11-12 15:14:23",
+                            "url": "https://codeload.github.com/packagecontrol-test"
+                                   "/package_control-tester/zip/1.0.1-beta",
+                            "sublime_text": "*",
+                            "platforms": ["windows"]
+                        },
+                        {
+                            "version": "1.0.0",
+                            "date": "2014-11-12 15:14:13",
+                            "url": "https://codeload.github.com/packagecontrol-test"
+                                   "/package_control-tester/zip/1.0.0",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
+                        },
+                        {
+                            "version": "0.9.0",
+                            "date": "2014-11-12 02:02:22",
+                            "url": "https://codeload.github.com/packagecontrol-test"
+                                   "/package_control-tester/zip/0.9.0",
+                            "sublime_text": "<3000",
+                            "platforms": ["*"]
+                        }
+                    ]
+                }
+            )],
             packages
         )
 

@@ -49,7 +49,7 @@ def platforms_to_releases(info, debug):
 
 
 class SchemaVersion(SemVer):
-    supported_versions = ('1.0', '1.1', '1.2', '2.0', '3.0.0')
+    supported_versions = ('1.0', '1.1', '1.2', '2.0', '3.0.0', '3.1.0')
 
     @classmethod
     def _parse(cls, ver):

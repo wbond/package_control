@@ -260,6 +260,7 @@ class RepositoryProvider():
                         {
                             'sublime_text': compatible version,
                             'platforms': [platform name, ...],
+                            'python_versions': ['3.3', '3.8'],
                             'url': url,
                             'version': version,
                             'sha256': hex hash
@@ -281,6 +282,21 @@ class RepositoryProvider():
 
         if not self.fetch_and_validate():
             return
+
+        if self.schema_version >= (3, 1, 0):
+            allowed_dependency_keys = {  # todo: remove 'load_order'
+                'name', 'description', 'author', 'issues', 'load_order', 'releases'
+            }
+            allowed_release_keys = {  # todo: remove 'branch'
+                'base', 'version', 'sublime_text', 'platforms', 'python_versions', 'branch', 'tags', 'url', 'sha256'
+            }
+        else:
+            allowed_dependency_keys = {
+                'name', 'description', 'author', 'issues', 'load_order', 'releases'
+            }
+            allowed_release_keys = {
+                'base', 'version', 'sublime_text', 'platforms', 'branch', 'tags', 'url', 'sha256'
+            }
 
         debug = self.settings.get('debug')
 
@@ -310,6 +326,15 @@ class RepositoryProvider():
                 continue
 
             try:
+                unknown_keys = set(dependency) - allowed_dependency_keys
+                if unknown_keys:
+                    raise ProviderException(text.format(
+                        '''
+                        The "%s" key(s) in the dependency "%s" in the repository %s are not supported.
+                        ''',
+                        ('", "'.join(sorted(unknown_keys)), info['name'], self.repo)
+                    ))
+
                 releases = dependency.get('releases', [])
                 if releases and not isinstance(releases, list):
                     raise ProviderException(text.format(
@@ -321,6 +346,16 @@ class RepositoryProvider():
 
                 for release in releases:
                     download_info = {}
+
+                    unknown_keys = set(release) - allowed_release_keys
+                    if unknown_keys:
+                        raise ProviderException(text.format(
+                            '''
+                            The "%s" key(s) in one of the releases of the dependency "%s"
+                            in the repository %s are not supported.
+                            ''',
+                            ('", "'.join(sorted(unknown_keys)), info['name'], self.repo)
+                        ))
 
                     # Make sure that explicit fields are copied over
                     for field in ('sublime_text', 'version', 'sha256'):
@@ -338,6 +373,18 @@ class RepositoryProvider():
                     if not isinstance(value, list):
                         value = [value]
                     download_info['platforms'] = value
+
+                    # Validate supported python_versions
+                    if self.schema_version < (3, 1, 0):
+                        # Assume python 3.3 for backward compatibility with older schemes.
+                        # Note: ST2 with python 2.6 are no longer supported
+                        download_info['python_versions'] = ['3.3']
+                    else:
+                        value = release.get('python_versions')
+                        if value:
+                            if not isinstance(value, list):
+                                value = [value]
+                            download_info['python_versions'] = value
 
                     tags = release.get('tags')
                     branch = release.get('branch')
@@ -411,7 +458,7 @@ class RepositoryProvider():
                             ))
 
                     # check required releases keys
-                    for key in ('version', 'url', 'sublime_text', 'platforms'):
+                    for key in ('version', 'url', 'sublime_text', 'platforms', 'python_versions'):
                         if key not in download_info:
                             raise ProviderException(text.format(
                                 '''

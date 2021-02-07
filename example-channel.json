@@ -2,7 +2,7 @@
 	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
 	// COMMENTS ARE NOT ALLOWED IN JSON
 
-	"schema_version": "3.0.0",
+	"schema_version": "3.1.0",
 
 	// All repositories must be an HTTPS URL. SSL certificates help prevent
 	// unauthorized code being loaded onto users' machines.
@@ -59,7 +59,8 @@
 						"version": "1.0.0",
 						"url": "https://codeload.github.com/codexns/sublime-bz2/zip/1.0.0",
 						"sublime_text": "*",
-						"platforms": ["*"]
+						"platforms": ["*"],
+						"python_versions": ["3.3", "3.8"]
 					}
 				]
 			}
