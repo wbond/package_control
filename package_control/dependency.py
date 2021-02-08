@@ -101,8 +101,7 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
 
     di_record_path = os.path.join(dist_info_path, 'RECORD')
     # Create an empty file so it shows up in its own file list
-    with open(di_record_path, 'w', encoding='utf-8') as fobj:
-        fobj.write('')
+    open(di_record_path, 'wb').close()
     rf_contents = wheel.generate_record(
         dest_root,
         dist_info_dirname,
