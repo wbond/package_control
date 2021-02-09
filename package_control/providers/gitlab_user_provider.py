@@ -130,10 +130,10 @@ class GitLabUserProvider:
                 yield (key, value)
             return
 
-        client = GitLabClient(self.settings)
-
         if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
+
+        client = GitLabClient(self.settings)
 
         try:
             user_repos = client.user_info(self.repo)
