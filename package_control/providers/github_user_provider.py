@@ -136,10 +136,10 @@ class GitHubUserProvider():
 
         try:
             user_repos = client.user_info(self.repo)
-        except (DownloaderException, ClientException, ProviderException) as e:
-            self.failed_sources = [self.repo]
-            self.cache['get_packages'] = e
-            raise e
+        except (DownloaderException, ClientException) as e:
+            self.failed_sources[self.repo] = e
+            self.cache['get_packages'] = {}
+            raise
 
         output = {}
         for repo_info in user_repos:
