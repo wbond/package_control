@@ -81,7 +81,11 @@
     },
     {
         "caption": "Preferences: Package Control Settings",
-        "command": "package_control_edit_settings"
+        "command": "edit_settings",
+        "args": {
+            "base_file": "${packages}/Package Control/Package Control.sublime-settings",
+            "default": "// See the left pane for the list of settings and valid values\n{\n\t$0\n}\n"
+        }
     },
     {
         "caption": "Package Control: Tests",
