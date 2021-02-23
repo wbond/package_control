@@ -38,8 +38,9 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
     extra_filenames = wheel.extra_files()
     shared_exts = wheel.shared_lib_extensions()
 
-    found_license = False
-    found_readme = False
+    # TEMP - linter
+    # found_license = False
+    # found_readme = False
 
     package_dirs = []
     package_files = []
@@ -58,10 +59,11 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
             # .dist-info dir since that is the only place we can
             # ensure there won't be name conflicts
             package_files.append(('%s/%s' % (dist_info_dirname, fname), path))
-            if 'readme' in lf:
-                found_readme = True
-            if 'license' in lf:
-                found_license = True
+            # TEMP - linter
+            # if 'readme' in lf:
+            #     found_readme = True
+            # if 'license' in lf:
+            #     found_license = True
 
     if not os.path.exists(dist_info_path):
         os.mkdir(dist_info_path)
