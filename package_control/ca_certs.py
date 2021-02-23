@@ -43,13 +43,13 @@ def get_ca_bundle_path(settings):
     if regenerate:
         with open(merged_ca_bundle_path, 'w', encoding='utf-8') as merged:
             if system_ca_bundle_path:
-                with open(system_ca_bundle_path, 'r', encoding='utf-8', errors='replace') as system:
+                with open(system_ca_bundle_path, 'r', encoding='utf-8') as system:
                     system_certs = system.read().strip()
                     merged.write(system_certs)
                     if len(system_certs) > 0:
                         merged.write('\n')
             if os.path.exists(user_ca_bundle_path):
-                with open(user_ca_bundle_path, 'r', encoding='utf-8', errors='replace') as user:
+                with open(user_ca_bundle_path, 'r', encoding='utf-8') as user:
                     user_certs = user.read().strip()
                     merged.write(user_certs)
                     if len(user_certs) > 0:
