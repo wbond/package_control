@@ -6,7 +6,7 @@ from ..clients.gitlab_client import GitLabClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..http_cache import HttpCache
 
-from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET
+from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET, USER_AGENT
 
 
 class GitHubClientTests(unittest.TestCase):
@@ -16,6 +16,8 @@ class GitHubClientTests(unittest.TestCase):
         return {
             'debug': True,
             'cache': HttpCache(604800),
+            'cache_length': 604800,
+            'user_agent': USER_AGENT,
             'query_string_params': {
                 'api.github.com': {
                     'client_id': CLIENT_ID,
@@ -135,6 +137,8 @@ class GitLabClientTests(unittest.TestCase):
         return {
             'debug': True,
             'cache': HttpCache(604800),
+            'cache_length': 604800,
+            'user_agent': USER_AGENT
         }
 
     def test_gitlab_client_repo_info(self):
@@ -250,7 +254,9 @@ class BitBucketClientTests(unittest.TestCase):
     def bitbucket_settings(self):
         return {
             'debug': True,
-            'cache': HttpCache(604800)
+            'cache': HttpCache(604800),
+            'cache_length': 604800,
+            'user_agent': USER_AGENT
         }
 
     def test_bitbucket_client_repo_info(self):
