@@ -234,7 +234,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             HTTP header names.
         """
 
-        with open(self.tmp_file, 'r', encoding='utf-8') as fobj:
+        with open(self.tmp_file, 'r') as fobj:
             output = fobj.read().splitlines()
         self.clean_tmp_file()
 

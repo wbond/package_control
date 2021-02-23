@@ -141,7 +141,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             try:
                 output = self.execute(command)
 
-                with open(self.tmp_file, 'r', encoding='utf-8') as fobj:
+                with open(self.tmp_file, 'r') as fobj:
                     headers_str = fobj.read()
                 self.clean_tmp_file()
 
