@@ -290,8 +290,7 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
                 if data is not None:
                     dst_path = os.path.join(deps_dir, zi.filename[8:])
                     dst_dir = os.path.dirname(dst_path)
-                    if not os.path.exists(dst_dir):
-                        os.makedirs(dst_dir)
+                    os.makedirs(dst_dir, exist_ok=True)
                     with open(dst_path, 'wb') as f:
                         f.write(data)
         finally:
@@ -327,8 +326,7 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
                 dst_rel_path = dst_rel_path[len(common_root) + 1:]
             members.append((info, dst_rel_path))
 
-        if not os.path.exists(staging_dir):
-            os.makedirs(staging_dir)
+        os.makedirs(staging_dir, exist_ok=True)
 
         for info, rel_path in members:
             info_data = _extract_info(ar, info)
@@ -336,8 +334,7 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
             if info_data is not None:
                 dst_path = os.path.join(staging_dir, rel_path)
                 dst_dir = os.path.dirname(dst_path)
-                if not os.path.exists(dst_dir):
-                    os.makedirs(dst_dir)
+                os.makedirs(dst_dir, exist_ok=True)
                 with open(dst_path, 'wb') as f:
                     f.write(info_data)
 
