@@ -84,11 +84,10 @@ class CliDownloader(object):
         proc = subprocess.Popen(
             args, startupinfo=startupinfo, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        output = proc.stdout.read()
-        self.stderr = proc.stderr.read()
-        returncode = proc.wait()
-        if returncode != 0:
-            error = NonCleanExitError(returncode)
+        output, self.stderr = proc.communicate()
+
+        if proc.returncode != 0:
+            error = NonCleanExitError(proc.returncode)
             error.stderr = self.stderr
             error.stdout = output
             raise error
