@@ -129,17 +129,17 @@ class GitHubUserProvider():
                 yield (key, value)
             return
 
-        client = GitHubClient(self.settings)
-
         if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
 
+        client = GitHubClient(self.settings)
+
         try:
             user_repos = client.user_info(self.repo)
-        except (DownloaderException, ClientException, ProviderException) as e:
-            self.failed_sources = [self.repo]
-            self.cache['get_packages'] = e
-            raise e
+        except (DownloaderException, ClientException) as e:
+            self.failed_sources[self.repo] = e
+            self.cache['get_packages'] = {}
+            raise
 
         output = {}
         for repo_info in user_repos:
