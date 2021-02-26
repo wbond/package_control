@@ -3,6 +3,13 @@ import sublime_plugin
 
 from ..tests import runner
 from ..tests.clients import GitHubClientTests, BitBucketClientTests
+from ..tests.downloaders import (
+    CurlDownloaderTests,
+    OscryptoDownloaderTests,
+    UrlLibDownloaderTests,
+    WgetDownloaderTests,
+    WinINetDownloaderTests
+)
 from ..tests.providers import (
     BitBucketRepositoryProviderTests,
     ChannelProviderTests,
@@ -23,6 +30,11 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
         runner(
             self.window,
             [
+                CurlDownloaderTests,
+                OscryptoDownloaderTests,
+                UrlLibDownloaderTests,
+                WgetDownloaderTests,
+                WinINetDownloaderTests,
                 GitHubClientTests,
                 BitBucketClientTests,
                 GitHubRepositoryProviderTests,
