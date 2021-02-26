@@ -14,8 +14,6 @@ from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
 from .package_renamer import PackageRenamer
-from .file_not_found_error import FileNotFoundError
-from .open_compat import open_compat, read_compat, write_compat
 from .settings import pc_settings_filename, load_list_setting
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
@@ -76,15 +74,15 @@ class AutomaticUpgrader(threading.Thread):
         legacy_last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
         if os.path.exists(legacy_last_run_file):
             try:
-                with open_compat(legacy_last_run_file) as fobj:
-                    self.last_run = int(read_compat(fobj))
+                with open(legacy_last_run_file) as fobj:
+                    self.last_run = int(fobj.read())
                 os.unlink(legacy_last_run_file)
             except (FileNotFoundError, ValueError):
                 pass
 
         try:
-            with open_compat(os.path.join(pc_cache_dir(), 'last_run.json')) as fobj:
-                last_run_data = json.loads(read_compat(fobj))
+            with open(os.path.join(pc_cache_dir(), 'last_run.json')) as fobj:
+                last_run_data = json.load(fobj)
             self.last_run = int(last_run_data['timestamp'])
             self.last_version = int(last_run_data['st_version'])
         except (FileNotFoundError, ValueError, TypeError):
@@ -103,14 +101,11 @@ class AutomaticUpgrader(threading.Thread):
             The unix timestamp of when to record the last run as
         """
 
-        with open_compat(os.path.join(pc_cache_dir(), 'last_run.json'), 'w') as fobj:
-            write_compat(
-                fobj,
-                json.dumps({
-                    'timestamp': last_run,
-                    'st_version': self.current_version
-                })
-            )
+        with open(os.path.join(pc_cache_dir(), 'last_run.json'), 'w') as fobj:
+            json.dump({
+                'timestamp': last_run,
+                'st_version': self.current_version
+            }, fp=fobj)
 
     def load_settings(self):
         """

@@ -1,8 +1,6 @@
 import os
 import time
 
-from .file_not_found_error import FileNotFoundError
-from .open_compat import open_compat, read_compat
 from .sys_path import pc_cache_dir
 
 
@@ -49,8 +47,8 @@ class HttpCache(object):
         """
         try:
             cache_file = os.path.join(self.base_path, key)
-            with open_compat(cache_file, 'rb') as f:
-                return read_compat(f)
+            with open(cache_file, 'rb') as fobj:
+                return fobj.read()
         except FileNotFoundError:
             return False
 
@@ -83,5 +81,5 @@ class HttpCache(object):
         """
 
         cache_file = os.path.join(self.base_path, key)
-        with open_compat(cache_file, 'wb') as f:
+        with open(cache_file, 'wb') as f:
             f.write(content)

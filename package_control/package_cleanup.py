@@ -9,7 +9,6 @@ from .console_write import console_write
 from .clear_directory import clear_directory, unlink_or_delete_directory, clean_old_files
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
-from .open_compat import open_compat
 from .package_io import package_file_exists
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 from . import loader, text, __version__
@@ -130,7 +129,7 @@ class PackageCleanup(threading.Thread):
             else:
                 cleanup_file = os.path.join(dependency_dir, 'package-control.cleanup')
                 if not os.path.exists(cleanup_file):
-                    open_compat(cleanup_file, 'w').close()
+                    open(cleanup_file, 'wb').close()
                 console_write(
                     '''
                     Unable to remove directory for unneeded dependency %s -
@@ -163,7 +162,7 @@ class PackageCleanup(threading.Thread):
                     found = False
                 else:
                     if not os.path.exists(cleanup_file):
-                        open_compat(cleanup_file, 'w').close()
+                        open(cleanup_file, 'wb').close()
                     console_write(
                         '''
                         Unable to remove old directory %s - deferring until next
@@ -181,7 +180,7 @@ class PackageCleanup(threading.Thread):
                 # that has attempted to re-install the package initially.
                 if not clear_directory(package_dir, [metadata_path]):
                     if not os.path.exists(reinstall):
-                        open_compat(reinstall, 'w').close()
+                        open(reinstall, 'wb').close()
 
                     def show_still_locked(package_name):
                         show_error(
@@ -228,7 +227,7 @@ class PackageCleanup(threading.Thread):
                         found = False
                     else:
                         if not os.path.exists(cleanup_file):
-                            open_compat(cleanup_file, 'w').close()
+                            open(cleanup_file, 'wb').close()
                         console_write(
                             '''
                             Unable to remove directory for orphaned package %s -

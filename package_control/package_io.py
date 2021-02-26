@@ -4,7 +4,6 @@ import zipfile
 import sublime
 
 from .console_write import console_write
-from .open_compat import open_compat, read_compat
 
 
 def read_package_file(package, relative_path, binary=False):
@@ -73,8 +72,9 @@ def _read_regular_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
 
-    with open_compat(file_path, ('rb' if binary else 'r')) as f:
-        return read_compat(f)
+    mode, encoding = ('rb', None) if binary else ('r', 'utf-8')
+    with open(file_path, mode=mode, encoding=encoding) as fobj:
+        return fobj.read()
 
 
 def _read_zip_file(package, relative_path, binary=False):
