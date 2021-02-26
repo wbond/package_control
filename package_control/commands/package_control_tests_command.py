@@ -2,7 +2,11 @@ import sublime
 import sublime_plugin
 
 from ..tests import runner
-from ..tests.clients import GitHubClientTests, BitBucketClientTests
+from ..tests.clients import (
+    BitBucketClientTests,
+    GitHubClientTests,
+    GitLabClientTests
+)
 from ..tests.providers import (
     BitBucketRepositoryProviderTests,
     ChannelProviderTests,
@@ -24,6 +28,7 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
             self.window,
             [
                 GitHubClientTests,
+                GitLabClientTests,
                 BitBucketClientTests,
                 GitHubRepositoryProviderTests,
                 BitBucketRepositoryProviderTests,
