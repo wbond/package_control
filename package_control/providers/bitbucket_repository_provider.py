@@ -134,7 +134,7 @@ class BitBucketRepositoryProvider():
             raise StopIteration()
 
         client = BitBucketClient(self.settings)
-        
+
         try:
             repo_info = client.repo_info(self.repo)
 
