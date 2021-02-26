@@ -10,11 +10,8 @@ class NonCleanExitError(Exception):
     def __init__(self, returncode):
         self.returncode = returncode
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.returncode)
 
-    def __str__(self):
-        return self.__unicode__()
-
     def __bytes__(self):
-        return self.__unicode__().encode('utf-8')
+        return self.__str__().encode('utf-8')
