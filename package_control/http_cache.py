@@ -14,8 +14,7 @@ class HttpCache(object):
 
     def __init__(self, ttl):
         self.base_path = os.path.join(pc_cache_dir(), 'http_cache')
-        if not os.path.exists(self.base_path):
-            os.mkdir(self.base_path)
+        os.makedirs(self.base_path, exist_ok=True)
         self.clear(int(ttl))
 
     def clear(self, ttl):
