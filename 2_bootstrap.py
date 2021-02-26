@@ -209,21 +209,21 @@ def _install_injectors(settings):
     """
 
     injector_code = dedent(injector_code).strip() + "\n"
+    injector_code = injector_code.encode('utf-8')
 
-    injector_path_33 = os.path.join(sys_path.data_dir, 'Lib', 'python33', 'package_control.py')
-    try:
-        if not os.path.exists(injector_path_33):
-            with open(injector_path_33, 'wb') as f:
-                f.write(injector_code.encode('utf-8'))
-    except (OSError) as e:
-        console_write('Unable to write injector to "%s" - %s' % (injector_path_33, e))
+    if int(sublime.version()) >= 4000:
+        names = ('python33', 'python38')
+    else:
+        names = ('python3.3', )
 
-    injector_path_38 = os.path.join(sys_path.data_dir, 'Lib', 'python38', 'package_control.py')
-    try:
-        if not os.path.exists(injector_path_38):
-            with open(injector_path_38, 'wb') as f:
-                f.write(injector_code.encode('utf-8'))
-    except (OSError) as e:
-        console_write('Unable to write injector to "%s" - %s' % (injector_path_38, e))
+    for name in names:
+        injector_path = os.path.join(sys_path.data_dir, 'Lib', name, 'package_control.py')
+        try:
+            with open(injector_path, 'xb') as fobj:
+                fobj.write(injector_code)
+        except FileExistsError:
+            pass
+        except OSError as e:
+            console_write('Unable to write injector to "%s" - %s' % (injector_path, e))
 
     sublime.set_timeout(_mark_bootstrapped, 10)
