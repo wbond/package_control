@@ -2,11 +2,5 @@ class ClientException(Exception):
 
     """If a client could not fetch information"""
 
-    def __unicode__(self):
-        return self.args[0]
-
-    def __str__(self):
-        return self.__unicode__()
-
     def __bytes__(self):
-        return self.__unicode__().encode('utf-8')
+        return self.__str__().encode('utf-8')

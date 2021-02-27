@@ -135,10 +135,10 @@ class GitHubRepositoryProvider():
                 yield (key, value)
             return
 
-        client = GitHubClient(self.settings)
-
         if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
+
+        client = GitHubClient(self.settings)
 
         try:
             repo_info = client.repo_info(self.repo)
