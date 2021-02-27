@@ -905,7 +905,38 @@ class PackageManager():
 
         try:
             os.makedirs(package_destination, exist_ok=True)
-            package_file = zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED)
+
+            with zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED) as package_file:
+
+                compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
+
+                profile_settings = self.settings.get('package_profiles', {}).get(profile)
+
+                def get_profile_setting(setting, default):
+                    if profile_settings:
+                        profile_value = profile_settings.get(setting)
+                        if profile_value is not None:
+                            return profile_value
+                    return self.settings.get(setting, default)
+
+                dirs_to_ignore = get_profile_setting('dirs_to_ignore', [])
+                files_to_ignore = get_profile_setting('files_to_ignore', [])
+                files_to_include = get_profile_setting('files_to_include', [])
+
+                for root, dirs, files in os.walk(package_dir):
+                    # remove all "dirs_to_ignore" from "dirs" to make os.walk ignore them
+                    dirs[:] = [x for x in dirs if x not in dirs_to_ignore]
+                    for file in files:
+                        full_path = os.path.join(root, file)
+                        relative_path = os.path.relpath(full_path, package_dir)
+
+                        ignore_matches = (fnmatch(relative_path, p) for p in files_to_ignore)
+                        include_matches = (fnmatch(relative_path, p) for p in files_to_include)
+                        if any(ignore_matches) and not any(include_matches):
+                            continue
+
+                        package_file.write(full_path, relative_path)
+
         except (OSError, IOError) as e:
             show_error(
                 '''
@@ -916,40 +947,6 @@ class PackageManager():
                 (package_filename, package_destination, str(e))
             )
             return False
-
-        if self.settings['version'] >= 3000:
-            compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
-
-        if profile:
-            profile_settings = self.settings.get('package_profiles').get(profile)
-
-        def get_profile_setting(setting, default):
-            if profile:
-                profile_value = profile_settings.get(setting)
-                if profile_value is not None:
-                    return profile_value
-            return self.settings.get(setting, default)
-
-        dirs_to_ignore = get_profile_setting('dirs_to_ignore', [])
-        files_to_ignore = get_profile_setting('files_to_ignore', [])
-        files_to_include = get_profile_setting('files_to_include', [])
-
-        for root, dirs, files in os.walk(package_dir):
-            # remove all "dirs_to_ignore" from "dirs" to make os.walk ignore them
-            dirs[:] = [x for x in dirs if x not in dirs_to_ignore]
-            for file in files:
-                full_path = os.path.join(root, file)
-                relative_path = os.path.relpath(full_path, package_dir)
-
-                ignore_matches = (fnmatch(relative_path, p) for p in files_to_ignore)
-                include_matches = (fnmatch(relative_path, p) for p in files_to_include)
-                if any(ignore_matches) and not any(include_matches):
-                    continue
-
-                package_file.write(full_path, relative_path)
-
-        package_file.close()
-
         return True
 
     def install_package(self, package_name, is_dependency=False):
