@@ -82,8 +82,8 @@ def _migrate_loaders(settings):
                 json_path = os.path.join(dep_path, 'dependency-metadata.json')
 
                 try:
-                    with open(json_path, 'rb') as j:
-                        metadata = json.loads(j.read().decode('utf-8'))
+                    with open(json_path, 'r', encoding='utf-8') as fobj:
+                        metadata = json.load(fobj)
                 except (OSError, ValueError) as e:
                     console_write('Error loading dependency metadata during migration - %s' % e)
                     continue
