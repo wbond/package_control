@@ -1043,11 +1043,6 @@ class PackageManager():
 
             unpacked_package_dir = self.get_package_dir(package_name)
             package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
-            pristine_package_path = os.path.join(
-                os.path.dirname(self.settings['packages_path']),
-                'Pristine Packages',
-                package_filename
-            )
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
@@ -1490,11 +1485,6 @@ class PackageManager():
                     )
                     return None
 
-            # We have to remove the pristine package too or else Sublime Text 2
-            # will silently delete the package
-            if os.path.exists(pristine_package_path):
-                os.remove(pristine_package_path)
-
             os.chdir(self.settings['packages_path'])
             return True
 
@@ -1869,11 +1859,6 @@ class PackageManager():
 
         package_filename = package_name + '.sublime-package'
         installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
-        pristine_package_path = os.path.join(
-            os.path.dirname(self.settings['packages_path']),
-            'Pristine Packages',
-            package_filename
-        )
         package_dir = self.get_package_dir(package_name)
 
         version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
@@ -1885,21 +1870,6 @@ class PackageManager():
                 os.remove(installed_package_path)
         except (OSError, IOError):
             cleanup_complete = False
-
-        try:
-            if os.path.exists(pristine_package_path):
-                os.remove(pristine_package_path)
-        except (OSError, IOError) as e:
-            show_error(
-                '''
-                An error occurred while trying to remove the pristine package
-                file for %s.
-
-                %s
-                ''',
-                (package_name, str(e))
-            )
-            return False
 
         if os.path.exists(package_dir):
             # We don't delete the actual package dir immediately due to a bug
