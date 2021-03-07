@@ -691,7 +691,7 @@ class PackageManager():
 
         packages = self._list_visible_dirs(self.settings['packages_path'])
 
-        if self.settings['version'] > 3000 and unpacked_only is False:
+        if unpacked_only is False:
             packages |= self._list_sublime_package_files(self.settings['installed_packages_path'])
 
         packages -= set(self.list_default_packages())
@@ -746,20 +746,8 @@ class PackageManager():
     def list_default_packages(self):
         """ :return: A list of all default package names"""
 
-        if self.settings['version'] > 3000:
-            app_dir = os.path.dirname(sublime.executable_path())
-            packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
-
-        else:
-            config_dir = os.path.dirname(self.settings['packages_path'])
-
-            pristine_dir = os.path.join(config_dir, 'Pristine Packages')
-            pristine_files = self._list_sublime_package_files(pristine_dir)
-
-            installed_dir = self.settings['installed_packages_path']
-            installed_files = self._list_sublime_package_files(installed_dir)
-
-            packages = pristine_files - installed_files
+        app_dir = os.path.dirname(sublime.executable_path())
+        packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
 
         packages -= set(['User', 'Default'])
         return sorted(packages, key=lambda s: s.lower())
@@ -1039,11 +1027,6 @@ class PackageManager():
 
             unpacked_package_dir = self.get_package_dir(package_name)
             package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
-            pristine_package_path = os.path.join(
-                os.path.dirname(self.settings['packages_path']),
-                'Pristine Packages',
-                package_filename
-            )
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
@@ -1158,20 +1141,14 @@ class PackageManager():
                 dependencies_path = root_level_paths[0] + dependencies_path
                 no_package_file_zip_path = root_level_paths[0] + no_package_file_zip_path
 
-            # If we should extract unpacked or as a .sublime-package file
-            unpack = True
-
-            # By default, ST3 prefers .sublime-package files since this allows
-            # overriding files in the Packages/{package_name}/ folder
-            if self.settings['version'] >= 3000:
-                unpack = False
-
+            # By default, ST prefers .sublime-package files since this allows
+            # overriding files in the Packages/{package_name}/ folder.
             # If the package maintainer doesn't want a .sublime-package
             try:
                 package_zip.getinfo(no_package_file_zip_path)
                 unpack = True
             except (KeyError):
-                pass
+                unpack = False
 
             # Dependencies are always unpacked. If it doesn't need to be
             # unpacked, it probably should just be part of a package instead
@@ -1491,11 +1468,6 @@ class PackageManager():
                         package_name
                     )
                     return None
-
-            # We have to remove the pristine package too or else Sublime Text 2
-            # will silently delete the package
-            if os.path.exists(pristine_package_path):
-                os.remove(pristine_package_path)
 
             os.chdir(self.settings['packages_path'])
             return True
@@ -1871,11 +1843,6 @@ class PackageManager():
 
         package_filename = package_name + '.sublime-package'
         installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
-        pristine_package_path = os.path.join(
-            os.path.dirname(self.settings['packages_path']),
-            'Pristine Packages',
-            package_filename
-        )
         package_dir = self.get_package_dir(package_name)
 
         version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
@@ -1887,21 +1854,6 @@ class PackageManager():
                 os.remove(installed_package_path)
         except (OSError, IOError):
             cleanup_complete = False
-
-        try:
-            if os.path.exists(pristine_package_path):
-                os.remove(pristine_package_path)
-        except (OSError, IOError) as e:
-            show_error(
-                '''
-                An error occurred while trying to remove the pristine package
-                file for %s.
-
-                %s
-                ''',
-                (package_name, str(e))
-            )
-            return False
 
         if os.path.exists(package_dir):
             # We don't delete the actual package dir immediately due to a bug
