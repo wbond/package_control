@@ -7,6 +7,13 @@ from ..tests.clients import (
     GitHubClientTests,
     GitLabClientTests
 )
+from ..tests.downloaders import (
+    CurlDownloaderTests,
+    OscryptoDownloaderTests,
+    UrlLibDownloaderTests,
+    WgetDownloaderTests,
+    WinINetDownloaderTests
+)
 from ..tests.providers import (
     BitBucketRepositoryProviderTests,
     ChannelProviderTests,
@@ -27,6 +34,11 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
         TestRunner(args=(
             self.window,
             [
+                CurlDownloaderTests,
+                OscryptoDownloaderTests,
+                UrlLibDownloaderTests,
+                WgetDownloaderTests,
+                WinINetDownloaderTests,
                 GitHubClientTests,
                 GitLabClientTests,
                 BitBucketClientTests,
