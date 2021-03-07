@@ -91,7 +91,9 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
     package_dir_names = []
     for dname, source in package_dirs:
         package_dir_names.append(dname)
-        shutil.copytree(source, os.path.join(dest_root, dname))
+        destination = os.path.join(dest_root, dname)
+        shutil.rmtree(destination, ignore_errors=True)
+        shutil.copytree(source, destination)
 
     package_file_names = []
     for rel_dest, source in package_files:
