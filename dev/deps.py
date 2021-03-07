@@ -11,14 +11,7 @@ import subprocess
 import sys
 import tarfile
 import zipfile
-
-if sys.version_info >= (2, 7):
-    import sysconfig
-
-if sys.version_info < (3,):
-    str_cls = unicode  # noqa
-else:
-    str_cls = str
+import sysconfig
 
 
 PACKAGE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -297,8 +290,7 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
                 if data is not None:
                     dst_path = os.path.join(deps_dir, zi.filename[8:])
                     dst_dir = os.path.dirname(dst_path)
-                    if not os.path.exists(dst_dir):
-                        os.makedirs(dst_dir)
+                    os.makedirs(dst_dir, exist_ok=True)
                     with open(dst_path, 'wb') as f:
                         f.write(data)
         finally:
@@ -334,8 +326,7 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
                 dst_rel_path = dst_rel_path[len(common_root) + 1:]
             members.append((info, dst_rel_path))
 
-        if not os.path.exists(staging_dir):
-            os.makedirs(staging_dir)
+        os.makedirs(staging_dir, exist_ok=True)
 
         for info, rel_path in members:
             info_data = _extract_info(ar, info)
@@ -343,8 +334,7 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
             if info_data is not None:
                 dst_path = os.path.join(staging_dir, rel_path)
                 dst_dir = os.path.dirname(dst_path)
-                if not os.path.exists(dst_dir):
-                    os.makedirs(dst_dir)
+                os.makedirs(dst_dir, exist_ok=True)
                 with open(dst_path, 'wb') as f:
                     f.write(info_data)
 
@@ -429,7 +419,7 @@ def _is_valid_python_version(python_version, requires_python):
             cond_tup = tuple(map(int, ver_str.split('.')))
             return (sys.version_info[:len(cond_tup)], cond_tup)
 
-        for part in map(str_cls.strip, requires_python.split(',')):
+        for part in map(str.strip, requires_python.split(',')):
             if part.startswith('!='):
                 sys_tup, cond_tup = _ver_tuples(part[2:])
                 if sys_tup == cond_tup:
@@ -604,7 +594,7 @@ def _parse_requires(path):
          - 'ver' (if 'type' == '==' or 'type' == '>=')
     """
 
-    python_version = '.'.join(map(str_cls, sys.version_info[0:2]))
+    python_version = '.'.join(map(str, sys.version_info[0:2]))
     sys_platform = sys.platform
 
     packages = []
@@ -766,7 +756,7 @@ def _pep425_supports_manylinux():
         gnu_get_libc_version.restype = ctypes.c_char_p
 
         ver = gnu_get_libc_version()
-        if not isinstance(ver, str_cls):
+        if not isinstance(ver, str):
             ver = ver.decode('ascii')
         match = re.match(r'(\d+)\.(\d+)', ver)
         return match and match.group(1) == '2' and int(match.group(2)) >= 5
@@ -797,7 +787,7 @@ def _pep425_get_abi():
         suffix += 'm'
     if sys.maxunicode == 0x10ffff and sys.version_info < (3, 3):
         suffix += 'u'
-    return '%s%s%s' % (impl, ''.join(map(str_cls, _pep425_version())), suffix)
+    return '%s%s%s' % (impl, ''.join(map(str, _pep425_version())), suffix)
 
 
 def _pep425tags():

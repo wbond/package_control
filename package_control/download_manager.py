@@ -3,22 +3,13 @@ import socket
 from threading import Lock, Timer
 from contextlib import contextmanager
 import sys
-
-try:
-    # Python 3
-    from urllib.parse import urlparse
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
+from urllib.parse import urlparse
 
 from . import __version__
 
 from .show_error import show_error
 from .console_write import console_write
 from .cache import set_cache, get_cache
-from .unicode import unicode_from_os
 from . import text
 
 from .downloaders import DOWNLOADERS
@@ -59,15 +50,14 @@ def downloader(url, settings):
 def _grab(url, settings):
     global _managers, _lock, _in_use, _timer
 
-    _lock.acquire()
-    try:
+    with _lock:
         if _timer:
             _timer.cancel()
             _timer = None
 
         parsed = urlparse(url)
         if not parsed or not parsed.hostname:
-            raise DownloaderException(u'The URL "%s" is malformed' % url)
+            raise DownloaderException('The URL "%s" is malformed' % url)
         hostname = parsed.hostname.lower()
         if hostname not in _managers:
             _managers[hostname] = []
@@ -79,15 +69,11 @@ def _grab(url, settings):
 
         return _managers[hostname].pop()
 
-    finally:
-        _lock.release()
-
 
 def _release(url, manager):
     global _managers, _lock, _in_use, _timer
 
-    _lock.acquire()
-    try:
+    with _lock:
         hostname = urlparse(url).hostname.lower()
 
         # This means the package was reloaded between _grab and _release,
@@ -107,15 +93,11 @@ def _release(url, manager):
             _timer = Timer(5.0, close_all_connections)
             _timer.start()
 
-    finally:
-        _lock.release()
-
 
 def close_all_connections():
     global _managers, _lock, _in_use, _timer
 
-    _lock.acquire()
-    try:
+    with _lock:
         if _timer:
             _timer.cancel()
             _timer = None
@@ -124,9 +106,6 @@ def close_all_connections():
             for manager in managers:
                 manager.close()
         _managers = {}
-
-    finally:
-        _lock.release()
 
 
 def update_url(url, debug):
@@ -159,7 +138,7 @@ def update_url(url, debug):
 
     if debug and url != original_url:
         console_write(
-            u'''
+            '''
             Fixed URL from %s to %s
             ''',
             (original_url, url)
@@ -233,7 +212,7 @@ class DownloadManager(object):
 
         if not isinstance(downloader_list, list) or len(downloader_list) == 0:
             error_string = text.format(
-                u'''
+                '''
                 No list of preferred downloaders specified in the
                 "downloader_precedence" setting for the platform "%s"
                 ''',
@@ -256,7 +235,7 @@ class DownloadManager(object):
                             downloader_name == 'oscrypto':
                         continue
                     error_string = text.format(
-                        u'''
+                        '''
                         The downloader "%s" from the "downloader_precedence"
                         setting for the platform "%s" is invalid
                         ''',
@@ -278,7 +257,7 @@ class DownloadManager(object):
 
         if not self.downloader:
             error_string = text.format(
-                u'''
+                '''
                 None of the preferred downloaders can download %s.
 
                 This is usually either because the ssl module is unavailable
@@ -317,31 +296,31 @@ class DownloadManager(object):
             try:
                 ip = socket.gethostbyname(hostname)
             except (socket.gaierror) as e:
-                ip = unicode_from_os(e)
+                ip = str(e)
             except (TypeError):
                 ip = None
 
             console_write(
-                u'''
+                '''
                 Download Debug
                   URL: %s
                   Timeout: %s
                   Resolved IP: %s
                 ''',
-                (url, str_cls(timeout), ip)
+                (url, str(timeout), ip)
             )
             if ipv6:
                 console_write(
-                    u'  Resolved IPv6: %s',
+                    '  Resolved IPv6: %s',
                     ipv6,
                     prefix=False
                 )
 
         if hostname in rate_limited_domains:
-            error_string = u'Skipping due to hitting rate limit for %s' % hostname
+            error_string = 'Skipping due to hitting rate limit for %s' % hostname
             if self.settings.get('debug'):
                 console_write(
-                    u'  %s',
+                    '  %s',
                     error_string,
                     prefix=False
                 )
@@ -356,7 +335,7 @@ class DownloadManager(object):
             set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
 
             console_write(
-                u'''
+                '''
                 Hit rate limit of %s for %s. Skipping all futher download
                 requests for this domain.
                 ''',
@@ -366,10 +345,10 @@ class DownloadManager(object):
 
         except (OscryptoDownloaderException) as e:
             console_write(
-                u'''
+                '''
                 Attempting to use Urllib downloader due to Oscrypto error: %s
                 ''',
-                str_cls(e)
+                str(e)
             )
 
             self.downloader = UrlLibDownloader(self.settings)
@@ -379,7 +358,7 @@ class DownloadManager(object):
         except (WinDownloaderException) as e:
 
             console_write(
-                u'''
+                '''
                 Attempting to use Urllib downloader due to WinINet error: %s
                 ''',
                 e

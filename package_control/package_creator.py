@@ -22,7 +22,7 @@ class PackageCreator():
         self.packages = self.manager.list_packages(unpacked_only=True)
         if not self.packages:
             show_error(
-                u'''
+                '''
                 There are no packages available to be packaged
                 '''
             )

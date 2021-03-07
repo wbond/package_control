@@ -35,7 +35,7 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
         self.package_list = self.make_package_list('remove')
         if not self.package_list:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no packages that can be removed

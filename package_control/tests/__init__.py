@@ -1,10 +1,8 @@
-import time
+import re
 import threading
 import unittest
-import re
 
-import sublime
-
+from .. import __version__
 
 LAST_COMMIT_TIMESTAMP = '2014-11-28 20:54:15'
 LAST_COMMIT_VERSION = re.sub(r'[ :\-]', '.', LAST_COMMIT_TIMESTAMP)
@@ -12,31 +10,33 @@ LAST_COMMIT_VERSION = re.sub(r'[ :\-]', '.', LAST_COMMIT_TIMESTAMP)
 CLIENT_ID = ''
 CLIENT_SECRET = ''
 
+USER_AGENT = 'Package Control %s Unittests' % __version__
 
-class StringQueue():
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.queue = ''
+
+class OutputPanel:
+
+    def __init__(self, window):
+        self.panel = window.get_output_panel('package_control_tests')
+        self.panel.settings().set('word_wrap', True)
+        self.panel.settings().set('scroll_past_end', False)
+        window.run_command("show_panel", {"panel": 'output.package_control_tests'})
 
     def write(self, data):
-        self.lock.acquire()
-        self.queue += data
-        self.lock.release()
+        self.panel.run_command('package_control_insert', {'string': data})
 
     def get(self):
-        self.lock.acquire()
-        output = self.queue
-        self.queue = ''
-        self.lock.release()
-        return output
+        pass
 
     def flush(self):
         pass
 
 
-def runner(window, test_classes):
+class TestRunner(threading.Thread):
     """
     Runs tests in a thread and outputs the results to an output panel
+
+    :example:
+        TestRunner(args=(window, test_classes)).start()
 
     :param window:
         A sublime.Window object to use to display the results
@@ -45,47 +45,19 @@ def runner(window, test_classes):
         A unittest.TestCase class, or list of classes
     """
 
-    output = StringQueue()
+    def run(self):
+        window, test_classes = self._args
 
-    panel = window.get_output_panel('package_control_tests')
-    panel.settings().set('word_wrap', True)
+        output = OutputPanel(window)
+        output.write('Running Package Control Tests\n\n')
 
-    window.run_command('show_panel', {'panel': 'output.package_control_tests'})
+        if not isinstance(test_classes, list) and not isinstance(test_classes, tuple):
+            test_classes = [test_classes]
 
-    threading.Thread(target=show_results, args=(panel, output)).start()
-    threading.Thread(target=do_run, args=(test_classes, output)).start()
+        suite = unittest.TestSuite()
 
+        loader = unittest.TestLoader()
+        for test_class in test_classes:
+            suite.addTest(loader.loadTestsFromTestCase(test_class))
 
-def do_run(test_classes, output):
-    if not isinstance(test_classes, list) and not isinstance(test_classes, tuple):
-        test_classes = [test_classes]
-
-    suite = unittest.TestSuite()
-
-    loader = unittest.TestLoader()
-    for test_class in test_classes:
-        suite.addTest(loader.loadTestsFromTestCase(test_class))
-
-    unittest.TextTestRunner(stream=output, verbosity=1).run(suite)
-    output.write("\x04")
-
-
-def show_results(panel, output):
-    def write_to_panel(chars):
-        sublime.set_timeout(lambda: panel.run_command('package_control_insert', {'string': chars}), 10)
-
-    write_to_panel(u'Running Package Control Tests\n\n')
-
-    while True:
-        chars = output.get()
-
-        if chars == '':
-            time.sleep(0.1)
-            continue
-
-        if chars[-1] == "\x04":
-            chars = chars[0:-1]
-            write_to_panel(chars)
-            break
-
-        write_to_panel(chars)
+        unittest.TextTestRunner(stream=output, verbosity=1).run(suite)

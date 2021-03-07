@@ -1,12 +1,8 @@
 import re
+from urllib.parse import quote
 
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
-
-try:
-    from urllib import quote
-except (ImportError):
-    from urllib.parse import quote
 
 
 # A predefined list of readme filenames to look for
@@ -176,7 +172,7 @@ class BitBucketClient(JSONApiClient):
 
         info = self.fetch_json(api_url)
 
-        issues_url = u'https://bitbucket.org/%s/issues' % user_repo
+        issues_url = 'https://bitbucket.org/%s/issues' % user_repo
 
         author = info['owner'].get('nickname')
         if author is None:

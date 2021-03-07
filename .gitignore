@@ -1,6 +1,17 @@
+# development dependencies
 dev/.lint-deps/
+
+# linter cache
+.mypy_cache/
+.pytest_cache/
+.ropeproject/
+
+# python cache
+__pycache__/
 *.pyc
+*.pyo
+
+# Sublime Text files
 *.sublime-project
-*.thTheme.cache
 *.sublime-workspace
-*.mypy_cache/
+*.thTheme.cache

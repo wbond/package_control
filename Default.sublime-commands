@@ -80,16 +80,12 @@
         "command": "package_control_disable_debug_mode"
     },
     {
-        "caption": "Preferences: Package Control Settings – Default",
-        "command": "package_control_open_default_settings"
-    },
-    {
-        "caption": "Preferences: Package Control Settings – User",
-        "command": "package_control_open_user_settings"
-    },
-    {
         "caption": "Preferences: Package Control Settings",
-        "command": "package_control_edit_settings"
+        "command": "edit_settings",
+        "args": {
+            "base_file": "${packages}/Package Control/Package Control.sublime-settings",
+            "default": "// See the left pane for the list of settings and valid values\n{\n\t$0\n}\n"
+        }
     },
     {
         "caption": "Package Control: Tests",

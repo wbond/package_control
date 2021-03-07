@@ -19,7 +19,7 @@ class InstallLocalDependencyCommand(sublime_plugin.WindowCommand):
         self.dependency_list = sorted(dependencies, key=lambda s: s.lower())
         if not self.dependency_list:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 All local dependencies are currently loaded

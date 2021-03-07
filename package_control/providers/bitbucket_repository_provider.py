@@ -130,10 +130,10 @@ class BitBucketRepositoryProvider():
                 yield (key, value)
             return
 
-        client = BitBucketClient(self.settings)
-
         if invalid_sources is not None and self.repo in invalid_sources:
             raise StopIteration()
+
+        client = BitBucketClient(self.settings)
 
         try:
             repo_info = client.repo_info(self.repo)

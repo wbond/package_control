@@ -1,19 +1,12 @@
 import sublime
 
-try:
-    str_cls = unicode
-except (NameError):
-    str_cls = str
-
 
 def preferences_filename():
     """
     :return: The appropriate settings filename based on the version of Sublime Text
     """
 
-    if int(sublime.version()) >= 2174:
-        return 'Preferences.sublime-settings'
-    return 'Global.sublime-settings'
+    return 'Preferences.sublime-settings'
 
 
 def pc_settings_filename():
@@ -42,14 +35,14 @@ def load_list_setting(settings, name):
     value = settings.get(name)
     if not value:
         return []
-    if isinstance(value, str_cls):
+    if isinstance(value, str):
         value = [value]
     if not isinstance(value, list):
         return []
 
     filtered_value = []
     for v in value:
-        if not isinstance(v, str_cls):
+        if not isinstance(v, str):
             continue
         filtered_value.append(v)
     return sorted(filtered_value, key=lambda s: s.lower())

@@ -22,4 +22,4 @@ def show_error(string, params=None, strip=True, indent=None):
     """
 
     string = text.format(string, params, strip=strip, indent=indent)
-    sublime.error_message(u'Package Control\n\n%s' % string)
+    sublime.error_message('Package Control\n\n%s' % string)

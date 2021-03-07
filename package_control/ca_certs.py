@@ -3,7 +3,6 @@ import time
 import sys
 
 from .console_write import console_write
-from .open_compat import open_compat, read_compat
 from .sys_path import pc_cache_dir, user_config_dir
 
 from .deps.oscrypto import use_ctypes
@@ -42,22 +41,22 @@ def get_ca_bundle_path(settings):
         regenerate = regenerate or os.path.getmtime(user_ca_bundle_path) > os.path.getmtime(merged_ca_bundle_path)
 
     if regenerate:
-        with open(merged_ca_bundle_path, 'wb') as merged:
+        with open(merged_ca_bundle_path, 'w', encoding='utf-8') as merged:
             if system_ca_bundle_path:
-                with open_compat(system_ca_bundle_path, 'r') as system:
-                    system_certs = read_compat(system).strip()
-                    merged.write(system_certs.encode('utf-8'))
+                with open(system_ca_bundle_path, 'r', encoding='utf-8') as system:
+                    system_certs = system.read().strip()
+                    merged.write(system_certs)
                     if len(system_certs) > 0:
-                        merged.write(b'\n')
+                        merged.write('\n')
             if os.path.exists(user_ca_bundle_path):
-                with open_compat(user_ca_bundle_path, 'r') as user:
-                    user_certs = read_compat(user).strip()
-                    merged.write(user_certs.encode('utf-8'))
+                with open(user_ca_bundle_path, 'r', encoding='utf-8') as user:
+                    user_certs = user.read().strip()
+                    merged.write(user_certs)
                     if len(user_certs) > 0:
-                        merged.write(b'\n')
+                        merged.write('\n')
         if settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Regenerated the merged CA bundle from the system and user CA bundles
                 '''
             )
@@ -82,7 +81,7 @@ def get_user_ca_bundle_path(settings):
     if not os.path.exists(user_ca_bundle_path):
         if settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Created blank user CA bundle
                 '''
             )
@@ -103,14 +102,14 @@ def print_cert_subject(cert, reason):
 
     if reason is None:
         console_write(
-            u'''
+            '''
             Exported certificate: %s
             ''',
             cert.subject.human_friendly
         )
     else:
         console_write(
-            u'''
+            '''
             Skipped certificate: %s - reason %s
             ''',
             (cert.subject.human_friendly, reason)
@@ -156,7 +155,7 @@ def get_system_ca_bundle_path(settings):
             cert_callback = None
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Generating new CA bundle from system keychain
                     '''
                 )
@@ -164,7 +163,7 @@ def get_system_ca_bundle_path(settings):
             trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback=cert_callback)
             if debug:
                 console_write(
-                    u'''
+                    '''
                     Finished generating new CA bundle at %s (%d bytes)
                     ''',
                     (ca_path, os.stat(ca_path).st_size)
@@ -172,7 +171,7 @@ def get_system_ca_bundle_path(settings):
 
         elif debug:
             console_write(
-                u'''
+                '''
                 Found previously exported CA bundle at %s (%d bytes)
                 ''',
                 (ca_path, os.stat(ca_path).st_size)
@@ -200,7 +199,7 @@ def get_system_ca_bundle_path(settings):
 
         if debug and ca_path:
             console_write(
-                u'''
+                '''
                 Found system CA bundle at %s (%d bytes)
                 ''',
                 (ca_path, os.stat(ca_path).st_size)

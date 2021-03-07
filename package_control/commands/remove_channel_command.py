@@ -17,7 +17,7 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
         self.channels = self.settings.get('channels')
         if not self.channels:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no channels to remove
@@ -28,7 +28,7 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
         run = False
         if len(self.channels) == 1:
             message = text.format(
-                u'''
+                '''
                 Package Control
 
                 You are about to remove the only channel in your settings. This

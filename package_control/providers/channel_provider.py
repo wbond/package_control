@@ -1,15 +1,7 @@
 import json
 import os
 import re
-
-try:
-    # Python 3
-    from urllib.parse import urljoin
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urlparse import urljoin
-    str_cls = unicode  # noqa
+from urllib.parse import urljoin
 
 from .. import text
 from ..console_write import console_write
@@ -89,11 +81,11 @@ class ChannelProvider():
         # All other channels are expected to be filesystem paths
         else:
             if not os.path.exists(self.channel):
-                raise ProviderException(u'Error, file %s does not exist' % self.channel)
+                raise ProviderException('Error, file %s does not exist' % self.channel)
 
             if self.settings.get('debug'):
                 console_write(
-                    u'''
+                    '''
                     Loading %s as a channel
                     ''',
                     self.channel
@@ -106,25 +98,25 @@ class ChannelProvider():
         try:
             channel_info = json.loads(channel_json.decode('utf-8'))
         except (ValueError):
-            raise ProviderException(u'Error parsing JSON from channel %s.' % self.channel)
+            raise ProviderException('Error parsing JSON from channel %s.' % self.channel)
 
-        schema_error = u'Channel %s does not appear to be a valid channel file because ' % self.channel
+        schema_error = 'Channel %s does not appear to be a valid channel file because ' % self.channel
 
         if 'schema_version' not in channel_info:
-            raise ProviderException(u'%s the "schema_version" JSON key is missing.' % schema_error)
+            raise ProviderException('%s the "schema_version" JSON key is missing.' % schema_error)
 
         try:
             self.schema_version = channel_info.get('schema_version')
             if isinstance(self.schema_version, int):
                 self.schema_version = float(self.schema_version)
             if isinstance(self.schema_version, float):
-                self.schema_version = str_cls(self.schema_version)
+                self.schema_version = str(self.schema_version)
         except (ValueError):
-            raise ProviderException(u'%s the "schema_version" is not a valid number.' % schema_error)
+            raise ProviderException('%s the "schema_version" is not a valid number.' % schema_error)
 
         if self.schema_version not in ['1.0', '1.1', '1.2', '2.0', '3.0.0']:
             raise ProviderException(text.format(
-                u'''
+                '''
                 %s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2, 2.0 or 3.0.0.
                 ''',
                 schema_error
@@ -202,7 +194,7 @@ class ChannelProvider():
 
         if 'repositories' not in self.channel_info:
             raise ProviderException(text.format(
-                u'''
+                '''
                 Channel %s does not appear to be a valid channel file because
                 the "repositories" JSON key is missing.
                 ''',

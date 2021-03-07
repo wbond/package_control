@@ -16,8 +16,6 @@ def show_quick_panel(window, list, on_done):
     """
 
     # When possible, keep the quick panel open until the users picks an option
-    flags = 0
-    if int(sublime.version()) >= 3070:
-        flags = sublime.KEEP_OPEN_ON_FOCUS_LOST
+    flags = sublime.KEEP_OPEN_ON_FOCUS_LOST
 
     return window.show_quick_panel(list, on_done, flags)

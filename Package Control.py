@@ -1,32 +1,21 @@
 import sublime
-import sys
 import os
 import shutil
 
 
-st_version = 2 if sys.version_info < (3,) else 3
+from .package_control import text, sys_path
 
+installed_dir, _ = __name__.split('.')
 
-if st_version == 3:
-    from .package_control import text, sys_path
-
-    installed_dir, _ = __name__.split('.')
-
-    package_path = os.path.join(sys_path.installed_packages_path, 'Package Control.sublime-package')
-    pc_python_path = os.path.join(sys_path.packages_path, 'Package Control', 'Package Control.py')
-    has_packed = os.path.exists(package_path)
-    has_unpacked = os.path.exists(pc_python_path)
-
-elif st_version == 2:
-    from package_control import text, sys_path
-
-    installed_dir = os.path.basename(os.getcwd())
-
+package_path = os.path.join(sys_path.installed_packages_path, 'Package Control.sublime-package')
+pc_python_path = os.path.join(sys_path.packages_path, 'Package Control', 'Package Control.py')
+has_packed = os.path.exists(package_path)
+has_unpacked = os.path.exists(pc_python_path)
 
 # Ensure the user has installed Package Control properly
 if installed_dir != 'Package Control':
     message = text.format(
-        u'''
+        '''
         Package Control
 
         This package appears to be installed incorrectly.
@@ -46,7 +35,7 @@ if installed_dir != 'Package Control':
     # If installed unpacked
     if os.path.exists(os.path.join(sys_path.packages_path, installed_dir)):
         message += text.format(
-            u'''
+            '''
             3. Rename the folder "%s" to "Package Control"
             4. Restart Sublime Text
             ''',
@@ -55,7 +44,7 @@ if installed_dir != 'Package Control':
     # If installed as a .sublime-package file
     else:
         message += text.format(
-            u'''
+            '''
             3. Browse up a folder
             4. Browse into the "Installed Packages/" folder
             5. Rename "%s.sublime-package" to "Package Control.sublime-package"
@@ -65,9 +54,9 @@ if installed_dir != 'Package Control':
         )
     sublime.error_message(message)
 
-elif st_version == 3 and has_packed and has_unpacked:
+elif has_packed and has_unpacked:
     message = text.format(
-        u'''
+        '''
         Package Control
 
         It appears you have Package Control installed as both a
@@ -85,19 +74,10 @@ elif st_version == 3 and has_packed and has_unpacked:
 
 # Normal execution will finish setting up the package
 else:
-    if st_version == 3:
-        from .package_control.commands import *  # noqa
-        from .package_control.package_cleanup import PackageCleanup
-        from .package_control.unicode import tempfile_unicode_patch
-        from .package_control.console_write import console_write
-        from .package_control.settings import pc_settings_filename
-
-    else:
-        from package_control.commands import *  # noqa
-        from package_control.package_cleanup import PackageCleanup
-        from package_control.unicode import tempfile_unicode_patch
-        from package_control.console_write import console_write
-        from package_control.settings import pc_settings_filename
+    from .package_control.commands import *  # noqa
+    from .package_control.package_cleanup import PackageCleanup
+    from .package_control.console_write import console_write
+    from .package_control.settings import pc_settings_filename
 
     def plugin_loaded():
         # Make sure the user's locale can handle non-ASCII. A whole bunch of
@@ -107,10 +87,10 @@ else:
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
         try:
-            os.path.exists(os.path.join(sublime.packages_path(), u"fran\u2013ais"))
+            os.path.exists(os.path.join(sublime.packages_path(), "fran\u2013ais"))
         except (UnicodeEncodeError):
             message = text.format(
-                u'''
+                '''
                 Package Control
 
                 Your system's locale is set to a value that can not handle
@@ -128,27 +108,24 @@ else:
             sublime.error_message(message)
             return
 
-        # This handles fixing unicode issues with tempdirs on ST2 for Windows
-        tempfile_unicode_patch()
-
         # Ensure we have a Cache dir we can use for temporary data
         if not os.path.exists(sys_path.pc_cache_dir()):
             os.mkdir(sys_path.pc_cache_dir())
 
         # Clean up the old HTTP cache dir
-        legacy_http_cache = os.path.join(sublime.packages_path(), u'User', u'Package Control.cache')
+        legacy_http_cache = os.path.join(sublime.packages_path(), 'User', 'Package Control.cache')
         http_cache = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         if os.path.exists(legacy_http_cache):
             if not os.path.exists(http_cache):
                 console_write(
-                    u'''
+                    '''
                     Moving HTTP cache data into "Cache/Package Control/http_cache/"
                     '''
                 )
                 shutil.move(legacy_http_cache, http_cache)
             else:
                 console_write(
-                    u'''
+                    '''
                     Removing old HTTP cache data"
                     '''
                 )
@@ -167,9 +144,9 @@ else:
 
         pc_settings = sublime.load_settings(pc_settings_filename())
 
-        if not pc_settings.get('bootstrapped'):
+        if pc_settings.get('bootstrapped') != 4:
             console_write(
-                u'''
+                '''
                 Not running package cleanup since bootstrapping is not yet complete
                 '''
             )
@@ -177,6 +154,3 @@ else:
             # Start shortly after Sublime starts so package renames don't cause errors
             # with keybindings, settings, etc disappearing in the middle of parsing
             sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
-
-    if st_version == 2:
-        plugin_loaded()

@@ -28,7 +28,7 @@ class AddChannelCommand(sublime_plugin.WindowCommand):
 
         if re.match('https?://', input, re.I) is None:
             show_error(
-                u'''
+                '''
                 Unable to add the channel "%s" since it does not appear to be
                 served via HTTP (http:// or https://).
                 ''',

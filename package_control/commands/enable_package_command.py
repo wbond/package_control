@@ -18,7 +18,7 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
         self.disabled_packages = load_list_setting(self.settings, 'ignored_packages')
         if not self.disabled_packages:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no disabled packages to enable

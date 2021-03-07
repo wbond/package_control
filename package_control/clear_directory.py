@@ -3,13 +3,6 @@ import stat
 import shutil
 import sys
 from .console_write import console_write
-from .unicode import unicode_from_os
-
-
-try:
-    str_cls = unicode
-except (NameError):
-    str_cls = str
 
 
 def is_directory_symlink(path):
@@ -18,7 +11,7 @@ def is_directory_symlink(path):
 
         if os.path.isdir(path):
             FILE_ATTRIBUTE_REPARSE_POINT = 0x0400
-            attributes = ctypes.windll.kernel32.GetFileAttributesW(str_cls(path))
+            attributes = ctypes.windll.kernel32.GetFileAttributesW(str(path))
             return (attributes & FILE_ATTRIBUTE_REPARSE_POINT) > 0
         return False
     else:
@@ -42,10 +35,10 @@ def clean_old_files(directory):
                     os.remove(path)
                 except (OSError) as e:
                     console_write(
-                        u'''
+                        '''
                         Error removing old file "%s": %s
                         ''',
-                        (path, unicode_from_os(e))
+                        (path, str(e))
                     )
 
 

@@ -1,12 +1,5 @@
 import json
-
-try:
-    # Python 3
-    from urllib.parse import urlencode, urlparse
-except (ImportError):
-    # Python 2
-    from urllib import urlencode
-    from urlparse import urlparse
+from urllib.parse import urlencode, urlparse
 
 from .client_exception import ClientException
 from ..download_manager import downloader
@@ -60,5 +53,5 @@ class JSONApiClient():
         try:
             return json.loads(repository_json.decode('utf-8'))
         except (ValueError):
-            error_string = u'Error parsing JSON from URL %s.' % url
+            error_string = 'Error parsing JSON from URL %s.' % url
             raise ClientException(error_string)

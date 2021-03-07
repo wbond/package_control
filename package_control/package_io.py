@@ -4,7 +4,6 @@ import zipfile
 import sublime
 
 from .console_write import console_write
-from .open_compat import open_compat, read_compat
 
 
 def read_package_file(package, relative_path, binary=False):
@@ -32,12 +31,7 @@ def read_package_file(package, relative_path, binary=False):
     if os.path.exists(package_dir) and _regular_file_exists(package, relative_path):
         return _read_regular_file(package, relative_path, binary)
 
-    if int(sublime.version()) >= 3000:
-        result = _read_zip_file(package, relative_path, binary)
-        if result is not False:
-            return result
-
-    return False
+    return _read_zip_file(package, relative_path, binary)
 
 
 def package_file_exists(package, relative_path):
@@ -65,10 +59,7 @@ def package_file_exists(package, relative_path):
         if result:
             return result
 
-    if int(sublime.version()) >= 3000:
-        return _zip_file_exists(package, relative_path)
-
-    return False
+    return _zip_file_exists(package, relative_path)
 
 
 def _get_package_dir(package):
@@ -81,8 +72,9 @@ def _read_regular_file(package, relative_path, binary=False):
     package_dir = _get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
 
-    with open_compat(file_path, ('rb' if binary else 'r')) as f:
-        return read_compat(f)
+    mode, encoding = ('rb', None) if binary else ('r', 'utf-8')
+    with open(file_path, mode=mode, encoding=encoding) as fobj:
+        return fobj.read()
 
 
 def _read_zip_file(package, relative_path, binary=False):
@@ -96,7 +88,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             An error occurred while trying to unzip the sublime-package file
             for %s.
             ''',
@@ -115,7 +107,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to the
             package file being corrupt
             ''',
@@ -124,7 +116,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (IOError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
             invalid filename
             ''',
@@ -133,7 +125,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (UnicodeDecodeError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
             invalid filename or character encoding issue
             ''',
@@ -160,7 +152,7 @@ def _zip_file_exists(package, relative_path):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             An error occurred while trying to unzip the sublime-package file
             for %s.
             ''',

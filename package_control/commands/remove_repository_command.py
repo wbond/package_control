@@ -17,7 +17,7 @@ class RemoveRepositoryCommand(sublime_plugin.WindowCommand):
         self.repositories = self.settings.get('repositories')
         if not self.repositories:
             sublime.message_dialog(text.format(
-                u'''
+                '''
                 Package Control
 
                 There are no repositories to remove

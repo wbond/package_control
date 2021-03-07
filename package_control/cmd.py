@@ -1,10 +1,8 @@
 import os
 import subprocess
 import re
-import sys
 
 from .console_write import console_write
-from .unicode import unicode_from_os
 from .show_error import show_error
 from . import text
 
@@ -17,13 +15,6 @@ try:
     import sublime
 except (ImportError):
     sublime = None
-
-try:
-    # Python 2
-    str_cls = unicode
-except (NameError):
-    # Python 3
-    str_cls = str
 
 
 def create_cmd(args, basename_binary=False):
@@ -50,9 +41,9 @@ def create_cmd(args, basename_binary=False):
         escaped_args = []
         for arg in args:
             if re.search('^[a-zA-Z0-9/_^\\-\\.:=]+$', arg) is None:
-                arg = u"'" + arg.replace(u"'", u"'\\''") + u"'"
+                arg = "'" + arg.replace("'", "'\\''") + "'"
             escaped_args.append(arg)
-        return u' '.join(escaped_args)
+        return ' '.join(escaped_args)
 
 
 class Cli(object):
@@ -119,15 +110,13 @@ class Cli(object):
 
         if self.debug:
             console_write(
-                u'''
+                '''
                 Executing %s [%s]
                 ''',
                 (create_cmd(args), cwd)
             )
 
         try:
-            if sys.platform == 'win32' and sys.version_info < (3,):
-                cwd = cwd.encode('mbcs')
             proc = subprocess.Popen(
                 args,
                 stdin=subprocess.PIPE,
@@ -138,7 +127,7 @@ class Cli(object):
                 env=os.environ
             )
 
-            if input and isinstance(input, str_cls):
+            if input and isinstance(input, str):
                 input = input.encode(encoding)
 
             stuck = True
@@ -157,7 +146,7 @@ class Cli(object):
                     proc.kill()
 
                     message = text.format(
-                        u'''
+                        '''
                         The process %s seems to have gotten stuck.
 
                         Command: %s
@@ -168,7 +157,7 @@ class Cli(object):
                     )
                     if is_vcs:
                         message += text.format(
-                            u'''
+                            '''
 
                             This is likely due to a password or passphrase
                             prompt. Please ensure %s works without a prompt, or
@@ -193,7 +182,7 @@ class Cli(object):
             if proc.returncode not in self.ok_returncodes:
                 if not ignore_errors or re.search(ignore_errors, output) is None:
                     message = text.format(
-                        u'''
+                        '''
                         Error executing: %s
 
                         Working directory: %s
@@ -223,14 +212,14 @@ class Cli(object):
 
         except (OSError) as e:
             show_error(
-                u'''
+                '''
                 Error executing: %s
 
                 %s
 
                 Try checking your "%s_binary" setting?
                 ''',
-                (create_cmd(args), unicode_from_os(e), self.cli_name)
+                (create_cmd(args), str(e), self.cli_name)
             )
             return False
 
@@ -283,7 +272,7 @@ class Cli(object):
 
         if self.debug:
             console_write(
-                u'''
+                '''
                 Looking for %s at: "%s"
                 ''',
                 (self.cli_name, '", "'.join(check_binaries))
@@ -293,7 +282,7 @@ class Cli(object):
             if os.path.exists(path) and not os.path.isdir(path) and os.access(path, os.X_OK):
                 if self.debug:
                     console_write(
-                        u'''
+                        '''
                         Found %s at "%s"
                         ''',
                         (self.cli_name, path)
@@ -303,7 +292,7 @@ class Cli(object):
 
         if self.debug:
             console_write(
-                u'''
+                '''
                 Could not find %s on your machine
                 ''',
                 self.cli_name

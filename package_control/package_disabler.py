@@ -193,18 +193,15 @@ class PackageDisabler():
             ignored = list(set(ignored) - set([package]))
             save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
-            corruption_notice = u' You may see some graphical corruption until you restart Sublime Text.'
-
             if type == 'remove' and PackageDisabler.old_theme_package == package:
-                message = text.format(u'''
+                sublime.message_dialog(text.format(
+                    '''
                     Package Control
 
                     The package containing your active theme was just removed
                     and the Default theme was enabled in its place.
-                ''')
-                if int(sublime.version()) < 3106:
-                    message += corruption_notice
-                sublime.message_dialog(message)
+                    '''
+                ))
 
             # By delaying the restore, we give Sublime Text some time to
             # re-enable the package, making errors less likely
@@ -223,7 +220,7 @@ class PackageDisabler():
                         if resource_exists(syntax):
                             view.settings().set('syntax', syntax)
                         elif syntax not in syntax_errors:
-                            console_write(u'The syntax "%s" no longer exists' % syntax)
+                            console_write('The syntax "%s" no longer exists' % syntax)
                             syntax_errors.add(syntax)
 
                 if type == 'upgrade' and PackageDisabler.old_color_scheme_package == package:
@@ -232,7 +229,7 @@ class PackageDisabler():
                     else:
                         color_scheme_errors.add(PackageDisabler.old_color_scheme)
                         sublime.error_message(text.format(
-                            u'''
+                            '''
                             Package Control
 
                             The package containing your active color scheme was
@@ -248,24 +245,23 @@ class PackageDisabler():
                         if resource_exists(scheme):
                             view.settings().set('color_scheme', scheme)
                         elif scheme not in color_scheme_errors:
-                            console_write(u'The color scheme "%s" no longer exists' % scheme)
+                            console_write('The color scheme "%s" no longer exists' % scheme)
                             color_scheme_errors.add(scheme)
 
                 if type == 'upgrade' and PackageDisabler.old_theme_package == package:
                     if package_file_exists(package, PackageDisabler.old_theme):
                         settings.set('theme', PackageDisabler.old_theme)
-                        message = text.format(u'''
+                        sublime.message_dialog(text.format(
+                            '''
                             Package Control
 
                             The package containing your active theme was just
                             upgraded.
-                        ''')
-                        if int(sublime.version()) < 3106:
-                            message += corruption_notice
-                        sublime.message_dialog(message)
+                            '''
+                        ))
                     else:
                         sublime.error_message(text.format(
-                            u'''
+                            '''
                             Package Control
 
                             The package containing your active theme was just
