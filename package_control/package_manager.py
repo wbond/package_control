@@ -135,11 +135,11 @@ class PackageManager():
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
 
-    def get_metadata(self, package, is_dependency=False):
+    def get_metadata(self, package_name, is_dependency=False):
         """
         Returns the package metadata for an installed package
 
-        :param package:
+        :param package_name:
             The name of the package
 
         :param is_dependency:
@@ -157,8 +157,8 @@ class PackageManager():
         if is_dependency:
             metadata_filename = 'dependency-metadata.json'
 
-        if package_file_exists(package, metadata_filename):
-            metadata_json = read_package_file(package, metadata_filename)
+        if package_file_exists(package_name, metadata_filename):
+            metadata_json = read_package_file(package_name, metadata_filename)
             if metadata_json:
                 try:
                     return json.loads(metadata_json)
@@ -168,25 +168,25 @@ class PackageManager():
                         An error occurred while trying to parse the package
                         metadata for %s.
                         ''',
-                        package
+                        package_name
                     )
 
         return {}
 
-    def get_libraries(self, package):
+    def get_libraries(self, package_name):
         """
         Returns a list of libraries for the specified package on the
         current machine
 
-        :param package:
+        :param package_name:
             The name of the package
 
         :return:
             A list of library names
         """
 
-        if package_file_exists(package, 'dependencies.json'):
-            dep_info_json = read_package_file(package, 'dependencies.json')
+        if package_file_exists(package_name, 'dependencies.json'):
+            dep_info_json = read_package_file(package_name, 'dependencies.json')
             if dep_info_json:
                 try:
                     return self.select_dependencies(json.loads(dep_info_json))
@@ -196,10 +196,10 @@ class PackageManager():
                         An error occurred while trying to parse the
                         dependencies.json for %s.
                         ''',
-                        package
+                        package_name
                     )
 
-        metadata = self.get_metadata(package)
+        metadata = self.get_metadata(package_name)
         if metadata:
             return metadata.get('dependencies', [])
 
@@ -260,90 +260,90 @@ class PackageManager():
 
         return (priority, code)
 
-    def _is_git_package(self, package):
+    def _is_git_package(self, package_name):
         """
-        :param package:
+        :param package_name:
             The package name
 
         :return:
             If the package is installed via git
         """
 
-        git_dir = os.path.join(self.get_package_dir(package), '.git')
-        return os.path.exists(git_dir) and (os.path.isdir(git_dir) or os.path.isfile(git_dir))
+        git_dir = os.path.join(self.get_package_dir(package_name), '.git')
+        return os.path.isdir(git_dir) or os.path.isfile(git_dir)
 
-    def _is_hg_package(self, package):
+    def _is_hg_package(self, package_name):
         """
-        :param package:
+        :param package_name:
             The package name
 
         :return:
             If the package is installed via hg
         """
 
-        hg_dir = os.path.join(self.get_package_dir(package), '.hg')
-        return os.path.exists(hg_dir) and os.path.isdir(hg_dir)
+        hg_dir = os.path.join(self.get_package_dir(package_name), '.hg')
+        return os.path.isdir(hg_dir)
 
-    def is_vcs_package(self, package):
+    def is_vcs_package(self, package_name):
         """
         If the package is installed via git or hg
 
-        :param package:
+        :param package_name:
             The package to check
 
         :return:
             bool
         """
 
-        return self._is_git_package(package) or self._is_hg_package(package)
+        return self._is_git_package(package_name) or self._is_hg_package(package_name)
 
-    def get_version(self, package):
+    def get_version(self, package_name):
         """
         Determines the current version for a package
 
-        :param package:
+        :param package_name:
             The package name
         """
 
-        version = self.get_metadata(package).get('version')
+        version = self.get_metadata(package_name).get('version')
 
         if version:
             return version
 
-        if self.is_vcs_package(package):
-            upgrader = self.instantiate_upgrader(package)
+        if self.is_vcs_package(package_name):
+            upgrader = self.instantiate_upgrader(package_name)
             version = upgrader.latest_commit()
             if version:
                 return '%s commit %s' % (upgrader.cli_name, version)
 
         return 'unknown version'
 
-    def instantiate_upgrader(self, package):
+    def instantiate_upgrader(self, package_name):
         """
         Creates an HgUpgrader or GitUpgrader object to run operations on a VCS-
         based package
 
-        :param package:
+        :param package_name:
             The name of the package
 
         :return:
             GitUpgrader, HgUpgrader or None
         """
 
-        if self._is_git_package(package):
+        if self._is_git_package(package_name):
             return GitUpgrader(
                 self.settings['git_binary'],
                 self.settings['git_update_command'],
-                self.get_package_dir(package),
+                self.get_package_dir(package_name),
                 self.settings['cache_length'],
                 self.settings['debug']
             )
 
-        if self._is_hg_package(package):
+        if self._is_hg_package(package_name):
             return HgUpgrader(
                 self.settings['hg_binary'],
                 self.settings['hg_update_command'],
-                self.get_package_dir(package),
+                self.get_package_dir(package_name),
                 self.settings['cache_length'],
                 self.settings['debug']
             )
@@ -846,15 +846,15 @@ class PackageManager():
         output = list(set(output))
         return sorted(output, key=lambda s: s.lower())
 
-    def get_package_dir(self, package):
+    def get_package_dir(self, package_name):
         """:return: The full filesystem path to the package directory"""
 
-        return os.path.join(self.settings['packages_path'], package)
+        return os.path.join(self.settings['packages_path'], package_name)
 
-    def get_mapped_name(self, package):
+    def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""
 
-        return self.settings.get('package_name_map', {}).get(package, package)
+        return self.settings.get('package_name_map', {}).get(package_name, package_name)
 
     def create_package(self, package_name, package_destination, profile=None):
         """
@@ -1660,7 +1660,7 @@ class PackageManager():
                 pass  # Exeption occurred before package_backup_dir defined
             return False
 
-    def print_messages(self, package, package_dir, is_upgrade, old_version, new_version):
+    def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version):
         """
         Prints out package install and upgrade messages
 
@@ -1668,7 +1668,7 @@ class PackageManager():
         show messages to the user when a package is installed, or when
         certain version upgrade occur.
 
-        :param package:
+        :param package_name:
             The name of the package the message is for
 
         :param package_dir:
@@ -1695,7 +1695,7 @@ class PackageManager():
                 '''
                 Error parsing messages.json for %s
                 ''',
-                package
+                package_name
             )
             return
 
@@ -1714,7 +1714,7 @@ class PackageManager():
                     '''
                     Error opening install message for %s from %s
                     ''',
-                    (package, install_file)
+                    (package_name, install_file)
                 )
 
         elif is_upgrade and old_version:
@@ -1741,13 +1741,13 @@ class PackageManager():
                         '''
                         Error opening %s message for %s from %s
                         ''',
-                        (version, package, upgrade_file)
+                        (version, package_name, upgrade_file)
                     )
 
         if not output:
             return
         else:
-            output = '\n\n%s\n%s\n' % (package, '-' * len(package)) + output
+            output = '\n\n%s\n%s\n' % (package_name, '-' * len(package_name)) + output
 
         def print_to_panel():
             window = sublime.active_window()
