@@ -157,19 +157,18 @@ class PackageManager():
         if is_dependency:
             metadata_filename = 'dependency-metadata.json'
 
-        if package_file_exists(package_name, metadata_filename):
-            metadata_json = read_package_file(package_name, metadata_filename)
-            if metadata_json:
-                try:
-                    return json.loads(metadata_json)
-                except (ValueError):
-                    console_write(
-                        '''
-                        An error occurred while trying to parse the package
-                        metadata for %s.
-                        ''',
-                        package_name
-                    )
+        metadata_json = read_package_file(package_name, metadata_filename)
+        if metadata_json:
+            try:
+                return json.loads(metadata_json)
+            except (ValueError):
+                console_write(
+                    '''
+                    An error occurred while trying to parse the package
+                    metadata for %s.
+                    ''',
+                    package_name
+                )
 
         return {}
 
@@ -185,25 +184,20 @@ class PackageManager():
             A list of library names
         """
 
-        if package_file_exists(package_name, 'dependencies.json'):
-            dep_info_json = read_package_file(package_name, 'dependencies.json')
-            if dep_info_json:
-                try:
-                    return self.select_dependencies(json.loads(dep_info_json))
-                except (ValueError):
-                    console_write(
-                        '''
-                        An error occurred while trying to parse the
-                        dependencies.json for %s.
-                        ''',
-                        package_name
-                    )
+        dep_info_json = read_package_file(package_name, 'dependencies.json')
+        if dep_info_json:
+            try:
+                return self.select_dependencies(json.loads(dep_info_json))
+            except (ValueError):
+                console_write(
+                    '''
+                    An error occurred while trying to parse the
+                    dependencies.json for %s.
+                    ''',
+                    package_name
+                )
 
-        metadata = self.get_metadata(package_name)
-        if metadata:
-            return metadata.get('dependencies', [])
-
-        return []
+        return self.get_metadata(package_name).get('dependencies', [])
 
     def get_dependency_priority_code(self, dependency):
         """
