@@ -27,7 +27,7 @@ from .download_manager import downloader
 from .providers.release_selector import filter_releases, is_compatible_version
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
-from .package_io import read_package_file, package_file_exists
+from .package_io import read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
 from . import loader, text
