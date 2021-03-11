@@ -1402,15 +1402,11 @@ class PackageManager():
             if not is_dependency:
                 # Record the install in the settings file so that you can move
                 # settings across computers and have the same packages installed
-                def save_names():
-                    settings = sublime.load_settings(pc_settings_filename())
-                    original_names = load_list_setting(settings, 'installed_packages')
-                    names = list(original_names)
-                    if package_name not in names:
-                        names.append(package_name)
-                    save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
-                sublime.set_timeout(save_names, 1)
-
+                settings = sublime.load_settings(pc_settings_filename())
+                names = load_list_setting(settings, 'installed_packages')
+                if package_name in names:
+                    names.append(package_name)
+                    save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
             else:
                 load_order = packages[package_name]['load_order']
                 loader.add_or_update(load_order, package_name, loader_code)
@@ -1872,14 +1868,11 @@ class PackageManager():
         self.record_usage(params)
 
         if not is_dependency:
-            def save_names():
-                settings = sublime.load_settings(pc_settings_filename())
-                original_names = load_list_setting(settings, 'installed_packages')
-                names = list(original_names)
-                if package_name in names:
-                    names.remove(package_name)
-                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names, original_names)
-            sublime.set_timeout(save_names, 1)
+            settings = sublime.load_settings(pc_settings_filename())
+            names = load_list_setting(settings, 'installed_packages')
+            if package_name in names:
+                names.remove(package_name)
+                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
 
         if os.path.exists(package_dir) and can_delete_dir:
             unlink_or_delete_directory(package_dir)
