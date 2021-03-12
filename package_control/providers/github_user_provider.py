@@ -1,13 +1,13 @@
 import re
 
+from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..downloaders.downloader_exception import DownloaderException
-from ..clients.client_exception import ClientException
+from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import ProviderException
 
 
-class GitHubUserProvider():
-
+class GitHubUserProvider(BaseRepositoryProvider):
     """
     Allows using a GitHub user/organization as the source for multiple packages,
     or in Package Control terminology, a "repository".
@@ -30,57 +30,11 @@ class GitHubUserProvider():
           `query_string_params`
     """
 
-    def __init__(self, repo, settings):
-        self.cache = {}
-        self.repo = repo
-        self.settings = settings
-        self.failed_sources = {}
-
     @classmethod
     def match_url(cls, repo):
         """Indicates if this provider can handle the provided repo"""
 
         return re.search('^https?://github.com/[^/]+/?$', repo) is not None
-
-    def prefetch(self):
-        """
-        Go out and perform HTTP operations, caching the result
-        """
-
-        [name for name, info in self.get_packages()]
-
-    def get_failed_sources(self):
-        """
-        List of any URLs that could not be accessed while accessing this repository
-
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-
-        :return:
-            A generator of ("https://github.com/user/repo", Exception()) tuples
-        """
-
-        return self.failed_sources.items()
-
-    def get_broken_packages(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_broken_dependencies(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_dependencies(self, ):
-        "For API-compatibility with RepositoryProvider"
-
-        return {}.items()
 
     def get_packages(self, invalid_sources=None):
         """
@@ -175,18 +129,3 @@ class GitHubUserProvider():
                 self.failed_sources[repo_url] = e
 
         self.cache['get_packages'] = output
-
-    def get_sources(self):
-        """
-        Return a list of current URLs that are directly referenced by the repo
-
-        :return:
-            A list of URLs
-        """
-
-        return [self.repo]
-
-    def get_renamed_packages(self):
-        """For API-compatibility with RepositoryProvider"""
-
-        return {}

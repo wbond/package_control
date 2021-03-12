@@ -2,7 +2,7 @@
 	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
 	// COMMENTS ARE NOT ALLOWED IN JSON
 
-	"schema_version": "3.1.0",
+	"schema_version": "4.0.0",
 
 	// Packages can be specified with a simple URL to a GitHub or BitBucket
 	// repository, but details can be overridden for every field. It is also
@@ -368,19 +368,18 @@
 		}
 	],
 
-	// Packages that can be listed under "dependencies" in under "releases" of
+	// Packages that can be listed under "libraries" in under "releases" of
 	// a normal package. These will typically be compiled Python extensions
 	// that are supplementary, or missing from Sublime Text.
-	"dependencies": [
+	"libraries": [
 		{
-			// Each dependency should have a name, load_order, description,
+			// Each dependency should have a name, description,
 			// author, issues URL and a list of releases. Each release needs a
 			// version and url or base and tags plus sublime_text keys. The
 			// platforms key is optionally and defaults to *. If the URL is not
 			// over SSL, there needs to be a sha256 key containing the sha256
 			// hash of the package file.
 			"name": "bz2",
-			"load_order": "02",
 			"description": "Python bz2 module",
 			"author": "wbond",
 			"issues": "https://github.com/codexns/sublime-bz2/issues",
@@ -395,7 +394,6 @@
 		},
 		{
 			"name": "ssl-linux",
-			"load_order": "01",
 			"description": "Python _ssl module for Linux",
 			"author": "wbond",
 			"issues": "https://github.com/codexns/sublime-ssl-linux/issues",
@@ -412,7 +410,6 @@
 		},
 		{
 			"name": "ssl-windows",
-			"load_order": "02",
 			"description": "Python _ssl module for Sublime Text 2 on Windows",
 			"author": "wbond",
 			"issues": "https://github.com/codexns/sublime-ssl-windows/issues",

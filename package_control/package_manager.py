@@ -173,7 +173,7 @@ class PackageManager():
 
         return {}
 
-    def get_dependencies(self, package):
+    def get_libraries(self, package):
         """
         Returns a list of dependencies for the specified package on the
         current machine
@@ -426,7 +426,7 @@ class PackageManager():
             merge_cache_under_settings(self, 'package_name_map', channel)
             merge_cache_under_settings(self, 'renamed_packages', channel)
             merge_cache_under_settings(self, 'unavailable_packages', channel, list_=True)
-            merge_cache_under_settings(self, 'unavailable_dependencies', channel, list_=True)
+            merge_cache_under_settings(self, 'unavailable_libraries', channel, list_=True)
 
             # If any of the info was not retrieved from the cache, we need to
             # grab the channel to get it
@@ -442,7 +442,7 @@ class PackageManager():
                     set_cache(cache_key, channel_repositories, cache_ttl)
 
                     unavailable_packages = []
-                    unavailable_dependencies = []
+                    unavailable_libraries = []
 
                     for repo in channel_repositories:
                         original_packages = provider.get_packages(repo)
@@ -457,7 +457,7 @@ class PackageManager():
                         packages_cache_key = repo + '.packages'
                         set_cache(packages_cache_key, filtered_packages, cache_ttl)
 
-                        original_dependencies = provider.get_dependencies(repo)
+                        original_dependencies = provider.get_libraries(repo)
                         filtered_dependencies = {}
                         for dependency in original_dependencies:
                             info = original_dependencies[dependency]
@@ -465,9 +465,9 @@ class PackageManager():
                             if info['releases']:
                                 filtered_dependencies[dependency] = info
                             else:
-                                unavailable_dependencies.append(dependency)
-                        dependencies_cache_key = repo + '.dependencies'
-                        set_cache(dependencies_cache_key, filtered_dependencies, cache_ttl)
+                                unavailable_libraries.append(dependency)
+                        libraries_cache_key = repo + '.libraries'
+                        set_cache(libraries_cache_key, filtered_dependencies, cache_ttl)
 
                     # Have the local name map override the one from the channel
                     name_map = provider.get_name_map()
@@ -486,9 +486,9 @@ class PackageManager():
                     )
                     set_cache_under_settings(
                         self,
-                        'unavailable_dependencies',
+                        'unavailable_libraries',
                         channel,
-                        unavailable_dependencies,
+                        unavailable_libraries,
                         cache_ttl,
                         list_=True
                     )
@@ -514,8 +514,8 @@ class PackageManager():
                     ...
                 },
                 {
-                    'Dependency Name': {
-                        # Dependency details - see example-repository.json for format
+                    'Library Name': {
+                        # Library details - see example-repository.json for format
                     },
                     ...
                 }
@@ -560,9 +560,9 @@ class PackageManager():
             if repository_packages is not None:
                 packages.update(repository_packages)
 
-                cache_key = repo + '.dependencies'
-                repository_dependencies = get_cache(cache_key)
-                dependencies.update(repository_dependencies)
+                cache_key = repo + '.libraries'
+                repository_libraries = get_cache(cache_key)
+                dependencies.update(repository_libraries)
 
             else:
                 domain = urlparse(repo).hostname
@@ -590,7 +590,7 @@ class PackageManager():
                 continue
 
             unavailable_packages = []
-            unavailable_dependencies = []
+            unavailable_libraries = []
 
             # Allow name mapping of packages for schema version < 2.0
             repository_packages = {}
@@ -603,29 +603,29 @@ class PackageManager():
                 else:
                     unavailable_packages.append(name)
 
-            repository_dependencies = {}
-            for name, info in provider.get_dependencies():
+            repository_libraries = {}
+            for name, info in provider.get_libraries():
                 info['releases'] = filter_releases(name, self.settings, info['releases'])
                 if info['releases']:
-                    repository_dependencies[name] = info
+                    repository_libraries[name] = info
                 else:
-                    unavailable_dependencies.append(name)
+                    unavailable_libraries.append(name)
 
             # Display errors we encountered while fetching package info
             for url, exception in provider.get_failed_sources():
                 console_write(exception)
             for name, exception in provider.get_broken_packages():
                 console_write(exception)
-            for name, exception in provider.get_broken_dependencies():
+            for name, exception in provider.get_broken_libraries():
                 console_write(exception)
 
             cache_key = repo + '.packages'
             set_cache(cache_key, repository_packages, cache_ttl)
             packages.update(repository_packages)
 
-            cache_key = repo + '.dependencies'
-            set_cache(cache_key, repository_dependencies, cache_ttl)
-            dependencies.update(repository_dependencies)
+            cache_key = repo + '.libraries'
+            set_cache(cache_key, repository_libraries, cache_ttl)
+            dependencies.update(repository_libraries)
 
             renamed_packages = provider.get_renamed_packages()
             set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
@@ -640,9 +640,9 @@ class PackageManager():
             )
             set_cache_under_settings(
                 self,
-                'unavailable_dependencies',
+                'unavailable_libraries',
                 repo,
-                unavailable_dependencies,
+                unavailable_libraries,
                 cache_ttl,
                 list_=True
             )
@@ -829,7 +829,7 @@ class PackageManager():
         for package in self.list_packages():
             if package == ignore_package:
                 continue
-            output.extend(self.get_dependencies(package))
+            output.extend(self.get_libraries(package))
 
         # Consider any folder with a .sublime-dependency file that does not
         # have a dependency-metadata.json file to be a dependency that was
@@ -973,7 +973,7 @@ class PackageManager():
 
         unavailable_key = 'unavailable_packages'
         if is_dependency:
-            unavailable_key = 'unavailable_dependencies'
+            unavailable_key = 'unavailable_libraries'
         is_unavailable = package_name in self.settings.get(unavailable_key, [])
 
         package_type = 'package'

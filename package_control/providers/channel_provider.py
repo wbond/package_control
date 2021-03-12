@@ -5,15 +5,14 @@ from urllib.parse import urljoin
 
 from .. import text
 from ..console_write import console_write
+from ..download_manager import downloader, update_url
+from ..versions import version_sort
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
 from .schema_compat import SchemaVersion
-from ..download_manager import downloader, update_url
-from ..versions import version_sort
 
 
-class ChannelProvider():
-
+class ChannelProvider:
     """
     Retrieves a channel and provides an API into the information
 
@@ -229,11 +228,11 @@ class ChannelProvider():
 
         return self.get_repositories()
 
-    def get_packages(self, repo):
+    def get_packages(self, repo_url):
         """
         Provides access to the repository info that is cached in a channel
 
-        :param repo:
+        :param repo_url:
             The URL of the repository to get the cached info of
 
         :raises:
@@ -271,20 +270,14 @@ class ChannelProvider():
 
         self.fetch()
 
-        repo = update_url(repo, self.settings.get('debug'))
+        repo_url = update_url(repo_url, self.settings.get('debug'))
 
         # The 2.0 channel schema renamed the key cached package info was
         # stored under in order to be more clear to new users.
         packages_key = 'packages_cache' if self.schema_version.major >= 2 else 'packages'
 
-        if self.channel_info.get(packages_key, False) is False:
-            return {}
-
-        if self.channel_info[packages_key].get(repo, False) is False:
-            return {}
-
         output = {}
-        for package in self.channel_info[packages_key][repo]:
+        for package in self.channel_info.get(packages_key, {}).get(repo_url, []):
             copy = package.copy()
 
             # In schema version 2.0, we store a list of dicts containing info
@@ -320,11 +313,11 @@ class ChannelProvider():
 
         return output
 
-    def get_dependencies(self, repo):
+    def get_libraries(self, repo_url):
         """
-        Provides access to the dependency info that is cached in a channel
+        Provides access to the library info that is cached in a channel
 
-        :param repo:
+        :param repo_url:
             The URL of the repository to get the cached info of
 
         :raises:
@@ -357,17 +350,15 @@ class ChannelProvider():
 
         self.fetch()
 
-        repo = update_url(repo, self.settings.get('debug'))
+        repo_url = update_url(repo_url, self.settings.get('debug'))
 
-        if self.channel_info.get('dependencies_cache', False) is False:
-            return {}
-
-        if self.channel_info['dependencies_cache'].get(repo, False) is False:
-            return {}
+        # The 4.0.0 channel schema renamed the key cached package info was
+        # stored under in order to be more clear to new users.
+        libraries_key = 'libraries_cache' if self.schema_version.major >= 4 else 'dependencies_cache'
 
         output = {}
-        for dependency in self.channel_info['dependencies_cache'][repo]:
-            dependency['releases'] = version_sort(dependency['releases'], 'platforms', reverse=True)
-            output[dependency['name']] = dependency
+        for library in self.channel_info.get(libraries_key, {}).get(repo_url, []):
+            library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
+            output[library['name']] = library
 
         return output

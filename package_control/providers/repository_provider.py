@@ -5,21 +5,21 @@ from itertools import chain
 from urllib.parse import urljoin, urlparse
 
 from .. import text
-from ..console_write import console_write
-from .provider_exception import ProviderException
-from .schema_compat import platforms_to_releases
-from .schema_compat import SchemaVersion
-from ..downloaders.downloader_exception import DownloaderException
+from ..clients.bitbucket_client import BitBucketClient
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.gitlab_client import GitLabClient
-from ..clients.bitbucket_client import BitBucketClient
+from ..console_write import console_write
 from ..download_manager import downloader, update_url
+from ..downloaders.downloader_exception import DownloaderException
 from ..versions import version_sort
+from .base_repository_provider import BaseRepositoryProvider
+from .provider_exception import ProviderException
+from .schema_compat import platforms_to_releases
+from .schema_compat import SchemaVersion
 
 
-class RepositoryProvider():
-
+class RepositoryProvider(BaseRepositoryProvider):
     """
     Generic repository downloader that fetches package info
 
@@ -48,61 +48,9 @@ class RepositoryProvider():
     """
 
     def __init__(self, repo, settings):
-        self.cache = {}
+        super().__init__(repo, settings)
         self.repo_info = None
         self.schema_version = None
-        self.repo = repo
-        self.settings = settings
-        self.failed_sources = {}
-        self.broken_packages = {}
-        self.broken_dependencies = {}
-
-    @classmethod
-    def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
-
-        return True
-
-    def prefetch(self):
-        """
-        Go out and perform HTTP operations, caching the result
-
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-        """
-
-        [name for name, info in self.get_packages()]
-
-    def get_failed_sources(self):
-        """
-        List of any URLs that could not be accessed while accessing this repository
-
-        :return:
-            A generator of ("https://example.com", Exception()) tuples
-        """
-
-        return self.failed_sources.items()
-
-    def get_broken_packages(self):
-        """
-        List of package names for packages that are missing information
-
-        :return:
-            A generator of ("Package Name", Exception()) tuples
-        """
-
-        return self.broken_packages.items()
-
-    def get_broken_dependencies(self):
-        """
-        List of dependency names for dependencies that are missing information
-
-        :return:
-            A generator of ("Dependency Name", Exception()) tuples
-        """
-
-        return self.broken_dependencies.items()
 
     def fetch(self):
         """
@@ -118,9 +66,11 @@ class RepositoryProvider():
 
         self.cache = {}
         self.repo_info = self.fetch_location(self.repo)
-        for key in ('packages', 'dependencies'):
+        for key in ('packages', 'libraries'):
             if key not in self.repo_info:
                 self.repo_info[key] = []
+
+        self.repo_info['libraries'].extend(self.repo_info.pop('dependencies', []))
 
         if 'includes' not in self.repo_info:
             return
@@ -151,8 +101,10 @@ class RepositoryProvider():
             include_info = self.fetch_location(include)
             included_packages = include_info.get('packages', [])
             self.repo_info['packages'].extend(included_packages)
-            included_dependencies = include_info.get('dependencies', [])
-            self.repo_info['dependencies'].extend(included_dependencies)
+            included_libraries = include_info.get('libraries', [])
+            self.repo_info['libraries'].extend(included_libraries)
+            included_libraries = include_info.get('dependencies', [])
+            self.repo_info['libraries'].extend(included_libraries)
 
     def fetch_and_validate(self):
         """
@@ -187,7 +139,7 @@ class RepositoryProvider():
 
         except (DownloaderException, ProviderException) as e:
             self.failed_sources[self.repo] = e
-            self.cache['get_dependencies'] = {}
+            self.cache['get_libraries'] = {}
             self.cache['get_packages'] = {}
             return False
 
@@ -234,9 +186,9 @@ class RepositoryProvider():
         except (ValueError):
             raise ProviderException('Error parsing JSON from repository %s.' % location)
 
-    def get_dependencies(self, invalid_sources=None):
+    def get_libraries(self, invalid_sources=None):
         """
-        Provides access to the dependencies in this repository
+        Provides access to the libraries in this repository
 
         :param invalid_sources:
             A list of URLs that are permissible to fetch data from
@@ -272,8 +224,8 @@ class RepositoryProvider():
             tuples
         """
 
-        if 'get_dependencies' in self.cache:
-            for key, value in self.cache['get_dependencies'].items():
+        if 'get_libraries' in self.cache:
+            for key, value in self.cache['get_libraries'].items():
                 yield (key, value)
             return
 
@@ -283,9 +235,9 @@ class RepositoryProvider():
         if not self.fetch_and_validate():
             return
 
-        if self.schema_version >= (3, 1, 0):
-            allowed_dependency_keys = {  # todo: remove 'load_order'
-                'name', 'description', 'author', 'issues', 'load_order', 'releases'
+        if self.schema_version.major >= 4:
+            allowed_dependency_keys = {
+                'name', 'description', 'author', 'issues', 'releases'
             }
             allowed_release_keys = {  # todo: remove 'branch'
                 'base', 'version', 'sublime_text', 'platforms', 'python_versions', 'branch', 'tags', 'url', 'sha256'
@@ -305,41 +257,41 @@ class RepositoryProvider():
         ]
 
         output = {}
-        for dependency in self.repo_info['dependencies']:
+        for library in self.repo_info['libraries']:
             info = {
                 'releases': [],
                 'sources': [self.repo]
             }
 
-            for field in ('name', 'description', 'author', 'issues', 'load_order'):
-                field_value = dependency.get(field)
+            for field in ('name', 'description', 'author', 'issues'):
+                field_value = library.get(field)
                 if field_value:
                     info[field] = field_value
 
             if 'name' not in info:
                 self.failed_sources[self.repo] = ProviderException(text.format(
                     '''
-                    No "name" value for one of the dependencies in the repository %s.
+                    No "name" value for one of the libraries in the repository %s.
                     ''',
                     self.repo
                 ))
                 continue
 
             try:
-                unknown_keys = set(dependency) - allowed_dependency_keys
+                unknown_keys = set(library) - allowed_dependency_keys
                 if unknown_keys:
                     raise ProviderException(text.format(
                         '''
-                        The "%s" key(s) in the dependency "%s" in the repository %s are not supported.
+                        The "%s" key(s) in the library "%s" in the repository %s are not supported.
                         ''',
                         ('", "'.join(sorted(unknown_keys)), info['name'], self.repo)
                     ))
 
-                releases = dependency.get('releases', [])
+                releases = library.get('releases', [])
                 if releases and not isinstance(releases, list):
                     raise ProviderException(text.format(
                         '''
-                        The "releases" value is not an array for the dependency "%s" in the repository %s.
+                        The "releases" value is not an array for the library "%s" in the repository %s.
                         ''',
                         (info['name'], self.repo)
                     ))
@@ -351,7 +303,7 @@ class RepositoryProvider():
                     if unknown_keys:
                         raise ProviderException(text.format(
                             '''
-                            The "%s" key(s) in one of the releases of the dependency "%s"
+                            The "%s" key(s) in one of the releases of the library "%s"
                             in the repository %s are not supported.
                             ''',
                             ('", "'.join(sorted(unknown_keys)), info['name'], self.repo)
@@ -375,7 +327,7 @@ class RepositoryProvider():
                     download_info['platforms'] = value
 
                     # Validate supported python_versions
-                    if self.schema_version < (3, 1, 0):
+                    if self.schema_version.major < 4:
                         # Assume python 3.3 for backward compatibility with older schemes.
                         # Note: ST2 with python 2.6 are no longer supported
                         download_info['python_versions'] = ['3.3']
@@ -398,7 +350,7 @@ class RepositoryProvider():
                             raise ProviderException(text.format(
                                 '''
                                 Missing release-level "base" key for one of the releases of the
-                                dependency "%s" in the repository %s.
+                                library "%s" in the repository %s.
                                 ''',
                                 (info['name'], self.repo)
                             ))
@@ -425,7 +377,7 @@ class RepositoryProvider():
                             raise ProviderException(text.format(
                                 '''
                                 Invalid "base" value "%s" for one of the releases of the
-                                dependency "%s" in the repository %s.
+                                library "%s" in the repository %s.
                                 ''',
                                 (base, info['name'], self.repo)
                             ))
@@ -434,7 +386,7 @@ class RepositoryProvider():
                         if downloads is False:
                             raise ProviderException(text.format(
                                 '''
-                                No valid semver tags found at %s for the dependency
+                                No valid semver tags found at %s for the library
                                 "%s" in the repository %s.
                                 ''',
                                 (url, info['name'], self.repo)
@@ -452,7 +404,7 @@ class RepositoryProvider():
                             raise ProviderException(text.format(
                                 '''
                                 No "sha256" key for the non-secure "url" value in one of the
-                                releases of the dependency "%s" in the repository %s.
+                                releases of the library "%s" in the repository %s.
                                 ''',
                                 (info['name'], self.repo)
                             ))
@@ -462,19 +414,19 @@ class RepositoryProvider():
                         if key not in download_info:
                             raise ProviderException(text.format(
                                 '''
-                                Missing "%s" key for one of the releases of the dependency "%s" in the repository %s.
+                                Missing "%s" key for one of the releases of the library "%s" in the repository %s.
                                 ''',
                                 (key, info['name'], self.repo)
                             ))
 
                     info['releases'].append(download_info)
 
-                # check required dependency keys
-                for key in ('author', 'releases', 'issues', 'description', 'load_order'):
+                # check required library keys
+                for key in ('author', 'releases', 'issues', 'description'):
                     if key not in info:
                         raise ProviderException(text.format(
                             '''
-                            No "%s" key for the dependency "%s" in the repository %s.
+                            No "%s" key for the library "%s" in the repository %s.
                             ''',
                             (key, info['name'], self.repo)
                         ))
@@ -485,9 +437,9 @@ class RepositoryProvider():
                 yield (info['name'], info)
 
             except (DownloaderException, ClientException, ProviderException) as e:
-                self.broken_dependencies[info['name']] = e
+                self.broken_libriaries[info['name']] = e
 
-        self.cache['get_dependencies'] = output
+        self.cache['get_libraries'] = output
 
     def get_packages(self, invalid_sources=None):
         """
@@ -518,7 +470,7 @@ class RepositoryProvider():
                             'url': url,
                             'date': date,
                             'version': version,
-                            'dependencies': [dependency name, ...]
+                            'dependencies': [library name, ...]
                         }, ...
                     ]
                     'previous_names': [old_name, ...],

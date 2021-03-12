@@ -1,13 +1,13 @@
 import unittest
 
-from ..providers.repository_provider import RepositoryProvider
+from ..http_cache import HttpCache
+from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
 from ..providers.channel_provider import ChannelProvider
 from ..providers.github_repository_provider import GitHubRepositoryProvider
 from ..providers.github_user_provider import GitHubUserProvider
 from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
 from ..providers.gitlab_user_provider import GitLabUserProvider
-from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
-from ..http_cache import HttpCache
+from ..providers.repository_provider import RepositoryProvider
 
 from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET, USER_AGENT
 
@@ -106,21 +106,21 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
             'https://github.com/packagecontrol-test/package_control-tester',
             self.github_settings()
         )
-        self.assertEqual(list(), list(provider.get_broken_packages()))
+        self.assertEqual([], list(provider.get_broken_packages()))
 
-    def test_get_dependencies(self):
+    def test_get_libraries(self):
         provider = GitHubRepositoryProvider(
             'https://github.com/packagecontrol-test/package_control-tester',
             self.github_settings()
         )
-        self.assertEqual(list(), list(provider.get_dependencies()))
+        self.assertEqual([], list(provider.get_libraries()))
 
-    def test_get_broken_dependencies(self):
+    def test_get_broken_libraries(self):
         provider = GitHubRepositoryProvider(
             'https://github.com/packagecontrol-test/package_control-tester',
             self.github_settings()
         )
-        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
 
 class GitHubUserProviderTests(unittest.TestCase):
@@ -202,15 +202,15 @@ class GitHubUserProviderTests(unittest.TestCase):
 
     def test_get_broken_packages(self):
         provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        self.assertEqual(list(), list(provider.get_broken_packages()))
+        self.assertEqual([], list(provider.get_broken_packages()))
 
-    def test_get_dependencies(self):
+    def test_get_libraries(self):
         provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        self.assertEqual(list(), list(provider.get_dependencies()))
+        self.assertEqual([], list(provider.get_libraries()))
 
-    def test_get_broken_dependencies(self):
+    def test_get_broken_libraries(self):
         provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
 
 class GitLabRepositoryProviderTests(unittest.TestCase):
@@ -302,21 +302,21 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
             'https://gitlab.com/packagecontrol-test/package_control-tester',
             self.gitlab_settings()
         )
-        self.assertEqual(list(), list(provider.get_broken_packages()))
+        self.assertEqual([], list(provider.get_broken_packages()))
 
-    def test_get_dependencies(self):
+    def test_get_libraries(self):
         provider = GitLabRepositoryProvider(
             'https://gitlab.com/packagecontrol-test/package_control-tester',
             self.gitlab_settings()
         )
-        self.assertEqual(list(), list(provider.get_dependencies()))
+        self.assertEqual([], list(provider.get_libraries()))
 
-    def test_get_broken_dependencies(self):
+    def test_get_broken_libraries(self):
         provider = GitLabRepositoryProvider(
             'https://gitlab.com/packagecontrol-test/package_control-tester',
             self.gitlab_settings()
         )
-        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
 
 class GitLabUserProviderTests(unittest.TestCase):
@@ -390,15 +390,15 @@ class GitLabUserProviderTests(unittest.TestCase):
 
     def test_get_broken_packages(self):
         provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        self.assertEqual(list(), list(provider.get_broken_packages()))
+        self.assertEqual([], list(provider.get_broken_packages()))
 
-    def test_get_dependencies(self):
+    def test_get_libraries(self):
         provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        self.assertEqual(list(), list(provider.get_dependencies()))
+        self.assertEqual([], list(provider.get_libraries()))
 
-    def test_get_broken_dependencies(self):
+    def test_get_broken_libraries(self):
         provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
 
 class BitBucketRepositoryProviderTests(unittest.TestCase):
@@ -485,21 +485,21 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
             'https://bitbucket.org/wbond/package_control-tester',
             self.bitbucket_settings()
         )
-        self.assertEqual(list(), list(provider.get_broken_packages()))
+        self.assertEqual([], list(provider.get_broken_packages()))
 
-    def test_get_dependencies(self):
+    def test_get_libraries(self):
         provider = BitBucketRepositoryProvider(
             'https://bitbucket.org/wbond/package_control-tester',
             self.bitbucket_settings()
         )
-        self.assertEqual(list(), list(provider.get_dependencies()))
+        self.assertEqual([], list(provider.get_libraries()))
 
-    def test_get_broken_dependencies(self):
+    def test_get_broken_libraries(self):
         provider = BitBucketRepositoryProvider(
             'https://bitbucket.org/wbond/package_control-tester',
             self.bitbucket_settings()
         )
-        self.assertEqual(list(), list(provider.get_broken_dependencies()))
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
 
 class RepositoryProviderTests(unittest.TestCase):
@@ -575,13 +575,12 @@ class RepositoryProviderTests(unittest.TestCase):
             packages
         )
 
-    def test_get_dependencies_10(self):
+    def test_get_libraries_10(self):
         provider = RepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json',
             self.settings()
         )
-        dependencies = [dependency for dependency in provider.get_dependencies()]
-        self.assertEqual([], dependencies)
+        self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_packages_12(self):
         provider = RepositoryProvider(
@@ -639,13 +638,12 @@ class RepositoryProviderTests(unittest.TestCase):
             packages
         )
 
-    def test_get_dependencies_12(self):
+    def test_get_libraries_12(self):
         provider = RepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json',
             self.settings()
         )
-        dependencies = [dependency for dependency in provider.get_dependencies()]
-        self.assertEqual([], dependencies)
+        self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_packages_20_explicit(self):
         provider = RepositoryProvider(
@@ -712,13 +710,12 @@ class RepositoryProviderTests(unittest.TestCase):
             packages
         )
 
-    def test_get_dependencies_20(self):
+    def test_get_libraries_20(self):
         provider = RepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json',
             self.settings()
         )
-        dependencies = [dependency for dependency in provider.get_dependencies()]
-        self.assertEqual([], dependencies)
+        self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_packages_20_github(self):
         provider = RepositoryProvider(
@@ -916,19 +913,17 @@ class RepositoryProviderTests(unittest.TestCase):
             packages
         )
 
-    def test_get_dependencies_300_explicit(self):
+    def test_get_libraries_300_explicit(self):
         provider = RepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json',
             self.settings()
         )
-        dependencies = [dependency for dependency in provider.get_dependencies()]
         self.assertEqual(
             [
                 (
                     'bz2',
                     {
                         "name": "bz2",
-                        "load_order": "02",
                         "author": "wbond",
                         "description": "Python bz2 module",
                         "issues": "https://github.com/wbond/package_control/issues",
@@ -951,7 +946,6 @@ class RepositoryProviderTests(unittest.TestCase):
                     'ssl-linux',
                     {
                         "name": "ssl-linux",
-                        "load_order": "01",
                         "description": "Python _ssl module for Linux",
                         "author": "wbond",
                         "issues": "https://github.com/wbond/package_control/issues",
@@ -975,7 +969,6 @@ class RepositoryProviderTests(unittest.TestCase):
                     'ssl-windows',
                     {
                         "name": "ssl-windows",
-                        "load_order": "01",
                         "description": "Python _ssl module for Sublime Text 2 on Windows",
                         "author": "wbond",
                         "issues": "https://github.com/wbond/package_control/issues",
@@ -996,7 +989,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     }
                 )
             ],
-            dependencies
+            list(provider.get_libraries())
         )
 
     def test_get_packages_300_github(self):
@@ -1462,25 +1455,23 @@ class RepositoryProviderTests(unittest.TestCase):
             packages
         )
 
-    def test_get_dependencies_310_explicit(self):
+    def test_get_libraries_400_explicit(self):
         provider = RepositoryProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.1.0-explicit.json',
+            'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json',
             self.settings()
         )
-        dependencies = [dependency for dependency in provider.get_dependencies()]
         self.assertEqual(
             [
                 (
                     'bz2',
                     {
                         "name": "bz2",
-                        "load_order": "02",
                         "author": "wbond",
                         "description": "Python bz2 module",
                         "issues": "https://github.com/wbond/package_control/issues",
                         "sources": [
                             'https://raw.githubusercontent.com/wbond/package_control-json'
-                            '/master/repository-3.1.0-explicit.json'
+                            '/master/repository-4.0.0-explicit.json'
                         ],
                         "releases": [
                             {
@@ -1497,13 +1488,12 @@ class RepositoryProviderTests(unittest.TestCase):
                     'ssl-linux',
                     {
                         "name": "ssl-linux",
-                        "load_order": "01",
                         "description": "Python _ssl module for Linux",
                         "author": "wbond",
                         "issues": "https://github.com/wbond/package_control/issues",
                         "sources": [
                             'https://raw.githubusercontent.com/wbond/package_control-json'
-                            '/master/repository-3.1.0-explicit.json'
+                            '/master/repository-4.0.0-explicit.json'
                         ],
                         "releases": [
                             {
@@ -1519,20 +1509,20 @@ class RepositoryProviderTests(unittest.TestCase):
                 ),
                 # Note: 'ssl-windows' is expected to not be present because of missing python_versions!
             ],
-            dependencies
+            list(provider.get_libraries())
         )
 
-    def test_get_packages_310_explicit(self):
+    def test_get_packages_400_explicit(self):
         provider = RepositoryProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.1.0-explicit.json',
+            'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json',
             self.settings()
         )
         packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
-                'package_control-tester-3.1.0',
+                'package_control-tester-4.0.0',
                 {
-                    "name": "package_control-tester-3.1.0",
+                    "name": "package_control-tester-4.0.0",
                     "author": ["packagecontrol", "wbond"],
                     "description": "A test of Package Control upgrade messages with "
                                    "explicit versions, but date-based releases.",
@@ -1545,7 +1535,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     "labels": [],
                     "sources": [
                         'https://raw.githubusercontent.com/wbond/package_control-json'
-                        '/master/repository-3.1.0-explicit.json'
+                        '/master/repository-4.0.0-explicit.json'
                     ],
                     "last_modified": "2014-11-12 15:52:35",
                     "releases": [
@@ -2551,7 +2541,7 @@ class ChannelProviderTests(unittest.TestCase):
             )
         )
 
-    def test_get_dependencies_300(self):
+    def test_get_libraries_300(self):
         self.maxDiff = None
         provider = ChannelProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
@@ -2607,7 +2597,7 @@ class ChannelProviderTests(unittest.TestCase):
                     ]
                 }
             },
-            provider.get_dependencies(
+            provider.get_libraries(
                 "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json"
             )
         )

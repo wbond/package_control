@@ -1,13 +1,13 @@
 import re
 
+from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..downloaders.downloader_exception import DownloaderException
-from ..clients.client_exception import ClientException
+from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import ProviderException
 
 
-class GitHubRepositoryProvider():
-
+class GitHubRepositoryProvider(BaseRepositoryProvider):
     """
     Allows using a public GitHub repository as the source for a single package.
     For legacy purposes, this can also be treated as the source for a Package
@@ -34,11 +34,8 @@ class GitHubRepositoryProvider():
     """
 
     def __init__(self, repo, settings):
-        self.cache = {}
         # Clean off the trailing .git to be more forgiving
-        self.repo = re.sub(r'\.git$', '', repo)
-        self.settings = settings
-        self.failed_sources = {}
+        super().__init__(re.sub(r'\.git$', '', repo), settings)
 
     @classmethod
     def match_url(cls, repo):
@@ -47,46 +44,6 @@ class GitHubRepositoryProvider():
         master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo)
         branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$', repo)
         return master is not None or branch is not None
-
-    def prefetch(self):
-        """
-        Go out and perform HTTP operations, caching the result
-
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-        """
-
-        [name for name, info in self.get_packages()]
-
-    def get_failed_sources(self):
-        """
-        List of any URLs that could not be accessed while accessing this repository
-
-        :return:
-            A generator of ("https://github.com/user/repo", Exception()) tuples
-        """
-
-        return self.failed_sources.items()
-
-    def get_broken_packages(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_broken_dependencies(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_dependencies(self, ):
-        "For API-compatibility with RepositoryProvider"
-
-        return {}.items()
 
     def get_packages(self, invalid_sources=None):
         """
@@ -172,18 +129,3 @@ class GitHubRepositoryProvider():
             self.failed_sources[self.repo] = e
             self.cache['get_packages'] = {}
             raise StopIteration()
-
-    def get_sources(self):
-        """
-        Return a list of current URLs that are directly referenced by the repo
-
-        :return:
-            A list of URLs
-        """
-
-        return [self.repo]
-
-    def get_renamed_packages(self):
-        """For API-compatibility with RepositoryProvider"""
-
-        return {}
