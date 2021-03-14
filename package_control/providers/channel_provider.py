@@ -3,13 +3,20 @@ import os
 import re
 from urllib.parse import urljoin
 
-from .. import text
 from ..console_write import console_write
 from ..download_manager import downloader, update_url
 from ..versions import version_sort
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
 from .schema_compat import SchemaVersion
+
+
+class InvalidChannelFileException(ProviderException):
+
+    def __init__(self, channel, reason_message):
+        super().__init__(
+            'Channel %s does not appear to be a valid channel file because'
+            ' %s' % (channel.url, reason_message))
 
 
 class ChannelProvider:
@@ -21,7 +28,7 @@ class ChannelProvider:
     has the side effect of lessening the load on the GitHub and BitBucket APIs
     and getting around not-infrequent HTTP 503 errors from those APIs.
 
-    :param channel:
+    :param channel_url:
         The URL of the channel
 
     :param settings:
@@ -38,15 +45,24 @@ class ChannelProvider:
           `query_string_params`
     """
 
-    def __init__(self, channel, settings):
+    __slots__ = [
+        'channel_info',
+        'channel_url',
+        'schema_version',
+        'settings',
+    ]
+
+    def __init__(self, channel_url, settings):
         self.channel_info = None
+        self.channel_url = channel_url
         self.schema_version = None
-        self.channel = channel
         self.settings = settings
 
     @classmethod
-    def match_url(cls, channel):
-        """Indicates if this provider can handle the provided channel"""
+    def match_url(cls, channel_url):
+        """
+        Indicates if this provider can handle the provided channel_url.
+        """
 
         return True
 
@@ -66,53 +82,50 @@ class ChannelProvider:
         Retrieves and loads the JSON for other methods to use
 
         :raises:
-            ProviderException: when an error occurs with the channel contents
+            InvalidChannelFileException: when parsing or validation file content fails
+            ProviderException: when an error occurs trying to open a file
             DownloaderException: when an error occurs trying to open a URL
         """
 
         if self.channel_info is not None:
             return
 
-        if re.match('https?://', self.channel, re.I):
-            with downloader(self.channel, self.settings) as manager:
-                channel_json = manager.fetch(self.channel, 'Error downloading channel.')
+        if re.match(r'https?://', self.channel_url, re.I):
+            with downloader(self.channel_url, self.settings) as manager:
+                json_string = manager.fetch(self.channel_url, 'Error downloading channel.')
 
         # All other channels are expected to be filesystem paths
         else:
-            if not os.path.exists(self.channel):
-                raise ProviderException('Error, file %s does not exist' % self.channel)
+            if not os.path.exists(self.channel_url):
+                raise ProviderException('Error, file %s does not exist' % self.channel_url)
 
             if self.settings.get('debug'):
                 console_write(
                     '''
                     Loading %s as a channel
                     ''',
-                    self.channel
+                    self.channel_url
                 )
 
             # We open as binary so we get bytes like the DownloadManager
-            with open(self.channel, 'rb') as f:
-                channel_json = f.read()
+            with open(self.channel_url, 'rb') as f:
+                json_string = f.read()
 
         try:
-            channel_info = json.loads(channel_json.decode('utf-8'))
+            channel_info = json.loads(json_string.decode('utf-8'))
         except (ValueError):
-            raise ProviderException('Error parsing JSON from channel %s.' % self.channel)
-
-        def fail(message):
-            raise ProviderException(
-                'Channel %s does not appear to be a valid channel file because %s' % (self.channel, message))
+            raise InvalidChannelFileException(self, 'parsing JSON failed.')
 
         try:
-            self.schema_version = SchemaVersion(channel_info['schema_version'])
+            schema_version = SchemaVersion(channel_info['schema_version'])
         except KeyError:
-            fail('the "schema_version" JSON key is missing.')
+            raise InvalidChannelFileException(self, 'the "schema_version" JSON key is missing.')
         except ValueError as e:
-            fail(e)
+            raise InvalidChannelFileException(self, e)
 
         # Fix any out-dated repository URLs in the package cache
         debug = self.settings.get('debug')
-        packages_key = 'packages_cache' if self.schema_version.major >= 2 else 'packages'
+        packages_key = 'packages_cache' if schema_version.major >= 2 else 'packages'
         if packages_key in channel_info:
             original_cache = channel_info[packages_key]
             new_cache = {}
@@ -121,6 +134,7 @@ class ChannelProvider:
             channel_info[packages_key] = new_cache
 
         self.channel_info = channel_info
+        self.schema_version = schema_version
 
     def get_name_map(self):
         """
@@ -178,27 +192,21 @@ class ChannelProvider:
         self.fetch()
 
         if 'repositories' not in self.channel_info:
-            raise ProviderException(text.format(
-                '''
-                Channel %s does not appear to be a valid channel file because
-                the "repositories" JSON key is missing.
-                ''',
-                self.channel
-            ))
+            raise InvalidChannelFileException(
+                self, 'the "repositories" JSON key is missing.')
 
         # Determine a relative root so repositories can be defined
         # relative to the location of the channel file.
-        scheme_match = re.match('(https?:)//', self.channel, re.I)
+        scheme_match = re.match(r'(https?:)//', self.channel_url, re.I)
         if scheme_match is None:
-            relative_base = os.path.dirname(self.channel)
+            relative_base = os.path.dirname(self.channel_url)
             is_http = False
         else:
             is_http = True
 
         debug = self.settings.get('debug')
         output = []
-        repositories = self.channel_info.get('repositories', [])
-        for repository in repositories:
+        for repository in self.channel_info['repositories']:
             if repository.startswith('//'):
                 if scheme_match is not None:
                     repository = scheme_match.group(1) + repository
@@ -209,7 +217,7 @@ class ChannelProvider:
                 continue
             elif repository.startswith('./') or repository.startswith('../'):
                 if is_http:
-                    repository = urljoin(self.channel, repository)
+                    repository = urljoin(self.channel_url, repository)
                 else:
                     repository = os.path.join(relative_base, repository)
                     repository = os.path.normpath(repository)

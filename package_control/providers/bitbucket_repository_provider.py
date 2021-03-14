@@ -32,10 +32,10 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
     """
 
     @classmethod
-    def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
+    def match_url(cls, repo_url):
+        """Indicates if this provider can handle the provided repo_url"""
 
-        return re.search('^https?://bitbucket.org/([^/]+/[^/]+)/?$', repo) is not None
+        return re.search('^https?://bitbucket.org/([^/]+/[^/]+)/?$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """
@@ -84,16 +84,16 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
                 yield (key, value)
             return
 
-        if invalid_sources is not None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo_url in invalid_sources:
             raise StopIteration()
 
         client = BitBucketClient(self.settings)
 
         try:
-            repo_info = client.repo_info(self.repo)
+            repo_info = client.repo_info(self.repo_url)
 
             releases = []
-            for download in client.download_info(self.repo):
+            for download in client.download_info(self.repo_url):
                 download['sublime_text'] = '*'
                 download['platforms'] = ['*']
                 releases.append(download)
@@ -108,7 +108,7 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
                 'releases': releases,
                 'previous_names': [],
                 'labels': [],
-                'sources': [self.repo],
+                'sources': [self.repo_url],
                 'readme': repo_info['readme'],
                 'issues': repo_info['issues'],
                 'donate': repo_info['donate'],
@@ -118,6 +118,6 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
             yield (name, details)
 
         except (DownloaderException, ClientException, ProviderException) as e:
-            self.failed_sources[self.repo] = e
+            self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
             raise StopIteration()

@@ -13,7 +13,7 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
     For legacy purposes, this can also be treated as the source for a Package
     Control "repository".
 
-    :param repo:
+    :param repo_url:
         The public web URL to the GitHub repository. Should be in the format
         `https://github.com/user/package` for the master branch, or
         `https://github.com/user/package/tree/{branch_name}` for any other
@@ -33,16 +33,16 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
           `query_string_params`
     """
 
-    def __init__(self, repo, settings):
+    def __init__(self, repo_url, settings):
         # Clean off the trailing .git to be more forgiving
-        super().__init__(re.sub(r'\.git$', '', repo), settings)
+        super().__init__(re.sub(r'\.git$', '', repo_url), settings)
 
     @classmethod
-    def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
+    def match_url(cls, repo_url):
+        """Indicates if this provider can handle the provided repo_url"""
 
-        master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo)
-        branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$', repo)
+        master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo_url)
+        branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$', repo_url)
         return master is not None or branch is not None
 
     def get_packages(self, invalid_sources=None):
@@ -92,16 +92,16 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
                 yield (key, value)
             return
 
-        if invalid_sources is not None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo_url in invalid_sources:
             raise StopIteration()
 
         client = GitHubClient(self.settings)
 
         try:
-            repo_info = client.repo_info(self.repo)
+            repo_info = client.repo_info(self.repo_url)
 
             releases = []
-            for download in client.download_info(self.repo):
+            for download in client.download_info(self.repo_url):
                 download['sublime_text'] = '*'
                 download['platforms'] = ['*']
                 releases.append(download)
@@ -116,7 +116,7 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
                 'releases': releases,
                 'previous_names': [],
                 'labels': [],
-                'sources': [self.repo],
+                'sources': [self.repo_url],
                 'readme': repo_info['readme'],
                 'issues': repo_info['issues'],
                 'donate': repo_info['donate'],
@@ -126,6 +126,6 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
             yield (name, details)
 
         except (DownloaderException, ClientException, ProviderException) as e:
-            self.failed_sources[self.repo] = e
+            self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
             raise StopIteration()

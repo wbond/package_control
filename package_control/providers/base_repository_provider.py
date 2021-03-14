@@ -8,7 +8,7 @@ class BaseRepositoryProvider:
     The structure of the JSON a repository should contain is located in
     example-packages.json.
 
-    :param repo:
+    :param repo_url:
         The URL of the package repository
 
     :param settings:
@@ -30,22 +30,22 @@ class BaseRepositoryProvider:
         'broken_packages',
         'cache',
         'failed_sources',
-        'repo',
+        'repo_url',
         'settings',
     ]
 
-    def __init__(self, repo, settings):
+    def __init__(self, repo_url, settings):
         self.broken_libriaries = {}
         self.broken_packages = {}
         self.failed_sources = {}
         self.cache = {}
-        self.repo = repo
+        self.repo_url = repo_url
         self.settings = settings
 
     @classmethod
-    def match_url(cls, repo):
+    def match_url(cls, repo_url):
         """
-        Indicates if this provider can handle the provided repo
+        Indicates if this provider can handle the provided repo_url
         """
 
         return True
@@ -123,7 +123,7 @@ class BaseRepositoryProvider:
             A list of URLs
         """
 
-        return [self.repo]
+        return [self.repo_url]
 
     def get_renamed_packages(self):
         """For API-compatibility with RepositoryProvider"""

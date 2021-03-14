@@ -12,7 +12,7 @@ class GitHubUserProvider(BaseRepositoryProvider):
     Allows using a GitHub user/organization as the source for multiple packages,
     or in Package Control terminology, a "repository".
 
-    :param repo:
+    :param repo_url:
         The public web URL to the GitHub user/org. Should be in the format
         `https://github.com/user`.
 
@@ -31,10 +31,10 @@ class GitHubUserProvider(BaseRepositoryProvider):
     """
 
     @classmethod
-    def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
+    def match_url(cls, repo_url):
+        """Indicates if this provider can handle the provided repo_url"""
 
-        return re.search('^https?://github.com/[^/]+/?$', repo) is not None
+        return re.search('^https?://github.com/[^/]+/?$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """
@@ -83,15 +83,15 @@ class GitHubUserProvider(BaseRepositoryProvider):
                 yield (key, value)
             return
 
-        if invalid_sources is not None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo_url in invalid_sources:
             raise StopIteration()
 
         client = GitHubClient(self.settings)
 
         try:
-            user_repos = client.user_info(self.repo)
+            user_repos = client.user_info(self.repo_url)
         except (DownloaderException, ClientException) as e:
-            self.failed_sources[self.repo] = e
+            self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
             raise
 
@@ -116,7 +116,7 @@ class GitHubUserProvider(BaseRepositoryProvider):
                     'releases': releases,
                     'previous_names': [],
                     'labels': [],
-                    'sources': [self.repo],
+                    'sources': [self.repo_url],
                     'readme': repo_info['readme'],
                     'issues': repo_info['issues'],
                     'donate': repo_info['donate'],
