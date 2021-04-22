@@ -250,7 +250,7 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
                     'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                     'author': 'packagecontrol-test',
                     'readme': 'https://gitlab.com/packagecontrol-test/'
-                              'package_control-tester/-/master/readme.md',
+                              'package_control-tester/-/blob/master/readme.md',
                     'issues': None,
                     'donate': None,
                     'buy': None,
@@ -1816,6 +1816,8 @@ class ChannelProviderTests(unittest.TestCase):
                 "/master/repository-3.0.0-explicit.json",
                 "https://raw.githubusercontent.com/wbond/package_control-json"
                 "/master/repository-3.0.0-github_releases.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/"
+                "master/repository-3.0.0-gitlab_releases.json",
                 "https://raw.githubusercontent.com/wbond/package_control-json"
                 "/master/repository-3.0.0-bitbucket_releases.json"
             ],
@@ -1833,6 +1835,8 @@ class ChannelProviderTests(unittest.TestCase):
                 "/master/repository-3.0.0-explicit.json",
                 "https://raw.githubusercontent.com/wbond/package_control-json"
                 "/master/repository-3.0.0-github_releases.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/"
+                "master/repository-3.0.0-gitlab_releases.json",
                 "https://raw.githubusercontent.com/wbond/package_control-json"
                 "/master/repository-3.0.0-bitbucket_releases.json"
             ],

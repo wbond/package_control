@@ -223,7 +223,7 @@ class GitLabClient(JSONApiClient):
         if not output['readme']:
             return output
 
-        output['readme'] = 'https://gitlab.com/%s/-/%s/%s' % (
+        output['readme'] = 'https://gitlab.com/%s/-/blob/%s/%s' % (
             user_repo,
             branch,
             output['readme'].split('/')[-1],
