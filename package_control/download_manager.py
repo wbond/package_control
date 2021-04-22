@@ -161,6 +161,7 @@ class DownloadManager(object):
         if settings.get('http_cache'):
             cache_length = settings.get('http_cache_length', 604800)
             self.settings['cache'] = HttpCache(cache_length)
+            self.settings['cache_length'] = cache_length
 
     def close(self):
         if self.downloader:
