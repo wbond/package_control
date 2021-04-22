@@ -1,5 +1,12 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches:
+      - four-point-oh
+  pull_request:
+    branches:
+      - four-point-oh
 
 jobs:
   build:
