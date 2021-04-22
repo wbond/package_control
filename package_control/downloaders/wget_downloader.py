@@ -118,10 +118,11 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             bundle_path = get_ca_bundle_path(self.settings)
             command.append(u'--ca-certificate=' + bundle_path)
 
+        command.append('-S')
         if self.debug:
             command.append('-d')
         else:
-            command.append('-S')
+            command.append('-q')
 
         http_proxy = self.settings.get('http_proxy')
         https_proxy = self.settings.get('https_proxy')
@@ -252,6 +253,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             output = read_compat(f).splitlines()
         self.clean_tmp_file()
 
+        debug_missing = False
         error = None
         header_lines = []
         if self.debug:
@@ -260,6 +262,13 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             for line in output:
                 if section == 'General':
                     if self.skippable_line(line):
+                        continue
+
+                    # This handles situations where debug is not compiled in
+                    if line.startswith('HTTP request sent, awaiting response'):
+                        last_section = 'General'
+                        section = 'Read'
+                        debug_missing = True
                         continue
 
                 # Skip blank lines
@@ -289,7 +298,11 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
                     console_write(u'Wget HTTP Debug %s', section)
 
                 if section == 'Read':
-                    header_lines.append(line)
+                    if debug_missing:
+                        if ':' in line:
+                            header_lines.append(line.lstrip())
+                    else:
+                        header_lines.append(line)
 
                 console_write(u'  %s', line, prefix=False)
                 last_section = section
