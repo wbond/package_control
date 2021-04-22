@@ -680,7 +680,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                         elif download_info:
                             info['releases'].append(download_info)
 
-                    elif self.schema_version.major == 3:
+                    elif self.schema_version.major >= 3:
                         tags = release.get('tags')
                         branch = release.get('branch')
 
