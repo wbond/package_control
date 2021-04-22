@@ -24,7 +24,7 @@ class InvalidRepoFileException(ProviderException):
     def __init__(self, repo, reason_message):
         super().__init__(
             'Repository %s does not appear to be a valid repository file because'
-            ' %s' % (repo.repo, reason_message))
+            ' %s' % (repo.repo_url, reason_message))
 
 
 class RepositoryProvider(BaseRepositoryProvider):
