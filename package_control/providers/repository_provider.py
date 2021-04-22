@@ -481,7 +481,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                             'url': url,
                             'date': date,
                             'version': version,
-                            'dependencies': [library name, ...]
+                            'libraries': [library name, ...]
                         }, ...
                     ]
                     'previous_names': [old_name, ...],
@@ -630,7 +630,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                     download_info = {}
 
                     # Make sure that explicit fields are copied over
-                    for field in ['platforms', 'sublime_text', 'version', 'url', 'date', 'dependencies']:
+                    for field in ['platforms', 'sublime_text', 'version', 'url', 'date', 'libraries']:
                         if field in release:
                             value = release[field]
                             if field == 'url':
@@ -638,6 +638,9 @@ class RepositoryProvider(BaseRepositoryProvider):
                             if field == 'platforms' and not isinstance(release['platforms'], list):
                                 value = [value]
                             download_info[field] = value
+
+                    if self.schema_version.major < 4 and 'dependencies' in release:
+                        download_info['libraries'] = release['dependencies']
 
                     if 'platforms' not in download_info:
                         download_info['platforms'] = ['*']

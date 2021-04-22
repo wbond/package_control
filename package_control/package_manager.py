@@ -1007,7 +1007,7 @@ class PackageManager():
 
         have_installed_dependencies = False
         if not is_dependency:
-            dependencies = release.get('dependencies', [])
+            dependencies = release.get('libraries', [])
             if dependencies:
                 if not self.install_dependencies(dependencies):
                     return False
@@ -1386,7 +1386,7 @@ class PackageManager():
                     "description": packages[package_name]['description']
                 }
                 if not is_dependency:
-                    metadata['dependencies'] = release.get('dependencies', [])
+                    metadata['dependencies'] = release.get('libraries', [])
                 json.dump(metadata, fobj)
 
             # Submit install and upgrade info

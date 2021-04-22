@@ -297,10 +297,17 @@ class ChannelProvider:
                 del copy['platforms']
             else:
                 last_modified = None
+
                 for release in copy.get('releases', []):
                     date = release.get('date')
                     if not last_modified or (date and date > last_modified):
                         last_modified = date
+
+                    if self.schema_version.major < 4:
+                        if 'dependencies' in release:
+                            release['libraries'] = release['dependencies']
+                            del release['dependencies']
+
                 copy['last_modified'] = last_modified
 
             defaults = {

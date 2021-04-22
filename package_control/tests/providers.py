@@ -881,7 +881,7 @@ class RepositoryProviderTests(unittest.TestCase):
                                    "/package_control-tester/zip/1.0.1",
                             "sublime_text": "*",
                             "platforms": ["windows"],
-                            "dependencies": ["bz2"]
+                            "libraries": ["bz2"]
                         },
                         {
                             "version": "1.0.1-beta",
@@ -1546,7 +1546,7 @@ class RepositoryProviderTests(unittest.TestCase):
                                    "/package_control-tester/zip/1.0.1",
                             "sublime_text": "*",
                             "platforms": ["windows"],
-                            "dependencies": ["bz2"]
+                            "libraries": ["bz2"]
                         },
                         {
                             "version": "1.0.1-beta",
@@ -2148,7 +2148,7 @@ class ChannelProviderTests(unittest.TestCase):
                                    "/package_control-tester/zip/1.0.1",
                             "sublime_text": "*",
                             "platforms": ["windows"],
-                            "dependencies": ["bz2"]
+                            "libraries": ["bz2"]
                         },
                         {
                             "version": "1.0.1-beta",

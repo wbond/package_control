@@ -232,14 +232,14 @@
 			]
 		},
 
-		// Mark a release as requiring one or more dependencies
+		// Mark a release as requiring one or more libraries
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
 					"sublime_text": "*",
 					"tags": true,
-					"dependencies": ["bz2"]
+					"libraries": ["bz2"]
 				}
 			]
 		},
@@ -373,7 +373,7 @@
 	// that are supplementary, or missing from Sublime Text.
 	"libraries": [
 		{
-			// Each dependency should have a name, description,
+			// Each library should have a name, description,
 			// author, issues URL and a list of releases. Each release needs a
 			// version and url or base and tags plus sublime_text keys. The
 			// platforms key is optionally and defaults to *. If the URL is not
