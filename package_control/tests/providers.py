@@ -2114,6 +2114,8 @@ class ChannelProviderTests(unittest.TestCase):
                 "https://raw.githubusercontent.com/wbond/package_control-json"
                 "/master/repository-3.0.0-github_releases.json",
                 "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-gitlab_releases.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
                 "/master/repository-3.0.0-bitbucket_releases.json"
             ],
             provider.get_sources()
