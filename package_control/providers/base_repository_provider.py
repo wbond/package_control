@@ -76,7 +76,7 @@ class BaseRepositoryProvider:
         List of library names for libraries that are missing information
 
         :return:
-            A generator of ("Dependency Name", Exception()) tuples
+            A generator of ("Library Name", Exception()) tuples
         """
 
         return self.broken_libriaries.items()

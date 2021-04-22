@@ -175,14 +175,14 @@ class PackageManager():
 
     def get_libraries(self, package):
         """
-        Returns a list of dependencies for the specified package on the
+        Returns a list of libraries for the specified package on the
         current machine
 
         :param package:
             The name of the package
 
         :return:
-            A list of dependency names
+            A list of library names
         """
 
         if package_file_exists(package, 'dependencies.json'):

@@ -212,7 +212,7 @@ class RepositoryProvider(BaseRepositoryProvider):
         :return:
             A generator of
             (
-                'Dependency Name',
+                'Library Name',
                 {
                     'name': name,
                     'load_order': two digit string,
@@ -247,14 +247,14 @@ class RepositoryProvider(BaseRepositoryProvider):
             return
 
         if self.schema_version.major >= 4:
-            allowed_dependency_keys = {
+            allowed_library_keys = {
                 'name', 'description', 'author', 'issues', 'releases'
             }
             allowed_release_keys = {  # todo: remove 'branch'
                 'base', 'version', 'sublime_text', 'platforms', 'python_versions', 'branch', 'tags', 'url', 'sha256'
             }
         else:
-            allowed_dependency_keys = {
+            allowed_library_keys = {
                 'name', 'description', 'author', 'issues', 'load_order', 'releases'
             }
             allowed_release_keys = {
@@ -289,7 +289,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                 continue
 
             try:
-                unknown_keys = set(library) - allowed_dependency_keys
+                unknown_keys = set(library) - allowed_library_keys
                 if unknown_keys:
                     raise ProviderException(text.format(
                         '''
