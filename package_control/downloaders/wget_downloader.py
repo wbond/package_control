@@ -1,6 +1,7 @@
 import tempfile
 import re
 import os
+import sys
 
 from ..console_write import console_write
 from .cli_downloader import CliDownloader
@@ -235,7 +236,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             HTTP header names.
         """
 
-        with open(self.tmp_file, 'r') as fobj:
+        with open(self.tmp_file, 'r', encoding=sys.getdefaultencoding()) as fobj:
             output = fobj.read().splitlines()
         self.clean_tmp_file()
 
