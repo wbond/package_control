@@ -132,6 +132,7 @@ class AutomaticUpgrader(threading.Thread):
             )
 
         self.upgrade_packages()
+        self.upgrade_depenendencies()
 
     def install_missing(self):
         """
@@ -332,3 +333,30 @@ class AutomaticUpgrader(threading.Thread):
                     ''',
                     (package_name, version)
                 )
+
+    def upgrade_depenendencies(self):
+        """
+        Upgrades all dependencies that are not currently upgraded to the lastest version.
+        """
+
+        if not self.auto_upgrade:
+            return
+
+        dependency_list = self.installer.make_package_list(
+            [
+                'install',
+                'reinstall',
+                'downgrade',
+                'overwrite',
+                'none'
+            ],
+            ignore_packages=self.auto_upgrade_ignore,
+            get_dependencies=True
+        )
+
+        if USE_QUICK_PANEL_ITEM:
+            dependency_list = [info.trigger for info in dependency_list]
+        else:
+            dependency_list = [info[0] for info in dependency_list]
+
+        self.installer.manager.install_dependencies(dependency_list, fail_early=False)
