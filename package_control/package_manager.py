@@ -1404,7 +1404,7 @@ class PackageManager():
                 # settings across computers and have the same packages installed
                 settings = sublime.load_settings(pc_settings_filename())
                 names = load_list_setting(settings, 'installed_packages')
-                if package_name in names:
+                if package_name not in names:
                     names.append(package_name)
                     save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
             else:
