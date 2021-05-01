@@ -30,7 +30,7 @@ mods_load_order = [
 
     '.sys_path',
     '.wheel',
-    '.dependency',
+    '.library',
     '.text',
     '.cache',
     '.http_cache',

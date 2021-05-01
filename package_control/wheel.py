@@ -138,7 +138,7 @@ def generate_record(install_root, dist_info_dir, package_dirs, package_files):
 def extra_files():
     """
     :return:
-        A set of unicode strings containing "important" files in a dependency
+        A set of unicode strings containing "important" files in a library
         archive that should be relocated into the .dist-info directory to
         prevent depdencies overwriting each other in the lib folder
     """
