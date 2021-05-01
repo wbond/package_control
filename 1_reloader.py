@@ -29,7 +29,7 @@ mods_load_order = [
     '',
 
     '.sys_path',
-    '.wheel',
+    '.distinfo',
     '.library',
     '.text',
     '.cache',
