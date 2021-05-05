@@ -6,7 +6,7 @@ from textwrap import dedent
 
 import sublime
 
-from .package_control import sys_path, dependency
+from .package_control import sys_path, library
 from .package_control.console_write import console_write
 from .package_control.package_manager import PackageManager
 from .package_control.settings import (
@@ -103,7 +103,7 @@ def _migrate_loaders(settings):
                 elif os.path.exists(dep_sys_paths['all']):
                     src_dir = dep_sys_paths['all']
 
-                dependency.install(
+                library.install(
                     lib_root,
                     src_dir,
                     name,

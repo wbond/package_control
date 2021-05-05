@@ -7,29 +7,29 @@ from . import wheel
 def install(dest_root, src_dir, name, version, description, url, plat_specific):
     """
     :param dest_root:
-        A unicode path to the directory to install the dependency into. If a
-        dependency has a folder named A, it will be installed to: dest_root/A.
+        A unicode path to the directory to install the library into. If a
+        library has a folder named A, it will be installed to: dest_root/A.
 
     :param src_dir:
         A unicode path to the directory to copy files and folders from. For
         most dependencies, this directory will contain a single folder with
-        the name of the dependency.
+        the name of the library.
 
     :param name:
-        A unicode string of the dependency name
+        A unicode string of the library name
 
     :param version:
         A unicode string of a PEP 440 version
 
     :param description:
-        An optional unicode string of a description of the dependency
+        An optional unicode string of a description of the library
 
     :param url:
-        An optional unicode string of the homepage for the dependency
+        An optional unicode string of the homepage for the library
 
     :param plat_specific:
         A bool indicating if the source files are platform or architecture
-        specific. Typically this would be set if the dependency contains any
+        specific. Typically this would be set if the library contains any
         shared libraries or executables.
     """
 

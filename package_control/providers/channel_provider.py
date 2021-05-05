@@ -3,16 +3,23 @@ import os
 import re
 from urllib.parse import urljoin
 
-from .. import text
 from ..console_write import console_write
-from .provider_exception import ProviderException
-from .schema_compat import platforms_to_releases
 from ..download_manager import downloader, update_url
 from ..versions import version_sort
+from .provider_exception import ProviderException
+from .schema_compat import platforms_to_releases
+from .schema_compat import SchemaVersion
 
 
-class ChannelProvider():
+class InvalidChannelFileException(ProviderException):
 
+    def __init__(self, channel, reason_message):
+        super().__init__(
+            'Channel %s does not appear to be a valid channel file because'
+            ' %s' % (channel.url, reason_message))
+
+
+class ChannelProvider:
     """
     Retrieves a channel and provides an API into the information
 
@@ -21,7 +28,7 @@ class ChannelProvider():
     has the side effect of lessening the load on the GitHub and BitBucket APIs
     and getting around not-infrequent HTTP 503 errors from those APIs.
 
-    :param channel:
+    :param channel_url:
         The URL of the channel
 
     :param settings:
@@ -38,16 +45,24 @@ class ChannelProvider():
           `query_string_params`
     """
 
-    def __init__(self, channel, settings):
+    __slots__ = [
+        'channel_info',
+        'channel_url',
+        'schema_version',
+        'settings',
+    ]
+
+    def __init__(self, channel_url, settings):
         self.channel_info = None
-        self.schema_version = '0.0'
-        self.schema_major_version = 0
-        self.channel = channel
+        self.channel_url = channel_url
+        self.schema_version = None
         self.settings = settings
 
     @classmethod
-    def match_url(cls, channel):
-        """Indicates if this provider can handle the provided channel"""
+    def match_url(cls, channel_url):
+        """
+        Indicates if this provider can handle the provided channel_url.
+        """
 
         return True
 
@@ -67,67 +82,50 @@ class ChannelProvider():
         Retrieves and loads the JSON for other methods to use
 
         :raises:
-            ProviderException: when an error occurs with the channel contents
+            InvalidChannelFileException: when parsing or validation file content fails
+            ProviderException: when an error occurs trying to open a file
             DownloaderException: when an error occurs trying to open a URL
         """
 
         if self.channel_info is not None:
             return
 
-        if re.match('https?://', self.channel, re.I):
-            with downloader(self.channel, self.settings) as manager:
-                channel_json = manager.fetch(self.channel, 'Error downloading channel.')
+        if re.match(r'https?://', self.channel_url, re.I):
+            with downloader(self.channel_url, self.settings) as manager:
+                json_string = manager.fetch(self.channel_url, 'Error downloading channel.')
 
         # All other channels are expected to be filesystem paths
         else:
-            if not os.path.exists(self.channel):
-                raise ProviderException('Error, file %s does not exist' % self.channel)
+            if not os.path.exists(self.channel_url):
+                raise ProviderException('Error, file %s does not exist' % self.channel_url)
 
             if self.settings.get('debug'):
                 console_write(
                     '''
                     Loading %s as a channel
                     ''',
-                    self.channel
+                    self.channel_url
                 )
 
             # We open as binary so we get bytes like the DownloadManager
-            with open(self.channel, 'rb') as f:
-                channel_json = f.read()
+            with open(self.channel_url, 'rb') as f:
+                json_string = f.read()
 
         try:
-            channel_info = json.loads(channel_json.decode('utf-8'))
+            channel_info = json.loads(json_string.decode('utf-8'))
         except (ValueError):
-            raise ProviderException('Error parsing JSON from channel %s.' % self.channel)
-
-        schema_error = 'Channel %s does not appear to be a valid channel file because ' % self.channel
-
-        if 'schema_version' not in channel_info:
-            raise ProviderException('%s the "schema_version" JSON key is missing.' % schema_error)
+            raise InvalidChannelFileException(self, 'parsing JSON failed.')
 
         try:
-            self.schema_version = channel_info.get('schema_version')
-            if isinstance(self.schema_version, int):
-                self.schema_version = float(self.schema_version)
-            if isinstance(self.schema_version, float):
-                self.schema_version = str(self.schema_version)
-        except (ValueError):
-            raise ProviderException('%s the "schema_version" is not a valid number.' % schema_error)
-
-        if self.schema_version not in ['1.0', '1.1', '1.2', '2.0', '3.0.0']:
-            raise ProviderException(text.format(
-                '''
-                %s the "schema_version" is not recognized. Must be one of: 1.0, 1.1, 1.2, 2.0 or 3.0.0.
-                ''',
-                schema_error
-            ))
-
-        version_parts = self.schema_version.split('.')
-        self.schema_major_version = int(version_parts[0])
+            schema_version = SchemaVersion(channel_info['schema_version'])
+        except KeyError:
+            raise InvalidChannelFileException(self, 'the "schema_version" JSON key is missing.')
+        except ValueError as e:
+            raise InvalidChannelFileException(self, e)
 
         # Fix any out-dated repository URLs in the package cache
         debug = self.settings.get('debug')
-        packages_key = 'packages_cache' if self.schema_major_version >= 2 else 'packages'
+        packages_key = 'packages_cache' if schema_version.major >= 2 else 'packages'
         if packages_key in channel_info:
             original_cache = channel_info[packages_key]
             new_cache = {}
@@ -136,6 +134,7 @@ class ChannelProvider():
             channel_info[packages_key] = new_cache
 
         self.channel_info = channel_info
+        self.schema_version = schema_version
 
     def get_name_map(self):
         """
@@ -149,7 +148,7 @@ class ChannelProvider():
 
         self.fetch()
 
-        if self.schema_major_version >= 2:
+        if self.schema_version.major >= 2:
             return {}
 
         return self.channel_info.get('package_name_map', {})
@@ -166,7 +165,7 @@ class ChannelProvider():
 
         self.fetch()
 
-        if self.schema_major_version >= 2:
+        if self.schema_version.major >= 2:
             output = {}
             if 'packages_cache' in self.channel_info:
                 for repo in self.channel_info['packages_cache']:
@@ -193,27 +192,21 @@ class ChannelProvider():
         self.fetch()
 
         if 'repositories' not in self.channel_info:
-            raise ProviderException(text.format(
-                '''
-                Channel %s does not appear to be a valid channel file because
-                the "repositories" JSON key is missing.
-                ''',
-                self.channel
-            ))
+            raise InvalidChannelFileException(
+                self, 'the "repositories" JSON key is missing.')
 
         # Determine a relative root so repositories can be defined
         # relative to the location of the channel file.
-        scheme_match = re.match('(https?:)//', self.channel, re.I)
+        scheme_match = re.match(r'(https?:)//', self.channel_url, re.I)
         if scheme_match is None:
-            relative_base = os.path.dirname(self.channel)
+            relative_base = os.path.dirname(self.channel_url)
             is_http = False
         else:
             is_http = True
 
         debug = self.settings.get('debug')
         output = []
-        repositories = self.channel_info.get('repositories', [])
-        for repository in repositories:
+        for repository in self.channel_info['repositories']:
             if repository.startswith('//'):
                 if scheme_match is not None:
                     repository = scheme_match.group(1) + repository
@@ -224,7 +217,7 @@ class ChannelProvider():
                 continue
             elif repository.startswith('./') or repository.startswith('../'):
                 if is_http:
-                    repository = urljoin(self.channel, repository)
+                    repository = urljoin(self.channel_url, repository)
                 else:
                     repository = os.path.join(relative_base, repository)
                     repository = os.path.normpath(repository)
@@ -243,11 +236,11 @@ class ChannelProvider():
 
         return self.get_repositories()
 
-    def get_packages(self, repo):
+    def get_packages(self, repo_url):
         """
         Provides access to the repository info that is cached in a channel
 
-        :param repo:
+        :param repo_url:
             The URL of the repository to get the cached info of
 
         :raises:
@@ -285,35 +278,36 @@ class ChannelProvider():
 
         self.fetch()
 
-        repo = update_url(repo, self.settings.get('debug'))
+        repo_url = update_url(repo_url, self.settings.get('debug'))
 
         # The 2.0 channel schema renamed the key cached package info was
         # stored under in order to be more clear to new users.
-        packages_key = 'packages_cache' if self.schema_major_version >= 2 else 'packages'
-
-        if self.channel_info.get(packages_key, False) is False:
-            return {}
-
-        if self.channel_info[packages_key].get(repo, False) is False:
-            return {}
+        packages_key = 'packages_cache' if self.schema_version.major >= 2 else 'packages'
 
         output = {}
-        for package in self.channel_info[packages_key][repo]:
+        for package in self.channel_info.get(packages_key, {}).get(repo_url, []):
             copy = package.copy()
 
             # In schema version 2.0, we store a list of dicts containing info
             # about all available releases. These include "version" and
             # "platforms" keys that are used to pick the download for the
             # current machine.
-            if self.schema_major_version < 2:
+            if self.schema_version.major < 2:
                 copy['releases'] = platforms_to_releases(copy, self.settings.get('debug'))
                 del copy['platforms']
             else:
                 last_modified = None
+
                 for release in copy.get('releases', []):
                     date = release.get('date')
                     if not last_modified or (date and date > last_modified):
                         last_modified = date
+
+                    if self.schema_version.major < 4:
+                        if 'dependencies' in release:
+                            release['libraries'] = release['dependencies']
+                            del release['dependencies']
+
                 copy['last_modified'] = last_modified
 
             defaults = {
@@ -334,11 +328,11 @@ class ChannelProvider():
 
         return output
 
-    def get_dependencies(self, repo):
+    def get_libraries(self, repo_url):
         """
-        Provides access to the dependency info that is cached in a channel
+        Provides access to the library info that is cached in a channel
 
-        :param repo:
+        :param repo_url:
             The URL of the repository to get the cached info of
 
         :raises:
@@ -348,7 +342,7 @@ class ChannelProvider():
         :return:
             A dict in the format:
             {
-                'Dependency Name': {
+                'Library Name': {
                     'name': name,
                     'load_order': two digit string,
                     'description': description,
@@ -371,17 +365,15 @@ class ChannelProvider():
 
         self.fetch()
 
-        repo = update_url(repo, self.settings.get('debug'))
+        repo_url = update_url(repo_url, self.settings.get('debug'))
 
-        if self.channel_info.get('dependencies_cache', False) is False:
-            return {}
-
-        if self.channel_info['dependencies_cache'].get(repo, False) is False:
-            return {}
+        # The 4.0.0 channel schema renamed the key cached package info was
+        # stored under in order to be more clear to new users.
+        libraries_key = 'libraries_cache' if self.schema_version.major >= 4 else 'dependencies_cache'
 
         output = {}
-        for dependency in self.channel_info['dependencies_cache'][repo]:
-            dependency['releases'] = version_sort(dependency['releases'], 'platforms', reverse=True)
-            output[dependency['name']] = dependency
+        for library in self.channel_info.get(libraries_key, {}).get(repo_url, []):
+            library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
+            output[library['name']] = library
 
         return output

@@ -1,13 +1,13 @@
 import re
 
 from ..clients.bitbucket_client import BitBucketClient
-from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
+from ..downloaders.downloader_exception import DownloaderException
+from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import ProviderException
 
 
-class BitBucketRepositoryProvider():
-
+class BitBucketRepositoryProvider(BaseRepositoryProvider):
     """
     Allows using a public BitBucket repository as the source for a single package.
     For legacy purposes, this can also be treated as the source for a Package
@@ -31,57 +31,11 @@ class BitBucketRepositoryProvider():
           `query_string_params`
     """
 
-    def __init__(self, repo, settings):
-        self.cache = {}
-        self.repo = repo
-        self.settings = settings
-        self.failed_sources = {}
-
     @classmethod
-    def match_url(cls, repo):
-        """Indicates if this provider can handle the provided repo"""
+    def match_url(cls, repo_url):
+        """Indicates if this provider can handle the provided repo_url"""
 
-        return re.search('^https?://bitbucket.org/([^/]+/[^/]+)/?$', repo) is not None
-
-    def prefetch(self):
-        """
-        Go out and perform HTTP operations, caching the result
-
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-        """
-
-        [name for name, info in self.get_packages()]
-
-    def get_failed_sources(self):
-        """
-        List of any URLs that could not be accessed while accessing this repository
-
-        :return:
-            A generator of ("https://bitbucket.org/user/repo", Exception()) tuples
-        """
-
-        return self.failed_sources.items()
-
-    def get_broken_packages(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_broken_dependencies(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_dependencies(self, ):
-        "For API-compatibility with RepositoryProvider"
-
-        return {}.items()
+        return re.search('^https?://bitbucket.org/([^/]+/[^/]+)/?$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """
@@ -130,16 +84,16 @@ class BitBucketRepositoryProvider():
                 yield (key, value)
             return
 
-        if invalid_sources is not None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo_url in invalid_sources:
             raise StopIteration()
 
         client = BitBucketClient(self.settings)
 
         try:
-            repo_info = client.repo_info(self.repo)
+            repo_info = client.repo_info(self.repo_url)
 
             releases = []
-            for download in client.download_info(self.repo):
+            for download in client.download_info(self.repo_url):
                 download['sublime_text'] = '*'
                 download['platforms'] = ['*']
                 releases.append(download)
@@ -154,7 +108,7 @@ class BitBucketRepositoryProvider():
                 'releases': releases,
                 'previous_names': [],
                 'labels': [],
-                'sources': [self.repo],
+                'sources': [self.repo_url],
                 'readme': repo_info['readme'],
                 'issues': repo_info['issues'],
                 'donate': repo_info['donate'],
@@ -164,21 +118,6 @@ class BitBucketRepositoryProvider():
             yield (name, details)
 
         except (DownloaderException, ClientException, ProviderException) as e:
-            self.failed_sources[self.repo] = e
+            self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
             raise StopIteration()
-
-    def get_sources(self):
-        """
-        Return a list of current URLs that are directly referenced by the repo
-
-        :return:
-            A list of URLs
-        """
-
-        return [self.repo]
-
-    def get_renamed_packages(self):
-        """For API-compatibility with RepositoryProvider"""
-
-        return {}

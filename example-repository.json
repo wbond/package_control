@@ -2,7 +2,7 @@
 	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
 	// COMMENTS ARE NOT ALLOWED IN JSON
 
-	"schema_version": "3.0.0",
+	"schema_version": "4.0.0",
 
 	// Packages can be specified with a simple URL to a GitHub or BitBucket
 	// repository, but details can be overridden for every field. It is also
@@ -232,14 +232,14 @@
 			]
 		},
 
-		// Mark a release as requiring one or more dependencies
+		// Mark a release as requiring one or more libraries
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
 				{
 					"sublime_text": "*",
 					"tags": true,
-					"dependencies": ["bz2"]
+					"libraries": ["bz2"]
 				}
 			]
 		},
@@ -368,19 +368,18 @@
 		}
 	],
 
-	// Packages that can be listed under "dependencies" in under "releases" of
+	// Packages that can be listed under "libraries" in under "releases" of
 	// a normal package. These will typically be compiled Python extensions
 	// that are supplementary, or missing from Sublime Text.
-	"dependencies": [
+	"libraries": [
 		{
-			// Each dependency should have a name, load_order, description,
+			// Each library should have a name, description,
 			// author, issues URL and a list of releases. Each release needs a
 			// version and url or base and tags plus sublime_text keys. The
 			// platforms key is optionally and defaults to *. If the URL is not
 			// over SSL, there needs to be a sha256 key containing the sha256
 			// hash of the package file.
 			"name": "bz2",
-			"load_order": "02",
 			"description": "Python bz2 module",
 			"author": "wbond",
 			"issues": "https://github.com/codexns/sublime-bz2/issues",
@@ -388,13 +387,13 @@
 				{
 					"base": "https://github.com/codexns/sublime-bz2",
 					"tags": true,
-					"sublime_text": "*"
+					"sublime_text": "*",
+					"python_versions": ["3.3", "3.8"]
 				}
 			]
 		},
 		{
 			"name": "ssl-linux",
-			"load_order": "01",
 			"description": "Python _ssl module for Linux",
 			"author": "wbond",
 			"issues": "https://github.com/codexns/sublime-ssl-linux/issues",
@@ -404,13 +403,13 @@
 					"url": "http://packagecontrol.io/ssl-linux.sublime-package",
 					"sublime_text": "*",
 					"platforms": ["linux"],
+					"python_versions": ["3.3", "3.8"],
 					"sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
 				}
 			]
 		},
 		{
 			"name": "ssl-windows",
-			"load_order": "02",
 			"description": "Python _ssl module for Sublime Text 2 on Windows",
 			"author": "wbond",
 			"issues": "https://github.com/codexns/sublime-ssl-windows/issues",
@@ -420,6 +419,7 @@
 					"url": "http://packagecontrol.io/ssl-windows.sublime-package",
 					"sublime_text": "<3000",
 					"platforms": ["windows"],
+					"python_versions": ["3.3", "3.8"],
 					"sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
 				}
 			]
