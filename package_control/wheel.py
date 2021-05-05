@@ -103,18 +103,23 @@ def generate_record(install_root, dist_info_dir, package_dirs, package_files):
 
     entries = []
 
+    def _unix_path(path):
+        if os.name == 'nt':
+            return path.replace('\\', '/')
+        return path
+
     def _entry(rel_path):
         fpath = os.path.join(install_root, rel_path)
         size = os.stat(fpath).st_size
         with open(fpath, 'rb') as f:
             digest = hashlib.sha256(f.read()).digest()
             sha = base64.urlsafe_b64encode(digest).rstrip(b'=')
-        return (rel_path, 'sha256=%s' % sha.decode('utf-8'), str(size))
+        return (_unix_path(rel_path), 'sha256=%s' % sha.decode('utf-8'), str(size))
 
     for fname in os.listdir(os.path.join(install_root, dist_info_dir)):
         rel_path = os.path.join(dist_info_dir, fname)
         if fname == 'RECORD':
-            entries.append((rel_path, '', ''))
+            entries.append((_unix_path(rel_path), '', ''))
         else:
             entries.append(_entry(rel_path))
 
