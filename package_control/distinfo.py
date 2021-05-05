@@ -19,6 +19,37 @@ _dist_info_pattern = re.compile(
 
 
 def match_dist_info_dir(dir_name, library_name):
+    """
+    Match a given directory name against the library name.
+
+    Distance information directories are always of the form <name>-<semver>.
+    This function extracts the name part and compares it with the given
+    library_name
+
+    :param dir_name:
+        An unicode string of a directory name which might be the desired
+        distance information directory, representing the library.
+
+    :param library_name:
+        An unicode string of a library name, to find a distance information
+        directory for.
+
+    :returns:
+        The regexp match object, if dir_name is the .dist-info directory of
+        the given library or False otherwise.
+
+        The match object provides all information the .dist-info directory
+        name can offer:
+
+        match['name']        - library name
+        match['version']     - full semver version string
+        match['major']       - semver part feed SemVer() with
+        match['minor']       - semver part feed SemVer() with
+        match['patch']       - semver part feed SemVer() with
+        match['prerelease']  - semver part feed SemVer() with
+        match['build']       - semver part feed SemVer() with
+    """
+
     match = _dist_info_pattern.match(dir_name)
     if match and match['name'] == library_name:
         return match
@@ -30,13 +61,14 @@ def find_dist_info_dir(install_root, library_name):
     Find the .dist-info directory for a given library.
 
     :param install_root:
-        A unicode string of the dir the package is installed in
+        An unicode string of an absolute path of the directory libraries are
+        installed in
 
     :param library_name:
-        A unicode string of the library name
+        An unicode string of the library name
 
     :returns:
-        A unicode string of the .dist-info directory.
+        An unicode string of the .dist-info directory.
 
     :raises:
         FileNotFoundError if no .dist-info directory was found.
@@ -49,6 +81,18 @@ def find_dist_info_dir(install_root, library_name):
 
 
 def list_dist_info_dirs(install_root):
+    """
+    Generates a list of all distance information directories in the given
+    installlation directory.
+
+    :param install_root:
+        An unicode string of an absolute path of the directory libraries are
+        installed in
+
+    :yields:
+        DistInfoDir objects for all distance information directories.
+    """
+
     for dir_name in os.listdir(install_root):
         if dir_name.endswith('.dist-info'):
             yield DistInfoDir(install_root, dir_name)
@@ -56,25 +100,60 @@ def list_dist_info_dirs(install_root):
 
 
 class DistInfoDir:
+    """
+    This class describes a distance information directory.
+
+    Example: 'pyyaml-5.1.1.dist-info'
+
+    It is used to access information stored in the directory as they were
+    normal class attributes. It is an I/O driver to handle all filesystem
+    operations required to read or write meta data of a library.
+    """
+
+    __slots__ = ['install_root', 'dir_name', 'dir_path']
 
     def __init__(self, install_root, dist_info_dir):
+        """
+        Constructs a new instance.
+
+        :param install_root:
+            An unicode string of an absolute path of the directory libraries are
+            installed in
+
+        :param dist_info_dir:
+            The name of a library's distance information directory.
+
+            Example: 'pyyaml-5.1.1.dist-info'
+        """
+
         self.install_root = install_root
-        self.dist_info_dir = dist_info_dir
-        self.dist_info_path = os.path.join(install_root, dist_info_dir)
+        self.dir_name = dist_info_dir
+        self.dir_path = os.path.join(install_root, dist_info_dir)
 
     def exists(self):
-        return os.path.isdir(self.dist_info_path)
+        """
+        Check whether distance info directory exists on filesystem.
+
+        :returns:   True if the distance info directory exists.
+        :rtype:     bool
+        """
+
+        return os.path.isdir(self.dir_path)
 
     def ensure_exists(self):
-        return os.makedirs(self.dist_info_path, exist_ok=True)
+        """
+        Create the distance info directory if it doesn't exist on filesystem.
+        """
 
-    def generate_wheel(self, python_version, plat_specific):
+        os.makedirs(self.dir_path, exist_ok=True)
+
+    @staticmethod
+    def generate_wheel(python_version, plat_specific):
         """
         Generates the .dist-info/WHEEL file contents
 
         :param python_version:
-            None if no specific version, otherwise a unicode string of "3.3" or
-            "3.8"
+            None if no specific version, otherwise a unicode string of "3.3" or "3.8"
 
         :param plat_specific:
             If the package includes a shared library or executable that is
@@ -117,7 +196,7 @@ class DistInfoDir:
             The unicode string of the package name
 
         :param version:
-            A unicode string of the version
+            An unicode string of the version
 
         :param desc:
             An optional unicode string of a description
@@ -169,8 +248,8 @@ class DistInfoDir:
                 sha = base64.urlsafe_b64encode(digest).rstrip(b'=')
             return (_unix_path(rel_path), 'sha256=%s' % sha.decode('utf-8'), str(size))
 
-        for fname in os.listdir(self.dist_info_path):
-            rel_path = os.path.join(self.dist_info_dir, fname)
+        for fname in os.listdir(self.dir_path):
+            rel_path = os.path.join(self.dir_name, fname)
             if fname == 'RECORD':
                 entries.append((_unix_path(rel_path), '', ''))
             else:
@@ -192,7 +271,8 @@ class DistInfoDir:
 
         return output
 
-    def extra_files(self):
+    @staticmethod
+    def extra_files():
         """
         :return:
             A set of unicode strings containing "important" files in a library
@@ -229,7 +309,8 @@ class DistInfoDir:
             'notes.rst'
         }
 
-    def shared_lib_extensions(self):
+    @staticmethod
+    def shared_lib_extensions():
         """
         :return:
             A set of unicode strings of file extensions for files that are shared
@@ -243,7 +324,17 @@ class DistInfoDir:
         }
 
     def abs_path(self, file_name):
-        return os.path.join(self.dist_info_path, file_name)
+        """
+        Create an absolute path of a file contained in the distance information dir.
+
+        :param file_name:
+            An unicode string of the file name to return the absolute path for.
+
+        :returns:
+            An unicode string of the absolute path of the given file.
+        """
+
+        return os.path.join(self.dir_path, file_name)
 
     def read_metadata(self):
         """
@@ -269,7 +360,7 @@ class DistInfoDir:
             The unicode string of the package name
 
         :param version:
-            A unicode string of the version
+            An unicode string of the version
 
         :param desc:
             An optional unicode string of a description
@@ -292,7 +383,7 @@ class DistInfoDir:
         Read the .dist-info/INSTALLER file contents
 
         :returns:
-            A unicode string of of which installer was used.
+            An unicode string of of which installer was used.
         """
 
         with open(self.abs_path('INSTALLER'), 'r', encoding='utf-8') as fobj:
@@ -325,13 +416,7 @@ class DistInfoDir:
 
     def write_record(self, package_dirs, package_files):
         """
-        Generates the .dist-info/RECORD file contents
-
-        :param self.install_root:
-            A unicode string of the dir the package is being installed into
-
-        :param dist_info_dir:
-            A unicode string of the .dist-info dir for the package
+        Write the .dist-info/RECORD file contents
 
         :param package_dirs:
             A list of unicode strings of the package dirs, or None if there is no dir
@@ -365,11 +450,10 @@ class DistInfoDir:
 
     def write_wheel(self, python_version, plat_specific):
         """
-        Read the .dist-info/WHEEL file contents
+        Write the .dist-info/WHEEL file contents
 
         :param python_version:
-            None if no specific version, otherwise a unicode string of "3.3" or
-            "3.8"
+            None if no specific version, otherwise a unicode string of "3.3" or "3.8"
 
         :param plat_specific:
             If the package includes a shared library or executable that is
