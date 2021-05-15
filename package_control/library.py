@@ -100,6 +100,7 @@ def remove(install_root, name):
     for file_name, file_hash, file_size in record:
         abs_path = os.path.normpath(os.path.join(install_root, file_name))
         dir_names.add(os.path.dirname(abs_path))
+        # TODO: finish this
         print("removing", abs_path)
         # os.remove(abs_path)
 
@@ -107,5 +108,6 @@ def remove(install_root, name):
         return len(a.split(os.sep))
 
     for dir_name in sorted(dir_names, key=sort_key, reverse=True):
+        # TODO: finish this
         print("removing", dir_name)
         # os.remove(dirname)
