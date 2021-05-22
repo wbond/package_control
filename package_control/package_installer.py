@@ -27,7 +27,7 @@ class PackageInstaller(PackageDisabler):
         self.old_theme_package = None
         self.old_theme = None
 
-    def make_package_list(self, ignore_actions=[], override_action=None, ignore_packages=[], get_dependencies=False):
+    def make_package_list(self, ignore_actions=[], override_action=None, ignore_packages=[], get_libraries=False):
         """
         Creates a list of packages and what operation would be performed for
         each. Allows filtering by the applicable action or package name.
@@ -50,8 +50,8 @@ class PackageInstaller(PackageDisabler):
         :param ignore_packages:
             A list of packages names that should not be returned in the list
 
-        :param get_dependencies:
-            Whether to return only a list of dependencies. By default only normal packages
+        :param get_libraries:
+            Whether to return only a list of libraries. By default only normal packages
             are returned.
 
         :return:
@@ -61,7 +61,7 @@ class PackageInstaller(PackageDisabler):
               2 - action; [extra info;] package url
         """
 
-        if get_dependencies:
+        if get_libraries:
             packages = self.manager.list_available_dependencies()
             installed_packages = self.manager.list_dependencies()
         else:
@@ -77,7 +77,7 @@ class PackageInstaller(PackageDisabler):
 
             if package in installed_packages:
                 installed = True
-                metadata = self.manager.get_metadata(package, get_dependencies)
+                metadata = self.manager.get_metadata(package, get_libraries)
                 if metadata.get('version'):
                     installed_version = metadata['version']
                 else:
@@ -142,14 +142,14 @@ class PackageInstaller(PackageDisabler):
             if not description:
                 description = 'No description provided'
 
-            if not get_dependencies:
+            if not get_libraries:
                 homepage = info['homepage']
                 homepage_display = re.sub('^https?://', '', homepage)
 
             if USE_QUICK_PANEL_ITEM:
                 description = '<em>%s</em>' % sublime.html_format_command(description)
                 final_line = '<em>' + action + extra + '</em>'
-                if not get_dependencies and homepage_display:
+                if not get_libraries and homepage_display:
                     if action or extra:
                         final_line += ' '
                     final_line += '<a href="%s">%s</a>' % (homepage, homepage_display)

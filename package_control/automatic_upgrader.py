@@ -132,7 +132,7 @@ class AutomaticUpgrader(threading.Thread):
             )
 
         self.upgrade_packages()
-        self.upgrade_depenendencies()
+        self.upgrade_libraries()
 
     def install_missing(self):
         """
@@ -334,9 +334,9 @@ class AutomaticUpgrader(threading.Thread):
                     (package_name, version)
                 )
 
-    def upgrade_depenendencies(self):
+    def upgrade_libraries(self):
         """
-        Upgrades all dependencies that are not currently upgraded to the lastest version.
+        Upgrades all libraries that are not currently upgraded to the lastest version.
         """
 
         if not self.auto_upgrade:
