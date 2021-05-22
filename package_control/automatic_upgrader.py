@@ -342,7 +342,7 @@ class AutomaticUpgrader(threading.Thread):
         if not self.auto_upgrade:
             return
 
-        dependency_list = self.installer.make_package_list(
+        libaries = self.installer.make_package_list(
             [
                 'install',
                 'reinstall',
@@ -351,12 +351,12 @@ class AutomaticUpgrader(threading.Thread):
                 'none'
             ],
             ignore_packages=self.auto_upgrade_ignore,
-            get_dependencies=True
+            get_libraries=True
         )
 
         if USE_QUICK_PANEL_ITEM:
-            dependency_list = [info.trigger for info in dependency_list]
+            libaries = [info.trigger for info in libaries]
         else:
-            dependency_list = [info[0] for info in dependency_list]
+            libaries = [info[0] for info in libaries]
 
-        self.installer.manager.install_dependencies(dependency_list, fail_early=False)
+        self.installer.manager.install_dependencies(libaries, fail_early=False)
