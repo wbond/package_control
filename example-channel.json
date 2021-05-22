@@ -2,7 +2,7 @@
 	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
 	// COMMENTS ARE NOT ALLOWED IN JSON
 
-	"schema_version": "3.0.0",
+	"schema_version": "4.0.0",
 
 	// All repositories must be an HTTPS URL. SSL certificates help prevent
 	// unauthorized code being loaded onto users' machines.
@@ -40,12 +40,11 @@
 		]
 	},
 
-	// The "dependencies_cache" is just like "packages_cache", but for
-	// dependencies
-	"dependencies_cache": {
+	// The "libraries_cache" is just like "packages_cache", but for libraries.
+	"libraries_cache": {
 		"https://packagecontrol.io/packages.json": [
 
-			// Like with packages, dependency info must be fully resolved,
+			// Like with packages, library info must be fully resolved,
 			// which for packages means releases must have "url", "version",
 			// "sublime_text" and "platforms" keys instead of "base" and "tags".
 			{
@@ -59,7 +58,8 @@
 						"version": "1.0.0",
 						"url": "https://codeload.github.com/codexns/sublime-bz2/zip/1.0.0",
 						"sublime_text": "*",
-						"platforms": ["*"]
+						"platforms": ["*"],
+						"python_versions": ["3.3", "3.8"]
 					}
 				]
 			}

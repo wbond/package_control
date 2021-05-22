@@ -29,8 +29,8 @@ mods_load_order = [
     '',
 
     '.sys_path',
-    '.wheel',
-    '.dependency',
+    '.distinfo',
+    '.library',
     '.text',
     '.cache',
     '.http_cache',
@@ -171,6 +171,7 @@ mods_load_order = [
     '.clients.gitlab_client',
     '.clients.readme_client',
 
+    '.providers.base_repository_provider',
     '.providers.provider_exception',
     '.providers.bitbucket_repository_provider',
     '.providers.github_repository_provider',

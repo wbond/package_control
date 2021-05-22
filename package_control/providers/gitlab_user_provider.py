@@ -3,15 +3,16 @@ import re
 from ..clients.client_exception import ClientException
 from ..clients.gitlab_client import GitLabClient
 from ..downloaders.downloader_exception import DownloaderException
+from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import ProviderException
 
 
-class GitLabUserProvider:
+class GitLabUserProvider(BaseRepositoryProvider):
     """
     Allows using a GitLab user/organization as the source for multiple packages,
     or in Package Control terminology, a 'repository'.
 
-    :param repo:
+    :param repo_url:
         The public web URL to the GitHub user/org. Should be in the format
         `https://gitlab.com/user`.
 
@@ -29,59 +30,13 @@ class GitLabUserProvider:
           `query_string_params`
     """
 
-    def __init__(self, repo, settings):
-        self.cache = {}
-        self.repo = repo
-        self.settings = settings
-        self.failed_sources = {}
-
     @classmethod
-    def match_url(cls, repo):
+    def match_url(cls, repo_url):
         """
-        Indicates if this provider can handle the provided repo
-        """
-
-        return re.search('^https?://gitlab.com/[^/]+/?$', repo) is not None
-
-    def prefetch(self):
-        """
-        Go out and perform HTTP operations, caching the result
+        Indicates if this provider can handle the provided repo_url
         """
 
-        [name for name, info in self.get_packages()]
-
-    def get_failed_sources(self):
-        """
-        List of any URLs that could not be accessed while accessing this repository
-
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-
-        :return:
-            A generator of ('https://gitlab.com/user/repo', Exception()) tuples
-        """
-
-        return self.failed_sources.items()
-
-    def get_broken_packages(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_broken_dependencies(self):
-        """
-        For API-compatibility with RepositoryProvider
-        """
-
-        return {}.items()
-
-    def get_dependencies(self, ):
-        '''For API-compatibility with RepositoryProvider'''
-
-        return {}.items()
+        return re.search('^https?://gitlab.com/[^/]+/?$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """
@@ -130,15 +85,15 @@ class GitLabUserProvider:
                 yield (key, value)
             return
 
-        if invalid_sources is not None and self.repo in invalid_sources:
+        if invalid_sources is not None and self.repo_url in invalid_sources:
             raise StopIteration()
 
         client = GitLabClient(self.settings)
 
         try:
-            user_repos = client.user_info(self.repo)
+            user_repos = client.user_info(self.repo_url)
         except (DownloaderException, ClientException) as e:
-            self.failed_sources[self.repo] = e
+            self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
             raise
 
@@ -164,7 +119,7 @@ class GitLabUserProvider:
                     'releases': releases,
                     'previous_names': [],
                     'labels': [],
-                    'sources': [self.repo],
+                    'sources': [self.repo_url],
                     'readme': repo_info['readme'],
                     'issues': repo_info['issues'],
                     'donate': repo_info['donate'],
@@ -178,18 +133,3 @@ class GitLabUserProvider:
                 self.failed_sources[repo_url] = e
 
         self.cache['get_packages'] = output
-
-    def get_sources(self):
-        """
-        Return a list of current URLs that are directly referenced by the repo
-
-        :return:
-            A list of URLs
-        """
-
-        return [self.repo]
-
-    def get_renamed_packages(self):
-        """For API-compatibility with RepositoryProvider"""
-
-        return {}

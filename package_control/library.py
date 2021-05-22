@@ -1,42 +1,43 @@
 import os
 import shutil
 
-from . import wheel
+from .distinfo import DistInfoDir, find_dist_info_dir
 
 
 def install(dest_root, src_dir, name, version, description, url, plat_specific):
     """
     :param dest_root:
-        A unicode path to the directory to install the dependency into. If a
-        dependency has a folder named A, it will be installed to: dest_root/A.
+        A unicode path to the directory to install the library into. If a
+        library has a folder named A, it will be installed to: dest_root/A.
 
     :param src_dir:
         A unicode path to the directory to copy files and folders from. For
         most dependencies, this directory will contain a single folder with
-        the name of the dependency.
+        the name of the library.
 
     :param name:
-        A unicode string of the dependency name
+        A unicode string of the library name
 
     :param version:
         A unicode string of a PEP 440 version
 
     :param description:
-        An optional unicode string of a description of the dependency
+        An optional unicode string of a description of the library
 
     :param url:
-        An optional unicode string of the homepage for the dependency
+        An optional unicode string of the homepage for the library
 
     :param plat_specific:
         A bool indicating if the source files are platform or architecture
-        specific. Typically this would be set if the dependency contains any
+        specific. Typically this would be set if the library contains any
         shared libraries or executables.
     """
 
     dist_info_dirname = '%s-%s.dist-info' % (name, version)
-    dist_info_path = os.path.join(dest_root, dist_info_dirname)
-    extra_filenames = wheel.extra_files()
-    shared_exts = wheel.shared_lib_extensions()
+    dist_info = DistInfoDir(dest_root, dist_info_dirname)
+
+    extra_filenames = dist_info.extra_files()
+    shared_exts = dist_info.shared_lib_extensions()
 
     # TEMP - linter
     # found_license = False
@@ -65,28 +66,10 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
             # if 'license' in lf:
             #     found_license = True
 
-    if not os.path.exists(dist_info_path):
-        os.mkdir(dist_info_path)
-
-    di_wheel_path = os.path.join(dist_info_path, 'WHEEL')
-    wf_contents = wheel.generate_wheel_file('3.3', plat_specific)
-    with open(di_wheel_path, 'w', encoding='utf-8') as fobj:
-        fobj.write(wf_contents)
-
-    di_metadata_path = os.path.join(dist_info_path, 'METADATA')
-    mf_contents = wheel.generate_metadata_file(
-        name,
-        version,
-        description,
-        url
-    )
-    with open(di_metadata_path, 'w', encoding='utf-8') as fobj:
-        fobj.write(mf_contents)
-
-    di_installer_path = os.path.join(dist_info_path, 'INSTALLER')
-    if_contents = wheel.generate_installer()
-    with open(di_installer_path, 'w', encoding='utf-8') as fobj:
-        fobj.write(if_contents)
+    dist_info.ensure_exists()
+    dist_info.write_wheel('3.3', plat_specific)
+    dist_info.write_metadata(name, version, description, url)
+    dist_info.write_installer()
 
     package_dir_names = []
     for dname, source in package_dirs:
@@ -101,14 +84,30 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
             with open(os.path.join(dest_root, rel_dest), 'wb') as df:
                 df.write(sf.read())
 
-    di_record_path = os.path.join(dist_info_path, 'RECORD')
-    # Create an empty file so it shows up in its own file list
-    open(di_record_path, 'wb').close()
-    rf_contents = wheel.generate_record(
-        dest_root,
-        dist_info_dirname,
-        package_dir_names,
-        package_file_names
-    )
-    with open(di_record_path, 'w', encoding='utf-8') as fobj:
-        fobj.write(rf_contents)
+    dist_info.write_record(package_dir_names, package_file_names)
+
+
+def remove(install_root, name):
+    dist_info = find_dist_info_dir(install_root, name)
+
+    dir_names = set()
+
+    try:
+        record = dist_info.read_record()
+    except FileNotFoundError:
+        raise FileNotFoundError('Library {} not installed!'.format(name))
+
+    for file_name, file_hash, file_size in record:
+        abs_path = os.path.normpath(os.path.join(install_root, file_name))
+        dir_names.add(os.path.dirname(abs_path))
+        # TODO: finish this
+        print("removing", abs_path)
+        # os.remove(abs_path)
+
+    def sort_key(a):
+        return len(a.split(os.sep))
+
+    for dir_name in sorted(dir_names, key=sort_key, reverse=True):
+        # TODO: finish this
+        print("removing", dir_name)
+        # os.remove(dirname)
