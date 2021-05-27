@@ -786,7 +786,7 @@ class RepositoryProvider():
                                     url = github_url
                                 elif gitlab_url:
                                     downloads = gitlab_client.download_info(gitlab_url, extra)
-                                    url = bitbucket_url
+                                    url = gitlab_url
                                 elif bitbucket_url:
                                     downloads = bitbucket_client.download_info(bitbucket_url, extra)
                                     url = bitbucket_url
