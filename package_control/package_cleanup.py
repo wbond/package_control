@@ -11,7 +11,7 @@ from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
 from .package_io import package_file_exists
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
-from . import loader, text, __version__
+from . import library, sys_path, text, __version__
 from .providers.release_selector import is_compatible_version
 
 
@@ -56,11 +56,11 @@ class PackageCleanup(threading.Thread):
         found_packages = []
         installed_packages = list(installed_packages_at_start)
 
-        found_dependencies = []
-        installed_dependencies = self.manager.list_dependencies()
+        found_libraries = []
+        installed_libraries = self.manager.list_libraries()
 
         # We scan the Installed Packages folder in ST3 before we check for
-        # dependencies since some dependencies might be specified by a
+        # libraries since some libraries might be specified by a
         # .sublime-package-new that has not yet finished being installed.
         installed_path = sublime.installed_packages_path()
 
@@ -71,7 +71,7 @@ class PackageCleanup(threading.Thread):
             # the user was prompted to restart Sublime Text. Now that the
             # package is not loaded, we can replace the old version with the
             # new one.
-            if file[-20:] == '.sublime-package-new' and file != loader.loader_package_name + '.sublime-package-new':
+            if file[-20:] == '.sublime-package-new':
                 package_name = file.replace('.sublime-package-new', '')
                 package_file = os.path.join(installed_path, package_name + '.sublime-package')
                 if os.path.exists(package_file):
@@ -89,10 +89,6 @@ class PackageCleanup(threading.Thread):
                 continue
 
             package_name = file.replace('.sublime-package', '')
-
-            if package_name == loader.loader_package_name:
-                found_dependencies.append(package_name)
-                continue
 
             # Cleanup packages that were installed via Package Control, but
             # we removed from the "installed_packages" list - usually by
@@ -112,33 +108,36 @@ class PackageCleanup(threading.Thread):
             else:
                 found_packages.append(package_name)
 
-        required_dependencies = set(self.manager.find_required_dependencies())
-        extra_dependencies = list(set(installed_dependencies) - required_dependencies)
+        required_libraries = set(self.manager.find_required_libraries())
+        extra_libraries = list(set(installed_libraries) - required_libraries)
 
-        # Clean up unneeded dependencies so that found_dependencies will only
-        # end up having required dependencies added to it
-        for dependency in extra_dependencies:
-            dependency_dir = os.path.join(sublime.packages_path(), dependency)
-            if unlink_or_delete_directory(dependency_dir):
+        # Clean up unneeded libraries so that found_libraries will only
+        # end up having required libraries added to it
+        for library_name in extra_libraries:
+            try;
+                # TODO: Handle 3.8
+                library.remove(sys_path.lib_paths()["3.3"], library_name)
                 console_write(
                     '''
-                    Removed directory for unneeded dependency %s
+                    Removed directory for unneeded library %s
                     ''',
-                    dependency
+                    library_name
                 )
-            else:
-                cleanup_file = os.path.join(dependency_dir, 'package-control.cleanup')
+
+            except FileNotFoundError:
+                pass
+
+            except Exception:
+                cleanup_file = os.path.join(library_dir, 'package-control.cleanup')
                 if not os.path.exists(cleanup_file):
                     open(cleanup_file, 'wb').close()
                 console_write(
                     '''
-                    Unable to remove directory for unneeded dependency %s -
+                    Unable to remove directory for unneeded library %s -
                     deferring until next start
                     ''',
-                    dependency
+                    library_name
                 )
-            # Make sure when cleaning up the dependency files that we remove the loader for it also
-            loader.remove(dependency)
 
         for package_name in os.listdir(sublime.packages_path()):
             found = True
@@ -149,7 +148,7 @@ class PackageCleanup(threading.Thread):
 
             clean_old_files(package_dir)
 
-            # Cleanup packages/dependencies that could not be removed due to in-use files
+            # Cleanup packages/libraries that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
                 if unlink_or_delete_directory(package_dir):
@@ -245,18 +244,11 @@ class PackageCleanup(threading.Thread):
                 )
                 unlink_or_delete_directory(package_dir)
 
-            # Skip over dependencies since we handle them separately
-            if (package_file_exists(package_name, 'dependency-metadata.json')
-                    or package_file_exists(package_name, '.sublime-dependency')) \
-                    and (package_name == loader.loader_package_name or loader.exists(package_name)):
-                found_dependencies.append(package_name)
-                continue
-
             if found:
                 found_packages.append(package_name)
 
         invalid_packages = []
-        invalid_dependencies = []
+        invalid_libraries = []
 
         # Check metadata to verify packages were not improperly installed
         for package in found_packages:
@@ -267,13 +259,13 @@ class PackageCleanup(threading.Thread):
             if metadata and not self.is_compatible(metadata):
                 invalid_packages.append(package)
 
-        # Make sure installed dependencies are not improperly installed
-        for dependency in found_dependencies:
-            metadata = self.manager.get_metadata(dependency, is_dependency=True)
+        # Make sure installed libraries are not improperly installed
+        for library_name in found_libraries:
+            metadata = self.manager.get_metadata(library_name, is_library=True)
             if metadata and not self.is_compatible(metadata):
-                invalid_dependencies.append(dependency)
+                invalid_libraries.append(library_name)
 
-        if invalid_packages or invalid_dependencies:
+        if invalid_packages or invalid_libraries:
             def show_sync_error():
                 message = ''
                 if invalid_packages:
@@ -287,16 +279,16 @@ class PackageCleanup(threading.Thread):
                         ''',
                         (package_s, '\n'.join(invalid_packages))
                     )
-                if invalid_dependencies:
-                    dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
+                if invalid_libraries:
+                    library_s = 'ies were' if len(invalid_libraries) != 1 else 'y was'
                     message += text.format(
                         '''
-                        The following incompatible dependenc%s found installed:
+                        The following incompatible librar%s found installed:
 
                         %s
 
                         ''',
-                        (dependency_s, '\n'.join(invalid_dependencies))
+                        (library_s, '\n'.join(invalid_libraries))
                     )
                 message += text.format(
                     '''
@@ -315,7 +307,7 @@ class PackageCleanup(threading.Thread):
                 show_error(message)
             sublime.set_timeout(show_sync_error, 100)
 
-        sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_dependencies), 10)
+        sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_libraries), 10)
 
     def remove_package_file(self, name, filename):
         """
@@ -406,7 +398,7 @@ class PackageCleanup(threading.Thread):
 
         return False
 
-    def finish(self, installed_packages, found_packages, found_dependencies):
+    def finish(self, installed_packages, found_packages, found_libraries):
         """
         A callback that can be run the main UI thread to perform saving of the
         Package Control.sublime-settings file. Also fires off the
@@ -420,8 +412,8 @@ class PackageCleanup(threading.Thread):
             A list of the string package names of all packages that are
             currently installed on the filesystem.
 
-        :param found_dependencies:
-            A list of the string package names of all dependencies that are
+        :param found_libraries:
+            A list of the string package names of all libraries that are
             currently installed on the filesystem.
         """
 
@@ -439,11 +431,6 @@ class PackageCleanup(threading.Thread):
             new_ignored = list(ignored)
             for package in in_process:
                 if package in new_ignored:
-                    # This prevents removing unused dependencies from being messed up by
-                    # the functionality to re-enable packages that were left disabled
-                    # by an error.
-                    if loader.loader_package_name == package and loader.is_swapping():
-                        continue
                     console_write(
                         '''
                         The package %s is being re-enabled after a Package
@@ -463,4 +450,4 @@ class PackageCleanup(threading.Thread):
             installed_packages,
             self.original_installed_packages
         )
-        AutomaticUpgrader(found_packages, found_dependencies).start()
+        AutomaticUpgrader(found_packages, found_libraries).start()

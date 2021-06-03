@@ -32,10 +32,6 @@
         "command": "grab_certs"
     },
     {
-        "caption": "Package Control: Install Local Dependency",
-        "command": "install_local_dependency"
-    },
-    {
         "caption": "Package Control: Install Package",
         "command": "install_package"
     },
@@ -68,8 +64,8 @@
         "command": "upgrade_all_packages"
     },
     {
-        "caption": "Package Control: Satisfy Dependencies",
-        "command": "satisfy_dependencies"
+        "caption": "Package Control: Satisfy Libraries",
+        "command": "satisfy_libraries"
     },
     {
         "caption": "Package Control: Enable Debug Mode",

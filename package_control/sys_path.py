@@ -78,108 +78,23 @@ if installed_packages_path and data_dir is None:
     data_dir = dirname(installed_packages_path)
 
 
-def add(path, first=False):
+def lib_paths():
     """
-    Adds an entry to the beginning of sys.path, working around the fact that
-    Python 2.6 can't import from non-ASCII paths on Windows.
-
-    :param path:
-        A unicode string of a folder, zip file or sublime-package file to
-        add to the path
-
-    :param first:
-        If the path should be added at the beginning
-    """
-
-    if os.name == 'nt':
-        # Work around unicode path import issue on Windows with Python 2.6
-        buf = create_unicode_buffer(512)
-        if windll.kernel32.GetShortPathNameW(path, buf, len(buf)):
-            path = buf.value
-
-    enc_path = encode(path)
-
-    if os.path.exists(enc_path):
-        if first:
-            try:
-                sys.path.remove(enc_path)
-            except (ValueError):
-                pass
-            sys.path.insert(0, enc_path)
-        elif enc_path not in sys.path:
-            sys.path.append(enc_path)
-
-
-def remove(path):
-    """
-    Removes a path from sys.path if it is present
-
-    :param path:
-        A unicode string of a folder, zip file or sublime-package file
-    """
-
-    try:
-        sys.path.remove(encode(path))
-    except (ValueError):
-        pass
-
-    if os.name == 'nt':
-        buf = create_unicode_buffer(512)
-        if windll.kernel32.GetShortPathNameW(path, buf, len(buf)):
-            path = buf.value
-        try:
-            sys.path.remove(encode(path))
-        except (ValueError):
-            pass
-
-
-def generate_dependency_paths(name):
-    """
-    Accepts a dependency name and generates a dict containing the three standard
-    import paths that are valid for the current machine.
-
-    :param name:
-        A unicode string name of the dependency
+    Returns a dict of version-specific lib folders
 
     :return:
-        A dict with the following keys:
-         - 'ver'
-         - 'plat'
-         - 'arch'
+        A dict with the key "3.3" and possibly the key "3.8"
     """
 
-    dependency_dir = os.path.join(packages_path, name)
-
-    ver = 'st3'
-    plat = sublime.platform()
-    arch = sublime.arch()
+    if int(sublime.version()) >= 4000:
+        return {
+            "3.3": os.path.join(sys_path.data_dir, "Lib", "python33"),
+            "3.8": os.path.join(sys_path.data_dir, "Lib", "python38"),
+        }
 
     return {
-        'all': os.path.join(dependency_dir, 'all'),
-        'ver': os.path.join(dependency_dir, ver),
-        'plat': os.path.join(dependency_dir, '%s_%s' % (ver, plat)),
-        'arch': os.path.join(dependency_dir, '%s_%s_%s' % (ver, plat, arch))
+        "3.3": os.path.join(sys_path.data_dir, "Lib", "python3.3"),
     }
-
-
-def add_dependency(name, first=False):
-    """
-    Accepts a dependency name and automatically adds the appropriate path
-    to sys.path, if the dependency has a path for the current platform and
-    architecture.
-
-    :param name:
-        A unicode string name of the dependency
-
-    :param first:
-        If the path should be added to the beginning of the list
-    """
-
-    dep_paths = generate_dependency_paths(name)
-
-    for path in dep_paths.values():
-        if os.path.exists(encode(path)):
-            add(path, first=first)
 
 
 def pc_cache_dir():

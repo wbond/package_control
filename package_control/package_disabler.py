@@ -65,7 +65,7 @@ class PackageDisabler():
              - "remove"
              - "install"
              - "disable"
-             - "loader"
+             - "loader" - deprecated
 
         :return:
             A list of package names that were disabled
@@ -163,7 +163,7 @@ class PackageDisabler():
              - "remove"
              - "install"
              - "enable"
-             - "loader"
+             - "loader" - deprecated
         """
 
         if not isinstance(threading.current_thread(), threading._MainThread):

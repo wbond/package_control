@@ -4,6 +4,77 @@ import shutil
 from .distinfo import DistInfoDir, find_dist_info_dir
 
 
+def _name_from_dist_info_dirname(dirname):
+    library_name = dirname[:-10]
+    return re.replace(
+        r'-(?:'
+        r'(\d+(?:\.\d+)*)'
+        r'([-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\.?\d*)?'
+        r'(-\d+|(?:[-._]?(?:rev|r|post)\.?\d*))?'
+        r'([-._]?dev\.?\d*)?'
+        r')$',
+        '',
+        library_name,
+        count=1
+    )
+
+
+def list_all(install_root):
+    """
+    List all dependencies installed
+
+    :param install_root:
+        A unicode path to the directory that contains all libraries
+
+    :return:
+        A list of unicode strings containing library names
+    """
+
+    out = []
+    for filename in os.listdir(install_root):
+        if not filename.endswith(".dist-info"):
+            continue
+        path = os.path.join(install_root, filename)
+        if not os.path.isdir(path):
+            continue
+        record_path = os.path.join(path, 'RECORD')
+        if not os.path.isfile(record_path):
+            continue
+        out.append(_name_from_dist_info_dirname(filename))
+    return out
+
+
+def list_unmanaged(install_root):
+    """
+    List all dependencies installed that Package Control didn't install
+
+    :param install_root:
+        A unicode path to the directory that contains all libraries
+
+    :return:
+        A list of unicode strings containing library names
+    """
+
+    out = []
+    for filename in os.listdir(install_root):
+        if not filename.endswith(".dist-info"):
+            continue
+        path = os.path.join(install_root, filename)
+        if not os.path.isdir(path):
+            continue
+        installer_path = os.path.join(path, 'INSTALLER')
+        if not os.path.isfile(installer_path):
+            continue
+
+        # We ignore what we've installed since we want unmanaged libraries
+        with open(installer_path, 'r', encoding='utf-8') as f:
+            if f.read().strip().startswith('Package Control'):
+                continue
+
+        out.append(_name_from_dist_info_dirname(filename))
+    return out
+
+
 def install(dest_root, src_dir, name, version, description, url, plat_specific):
     """
     :param dest_root:
@@ -12,7 +83,7 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
 
     :param src_dir:
         A unicode path to the directory to copy files and folders from. For
-        most dependencies, this directory will contain a single folder with
+        most libraries, this directory will contain a single folder with
         the name of the library.
 
     :param name:

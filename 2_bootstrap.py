@@ -245,13 +245,9 @@ def _install_injectors(settings):
     injector_code = dedent(injector_code).strip() + "\n"
     injector_code = injector_code.encode('utf-8')
 
-    if int(sublime.version()) >= 4000:
-        names = ('python33', 'python38')
-    else:
-        names = ('python3.3', )
-
-    for name in names:
-        injector_path = os.path.join(sys_path.data_dir, 'Lib', name, 'package_control.py')
+    lib_paths = sys_path.lib_paths()
+    for version in lib_paths:
+        injector_path = os.path.join(lib_paths[version], 'package_control.py')
         try:
             with open(injector_path, 'xb') as fobj:
                 fobj.write(injector_code)

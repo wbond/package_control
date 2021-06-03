@@ -27,14 +27,14 @@ class AutomaticUpgrader(threading.Thread):
     settings.
     """
 
-    def __init__(self, found_packages, found_dependencies):
+    def __init__(self, found_packages, found_libraries):
         """
         :param found_packages:
             A list of package names for the packages that were found to be
             installed on the machine.
 
-        :param found_dependencies:
-            A list of installed dependencies found on the machine
+        :param found_libraries:
+            A list of installed libraries found on the machine
         """
 
         self.installer = PackageInstaller()
@@ -59,7 +59,7 @@ class AutomaticUpgrader(threading.Thread):
 
         # Detect if a package is missing that should be installed
         self.missing_packages = list(set(self.installed_packages) - set(found_packages))
-        self.missing_dependencies = list(set(self.manager.find_required_dependencies()) - set(found_dependencies))
+        self.missing_libraries = list(set(self.manager.find_required_libraries()) - set(found_libraries))
 
         if self.auto_upgrade and self.next_run <= now:
             self.save_last_run(now)
@@ -138,39 +138,39 @@ class AutomaticUpgrader(threading.Thread):
         Installs all packages that were listed in the list of
         `installed_packages` from Package Control.sublime-settings but were not
         found on the filesystem and passed as `found_packages`. Also installs
-        any missing dependencies.
+        any missing libraries.
         """
 
-        # We always install missing dependencies - this operation does not
-        # obey the "install_missing" setting since not installing dependencies
+        # We always install missing libraries - this operation does not
+        # obey the "install_missing" setting since not installing libraries
         # would result in broken packages.
-        if self.missing_dependencies:
-            total_missing_dependencies = len(self.missing_dependencies)
-            dependency_s = 'ies' if total_missing_dependencies != 1 else 'y'
+        if self.missing_libraries:
+            total_missing_libraries = len(self.missing_libraries)
+            library_s = 'ies' if total_missing_libraries != 1 else 'y'
             console_write(
                 '''
-                Installing %s missing dependenc%s
+                Installing %s missing librar%s
                 ''',
-                (total_missing_dependencies, dependency_s)
+                (total_missing_libraries, library_s)
             )
 
-            dependencies_installed = 0
+            libraries_installed = 0
 
-            for dependency in self.missing_dependencies:
-                if self.installer.manager.install_package(dependency, is_dependency=True):
-                    console_write('Installed missing dependency %s', dependency)
-                    dependencies_installed += 1
+            for library in self.missing_libraries:
+                if self.installer.manager.install_package(library, is_library=True):
+                    console_write('Installed missing library %s', library)
+                    libraries_installed += 1
 
-            if dependencies_installed:
+            if libraries_installed:
                 def notify_restart():
-                    dependency_was = 'ies were' if dependencies_installed != 1 else 'y was'
+                    library_was = 'ies were' if libraries_installed != 1 else 'y was'
                     show_error(
                         '''
-                        %s missing dependenc%s just installed. Sublime Text
+                        %s missing librar%s just installed. Sublime Text
                         should be restarted, otherwise one or more of the
                         installed packages may not function properly.
                         ''',
-                        (dependencies_installed, dependency_was)
+                        (libraries_installed, library_was)
                     )
                 sublime.set_timeout(notify_restart, 1000)
 

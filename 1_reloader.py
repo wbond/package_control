@@ -195,8 +195,6 @@ mods_load_order = [
     '.package_installer',
     '.package_renamer',
 
-    '.loader',
-
     '.tests',
     '.tests.downloaders',
     '.tests.clients',
@@ -209,7 +207,6 @@ mods_load_order = [
     '.commands.discover_packages_command',
     '.commands.enable_package_command',
     '.commands.existing_packages_command',
-    '.commands.install_local_dependency_command',
     '.commands.install_package_command',
     '.commands.list_packages_command',
     '.commands.list_unmanaged_packages_command',
@@ -219,7 +216,7 @@ mods_load_order = [
     '.commands.upgrade_all_packages_command',
     '.commands.upgrade_package_command',
     '.commands.package_control_insert_command',
-    '.commands.satisfy_dependencies_command',
+    '.commands.satisfy_libraries_command',
     '.commands.package_control_tests_command',
     '.commands.package_control_edit_settings_command',
     '.commands.package_control_disable_debug_mode_command',

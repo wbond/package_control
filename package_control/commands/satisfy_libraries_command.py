@@ -11,21 +11,21 @@ from ..package_manager import PackageManager
 from ..thread_progress import ThreadProgress
 
 
-class SatisfyDependenciesCommand(sublime_plugin.WindowCommand):
+class SatisfyLibrariesCommand(sublime_plugin.WindowCommand):
 
     """
-    A command that finds all dependencies required by the installed packages
+    A command that finds all libraries required by the installed packages
     and makes sure they are all installed and up-to-date.
     """
 
     def run(self):
         manager = PackageManager()
-        thread = SatisfyDependenciesThread(manager)
+        thread = SatisfyLibrariesThread(manager)
         thread.start()
-        ThreadProgress(thread, 'Satisfying dependencies', '')
+        ThreadProgress(thread, 'Satisfying libraries', '')
 
 
-class SatisfyDependenciesThread(threading.Thread):
+class SatisfyLibrariesThread(threading.Thread):
 
     """
     A thread to run the action of retrieving available packages in. Uses the
@@ -40,23 +40,23 @@ class SatisfyDependenciesThread(threading.Thread):
         sublime.set_timeout(functools.partial(show_error, msg), 10)
 
     def run(self):
-        required_dependencies = self.manager.find_required_dependencies()
+        required_libraries = self.manager.find_required_libraries()
         error = False
 
-        if not self.manager.install_dependencies(required_dependencies, fail_early=False):
+        if not self.manager.install_libraries(required_libraries, fail_early=False):
             self.show_error(
                 '''
-                One or more dependencies could not be installed or updated.
+                One or more libraries could not be installed or updated.
 
                 Please check the console for details.
                 '''
             )
             error = True
 
-        if not self.manager.cleanup_dependencies(required_dependencies=required_dependencies):
+        if not self.manager.cleanup_libraries(required_libraries=required_libraries):
             self.show_error(
                 '''
-                One or more orphaned dependencies could not be removed.
+                One or more orphaned libraries could not be removed.
 
                 Please check the console for details.
                 '''
@@ -64,4 +64,4 @@ class SatisfyDependenciesThread(threading.Thread):
             error = True
 
         if not error:
-            console_write('All dependencies have been satisfied')
+            console_write('All libraries have been satisfied')

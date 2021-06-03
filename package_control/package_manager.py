@@ -30,7 +30,7 @@ from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
-from . import loader, text
+from . import library, sys_path, text
 from . import __version__
 
 
@@ -135,15 +135,15 @@ class PackageManager():
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
 
-    def get_metadata(self, package_name, is_dependency=False):
+    def get_metadata(self, package_name, is_library=False):
         """
         Returns the package metadata for an installed package
 
         :param package_name:
             The name of the package
 
-        :param is_dependency:
-            If the metadata is for a dependency
+        :param is_library:
+            If the metadata is for a library
 
         :return:
             A dict with the keys:
@@ -154,7 +154,7 @@ class PackageManager():
         """
 
         metadata_filename = 'package-metadata.json'
-        if is_dependency:
+        if is_library:
             metadata_filename = 'dependency-metadata.json'
 
         metadata_json = read_package_file(package_name, metadata_filename)
@@ -184,10 +184,10 @@ class PackageManager():
             A list of library names
         """
 
-        dep_info_json = read_package_file(package_name, 'dependencies.json')
-        if dep_info_json:
+        lib_info_json = read_package_file(package_name, 'dependencies.json')
+        if lib_info_json:
             try:
-                return self.select_dependencies(json.loads(dep_info_json))
+                return self.select_libraries(json.loads(lib_info_json))
             except (ValueError):
                 console_write(
                     '''
@@ -197,62 +197,9 @@ class PackageManager():
                     package_name
                 )
 
-        return self.get_metadata(package_name).get('dependencies', [])
-
-    def get_dependency_priority_code(self, dependency):
-        """
-        Returns the priority and loader code for a dependency that is already
-        on disk.
-
-        This is primarily only useful when a package author has a
-        dependency they are developing locally and Package Control needs to
-        know how to set up a loader for it.
-
-        :param dependency:
-            A unicode string of the dependency to get the info for
-
-        :return:
-            A 2-element tuple of unicode strings (priority, python code). Return
-            value will be (None, None) if the dependency was not found on disk.
-        """
-
-        dependency_path = self.get_package_dir(dependency)
-        if not os.path.exists(dependency_path):
-            return (None, None)
-
-        dependencies = self.list_available_dependencies()
-
-        hidden_file_path = os.path.join(dependency_path, '.sublime-dependency')
-        loader_py_path = os.path.join(dependency_path, 'loader.py')
-        loader_code_path = os.path.join(dependency_path, 'loader.code')
-
-        priority = None
-
-        if dependency in dependencies:
-            priority = dependencies[dependency].get('load_order')
-
-        # Look in the .sublime-dependency file to see where in the dependency
-        # load order this dependency should be installed
-        elif os.path.exists(hidden_file_path):
-            with open(hidden_file_path, 'r', encoding='utf-8') as fobj:
-                data = fobj.read().strip()
-                if data.isdigit():
-                    priority = data
-                    if len(priority) == 1:
-                        priority = '0' + priority
-
-        if priority is None:
-            priority = '50'
-
-        code = None
-        is_py_loader = os.path.exists(loader_py_path)
-        is_code_loader = os.path.exists(loader_code_path)
-        if is_py_loader or is_code_loader:
-            loader_path = loader_code_path if is_code_loader else loader_py_path
-            with open(loader_path, 'r', encoding='utf-8') as fobj:
-                code = fobj.read()
-
-        return (priority, code)
+        metadata = self.get_metadata(package_name)
+        # "dependencies" key is for backwards compatibility
+        return metadata.get('libraries', metadata.get('dependencies', []))
 
     def _is_git_package(self, package_name):
         """
@@ -344,16 +291,16 @@ class PackageManager():
 
         return None
 
-    def select_dependencies(self, dependency_info):
+    def select_libraries(self, library_info):
         """
         Takes the a dict from a dependencies.json file and returns the
-        dependency names that are applicable to the current machine
+        library names that are applicable to the current machine
 
-        :param dependency_info:
+        :param library_info:
             A dict from a dependencies.json file
 
         :return:
-            A list of dependency names
+            A list of library names
         """
 
         platform_selectors = [
@@ -363,20 +310,20 @@ class PackageManager():
         ]
 
         for platform_selector in platform_selectors:
-            if platform_selector not in dependency_info:
+            if platform_selector not in library_info:
                 continue
 
-            platform_dependency = dependency_info[platform_selector]
-            versions = platform_dependency.keys()
+            platform_library = library_info[platform_selector]
+            versions = platform_library.keys()
 
             # Sorting reverse will give us >, < then *
             for version_selector in sorted(versions, reverse=True):
                 if not is_compatible_version(version_selector):
                     continue
-                return platform_dependency[version_selector]
+                return platform_library[version_selector]
 
         # If there were no matches in the info, but there also weren't any
-        # errors, then it just means there are not dependencies for this machine
+        # errors, then it just means there are not libraries for this machine
         return []
 
     def list_repositories(self):
@@ -451,17 +398,17 @@ class PackageManager():
                         packages_cache_key = repo + '.packages'
                         set_cache(packages_cache_key, filtered_packages, cache_ttl)
 
-                        original_dependencies = provider.get_libraries(repo)
-                        filtered_dependencies = {}
-                        for dependency in original_dependencies:
-                            info = original_dependencies[dependency]
-                            info['releases'] = filter_releases(dependency, self.settings, info['releases'])
+                        original_libraries = provider.get_libraries(repo)
+                        filtered_libraries = {}
+                        for library in original_libraries:
+                            info = original_libraries[library]
+                            info['releases'] = filter_releases(library, self.settings, info['releases'])
                             if info['releases']:
-                                filtered_dependencies[dependency] = info
+                                filtered_libraries[library] = info
                             else:
-                                unavailable_libraries.append(dependency)
+                                unavailable_libraries.append(library)
                         libraries_cache_key = repo + '.libraries'
-                        set_cache(libraries_cache_key, filtered_dependencies, cache_ttl)
+                        set_cache(libraries_cache_key, filtered_libraries, cache_ttl)
 
                     # Have the local name map override the one from the channel
                     name_map = provider.get_name_map()
@@ -496,7 +443,7 @@ class PackageManager():
 
     def _list_available(self):
         """
-        Returns a master list of every available package and dependency from all sources
+        Returns a master list of every available package and library from all sources
 
         :return:
             A 2-element tuple, in the format:
@@ -519,7 +466,7 @@ class PackageManager():
         if self.settings.get('debug'):
             console_write(
                 '''
-                Fetching list of available packages and dependencies
+                Fetching list of available packages and libraries
                   Platform: %s-%s
                   Sublime Text Version: %s
                   Package Control Version: %s
@@ -535,7 +482,7 @@ class PackageManager():
         cache_ttl = self.settings.get('cache_length')
         repositories = self.list_repositories()
         packages = {}
-        dependencies = {}
+        libraries = {}
         bg_downloaders = {}
         active = []
         repos_to_download = []
@@ -556,7 +503,7 @@ class PackageManager():
 
                 cache_key = repo + '.libraries'
                 repository_libraries = get_cache(cache_key)
-                dependencies.update(repository_libraries)
+                libraries.update(repository_libraries)
 
             else:
                 domain = urlparse(repo).hostname
@@ -619,7 +566,7 @@ class PackageManager():
 
             cache_key = repo + '.libraries'
             set_cache(cache_key, repository_libraries, cache_ttl)
-            dependencies.update(repository_libraries)
+            libraries.update(repository_libraries)
 
             renamed_packages = provider.get_renamed_packages()
             set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
@@ -641,17 +588,17 @@ class PackageManager():
                 list_=True
             )
 
-        return (packages, dependencies)
+        return (packages, libraries)
 
-    def list_available_dependencies(self):
+    def list_available_libraries(self):
         """
-        Returns a master list of every available dependency from all sources
+        Returns a master list of every available library from all sources
 
         :return:
             A dict in the format:
             {
-                'Dependency Name': {
-                    # Dependency details - see example-repository.json for format
+                'Library Name': {
+                    # library details - see example-repository.json for format
                 },
                 ...
             }
@@ -680,7 +627,7 @@ class PackageManager():
         :param unpacked_only:
             Only list packages that are not inside of .sublime-package files
 
-        :return: A list of all installed, non-default, non-dependency, package names
+        :return: A list of all installed, non-default, non-library, package names
         """
 
         packages = self._list_visible_dirs(self.settings['packages_path'])
@@ -689,42 +636,18 @@ class PackageManager():
             packages |= self._list_sublime_package_files(self.settings['installed_packages_path'])
 
         packages -= set(self.list_default_packages())
-        packages -= set(self.list_dependencies())
+        packages -= set(self.list_libraries())
         packages -= set(['User', 'Default'])
         return sorted(packages, key=lambda s: s.lower())
 
-    def list_dependencies(self):
+    def list_libraries(self):
         """
-        :return: A list of all installed dependency names
-        """
-
-        output = []
-
-        # This is seeded since it is in a .sublime-package with ST3
-        output.append('0_package_control_loader')
-
-        for name in self._list_visible_dirs(self.settings['packages_path']):
-            if not self._is_dependency(name):
-                continue
-            output.append(name)
-
-        return sorted(output, key=lambda s: s.lower())
-
-    def list_unloaded_dependencies(self):
-        """
-        :return:
-            A list of the names of dependencies in the Packages/ folder that
-            are not currently being loaded
+        :return: A list of all installed library names
         """
 
-        output = []
-        for name in self._list_visible_dirs(self.settings['packages_path']):
-            hidden_file_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
-            if not os.path.exists(hidden_file_path):
-                continue
-            if not loader.exists(name):
-                output.append(name)
-        return output
+        # TODO: Handle 3.8
+        lib_path = sys_path.lib_paths()["3.3"]
+        return sorted(library.list_all(lib_path), key=lambda s: s.lower())
 
     def list_all_packages(self):
         """
@@ -791,51 +714,28 @@ class PackageManager():
             output.add(filename.replace('.sublime-package', ''))
         return output
 
-    def _is_dependency(self, name):
+    def find_required_libraries(self, ignore_package=None):
         """
-        Checks if a package specified is a dependency
-
-        :param name:
-            The name of the package to check if it is a dependency
-
-        :return:
-            Bool, if the package is a dependency
-        """
-
-        metadata_path = os.path.join(self.settings['packages_path'], name, 'dependency-metadata.json')
-        hidden_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
-        return os.path.exists(metadata_path) or os.path.exists(hidden_path)
-
-    def find_required_dependencies(self, ignore_package=None):
-        """
-        Find all of the dependencies required by the installed packages,
+        Find all of the libraries required by the installed packages,
         ignoring the specified package.
 
         :param ignore_package:
-            The package to ignore when enumerating dependencies
+            The package to ignore when enumerating libraries
 
         :return:
-            A list of the dependencies required by the installed packages
+            A list of the libraries required by the installed packages
         """
 
-        output = ['0_package_control_loader']
+        output = []
 
         for package in self.list_packages():
             if package == ignore_package:
                 continue
             output.extend(self.get_libraries(package))
 
-        # Consider any folder with a .sublime-dependency file that does not
-        # have a dependency-metadata.json file to be a dependency that was
-        # hand-installed by a developer, and thus "required"
-        for name in self._list_visible_dirs(self.settings['packages_path']):
-            metadata_path = os.path.join(self.settings['packages_path'], name, 'dependency-metadata.json')
-            hidden_path = os.path.join(self.settings['packages_path'], name, '.sublime-dependency')
-            metadata_exists = os.path.exists(metadata_path)
-            hidden_exists = os.path.exists(hidden_path)
-            if metadata_exists or not hidden_exists:
-                continue
-            output.append(name)
+        # TODO: Handle 3.8
+        lib_path = sys_path.lib_paths()["3.3"]
+        output.extend(library.list_unmanaged(lib_path))
 
         output = list(set(output))
         return sorted(output, key=lambda s: s.lower())
@@ -931,7 +831,7 @@ class PackageManager():
             return False
         return True
 
-    def install_package(self, package_name, is_dependency=False):
+    def install_package(self, package_name, is_library=False):
         """
         Downloads and installs (or upgrades) a package
 
@@ -950,29 +850,29 @@ class PackageManager():
         :param package_name:
             The package to download and install
 
-        :param is_dependency:
-            If the package is a dependency
+        :param is_library:
+            If the package is a library
 
         :return: bool if the package was successfully installed or None
                  if the package needs to be cleaned up on the next restart
                  and should not be reenabled
         """
 
-        if is_dependency:
-            packages = self.list_available_dependencies()
+        if is_library:
+            packages = self.list_available_libraries()
         else:
             packages = self.list_available_packages()
 
         is_available = package_name in list(packages.keys())
 
         unavailable_key = 'unavailable_packages'
-        if is_dependency:
+        if is_library:
             unavailable_key = 'unavailable_libraries'
         is_unavailable = package_name in self.settings.get(unavailable_key, [])
 
         package_type = 'package'
-        if is_dependency:
-            package_type = 'dependency'
+        if is_library:
+            package_type = 'library'
 
         if is_unavailable and not is_available:
             console_write(
@@ -982,16 +882,16 @@ class PackageManager():
                 ''',
                 (package_type, package_name)
             )
-            # If a dependency is not available on this machine, that means it
+            # If a library is not available on this machine, that means it
             # is not needed
-            if is_dependency:
+            if is_library:
                 return True
             return False
 
         if not is_available:
             message = "The %s '%s' is not available"
             params = (package_type, package_name)
-            if is_dependency:
+            if is_library:
                 console_write(message, params)
             else:
                 show_error(message, params)
@@ -999,13 +899,13 @@ class PackageManager():
 
         release = packages[package_name]['releases'][0]
 
-        have_installed_dependencies = False
-        if not is_dependency:
-            dependencies = release.get('libraries', [])
-            if dependencies:
-                if not self.install_dependencies(dependencies):
+        have_installed_libraries = False
+        if not is_library:
+            libraries = release.get('libraries', [])
+            if libraries:
+                if not self.install_libraries(libraries):
                     return False
-                have_installed_dependencies = True
+                have_installed_libraries = True
 
         url = release['url']
         package_filename = package_name + '.sublime-package'
@@ -1048,13 +948,9 @@ class PackageManager():
 
                 result = upgrader.run()
 
-                if result is True and is_dependency:
-                    load_order, loader_code = self.get_dependency_priority_code(package_name)
-                    loader.add_or_update(load_order, package_name, loader_code)
-
                 return result
 
-            old_version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
+            old_version = self.get_metadata(package_name, is_library=is_library).get('version')
             is_upgrade = old_version is not None
 
             # Download the sublime-package or zip file
@@ -1129,10 +1025,10 @@ class PackageManager():
             skip_root_dir = len(root_level_paths) == 1 and \
                 root_level_paths[0].endswith('/')
 
-            dependencies_path = 'dependencies.json'
+            libraries_path = 'dependencies.json'
             no_package_file_zip_path = '.no-sublime-package'
             if skip_root_dir:
-                dependencies_path = root_level_paths[0] + dependencies_path
+                libraries_path = root_level_paths[0] + libraries_path
                 no_package_file_zip_path = root_level_paths[0] + no_package_file_zip_path
 
             # By default, ST prefers .sublime-package files since this allows
@@ -1144,18 +1040,18 @@ class PackageManager():
             except (KeyError):
                 unpack = False
 
-            # Dependencies are always unpacked. If it doesn't need to be
+            # Libraries are always unpacked. If it doesn't need to be
             # unpacked, it probably should just be part of a package instead
             # of being split out.
-            if is_dependency:
+            if is_library:
                 unpack = True
 
-            # If dependencies were not in the channel, try the package
-            if not is_dependency and not have_installed_dependencies:
+            # If libraries were not in the channel, try the package
+            if not is_library and not have_installed_libraries:
                 try:
-                    dep_info_json = package_zip.read(dependencies_path)
+                    lib_info_json = package_zip.read(libraries_path)
                     try:
-                        dep_info = json.loads(dep_info_json.decode('utf-8'))
+                        lib_info = json.loads(lib_info_json.decode('utf-8'))
                     except (ValueError):
                         console_write(
                             '''
@@ -1166,15 +1062,15 @@ class PackageManager():
                         )
                         return False
 
-                    dependencies = self.select_dependencies(dep_info)
-                    if not self.install_dependencies(dependencies):
+                    libraries = self.select_libraries(lib_info)
+                    if not self.install_libraries(libraries):
                         return False
 
                 except (KeyError):
                     pass
 
             metadata_filename = 'package-metadata.json'
-            if is_dependency:
+            if is_library:
                 metadata_filename = 'dependency-metadata.json'
 
             # If we already have a package-metadata.json file in
@@ -1224,15 +1120,13 @@ class PackageManager():
                 os.mkdir(tmp_working_dir)
                 package_dir = tmp_working_dir
 
+            # TODO: Install libraries into lib dir
             package_metadata_file = os.path.join(package_dir, metadata_filename)
 
             if not os.path.exists(package_dir):
                 os.mkdir(package_dir)
 
             os.chdir(package_dir)
-
-            # Look for special loader code for dependencies
-            loader_code = None
 
             # Here we don't use .extractall() since it was having issues on OS X
             overwrite_failed = False
@@ -1275,20 +1169,6 @@ class PackageManager():
                     dest = dest.replace('/', '\\')
                 else:
                     dest = dest.replace('\\', '/')
-
-                # loader.py is included for backwards compatibility. New code
-                # should use loader.code with Python inside of it. We no longer
-                # use loader.py since we can't have any files ending in .py in
-                # the root of a package, otherwise Sublime Text loads it as a
-                # plugin and then the dependency path added to sys.path and the
-                # package path loaded by Sublime Text conflict and there will be
-                # errors when Sublime Text tries to initialize plugins. By using
-                # loader.code, developers can git clone a dependency into their
-                # Packages folder without issue.
-                if is_dependency and dest in set(['loader.code', 'loader.py']):
-                    loader_code = package_zip.read(path).decode('utf-8')
-                    if dest == 'loader.py':
-                        continue
 
                 dest = os.path.join(package_dir, dest)
 
@@ -1368,7 +1248,7 @@ class PackageManager():
             self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 
             with open(package_metadata_file, 'w', encoding='utf-8') as fobj:
-                if is_dependency:
+                if is_library:
                     url = packages[package_name]['issues']
                 else:
                     url = packages[package_name]['homepage']
@@ -1379,8 +1259,8 @@ class PackageManager():
                     "url": url,
                     "description": packages[package_name]['description']
                 }
-                if not is_dependency:
-                    metadata['dependencies'] = release.get('libraries', [])
+                if not is_library:
+                    metadata['libraries'] = release.get('libraries', [])
                 json.dump(metadata, fobj)
 
             # Submit install and upgrade info
@@ -1399,7 +1279,7 @@ class PackageManager():
                 }
             self.record_usage(params)
 
-            if not is_dependency:
+            if not is_library:
                 # Record the install in the settings file so that you can move
                 # settings across computers and have the same packages installed
                 settings = sublime.load_settings(pc_settings_filename())
@@ -1407,9 +1287,6 @@ class PackageManager():
                 if package_name not in names:
                     names.append(package_name)
                     save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
-            else:
-                load_order = packages[package_name]['load_order']
-                loader.add_or_update(load_order, package_name, loader_code)
 
             # If we didn't extract directly into the Packages/{package_name}/
             # folder, we need to create a .sublime-package file and install it
@@ -1473,129 +1350,126 @@ class PackageManager():
             # after we close it.
             sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
 
-    def install_dependencies(self, dependencies, fail_early=True):
+    def install_libraries(self, libraries, fail_early=True):
         """
-        Ensures a list of dependencies are installed and up-to-date
+        Ensures a list of libraries are installed and up-to-date
 
-        :param dependencies:
-            A list of dependency names
+        :param libraries:
+            A list of library names
 
         :return:
-            A boolean indicating if the dependencies are properly installed
+            A boolean indicating if the libraries are properly installed
         """
 
         debug = self.settings.get('debug')
 
-        packages = self.list_available_dependencies()
+        packages = self.list_available_libraries()
 
         error = False
-        for dependency in dependencies:
-            # This is a per-machine dynamically created dependency, so we skip
-            if dependency == '0_package_control_loader':
-                continue
+        for library in libraries:
+            # Collect library information
+            # TODO: implement installation using new system
+            library_dir = os.path.join(self.settings['packages_path'], library)
+            library_git_dir = os.path.join(library_dir, '.git')
+            library_hg_dir = os.path.join(library_dir, '.hg')
+            library_metadata = self.get_metadata(library, is_library=True)
 
-            # Collect dependency information
-            dependency_dir = os.path.join(self.settings['packages_path'], dependency)
-            dependency_git_dir = os.path.join(dependency_dir, '.git')
-            dependency_hg_dir = os.path.join(dependency_dir, '.hg')
-            dependency_metadata = self.get_metadata(dependency, is_dependency=True)
+            library_releases = packages.get(library, {}).get('releases', [])
+            library_release = library_releases[0] if library_releases else {}
 
-            dependency_releases = packages.get(dependency, {}).get('releases', [])
-            dependency_release = dependency_releases[0] if dependency_releases else {}
-
-            installed_version = dependency_metadata.get('version')
+            installed_version = library_metadata.get('version')
             installed_version = version_comparable(installed_version) if installed_version else None
-            available_version = dependency_release.get('version')
+            available_version = library_release.get('version')
             available_version = version_comparable(available_version) if available_version else None
 
-            def dependency_write(msg):
-                msg = "The dependency '{dependency}' " + msg
+            def library_write(msg):
+                msg = "The library '{library}' " + msg
                 msg = msg.format(
-                    dependency=dependency,
+                    library=library,
                     installed_version=installed_version,
                     available_version=available_version
                 )
                 console_write(msg)
 
-            def dependency_write_debug(msg):
+            def library_write_debug(msg):
                 if debug:
-                    dependency_write(msg)
+                    library_write(msg)
 
-            install_dependency = False
-            if not os.path.exists(dependency_dir):
-                install_dependency = True
-                dependency_write('is not currently installed; installing...')
-            elif os.path.exists(dependency_git_dir):
-                dependency_write_debug('is installed via git; leaving alone')
-            elif os.path.exists(dependency_hg_dir):
-                dependency_write_debug('is installed via hg; leaving alone')
-            elif not dependency_metadata:
-                dependency_write_debug('appears to be installed, but is missing metadata; leaving alone')
-            elif not dependency_releases:
-                dependency_write('is installed, but there are no available releases; leaving alone')
+            install_library = False
+            if not os.path.exists(library_dir):
+                install_library = True
+                library_write('is not currently installed; installing...')
+            elif os.path.exists(library_git_dir):
+                library_write_debug('is installed via git; leaving alone')
+            elif os.path.exists(library_hg_dir):
+                library_write_debug('is installed via hg; leaving alone')
+            elif not library_metadata:
+                library_write_debug('appears to be installed, but is missing metadata; leaving alone')
+            elif not library_releases:
+                library_write('is installed, but there are no available releases; leaving alone')
             elif not available_version:
-                dependency_write(
+                library_write(
                     'is installed, but the latest available release '
                     'could not be determined; leaving alone'
                 )
             elif not installed_version:
-                install_dependency = True
-                dependency_write(
+                install_library = True
+                library_write(
                     'is installed, but its version is not known; '
                     'upgrading to latest release {available_version}...'
                 )
             elif installed_version < available_version:
-                install_dependency = True
-                dependency_write(
+                install_library = True
+                library_write(
                     'is installed, but out of date; upgrading to latest '
                     'release {available_version} from {installed_version}...'
                 )
             else:
-                dependency_write_debug('is installed and up to date ({installed_version}); leaving alone')
+                library_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
-            if install_dependency:
-                dependency_result = self.install_package(dependency, True)
-                if not dependency_result:
-                    dependency_write('could not be installed or updated')
+            if install_library:
+                library_result = self.install_package(library, True)
+                if not library_result:
+                    library_write('could not be installed or updated')
                     if fail_early:
                         return False
                     error = True
                 else:
-                    dependency_write('has successfully been installed or updated')
+                    library_write('has successfully been installed or updated')
 
         return not error
 
-    def cleanup_dependencies(self, ignore_package=None, required_dependencies=None):
+    def cleanup_libraries(self, ignore_package=None, required_libraries=None):
         """
-        Remove all not needed dependencies by the installed packages,
+        Remove all not needed libraries by the installed packages,
         ignoring the specified package.
 
         :param ignore_package:
-            The package to ignore when enumerating dependencies.
-            Not used when required_dependencies is provided.
+            The package to ignore when enumerating libraries.
+            Not used when required_libraries is provided.
 
-        :param required_dependencies:
-            All required dependencies, for speedup purposes.
+        :param required_libraries:
+            All required libraries, for speedup purposes.
 
         :return:
             Boolean indicating the success of the removals.
         """
 
-        installed_dependencies = self.list_dependencies()
-        if not required_dependencies:
-            required_dependencies = self.find_required_dependencies(ignore_package)
+        installed_libraries = self.list_libraries()
+        if not required_libraries:
+            required_libraries = self.find_required_libraries(ignore_package)
 
-        orphaned_dependencies = set(installed_dependencies) - set(required_dependencies)
-        orphaned_dependencies = sorted(orphaned_dependencies, key=lambda s: s.lower())
+        orphaned_libraries = set(installed_libraries) - set(required_libraries)
+        orphaned_libraries = sorted(orphaned_libraries, key=lambda s: s.lower())
 
         error = False
-        for dependency in orphaned_dependencies:
-            if self.remove_package(dependency, is_dependency=True):
+        for library in orphaned_libraries:
+            if self.remove_package(library, is_library=True):
                 console_write(
                     '''
-                    The orphaned dependency %s has been removed
+                    The orphaned library %s has been removed
                     ''',
-                    dependency
+                    library
                 )
             else:
                 error = True
@@ -1793,7 +1667,7 @@ class PackageManager():
 
         sublime.set_timeout(print_to_panel, 1)
 
-    def remove_package(self, package_name, is_dependency=False):
+    def remove_package(self, package_name, is_library=False):
         """
         Deletes a package
 
@@ -1811,14 +1685,14 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        if not is_dependency:
+        if not is_library:
             installed_packages = self.list_packages()
         else:
-            installed_packages = self.list_dependencies()
+            installed_packages = self.list_libraries()
 
         package_type = 'package'
-        if is_dependency:
-            package_type = 'dependency'
+        if is_library:
+            package_type = 'library'
 
         if package_name not in installed_packages:
             show_error(
@@ -1835,7 +1709,7 @@ class PackageManager():
         installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
         package_dir = self.get_package_dir(package_name)
 
-        version = self.get_metadata(package_name, is_dependency=is_dependency).get('version')
+        version = self.get_metadata(package_name, is_library=is_library).get('version')
 
         cleanup_complete = True
 
@@ -1867,7 +1741,7 @@ class PackageManager():
         }
         self.record_usage(params)
 
-        if not is_dependency:
+        if not is_library:
             settings = sublime.load_settings(pc_settings_filename())
             names = load_list_setting(settings, 'installed_packages')
             if package_name in names:
@@ -1877,17 +1751,14 @@ class PackageManager():
         if os.path.exists(package_dir) and can_delete_dir:
             unlink_or_delete_directory(package_dir)
 
-        if is_dependency:
-            loader.remove(package_name)
-
-        else:
+        if not is_library:
             message = 'The package %s has been removed' % package_name
             if not cleanup_complete:
                 message += ' and will be cleaned up on the next restart'
             console_write(message)
 
-            # Remove dependencies that are no longer needed
-            self.cleanup_dependencies(package_name)
+            # Remove libraries that are no longer needed
+            self.cleanup_libraries(package_name)
 
         return True if cleanup_complete else None
 
