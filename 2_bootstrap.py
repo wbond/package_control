@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import threading
 import zipfile
 from textwrap import dedent
@@ -8,6 +9,7 @@ import sublime
 
 from .package_control import sys_path, library
 from .package_control.console_write import console_write
+from .package_control.package_disabler import PackageDisabler
 from .package_control.package_manager import PackageManager
 from .package_control.settings import (
     load_list_setting,
@@ -60,7 +62,7 @@ def _mark_bootstrapped():
 def _migrate_loaders(settings):
     """
     Moves old Package Control 3-style dependencies to the new 4-style
-    dependencies, which use the Lib folder
+    libraries, which use the Lib folder
 
     :param settings:
         A dict of settings
@@ -76,42 +78,74 @@ def _migrate_loaders(settings):
                     continue
                 if path == '00-package_control.py':
                     continue
+
                 name = path[3:-3]
-
-                dep_path = os.path.join(sublime.packages_path(), name)
-                json_path = os.path.join(dep_path, 'dependency-metadata.json')
-
                 try:
-                    with open(json_path, 'r', encoding='utf-8') as fobj:
-                        metadata = json.load(fobj)
-                except (OSError, ValueError) as e:
-                    console_write('Error loading dependency metadata during migration - %s' % e)
-                    continue
+                    dep_path = os.path.join(sublime.packages_path(), name)
+                    json_path = os.path.join(dep_path, 'dependency-metadata.json')
 
-                src_dir = None
-                plat_specific = False
+                    try:
+                        with open(json_path, 'r', encoding='utf-8') as fobj:
+                            metadata = json.load(fobj)
+                    except (OSError, ValueError) as e:
+                        console_write('Error loading dependency metadata during migration - %s' % e)
+                        continue
 
-                dep_sys_paths = sys_path.generate_dependency_paths(name)
-                if os.path.exists(dep_sys_paths['arch']):
-                    src_dir = dep_sys_paths['arch']
-                    plat_specific = True
-                elif os.path.exists(dep_sys_paths['plat']):
-                    src_dir = dep_sys_paths['plat']
-                    plat_specific = True
-                elif os.path.exists(dep_sys_paths['ver']):
-                    src_dir = dep_sys_paths['ver']
-                elif os.path.exists(dep_sys_paths['all']):
-                    src_dir = dep_sys_paths['all']
+                    src_dir = None
+                    plat_specific = False
 
-                library.install(
-                    lib_root,
-                    src_dir,
-                    name,
-                    metadata['version'],
-                    metadata['description'],
-                    metadata['url'],
-                    plat_specific
-                )
+                    dependency_dir = os.path.join(sys_path.packages_path, name)
+
+                    ver = 'st3'
+                    plat = sublime.platform()
+                    arch = sublime.arch()
+
+                    dep_sys_paths {
+                        'all': os.path.join(dependency_dir, 'all'),
+                        'ver': os.path.join(dependency_dir, ver),
+                        'plat': os.path.join(dependency_dir, '%s_%s' % (ver, plat)),
+                        'arch': os.path.join(dependency_dir, '%s_%s_%s' % (ver, plat, arch))
+                    }
+
+                    if os.path.exists(dep_sys_paths['arch']):
+                        src_dir = dep_sys_paths['arch']
+                        plat_specific = True
+                    elif os.path.exists(dep_sys_paths['plat']):
+                        src_dir = dep_sys_paths['plat']
+                        plat_specific = True
+                    elif os.path.exists(dep_sys_paths['ver']):
+                        src_dir = dep_sys_paths['ver']
+                    elif os.path.exists(dep_sys_paths['all']):
+                        src_dir = dep_sys_paths['all']
+
+                    library.install(
+                        lib_root,
+                        src_dir,
+                        name,
+                        metadata['version'],
+                        metadata['description'],
+                        metadata['url'],
+                        plat_specific
+                    )
+
+                    shutil.rmtree(dep_path)
+
+                except (Exception) as e:
+                    console_write('Error trying to migrate dependency %s - %s' % (name, e))
+
+        disabler = PackageDisabler()
+
+        def _disable_packages():
+            disabler.disable_packages([LOADER_PACKAGE_NAME], 'loader')
+        sublime.set_timeout(_disable_packages, 10)
+
+        def _remove_loader():
+            os.unlink(LOADER_PACKAGE_PATH)
+        sublime.set_timeout(_remove_loader, 510)
+
+        def _reenable_package():
+            disabler.reenable_package(LOADER_PACKAGE_NAME, 'loader')
+        sublime.set_timeout(_reenable_package, 1010)
 
     except (OSError) as e:
         console_write('Error trying to migrate dependencies - %s' % e)
