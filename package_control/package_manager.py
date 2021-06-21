@@ -111,8 +111,6 @@ class PackageManager():
         self.settings['platform'] = sublime.platform()
         self.settings['arch'] = sublime.arch()
         self.settings['version'] = int(sublime.version())
-        self.settings['packages_path'] = sublime.packages_path()
-        self.settings['installed_packages_path'] = sublime.installed_packages_path()
 
         # Use the cache to see if settings have changed since the last
         # time the package manager was created, and clearing any cached
@@ -630,10 +628,10 @@ class PackageManager():
         :return: A list of all installed, non-default, non-library, package names
         """
 
-        packages = self._list_visible_dirs(self.settings['packages_path'])
+        packages = self._list_visible_dirs(sys_path.packages_path)
 
         if unpacked_only is False:
-            packages |= self._list_sublime_package_files(self.settings['installed_packages_path'])
+            packages |= self._list_sublime_package_files(sys_path.installed_packages_path)
 
         packages -= set(self.list_default_packages())
         packages -= set(self.list_libraries())
@@ -743,7 +741,7 @@ class PackageManager():
     def get_package_dir(self, package_name):
         """:return: The full filesystem path to the package directory"""
 
-        return os.path.join(self.settings['packages_path'], package_name)
+        return os.path.join(sys_path.packages_path, package_name)
 
     def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""
@@ -778,7 +776,7 @@ class PackageManager():
                 The folder for the package name specified, %s,
                 does not exists in %s
                 ''',
-                (package_name, self.settings['packages_path'])
+                (package_name, sys_path.packages_path)
             )
             return False
 
@@ -831,6 +829,405 @@ class PackageManager():
             return False
         return True
 
+    def _download_zip_file(self, name, url, tmp_zip_path):
+        try:
+            with downloader(url, self.settings) as manager:
+                data = manager.fetch(url, 'Error downloading library.')
+        except (DownloaderException) as e:
+            console_write(e)
+            show_error(
+                '''
+                Unable to download %s. Please view the console for
+                more details.
+                ''',
+                name
+            )
+            return False
+
+        with open(tmp_zip_path, "wb") as zf:
+            zf.write(data)
+
+        try:
+            z = zipfile.ZipFile(tmp_zip_path, 'r')
+        except (zipfile.BadZipfile):
+            show_error(
+                '''
+                An error occurred while trying to unzip the file for %s.
+                ''',
+                name
+            )
+            return False
+
+        return z
+
+    def _common_folder(self, name, zf):
+        """
+        If all files in a zip file are contained in a single folder
+
+        :param name:
+            The name of the package or library
+
+        :param zf:
+            The zipfile instance
+
+        :return:
+            False if an error occurred, or a unicode string of the common
+            folder name. If no common folder, a blank string is returned. If
+            a folder name is returned, it will end in "/".
+        """
+
+        root_level_paths = []
+        last_path = None
+        for path in zf.namelist():
+            try:
+                if not isinstance(path, str):
+                    path = path.decode('utf-8', 'strict')
+            except (UnicodeDecodeError):
+                console_write(
+                    '''
+                    One or more of the zip file entries in %s is not
+                    encoded using UTF-8, aborting
+                    ''',
+                    name
+                )
+                return False
+
+            last_path = path
+
+            if path.find('/') in [len(path) - 1, -1]:
+                root_level_paths.append(path)
+            # Make sure there are no paths that look like security vulnerabilities
+            if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
+                show_error(
+                    '''
+                    The zip file for %s contains files that traverse outside
+                    of the root and cannot be safely installed.
+                    ''',
+                    name
+                )
+                return False
+
+        if last_path and len(root_level_paths) == 0:
+            root_level_paths.append(last_path[0:last_path.find('/') + 1])
+
+        # If there is only a single directory at the top leve, the file
+        # is most likely a zip from BitBucket or GitHub and we need
+        # to skip the top-level dir when extracting
+        skip_root_dir = len(root_level_paths) == 1 and \
+            root_level_paths[0].endswith('/')
+
+        if skip_root_dir:
+            return root_level_paths[0]
+
+        return None
+
+    def _extract_zip(self, name, zf, dest_dir, extracted_paths):
+        """
+        Extracts a zip to a folder
+
+        :param name:
+            A unicode string of the package or library name
+
+        :param zf:
+            A zipfile instance to extract
+
+        :param dest_dir:
+            A unicode string of the destination directory
+
+        :param extracted_paths:
+            A set of all of the paths extracted from the zip
+
+        :return:
+            A bool indication if the install should be retried
+        """
+
+        os.chdir(dest_dir)
+
+        # Here we don't use .extractall() since it was having issues on OS X
+        should_retry = False
+        extracted_paths = set()
+        for info in zf.infolist():
+            path = info.filename
+            dest = path
+
+            try:
+                if not isinstance(dest, str):
+                    dest = dest.decode('utf-8', 'strict')
+            except (UnicodeDecodeError):
+                console_write(
+                    '''
+                    One or more of the zip file entries in %s is not
+                    encoded using UTF-8, aborting
+                    ''',
+                    name
+                )
+                return False
+
+            if os.name == 'nt':
+                regex = r':|\*|\?|"|<|>|\|'
+                if re.search(regex, dest) is not None:
+                    console_write(
+                        '''
+                        Skipping file from package named %s due to an
+                        invalid filename
+                        ''',
+                        name
+                    )
+                    continue
+
+            # If there was only a single directory in the package, we remove
+            # that folder name from the paths as we extract entries
+            dest = dest[len(common_folder):]
+
+            if os.name == 'nt':
+                dest = dest.replace('/', '\\')
+            else:
+                dest = dest.replace('\\', '/')
+
+            dest = os.path.join(dest_dir, dest)
+
+            def add_extracted_dirs(dir_):
+                while dir_ not in extracted_paths:
+                    extracted_paths.add(dir_)
+                    dir_ = os.path.dirname(dir_)
+                    if dir_ == dest_dir:
+                        break
+
+            if path.endswith('/'):
+                os.makedirs(dest, exist_ok=True)
+                add_extracted_dirs(dest)
+            else:
+                dest_dir = os.path.dirname(dest)
+                os.makedirs(dest_dir, exist_ok=True)
+                add_extracted_dirs(dest_dir)
+                extracted_paths.add(dest)
+                try:
+                    with open(dest, 'wb') as fobj:
+                        fobj.write(package_zip.read(path))
+                except (IOError) as e:
+                    message = str(e)
+                    if re.search('[Ee]rrno 13', message):
+                        should_retry = True
+                        break
+                    console_write(
+                        '''
+                        Skipping file from package named %s due to an
+                        invalid filename
+                        ''',
+                        name
+                    )
+
+                except (UnicodeDecodeError):
+                    console_write(
+                        '''
+                        Skipping file from package named %s due to an
+                        invalid filename
+                        ''',
+                        name
+                    )
+        return should_retry
+
+    def install_library(self, library_name):
+        libraries = self.list_available_libraries()
+
+        is_available = library_name in list(libraries.keys())
+        is_unavailable = library_name in self.settings.get('unavailable_libraries', [])
+
+        if is_unavailable and not is_available:
+            console_write(
+                '''
+                The library "%s" is either not available on this platform or for
+                this version of Sublime Text
+                ''',
+                library_name
+            )
+            # If a library is not available on this machine, that means it
+            # is not needed
+            return True
+
+        if not is_available:
+            console_write("The libary '%s' is not available", (library_name,))
+            return False
+
+        release = libraries[library_name]['releases'][0]
+
+        url = release['url']
+        library_filename = library_name + '.sublime-package'
+
+        tmp_dir = tempfile.mkdtemp('')
+
+        try:
+            # This is refers to the zipfile later on, so we define it here so we can
+            # close the zip file if set during the finally clause
+            library_zip = None
+
+            tmp_library_path = os.path.join(tmp_dir, library_filename)
+
+            unpacked_package_dir = self.get_package_dir(package_name)
+            package_path = os.path.join(sys_path.installed_packages_path, package_filename)
+
+            old_version = self.get_metadata(library_name, is_library=True).get('version')
+            is_upgrade = old_version is not None
+
+            library_zip = self._download_zip_file(library_name, url, tmp_library_path)
+            if library_zip is False:
+                return False
+
+            common_folder = self._common_folder(library_name, library_zip)
+            if common_folder is False:
+                return False
+
+            metadata_filename = 'dependency-metadata.json'
+
+            # TODO: backup libraries?
+            self.backup_package_dir(library_name)
+
+            # TODO: setup library folder
+            if not os.path.exists(package_dir):
+                os.mkdir(package_dir)
+
+            extracted_paths = set()
+            should_retry = self._extract_zip(library_name, library_zip, package_dir, extracted_paths)
+
+            library_zip.close()
+            library_zip = None
+
+            # TODO: continue here
+            # If upgrading failed, queue the package to upgrade upon next start
+            if should_retry:
+                reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
+                open(reinstall_file, 'wb').close()
+
+                # Don't delete the metadata file, that way we have it
+                # when the reinstall happens, and the appropriate
+                # usage info can be sent back to the server.
+                # No need to handle symlink at this stage it was already removed
+                # and we are not working with symlink here anymore.
+                clear_directory(package_dir, [reinstall_file, package_metadata_file])
+
+                show_error(
+                    '''
+                    An error occurred while trying to upgrade %s. Please restart
+                    Sublime Text to finish the upgrade.
+                    ''',
+                    package_name
+                )
+                return None
+
+            # Here we clean out any files that were not just overwritten. It is ok
+            # if there is an error removing a file. The next time there is an
+            # upgrade, it should be cleaned out successfully then.
+            # No need to handle symlink at this stage it was already removed
+            # and we are not working with symlink here anymore.
+            clear_directory(package_dir, extracted_paths)
+
+            new_version = release['version']
+
+            self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
+
+            with open(package_metadata_file, 'w', encoding='utf-8') as fobj:
+                if is_library:
+                    url = packages[package_name]['issues']
+                else:
+                    url = packages[package_name]['homepage']
+                metadata = {
+                    "version": new_version,
+                    "sublime_text": release['sublime_text'],
+                    "platforms": release['platforms'],
+                    "url": url,
+                    "description": packages[package_name]['description']
+                }
+                if not is_library:
+                    metadata['libraries'] = release.get('libraries', [])
+                json.dump(metadata, fobj)
+
+            # Submit install and upgrade info
+            if is_upgrade:
+                params = {
+                    'package': package_name,
+                    'operation': 'upgrade',
+                    'version': new_version,
+                    'old_version': old_version
+                }
+            else:
+                params = {
+                    'package': package_name,
+                    'operation': 'install',
+                    'version': new_version
+                }
+            self.record_usage(params)
+
+            if not is_library:
+                # Record the install in the settings file so that you can move
+                # settings across computers and have the same packages installed
+                settings = sublime.load_settings(pc_settings_filename())
+                names = load_list_setting(settings, 'installed_packages')
+                if package_name not in names:
+                    names.append(package_name)
+                    save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
+
+            # If we didn't extract directly into the Packages/{package_name}/
+            # folder, we need to create a .sublime-package file and install it
+            if not unpack:
+                try:
+                    # Remove the downloaded file since we are going to overwrite it
+                    os.remove(tmp_package_path)
+                    package_zip = zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED)
+                except (OSError, IOError) as e:
+                    show_error(
+                        '''
+                        An error occurred creating the package file %s in %s.
+
+                        %s
+                        ''',
+                        (package_filename, tmp_dir, str(e))
+                    )
+                    return False
+
+                package_dir_regex = re.compile('^' + re.escape(package_dir))
+                for root, dirs, files in os.walk(package_dir):
+                    paths = dirs
+                    paths.extend(files)
+                    for path in paths:
+                        full_path = os.path.join(root, path)
+                        relative_path = re.sub(package_dir_regex, '', full_path)
+                        if os.path.isdir(full_path):
+                            continue
+                        package_zip.write(full_path, relative_path)
+
+                package_zip.close()
+                package_zip = None
+
+                try:
+                    if os.path.exists(package_path):
+                        os.remove(package_path)
+                    shutil.move(tmp_package_path, package_path)
+                except (OSError):
+                    new_package_path = package_path.replace('.sublime-package', '.sublime-package-new')
+                    shutil.move(tmp_package_path, new_package_path)
+                    show_error(
+                        '''
+                        An error occurred while trying to upgrade %s. Please restart
+                        Sublime Text to finish the upgrade.
+                        ''',
+                        package_name
+                    )
+                    return None
+
+            os.chdir(sys.packages_path)
+            return True
+
+        finally:
+            # We need to make sure the zipfile is closed to
+            # help prevent permissions errors on Windows
+            if package_zip:
+                package_zip.close()
+
+            # Try to remove the tmp dir after a second to make sure
+            # a virus scanner is holding a reference to the zipfile
+            # after we close it.
+            sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
+
     def install_package(self, package_name, is_library=False):
         """
         Downloads and installs (or upgrades) a package
@@ -858,54 +1255,34 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        if is_library:
-            packages = self.list_available_libraries()
-        else:
-            packages = self.list_available_packages()
+        packages = self.list_available_packages()
 
         is_available = package_name in list(packages.keys())
-
-        unavailable_key = 'unavailable_packages'
-        if is_library:
-            unavailable_key = 'unavailable_libraries'
-        is_unavailable = package_name in self.settings.get(unavailable_key, [])
+        is_unavailable = package_name in self.settings.get('unavailable_packages', [])
 
         package_type = 'package'
-        if is_library:
-            package_type = 'library'
-
         if is_unavailable and not is_available:
             console_write(
                 '''
-                The %s "%s" is either not available on this platform or for
+                The package "%s" is either not available on this platform or for
                 this version of Sublime Text
                 ''',
-                (package_type, package_name)
+                package_name
             )
-            # If a library is not available on this machine, that means it
-            # is not needed
-            if is_library:
-                return True
             return False
 
         if not is_available:
-            message = "The %s '%s' is not available"
-            params = (package_type, package_name)
-            if is_library:
-                console_write(message, params)
-            else:
-                show_error(message, params)
+            show_error("The package '%s' is not available", (package_name,))
             return False
 
         release = packages[package_name]['releases'][0]
 
         have_installed_libraries = False
-        if not is_library:
-            libraries = release.get('libraries', [])
-            if libraries:
-                if not self.install_libraries(libraries):
-                    return False
-                have_installed_libraries = True
+        libraries = release.get('libraries', [])
+        if libraries:
+            if not self.install_libraries(libraries):
+                return False
+            have_installed_libraries = True
 
         url = release['url']
         package_filename = package_name + '.sublime-package'
@@ -920,7 +1297,7 @@ class PackageManager():
             tmp_package_path = os.path.join(tmp_dir, package_filename)
 
             unpacked_package_dir = self.get_package_dir(package_name)
-            package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
+            package_path = os.path.join(sys_path.installed_packages_path, package_filename)
 
             if self.is_vcs_package(package_name):
                 upgrader = self.instantiate_upgrader(package_name)
@@ -950,86 +1327,19 @@ class PackageManager():
 
                 return result
 
-            old_version = self.get_metadata(package_name, is_library=is_library).get('version')
+            old_version = self.get_metadata(package_name, is_library=False).get('version')
             is_upgrade = old_version is not None
 
-            # Download the sublime-package or zip file
-            try:
-                with downloader(url, self.settings) as manager:
-                    package_bytes = manager.fetch(url, 'Error downloading package.')
-            except (DownloaderException) as e:
-                console_write(e)
-                show_error(
-                    '''
-                    Unable to download %s. Please view the console for
-                    more details.
-                    ''',
-                    package_name
-                )
+            package_zip = self._download_zip_file(package_name, url, tmp_package_path)
+            if package_zip is False:
                 return False
 
-            with open(tmp_package_path, "wb") as package_file:
-                package_file.write(package_bytes)
-
-            # Try to open it as a zip file
-            try:
-                package_zip = zipfile.ZipFile(tmp_package_path, 'r')
-            except (zipfile.BadZipfile):
-                show_error(
-                    '''
-                    An error occurred while trying to unzip the package file
-                    for %s. Please try installing the package again.
-                    ''',
-                    package_name
-                )
+            common_folder = self._common_folder(package_name, package_zip)
+            if common_folder is False:
                 return False
 
-            # Scan through the root level of the zip file to gather some info
-            root_level_paths = []
-            last_path = None
-            for path in package_zip.namelist():
-                try:
-                    if not isinstance(path, str):
-                        path = path.decode('utf-8', 'strict')
-                except (UnicodeDecodeError):
-                    console_write(
-                        '''
-                        One or more of the zip file entries in %s is not
-                        encoded using UTF-8, aborting
-                        ''',
-                        package_name
-                    )
-                    return False
-
-                last_path = path
-
-                if path.find('/') in [len(path) - 1, -1]:
-                    root_level_paths.append(path)
-                # Make sure there are no paths that look like security vulnerabilities
-                if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
-                    show_error(
-                        '''
-                        The package specified, %s, contains files outside of
-                        the package dir and cannot be safely installed.
-                        ''',
-                        package_name
-                    )
-                    return False
-
-            if last_path and len(root_level_paths) == 0:
-                root_level_paths.append(last_path[0:last_path.find('/') + 1])
-
-            # If there is only a single directory at the top leve, the file
-            # is most likely a zip from BitBucket or GitHub and we need
-            # to skip the top-level dir when extracting
-            skip_root_dir = len(root_level_paths) == 1 and \
-                root_level_paths[0].endswith('/')
-
-            libraries_path = 'dependencies.json'
-            no_package_file_zip_path = '.no-sublime-package'
-            if skip_root_dir:
-                libraries_path = root_level_paths[0] + libraries_path
-                no_package_file_zip_path = root_level_paths[0] + no_package_file_zip_path
+            libraries_path = common_folder + 'dependencies.json'
+            no_package_file_zip_path = common_folder + '.no-sublime-package'
 
             # By default, ST prefers .sublime-package files since this allows
             # overriding files in the Packages/{package_name}/ folder.
@@ -1336,7 +1646,7 @@ class PackageManager():
                     )
                     return None
 
-            os.chdir(self.settings['packages_path'])
+            os.chdir(sys.packages_path)
             return True
 
         finally:
@@ -1369,7 +1679,7 @@ class PackageManager():
         for library in libraries:
             # Collect library information
             # TODO: implement installation using new system
-            library_dir = os.path.join(self.settings['packages_path'], library)
+            library_dir = os.path.join(sys_path.packages_path, library)
             library_git_dir = os.path.join(library_dir, '.git')
             library_hg_dir = os.path.join(library_dir, '.hg')
             library_metadata = self.get_metadata(library, is_library=True)
@@ -1487,13 +1797,13 @@ class PackageManager():
             If the backup succeeded
         """
 
-        package_dir = os.path.join(self.settings['packages_path'], package_name)
+        package_dir = os.path.join(sys_path.packages_path, package_name)
         if not os.path.exists(package_dir):
             return True
 
         try:
             backup_dir = os.path.join(os.path.dirname(
-                self.settings['packages_path']), 'Backup',
+                sys_path.packages_path), 'Backup',
                 datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
             os.makedirs(backup_dir, exist_ok=True)
             package_backup_dir = os.path.join(backup_dir, package_name)
@@ -1703,10 +2013,10 @@ class PackageManager():
             )
             return False
 
-        os.chdir(self.settings['packages_path'])
+        os.chdir(sys_path.packages_path)
 
         package_filename = package_name + '.sublime-package'
-        installed_package_path = os.path.join(self.settings['installed_packages_path'], package_filename)
+        installed_package_path = os.path.join(sys_path.installed_packages_path, package_filename)
         package_dir = self.get_package_dir(package_name)
 
         version = self.get_metadata(package_name, is_library=is_library).get('version')
