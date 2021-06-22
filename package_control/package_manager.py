@@ -30,7 +30,7 @@ from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
-from . import library, sys_path, text
+from . import distinfo, library, sys_path, text
 from . import __version__
 
 
@@ -1052,7 +1052,8 @@ class PackageManager():
         release = libraries[library_name]['releases'][0]
 
         url = release['url']
-        library_filename = library_name + '.sublime-package'
+        suffix = '.whl' if url.endswith('.whl') else '.zip'
+        library_filename = library_name + suffix
 
         tmp_dir = tempfile.mkdtemp('')
 
@@ -1061,15 +1062,21 @@ class PackageManager():
             # close the zip file if set during the finally clause
             library_zip = None
 
-            tmp_library_path = os.path.join(tmp_dir, library_filename)
+            tmp_library_archive = os.path.join(tmp_dir, library_filename)
+            tmp_library_dir = os.path.join(tmp_dir, library_name)
 
-            unpacked_package_dir = self.get_package_dir(package_name)
-            package_path = os.path.join(sys_path.installed_packages_path, package_filename)
+            # TODO: Handle 3.8
+            lib_path = sys_path.lib_paths()["3.3"]
+            old_version = None
+            existing_did = None
+            try:
+                existing_did = distinfo.find_dist_info_dir(lib_path, library_name)
+                old_version = existing_did.read_metadata().get('version')
+                is_upgrade = True
+            except FileNotFoundError:
+                is_upgrade = False
 
-            old_version = self.get_metadata(library_name, is_library=True).get('version')
-            is_upgrade = old_version is not None
-
-            library_zip = self._download_zip_file(library_name, url, tmp_library_path)
+            library_zip = self._download_zip_file(library_name, url, tmp_library_archive)
             if library_zip is False:
                 return False
 
@@ -1077,34 +1084,20 @@ class PackageManager():
             if common_folder is False:
                 return False
 
-            metadata_filename = 'dependency-metadata.json'
-
             # TODO: backup libraries?
-            self.backup_package_dir(library_name)
+            # self.backup_package_dir(library_name)
 
-            # TODO: setup library folder
-            if not os.path.exists(package_dir):
-                os.mkdir(package_dir)
+            os.mkdir(tmp_library_dir)
 
             extracted_paths = set()
-            should_retry = self._extract_zip(library_name, library_zip, package_dir, extracted_paths)
+            should_retry = self._extract_zip(library_name, library_zip, tmp_library_dir, extracted_paths)
 
             library_zip.close()
             library_zip = None
 
-            # TODO: continue here
             # If upgrading failed, queue the package to upgrade upon next start
             if should_retry:
-                reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
-                open(reinstall_file, 'wb').close()
-
-                # Don't delete the metadata file, that way we have it
-                # when the reinstall happens, and the appropriate
-                # usage info can be sent back to the server.
-                # No need to handle symlink at this stage it was already removed
-                # and we are not working with symlink here anymore.
-                clear_directory(package_dir, [reinstall_file, package_metadata_file])
-
+                # TODO: test handling failed upgrades
                 show_error(
                     '''
                     An error occurred while trying to upgrade %s. Please restart
@@ -1113,6 +1106,26 @@ class PackageManager():
                     package_name
                 )
                 return None
+
+            wheel_filename = '%s-%s.dist-info/WHEEL' % (library_name, release['version'])
+            is_whl = wheel_filename in extracted_paths
+
+            new_did = distinfo.DistInfoDir(
+                lib_path,
+                "%s-%s.dist-info" % (library_name, release.get("version"))
+            )
+            new_did.ensure_exists()
+
+            # TODO: continue here
+            # handle existing_did - if any file is modified, don't upgrade
+            # otherwise, track files not to be overwritten by new_did so
+            # they can be removed after we extract new_did
+            # if the new package is not a wheel, create our own wheel and
+            # then run the algo.
+
+            if is_whl:
+                pass
+
 
             # Here we clean out any files that were not just overwritten. It is ok
             # if there is an error removing a file. The next time there is an
