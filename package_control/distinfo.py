@@ -22,17 +22,17 @@ def match_dist_info_dir(dir_name, library_name):
     """
     Match a given directory name against the library name.
 
-    Distance information directories are always of the form <name>-<semver>.
-    This function extracts the name part and compares it with the given
-    library_name
+    .dist-info directories are always of the form <name>-<semver>. This
+    function extracts the name part and compares it with the given
+    library_name.
 
     :param dir_name:
         An unicode string of a directory name which might be the desired
-        distance information directory, representing the library.
+        .dist-info directory, representing the library.
 
     :param library_name:
-        An unicode string of a library name, to find a distance information
-        directory for.
+        An unicode string of a library name, to find a .dist-info directory
+        for.
 
     :returns:
         The regexp match object, if dir_name is the .dist-info directory of
@@ -82,7 +82,7 @@ def find_dist_info_dir(install_root, library_name):
 
 def list_dist_info_dirs(install_root):
     """
-    Generates a list of all distance information directories in the given
+    Generates a list of all .dist-info directories in the given
     installlation directory.
 
     :param install_root:
@@ -90,7 +90,7 @@ def list_dist_info_dirs(install_root):
         installed in
 
     :yields:
-        DistInfoDir objects for all distance information directories.
+        DistInfoDir objects for all .dist-info directories.
     """
 
     for dir_name in os.listdir(install_root):
@@ -101,7 +101,7 @@ def list_dist_info_dirs(install_root):
 
 class DistInfoDir:
     """
-    This class describes a distance information directory.
+    This class describes a .dist-info directory.
 
     Example: 'pyyaml-5.1.1.dist-info'
 
@@ -121,7 +121,7 @@ class DistInfoDir:
             installed in
 
         :param dist_info_dir:
-            The name of a library's distance information directory.
+            The name of a library's .dist-info directory.
 
             Example: 'pyyaml-5.1.1.dist-info'
         """
@@ -132,7 +132,7 @@ class DistInfoDir:
 
     def exists(self):
         """
-        Check whether distance info directory exists on filesystem.
+        Check whether .dist-info directory exists on filesystem.
 
         :returns:   True if the distance info directory exists.
         :rtype:     bool
@@ -142,7 +142,7 @@ class DistInfoDir:
 
     def ensure_exists(self):
         """
-        Create the distance info directory if it doesn't exist on filesystem.
+        Create the .dist-info directory if it doesn't exist on filesystem.
         """
 
         os.makedirs(self.dir_path, exist_ok=True)
@@ -325,7 +325,7 @@ class DistInfoDir:
 
     def abs_path(self, file_name):
         """
-        Create an absolute path of a file contained in the distance information dir.
+        Create an absolute path of a file contained in the .dist-info dir.
 
         :param file_name:
             An unicode string of the file name to return the absolute path for.
