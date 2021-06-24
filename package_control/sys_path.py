@@ -88,12 +88,12 @@ def lib_paths():
 
     if int(sublime.version()) >= 4000:
         return {
-            "3.3": os.path.join(sys_path.data_dir, "Lib", "python33"),
-            "3.8": os.path.join(sys_path.data_dir, "Lib", "python38"),
+            "3.3": os.path.join(data_dir, "Lib", "python33"),
+            "3.8": os.path.join(data_dir, "Lib", "python38"),
         }
 
     return {
-        "3.3": os.path.join(sys_path.data_dir, "Lib", "python3.3"),
+        "3.3": os.path.join(data_dir, "Lib", "python3.3"),
     }
 
 

@@ -100,7 +100,7 @@ def _migrate_loaders(settings):
                     plat = sublime.platform()
                     arch = sublime.arch()
 
-                    dep_sys_paths {
+                    dep_sys_paths = {
                         'all': os.path.join(dependency_dir, 'all'),
                         'ver': os.path.join(dependency_dir, ver),
                         'plat': os.path.join(dependency_dir, '%s_%s' % (ver, plat)),

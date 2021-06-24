@@ -114,7 +114,7 @@ class PackageCleanup(threading.Thread):
         # Clean up unneeded libraries so that found_libraries will only
         # end up having required libraries added to it
         for library_name in extra_libraries:
-            try;
+            try:
                 # TODO: Handle 3.8
                 library.remove(sys_path.lib_paths()["3.3"], library_name)
                 console_write(
@@ -128,7 +128,7 @@ class PackageCleanup(threading.Thread):
                 pass
 
             except Exception:
-                cleanup_file = os.path.join(library_dir, 'package-control.cleanup')
+                cleanup_file = os.path.join(sys_path.lib_paths()["3.3"], library_name, 'package-control.cleanup')
                 if not os.path.exists(cleanup_file):
                     open(cleanup_file, 'wb').close()
                 console_write(

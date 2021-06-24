@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 
 from .distinfo import DistInfoDir, find_dist_info_dir
@@ -6,7 +7,7 @@ from .distinfo import DistInfoDir, find_dist_info_dir
 
 def _name_from_dist_info_dirname(dirname):
     library_name = dirname[:-10]
-    return re.replace(
+    return re.sub(
         r'-(?:'
         r'(\d+(?:\.\d+)*)'
         r'([-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\.?\d*)?'
