@@ -86,9 +86,9 @@ def is_compatible_version(version_range):
     else:
         return None
 
-    if min_version > int(sublime.version()):
+    if min_version >= int(sublime.version()):
         return False
-    if max_version < int(sublime.version()):
+    if max_version <= int(sublime.version()):
         return False
 
     return True
