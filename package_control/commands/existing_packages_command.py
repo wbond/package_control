@@ -62,7 +62,10 @@ class ExistingPackagesCommand():
                 description = '<em>%s</em>' % sublime.html_format_command(description)
                 final_line = '<em>' + action + installed_version + '</em>'
                 if url_display:
-                    final_line += '; <a href="%s">%s</a>' % (url, url_display)
+                    final_line += '; <a href="%s">%s</a>' % (
+                        sublime.html_format_command(url),
+                        sublime.html_format_command(url_display),
+                    )
                 package_entry = sublime.QuickPanelItem(package, [description, final_line])
             else:
                 final_line = action + installed_version

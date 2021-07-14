@@ -143,7 +143,10 @@ class PackageInstaller(PackageDisabler):
                 if homepage_display:
                     if action or extra:
                         final_line += ' '
-                    final_line += '<a href="%s">%s</a>' % (homepage, homepage_display)
+                    final_line += '<a href="%s">%s</a>' % (
+                        sublime.html_format_command(homepage),
+                        sublime.html_format_command(homepage_display),
+                    )
                 package_entry = sublime.QuickPanelItem(package, [description, final_line])
             else:
                 package_entry = [package]
