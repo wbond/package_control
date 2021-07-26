@@ -5,7 +5,7 @@ from ..downloaders.binary_not_found_error import BinaryNotFoundError
 from ..downloaders.downloader_exception import DownloaderException
 from ..http_cache import HttpCache
 
-from . import USER_AGENT
+from ._config import USER_AGENT, DEBUG
 
 
 class DownloaderTestsMixin:
@@ -13,7 +13,7 @@ class DownloaderTestsMixin:
     def downloader(self, cache_length=604800):
         if not hasattr(self, '_downloader'):
             self._downloader = self.downloader_class(settings={
-                'debug': True,
+                'debug': DEBUG,
                 'cache': HttpCache(cache_length),
                 'cache_length': cache_length,
                 'user_agent': USER_AGENT

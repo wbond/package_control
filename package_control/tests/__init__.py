@@ -1,16 +1,27 @@
-import re
 import threading
 import unittest
 
-from .. import __version__
+from . import clients, distinfo, downloaders, providers
 
-LAST_COMMIT_TIMESTAMP = '2014-11-28 20:54:15'
-LAST_COMMIT_VERSION = re.sub(r'[ :\-]', '.', LAST_COMMIT_TIMESTAMP)
 
-CLIENT_ID = ''
-CLIENT_SECRET = ''
-
-USER_AGENT = 'Package Control %s Unittests' % __version__
+TEST_CLASSES = [
+    downloaders.CurlDownloaderTests,
+    downloaders.OscryptoDownloaderTests,
+    downloaders.UrlLibDownloaderTests,
+    downloaders.WgetDownloaderTests,
+    downloaders.WinINetDownloaderTests,
+    clients.GitHubClientTests,
+    clients.GitLabClientTests,
+    clients.BitBucketClientTests,
+    providers.GitHubRepositoryProviderTests,
+    providers.BitBucketRepositoryProviderTests,
+    providers.GitHubUserProviderTests,
+    providers.GitLabRepositoryProviderTests,
+    providers.GitLabUserProviderTests,
+    providers.RepositoryProviderTests,
+    providers.ChannelProviderTests,
+    distinfo.DistinfoTests,
+]
 
 
 class OutputPanel:

@@ -1,28 +1,7 @@
 import sublime
 import sublime_plugin
 
-from ..tests import TestRunner
-from ..tests.clients import (
-    BitBucketClientTests,
-    GitHubClientTests,
-    GitLabClientTests
-)
-from ..tests.downloaders import (
-    CurlDownloaderTests,
-    OscryptoDownloaderTests,
-    UrlLibDownloaderTests,
-    WgetDownloaderTests,
-    WinINetDownloaderTests
-)
-from ..tests.providers import (
-    BitBucketRepositoryProviderTests,
-    ChannelProviderTests,
-    GitHubRepositoryProviderTests,
-    GitHubUserProviderTests,
-    GitLabRepositoryProviderTests,
-    GitLabUserProviderTests,
-    RepositoryProviderTests,
-)
+from ..tests import TestRunner, TEST_CLASSES
 
 
 class PackageControlTestsCommand(sublime_plugin.WindowCommand):
@@ -31,26 +10,7 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        TestRunner(args=(
-            self.window,
-            [
-                CurlDownloaderTests,
-                OscryptoDownloaderTests,
-                UrlLibDownloaderTests,
-                WgetDownloaderTests,
-                WinINetDownloaderTests,
-                GitHubClientTests,
-                GitLabClientTests,
-                BitBucketClientTests,
-                GitHubRepositoryProviderTests,
-                BitBucketRepositoryProviderTests,
-                GitHubUserProviderTests,
-                GitLabRepositoryProviderTests,
-                GitLabUserProviderTests,
-                RepositoryProviderTests,
-                ChannelProviderTests
-            ]
-        )).start()
+        TestRunner(args=(self.window, TEST_CLASSES)).start()
 
     def is_visible(self):
         settings = sublime.load_settings('Package Control.sublime-settings')

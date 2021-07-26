@@ -9,7 +9,7 @@ from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
 from ..providers.gitlab_user_provider import GitLabUserProvider
 from ..providers.repository_provider import RepositoryProvider
 
-from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET, USER_AGENT
+from ._config import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET, USER_AGENT, DEBUG
 
 
 class GitHubRepositoryProviderTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
 
     def github_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT,
@@ -128,7 +128,7 @@ class GitHubUserProviderTests(unittest.TestCase):
 
     def github_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT,
@@ -218,7 +218,7 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
 
     def gitlab_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT
@@ -324,7 +324,7 @@ class GitLabUserProviderTests(unittest.TestCase):
 
     def gitlab_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT
@@ -406,7 +406,7 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
 
     def bitbucket_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT
@@ -507,7 +507,7 @@ class RepositoryProviderTests(unittest.TestCase):
 
     def settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT,
@@ -1584,7 +1584,7 @@ class ChannelProviderTests(unittest.TestCase):
 
     def settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT
