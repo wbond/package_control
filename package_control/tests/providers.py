@@ -9,7 +9,7 @@ from ..providers.gitlab_user_provider import GitLabUserProvider
 from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
 from ..http_cache import HttpCache
 
-from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET
+from ._config import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET, USER_AGENT, DEBUG
 
 
 class GitHubRepositoryProviderTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
 
     def github_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'query_string_params': {
                 'api.github.com': {
@@ -126,7 +126,7 @@ class GitHubUserProviderTests(unittest.TestCase):
 
     def github_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'query_string_params': {
                 'api.github.com': {
@@ -214,7 +214,7 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
 
     def gitlab_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
         }
 
@@ -318,7 +318,7 @@ class GitLabUserProviderTests(unittest.TestCase):
 
     def gitlab_settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
         }
 
@@ -398,8 +398,10 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
 
     def bitbucket_settings(self):
         return {
-            'debug': True,
-            'cache': HttpCache(604800)
+            'debug': DEBUG,
+            'cache': HttpCache(604800),
+            'cache_length': 604800,
+            'user_agent': USER_AGENT
         }
 
     def test_match_url(self):
@@ -497,7 +499,7 @@ class RepositoryProviderTests(unittest.TestCase):
 
     def settings(self):
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
             'query_string_params': {
                 'api.github.com': {
@@ -1308,8 +1310,10 @@ class ChannelProviderTests(unittest.TestCase):
 
     def settings(self):
         return {
-            'debug': True,
-            'cache': HttpCache(604800)
+            'debug': DEBUG,
+            'cache': HttpCache(604800),
+            'cache_length': 604800,
+            'user_agent': USER_AGENT
         }
 
     def test_get_name_map_12(self):
