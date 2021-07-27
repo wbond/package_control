@@ -37,6 +37,7 @@ def filter_releases(package, settings, releases):
         releases = version_exclude_prerelease(releases)
 
     output = []
+    st_version = int(sublime.version())
     for release in releases:
         platforms = release.get('platforms', '*')
         if not isinstance(platforms, list):
@@ -51,7 +52,7 @@ def filter_releases(package, settings, releases):
             continue
 
         # Default to '*' (for legacy reasons), see #604
-        if not is_compatible_version(release.get('sublime_text', '*')):
+        if not is_compatible_version(release.get('sublime_text', '*'), st_version):
             continue
 
         output.append(release)
@@ -59,36 +60,28 @@ def filter_releases(package, settings, releases):
     return output
 
 
-def is_compatible_version(version_range):
-    min_version = float("-inf")
-    max_version = float("inf")
-
+def is_compatible_version(version_range, st_version):
     if version_range == '*':
         return True
 
-    gt_match = re.match(r'>(\d+)$', version_range)
-    ge_match = re.match(r'>=(\d+)$', version_range)
-    lt_match = re.match(r'<(\d+)$', version_range)
-    le_match = re.match(r'<=(\d+)$', version_range)
-    range_match = re.match(r'(\d+) - (\d+)$', version_range)
-
+    gt_match = re.match(r'>(\d{4})$', version_range)
     if gt_match:
-        min_version = int(gt_match.group(1)) + 1
-    elif ge_match:
-        min_version = int(ge_match.group(1))
-    elif lt_match:
-        max_version = int(lt_match.group(1)) - 1
-    elif le_match:
-        max_version = int(le_match.group(1))
-    elif range_match:
-        min_version = int(range_match.group(1))
-        max_version = int(range_match.group(2))
-    else:
-        return None
+        return st_version > int(gt_match.group(1))
 
-    if min_version >= int(sublime.version()):
-        return False
-    if max_version <= int(sublime.version()):
-        return False
+    ge_match = re.match(r'>=(\d{4})$', version_range)
+    if ge_match:
+        return st_version >= int(ge_match.group(1))
 
-    return True
+    lt_match = re.match(r'<(\d{4})$', version_range)
+    if lt_match:
+        return st_version < int(lt_match.group(1))
+
+    le_match = re.match(r'<=(\d{4})$', version_range)
+    if le_match:
+        return st_version <= int(le_match.group(1))
+
+    range_match = re.match(r'(\d{4}) - (\d{4})$', version_range)
+    if range_match:
+        return st_version >= int(range_match.group(1)) and st_version <= int(range_match.group(2))
+
+    return None

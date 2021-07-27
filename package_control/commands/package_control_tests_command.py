@@ -11,6 +11,7 @@ from ..tests.providers import (
     GitLabRepositoryProviderTests,
     GitLabUserProviderTests,
     RepositoryProviderTests,
+    VersionSelectorTests,
 )
 
 
@@ -31,7 +32,8 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
                 GitLabRepositoryProviderTests,
                 GitLabUserProviderTests,
                 RepositoryProviderTests,
-                ChannelProviderTests
+                ChannelProviderTests,
+                VersionSelectorTests,
             ]
         )
 
