@@ -1417,7 +1417,7 @@ class PackageManager():
                     # Don't delete the metadata file, that way we have it
                     # when the reinstall happens, and the appropriate
                     # usage info can be sent back to the server
-                    clear_directory(unpacked_package_dir, [reinstall_file, unpacked_metadata_file])
+                    clear_directory(unpacked_package_dir, {reinstall_file, unpacked_metadata_file})
 
                     show_error(
                         '''
@@ -1548,7 +1548,7 @@ class PackageManager():
                 # usage info can be sent back to the server.
                 # No need to handle symlink at this stage it was already removed
                 # and we are not working with symlink here anymore.
-                clear_directory(package_dir, [reinstall_file, package_metadata_file])
+                clear_directory(package_dir, {reinstall_file, package_metadata_file})
 
                 show_error(
                     '''

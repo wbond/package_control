@@ -177,7 +177,7 @@ class PackageCleanup(threading.Thread):
                 metadata_path = os.path.join(package_dir, 'package-metadata.json')
                 # No need to handle symlinks here as that was already handled in earlier step
                 # that has attempted to re-install the package initially.
-                if not clear_directory(package_dir, [metadata_path]):
+                if not clear_directory(package_dir, {metadata_path}):
                     if not os.path.exists(reinstall):
                         open(reinstall, 'wb').close()
 

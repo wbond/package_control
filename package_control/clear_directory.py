@@ -50,7 +50,7 @@ def clear_directory(directory, ignore_paths=None):
         The string directory path
 
     :param ignore_paths:
-        An array of paths to ignore while deleting files
+        An set of paths to ignore while deleting files
 
     :return:
         If all of the files and folders were successfully deleted
