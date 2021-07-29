@@ -3,6 +3,7 @@ import re
 import json
 import zipfile
 import shutil
+import sys
 from fnmatch import fnmatch
 import datetime
 import tempfile
@@ -398,13 +399,13 @@ class PackageManager():
 
                         original_libraries = provider.get_libraries(repo)
                         filtered_libraries = {}
-                        for library in original_libraries:
-                            info = original_libraries[library]
-                            info['releases'] = filter_releases(library, self.settings, info['releases'])
+                        for lib_name in original_libraries:
+                            info = original_libraries[lib_name]
+                            info['releases'] = filter_releases(lib_name, self.settings, info['releases'])
                             if info['releases']:
-                                filtered_libraries[library] = info
+                                filtered_libraries[lib_name] = info
                             else:
-                                unavailable_libraries.append(library)
+                                unavailable_libraries.append(lib_name)
                         libraries_cache_key = repo + '.libraries'
                         set_cache(libraries_cache_key, filtered_libraries, cache_ttl)
 
@@ -921,7 +922,7 @@ class PackageManager():
 
         return None
 
-    def _extract_zip(self, name, zf, dest_dir, extracted_paths):
+    def _extract_zip(self, name, zf, dest_dir, extracted_dirs, extracted_files, common_folder):
         """
         Extracts a zip to a folder
 
@@ -934,8 +935,14 @@ class PackageManager():
         :param dest_dir:
             A unicode string of the destination directory
 
-        :param extracted_paths:
-            A set of all of the paths extracted from the zip
+        :param extracted_dirs:
+            A set of all of the dir paths extracted from the zip
+
+        :param extracted_files:
+            A set of all of the files paths extracted from the zip
+
+        :param common_folder:
+            A unicode string of a common folder name
 
         :return:
             A bool indication if the install should be retried
@@ -945,7 +952,6 @@ class PackageManager():
 
         # Here we don't use .extractall() since it was having issues on OS X
         should_retry = False
-        extracted_paths = set()
         for info in zf.infolist():
             path = info.filename
             dest = path
@@ -987,8 +993,8 @@ class PackageManager():
             dest = os.path.join(dest_dir, dest)
 
             def add_extracted_dirs(dir_):
-                while dir_ not in extracted_paths:
-                    extracted_paths.add(dir_)
+                while dir_ not in extracted_dirs:
+                    extracted_dirs.add(dir_)
                     dir_ = os.path.dirname(dir_)
                     if dir_ == dest_dir:
                         break
@@ -1000,10 +1006,10 @@ class PackageManager():
                 dest_dir = os.path.dirname(dest)
                 os.makedirs(dest_dir, exist_ok=True)
                 add_extracted_dirs(dest_dir)
-                extracted_paths.add(dest)
+                extracted_files.add(dest)
                 try:
                     with open(dest, 'wb') as fobj:
-                        fobj.write(package_zip.read(path))
+                        fobj.write(zf.read(path))
                 except (IOError) as e:
                     message = str(e)
                     if re.search('[Ee]rrno 13', message):
@@ -1067,14 +1073,28 @@ class PackageManager():
 
             # TODO: Handle 3.8
             lib_path = sys_path.lib_paths()["3.3"]
-            old_version = None
             existing_did = None
             try:
                 existing_did = distinfo.find_dist_info_dir(lib_path, library_name)
-                old_version = existing_did.read_metadata().get('version')
                 is_upgrade = True
             except FileNotFoundError:
                 is_upgrade = False
+
+            modified_paths = set()
+            if is_upgrade:
+                _, modified_ris = existing_did.verify_files()
+                for mri in modified_ris:
+                    modified_paths.add(mri.relative_path)
+
+            if len(modified_paths):
+                console_write(
+                    "Unable to upgrade the libary '%s' because files on disk have been modified: '%s'",
+                    (
+                        library_name,
+                        "', '".join(sorted(list(modified_paths)))
+                    )
+                )
+                return False
 
             library_zip = self._download_zip_file(library_name, url, tmp_library_archive)
             if library_zip is False:
@@ -1089,8 +1109,17 @@ class PackageManager():
 
             os.mkdir(tmp_library_dir)
 
-            extracted_paths = set()
-            should_retry = self._extract_zip(library_name, library_zip, tmp_library_dir, extracted_paths)
+            extracted_files = set()
+            extracted_dirs = set()
+            should_retry = self._extract_zip(
+                library_name,
+                library_zip,
+                tmp_library_dir,
+                extracted_dirs,
+                extracted_files,
+                common_folder
+            )
+            extracted_paths = extracted_files + extracted_dirs
 
             library_zip.close()
             library_zip = None
@@ -1100,15 +1129,56 @@ class PackageManager():
                 # TODO: test handling failed upgrades
                 show_error(
                     '''
-                    An error occurred while trying to upgrade %s. Please restart
+                    An error occurred while trying to install the library %s. Please restart
                     Sublime Text to finish the upgrade.
                     ''',
-                    package_name
+                    library_name
                 )
-                return None
+                return False
 
-            wheel_filename = '%s-%s.dist-info/WHEEL' % (library_name, release['version'])
+            new_did_name = wheel_filename = '%s-%s.dist-info' % (library_name, release['version'])
+            wheel_filename = new_did_name + '/WHEEL'
             is_whl = wheel_filename in extracted_paths
+
+            if not is_whl:
+                ver = 'st3'
+                plat = sublime.platform()
+                arch = sublime.arch()
+
+                dep_sys_rel_paths = {
+                    'all': 'all',
+                    'ver': ver,
+                    'plat': '%s_%s' % (ver, plat),
+                    'arch': '%s_%s_%s' % (ver, plat, arch)
+                }
+                src_dir = None
+                plat_or_arch = False
+                for rel_type in ('arch', 'plat', 'ver', 'all'):
+                    if dep_sys_rel_paths[rel_type] in extracted_paths:
+                        src_dir = dep_sys_rel_paths[rel_type]
+                        plat_or_arch = rel_type in ('arch', 'plat')
+                        break
+                if not src_dir:
+                    show_error(
+                        '''
+                        An error occurred while trying to install the library %s. Unrecognized source archive layout.
+                        ''',
+                        library_name
+                    )
+                    return False
+                nested_dir = os.path.join(tmp_library_dir, src_dir)
+
+                lib = libraries[library_name]
+                temp_did = distinfo.DistInfoDir(nested_dir, new_did_name)
+                temp_did.ensure_exists()
+                temp_did.write_metadata(library_name, release['version'], lib.get('description'), lib.get('homepage'))
+                temp_did.write_installer()
+                # TODO: handle 3.8
+                temp_did.write_wheel("3.3", plat_or_arch)
+                temp_did.write_record([], sorted(extracted_files))
+
+            else:
+                temp_did = distinfo.DistInfoDir(tmp_library_dir, new_did_name)
 
             new_did = distinfo.DistInfoDir(
                 lib_path,
@@ -1116,116 +1186,32 @@ class PackageManager():
             )
             new_did.ensure_exists()
 
-            # TODO: continue here
-            # handle existing_did - if any file is modified, don't upgrade
-            # otherwise, track files not to be overwritten by new_did so
-            # they can be removed after we extract new_did
-            # if the new package is not a wheel, create our own wheel and
-            # then run the algo.
+            modified_paths = set()
+            _, modified_ris = temp_did.verify_files()
+            for mri in modified_ris:
+                modified_paths.add(mri.absolute_path)
 
-            if is_whl:
-                pass
+            if len(modified_paths):
+                console_write(
+                    "Unable to upgrade the libary '%s' because files in the archive have been modified: '%s'",
+                    (
+                        library_name,
+                        "', '".join(sorted(list(modified_paths)))
+                    )
+                )
+                return False
 
-
-            # Here we clean out any files that were not just overwritten. It is ok
-            # if there is an error removing a file. The next time there is an
-            # upgrade, it should be cleaned out successfully then.
-            # No need to handle symlink at this stage it was already removed
-            # and we are not working with symlink here anymore.
-            clear_directory(package_dir, extracted_paths)
-
-            new_version = release['version']
-
-            self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
-
-            with open(package_metadata_file, 'w', encoding='utf-8') as fobj:
-                if is_library:
-                    url = packages[package_name]['issues']
-                else:
-                    url = packages[package_name]['homepage']
-                metadata = {
-                    "version": new_version,
-                    "sublime_text": release['sublime_text'],
-                    "platforms": release['platforms'],
-                    "url": url,
-                    "description": packages[package_name]['description']
-                }
-                if not is_library:
-                    metadata['libraries'] = release.get('libraries', [])
-                json.dump(metadata, fobj)
-
-            # Submit install and upgrade info
             if is_upgrade:
-                params = {
-                    'package': package_name,
-                    'operation': 'upgrade',
-                    'version': new_version,
-                    'old_version': old_version
-                }
-            else:
-                params = {
-                    'package': package_name,
-                    'operation': 'install',
-                    'version': new_version
-                }
-            self.record_usage(params)
+                for rel_path in existing_did.top_level_paths():
+                    abs_path = os.path.join(existing_did.install_root, rel_path)
+                    if os.path.isdir(abs_path):
+                        shutil.rmtree(abs_path)
+                    else:
+                        os.unlink(abs_path)
 
-            if not is_library:
-                # Record the install in the settings file so that you can move
-                # settings across computers and have the same packages installed
-                settings = sublime.load_settings(pc_settings_filename())
-                names = load_list_setting(settings, 'installed_packages')
-                if package_name not in names:
-                    names.append(package_name)
-                    save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
-
-            # If we didn't extract directly into the Packages/{package_name}/
-            # folder, we need to create a .sublime-package file and install it
-            if not unpack:
-                try:
-                    # Remove the downloaded file since we are going to overwrite it
-                    os.remove(tmp_package_path)
-                    package_zip = zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED)
-                except (OSError, IOError) as e:
-                    show_error(
-                        '''
-                        An error occurred creating the package file %s in %s.
-
-                        %s
-                        ''',
-                        (package_filename, tmp_dir, str(e))
-                    )
-                    return False
-
-                package_dir_regex = re.compile('^' + re.escape(package_dir))
-                for root, dirs, files in os.walk(package_dir):
-                    paths = dirs
-                    paths.extend(files)
-                    for path in paths:
-                        full_path = os.path.join(root, path)
-                        relative_path = re.sub(package_dir_regex, '', full_path)
-                        if os.path.isdir(full_path):
-                            continue
-                        package_zip.write(full_path, relative_path)
-
-                package_zip.close()
-                package_zip = None
-
-                try:
-                    if os.path.exists(package_path):
-                        os.remove(package_path)
-                    shutil.move(tmp_package_path, package_path)
-                except (OSError):
-                    new_package_path = package_path.replace('.sublime-package', '.sublime-package-new')
-                    shutil.move(tmp_package_path, new_package_path)
-                    show_error(
-                        '''
-                        An error occurred while trying to upgrade %s. Please restart
-                        Sublime Text to finish the upgrade.
-                        ''',
-                        package_name
-                    )
-                    return None
+            for rel_path in temp_did.top_level_paths():
+                dest_path = os.path.join(lib_path, rel_path)
+                shutil.move(os.path.join(temp_did.install_root, rel_path), dest_path)
 
             os.chdir(sys.packages_path)
             return True
@@ -1233,8 +1219,8 @@ class PackageManager():
         finally:
             # We need to make sure the zipfile is closed to
             # help prevent permissions errors on Windows
-            if package_zip:
-                package_zip.close()
+            if library_zip:
+                library_zip.close()
 
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
@@ -1273,7 +1259,6 @@ class PackageManager():
         is_available = package_name in list(packages.keys())
         is_unavailable = package_name in self.settings.get('unavailable_packages', [])
 
-        package_type = 'package'
         if is_unavailable and not is_available:
             console_write(
                 '''
@@ -1485,8 +1470,8 @@ class PackageManager():
 
                 # If there was only a single directory in the package, we remove
                 # that folder name from the paths as we extract entries
-                if skip_root_dir:
-                    dest = dest[len(root_level_paths[0]):]
+                if common_folder:
+                    dest = dest[len(common_folder):]
 
                 if os.name == 'nt':
                     dest = dest.replace('/', '\\')
@@ -1689,15 +1674,15 @@ class PackageManager():
         packages = self.list_available_libraries()
 
         error = False
-        for library in libraries:
+        for lib_name in libraries:
             # Collect library information
             # TODO: implement installation using new system
-            library_dir = os.path.join(sys_path.packages_path, library)
+            library_dir = os.path.join(sys_path.packages_path, lib_name)
             library_git_dir = os.path.join(library_dir, '.git')
             library_hg_dir = os.path.join(library_dir, '.hg')
-            library_metadata = self.get_metadata(library, is_library=True)
+            library_metadata = self.get_metadata(lib_name, is_library=True)
 
-            library_releases = packages.get(library, {}).get('releases', [])
+            library_releases = packages.get(lib_name, {}).get('releases', [])
             library_release = library_releases[0] if library_releases else {}
 
             installed_version = library_metadata.get('version')
@@ -1706,9 +1691,9 @@ class PackageManager():
             available_version = version_comparable(available_version) if available_version else None
 
             def library_write(msg):
-                msg = "The library '{library}' " + msg
+                msg = "The library '{lib_name}' " + msg
                 msg = msg.format(
-                    library=library,
+                    library=lib_name,
                     installed_version=installed_version,
                     available_version=available_version
                 )
@@ -1751,7 +1736,7 @@ class PackageManager():
                 library_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
             if install_library:
-                library_result = self.install_package(library, True)
+                library_result = self.install_package(lib_name, True)
                 if not library_result:
                     library_write('could not be installed or updated')
                     if fail_early:
@@ -1786,13 +1771,13 @@ class PackageManager():
         orphaned_libraries = sorted(orphaned_libraries, key=lambda s: s.lower())
 
         error = False
-        for library in orphaned_libraries:
-            if self.remove_package(library, is_library=True):
+        for lib_name in orphaned_libraries:
+            if self.remove_package(lib_name, is_library=True):
                 console_write(
                     '''
                     The orphaned library %s has been removed
                     ''',
-                    library
+                    lib_name
                 )
             else:
                 error = True
