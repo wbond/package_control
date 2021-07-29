@@ -344,7 +344,7 @@ class DistInfoDir:
             entries.append(_entry(f))
 
         output = ''
-        for e in entries:
+        for e in sorted(entries, key=lambda e: e[0]):
             output += ",".join(e) + "\n"
 
         return output
@@ -526,7 +526,7 @@ class DistInfoDir:
 
             path_seg = ri.relative_path
             if level > min_level:
-                path_seg = _trim_segments(path_seg, min_level)
+                path_seg = _trim_segments(path_seg, min_level + 1)
 
             while True:
                 num_levels = path_seg.count('/')
