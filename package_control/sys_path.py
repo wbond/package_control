@@ -5,9 +5,6 @@ from zipimport import zipimporter
 
 import sublime
 
-if os.name == 'nt':
-    from ctypes import windll, create_unicode_buffer
-
 
 data_dir = None
 cache_dir = None
