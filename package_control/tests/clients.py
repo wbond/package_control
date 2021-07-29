@@ -13,6 +13,9 @@ class GitHubClientTests(unittest.TestCase):
     maxDiff = None
 
     def github_settings(self):
+        if not CLIENT_ID or not CLIENT_SECRET:
+            self.skipTest("GitHub client_id and/or client_secret are not set")
+
         return {
             'debug': DEBUG,
             'cache': HttpCache(604800),

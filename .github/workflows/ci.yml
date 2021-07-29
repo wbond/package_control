@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Python ${{ matrix.python }} on ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-18.04
+        python:
+          - '3.3.7'
+          - '3.8.7'
+        arch:
+          - 'x64'
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@main
+        with:
+          python-version: ${{ matrix.python }}
+          architecture: ${{ matrix.arch }}
+      - name: Install dependencies
+        run: python dev/deps.py
+      - name: Run linter
+        run: python dev/lint.py
+      - name: Run tests
+        run: python dev/tests.py
