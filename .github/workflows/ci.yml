@@ -35,3 +35,6 @@ jobs:
         run: python dev/lint.py
       - name: Run tests
         run: python dev/tests.py
+        env:
+          GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
