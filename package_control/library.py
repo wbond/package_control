@@ -165,16 +165,15 @@ def remove(install_root, name):
     dir_names = set()
 
     try:
-        record = dist_info.read_record()
+        record_infos = dist_info.read_record()
     except FileNotFoundError:
         raise FileNotFoundError('Library {} not installed!'.format(name))
 
-    for file_name, file_hash, file_size in record:
-        abs_path = os.path.normpath(os.path.join(install_root, file_name))
-        dir_names.add(os.path.dirname(abs_path))
+    for ri in record_infos:
+        dir_names.add(os.path.dirname(ri.absolute_path))
         # TODO: finish this
-        print("removing", abs_path)
-        # os.remove(abs_path)
+        print("removing", ri.absolute_path)
+        # os.remove(ri.absolute_path)
 
     def sort_key(a):
         return len(a.split(os.sep))

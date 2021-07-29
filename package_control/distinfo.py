@@ -99,6 +99,81 @@ def list_dist_info_dirs(install_root):
     return False
 
 
+def _verify_file(abs_path, hash_, size):
+    """
+    Verifies a file hasn't been modified using the filesize and SHA256 hash
+
+    :param abs_path:
+        A unicode string of the absolute filesystem path
+
+    :param hash_:
+        A unicode string of the results of the SHA256 digest being passed to
+        base64.urlsafe_b64encode() with any trailing equal signs truncated.
+
+    :param size:
+        An integer of the file size in bytes
+
+    :return:
+        A bool indicating if the file contents matched the hash and size
+    """
+
+    disk_size = os.path.getsize(abs_path)
+    if disk_size != size:
+        return False
+    with open(abs_path, 'rb') as f:
+        digest = hashlib.sha256(f.read()).digest()
+        sha = base64.urlsafe_b64encode(digest).rstrip(b'=').decode('utf-8')
+    if sha != hash_:
+        return False
+    return True
+
+
+class RecordInfo:
+    __slots__ = ['relative_path', 'absolute_path', 'size', 'sha256']
+
+    def __init__(self, rel_path, abs_path, size, sha256):
+        self.relative_path = rel_path
+        self.absolute_path = abs_path
+        self.size = size
+        self.sha256 = sha256
+
+    def __eq__(self, rhs):
+        if self.relative_path != rhs.relative_path:
+            return False
+        if self.absolute_path != rhs.absolute_path:
+            return False
+        if self.size != rhs.size:
+            return False
+        if self.sha256 != rhs.sha256:
+            return False
+        return True
+
+    def __hash__(self):
+        return hash((
+            self.relative_path,
+            self.absolute_path,
+            self.size,
+            self.sha256
+        ))
+
+
+def _trim_segments(rel_path, segments):
+    """
+    Trim a relative path to a specific number of segments
+
+    :param rel_path:
+        A unicode string of a relative path
+
+    :param segments:
+        An integer of the number of segments to retain
+
+    :return:
+        The relative path, trimmed to the number of segments
+    """
+
+    return '/'.join(rel_path.split('/')[0:segments])
+
+
 class DistInfoDir:
     """
     This class describes a .dist-info directory.
@@ -159,6 +234,9 @@ class DistInfoDir:
             If the package includes a shared library or executable that is
             specific to a platform and optionally architecture
         """
+
+        if python_version is not None and python_version not in {"3.3", "3.8"}:
+            raise ValueError("Invalid python_version %s" % repr(python_version))
 
         version_tag = 'py3'
         if python_version is not None:
@@ -227,7 +305,7 @@ class DistInfoDir:
         Generates the .dist-info/RECORD file contents
 
         :param package_dirs:
-            A list of unicode strings of the package dirs, or None if there is no dir
+            A list of unicode strings of the package dirs
 
         :param package_files:
             A list of unicode strings of files not in a dir
@@ -387,7 +465,7 @@ class DistInfoDir:
         """
 
         with open(self.abs_path('INSTALLER'), 'r', encoding='utf-8') as fobj:
-            return fobj.readline(1).strip()
+            return fobj.readline().strip()
         return False
 
     def write_installer(self):
@@ -404,15 +482,63 @@ class DistInfoDir:
         Read the .dist-info/RECORD file contents
 
         :returns:
-            A list of record entries, each a list of rel_path, hash, size.
+            A list of RecordInfo objects
         """
 
         with open(self.abs_path('RECORD'), 'r', encoding='utf-8') as fobj:
             entries = []
             for line in fobj.readlines():
-                entries.append(line.strip().split(','))
+                line = line.strip()
+                elements = line.split(',')
+                if len(elements) != 3:
+                    raise ValueError('Invalid record entry: %s' % line)
+                is_record_path = elements[0] == self.dir_name + "/RECORD"
+                if not elements[1].startswith('sha256=') and not is_record_path:
+                    raise ValueError('Unabled to parse sha256 hash: %s' % line)
+                ri = RecordInfo(
+                    elements[0],
+                    os.path.join(self.install_root, elements[0]),
+                    int(elements[2]) if not is_record_path else None,
+                    elements[1][7:] if not is_record_path else None
+                )
+                entries.append(ri)
             return entries
         return False
+
+    def top_level_paths(self):
+        """
+        Returns a list of top-level relative paths
+
+        :return:
+            A list of paths relative to self.install_root
+        """
+
+        paths = {}
+        min_level = 500
+        for ri in self.read_record():
+            if ri.relative_path.endswith('/'):
+                level = ri.relative_path.rstrip('/').count('/')
+            else:
+                level = ri.relative_path.count('/')
+
+            if level < min_level:
+                min_level = level
+
+            path_seg = ri.relative_path
+            if level > min_level:
+                path_seg = _trim_segments(path_seg, min_level)
+
+            while True:
+                num_levels = path_seg.count('/')
+                if num_levels <= min_level:
+                    if num_levels not in paths:
+                        paths[num_levels] = set()
+                    paths[num_levels].add(path_seg)
+                if num_levels == 0:
+                    break
+                path_seg = _trim_segments(path_seg, num_levels)
+
+        return sorted(paths[min_level])
 
     def write_record(self, package_dirs, package_files):
         """
@@ -463,3 +589,26 @@ class DistInfoDir:
         contents = self.generate_wheel(python_version, plat_specific)
         with open(self.abs_path('WHEEL'), 'w', encoding='utf-8') as fobj:
             fobj.write(contents)
+
+    def verify_files(self):
+        """
+        Returns two sets of paths
+
+        :return:
+            A 2-element tuple:
+             0: A set of RecordInfo object that are unmodified
+             1: A set of RecordInfo objects that are modified
+        """
+
+        unmodified_paths = set()
+        modified_paths = set()
+        for ri in self.read_record():
+            # The RECORD file itself doesn't have a sha or filesize
+            if ri.relative_path == self.dir_name + "/RECORD":
+                unmodified_paths.add(ri)
+                continue
+            if _verify_file(ri.absolute_path, ri.sha256, ri.size):
+                unmodified_paths.add(ri)
+            else:
+                modified_paths.add(ri)
+        return (unmodified_paths, modified_paths)
