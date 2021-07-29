@@ -31,3 +31,5 @@ jobs:
         run: python dev/deps.py
       - name: Run linter
         run: python dev/lint.py
+      - name: Run tests
+        run: python dev/tests.py
