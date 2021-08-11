@@ -19,10 +19,11 @@ from .downloader_exception import DownloaderException
 from ..ca_certs import get_ca_bundle_path
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
+from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
 
 
-class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader):
+class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader, BasicAuthDownloader):
 
     """
     A downloader that uses the command line program wget
@@ -104,6 +105,10 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             'Accept-Encoding': self.supported_encodings()
         }
         request_headers = self.add_conditional_headers(url, request_headers)
+
+        username, password = self.get_username_password(url)
+        if username and password:
+            command.extend(['--user=%s' % username, '--password=%s' % password])
 
         for name, value in request_headers.items():
             command.extend(['--header', "%s: %s" % (name, value)])
