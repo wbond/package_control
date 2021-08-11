@@ -709,7 +709,8 @@ class RepositoryProvider():
                                 gitlab_downloads = gitlab_client.download_info(download_details)
                                 bitbucket_downloads = bitbucket_client.download_info(download_details)
 
-                                if github_downloads is False or gitlab_downloads is False or bitbucket_downloads is False:
+                                if github_downloads is False or gitlab_downloads is False \
+                                        or bitbucket_downloads is False:
                                     raise ProviderException(text.format(
                                         u'''
                                         No valid semver tags found at %s for the package "%s" in the repository %s.
