@@ -26,8 +26,9 @@ class ChannelProvider():
 
     The current channel/repository infrastructure caches repository info into
     the channel to improve the Package Control client performance. This also
-    has the side effect of lessening the load on the GitHub and BitBucket APIs
-    and getting around not-infrequent HTTP 503 errors from those APIs.
+    has the side effect of lessening the load on the GitHub, GitLab and
+    BitBucket APIs and getting around not-infrequent HTTP 503 errors from
+    those APIs.
 
     :param channel:
         The URL of the channel
@@ -43,7 +44,8 @@ class ChannelProvider():
           `https_proxy`,
           `proxy_username`,
           `proxy_password`,
-          `query_string_params`
+          `query_string_params`,
+          `http_basic_auth`
     """
 
     def __init__(self, channel, settings):

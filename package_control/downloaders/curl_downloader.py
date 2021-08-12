@@ -16,11 +16,12 @@ from .non_clean_exit_error import NonCleanExitError
 from .downloader_exception import DownloaderException
 from ..ca_certs import get_ca_bundle_path
 from .limiting_downloader import LimitingDownloader
+from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
 from .decoding_downloader import DecodingDownloader
 
 
-class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader):
+class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader, BasicAuthDownloader):
 
     """
     A downloader that uses the command line program curl
@@ -100,6 +101,10 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         # OpenSSL which supports compression on the SSL layer, and Apache
         # will use that instead of HTTP-level encoding.
         request_headers['Accept-Encoding'] = self.supported_encodings()
+
+        auth_string = self.get_auth_string(url)
+        if auth_string:
+            command.extend(['-u', auth_string])
 
         for name, value in request_headers.items():
             command.extend(['--header', "%s: %s" % (name, value)])

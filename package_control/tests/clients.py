@@ -6,21 +6,34 @@ from ..clients.gitlab_client import GitLabClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..http_cache import HttpCache
 
-from . import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET
+from ._config import (
+    BB_PASS,
+    BB_USER,
+    DEBUG,
+    GH_PASS,
+    GH_USER,
+    GL_PASS,
+    GL_USER,
+    LAST_COMMIT_TIMESTAMP,
+    LAST_COMMIT_VERSION,
+    USER_AGENT,
+)
 
 
 class GitHubClientTests(unittest.TestCase):
     maxDiff = None
 
     def github_settings(self):
+        if not GH_PASS:
+            self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
+
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
-            'query_string_params': {
-                'api.github.com': {
-                    'client_id': CLIENT_ID,
-                    'client_secret': CLIENT_SECRET
-                }
+            'cache_length': 604800,
+            'user_agent': USER_AGENT,
+            'http_basic_auth': {
+                'api.github.com': [GH_USER, GH_PASS]
             }
         }
 
@@ -132,9 +145,17 @@ class GitLabClientTests(unittest.TestCase):
     maxDiff = None
 
     def gitlab_settings(self):
+        if not GL_PASS:
+            self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
+
         return {
-            'debug': True,
+            'debug': DEBUG,
             'cache': HttpCache(604800),
+            'cache_length': 604800,
+            'user_agent': USER_AGENT,
+            'http_basic_auth': {
+                'gitlab.com': [GL_USER, GL_PASS]
+            }
         }
 
     def test_gitlab_client_repo_info(self):
@@ -146,7 +167,7 @@ class GitLabClientTests(unittest.TestCase):
                     'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
                 'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                 'readme':
-                    'https://gitlab.com/packagecontrol-test/package_control-tester/-/package_control-tester/readme.md',
+                    'https://gitlab.com/packagecontrol-test/package_control-tester/-/master/readme.md',
                 'author': 'packagecontrol-test',
                 'issues': None,
                 'donate': None
@@ -248,9 +269,17 @@ class BitBucketClientTests(unittest.TestCase):
     maxDiff = None
 
     def bitbucket_settings(self):
+        if not BB_PASS:
+            self.skipTest("BitBucket app password for %s not set via env var BB_PASS" % BB_USER)
+
         return {
-            'debug': True,
-            'cache': HttpCache(604800)
+            'debug': DEBUG,
+            'cache': HttpCache(604800),
+            'cache_length': 604800,
+            'user_agent': USER_AGENT,
+            'http_basic_auth': {
+                'api.bitbucket.org': [BB_USER, BB_PASS]
+            }
         }
 
     def test_bitbucket_client_repo_info(self):

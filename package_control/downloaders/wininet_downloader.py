@@ -15,6 +15,7 @@ from .downloader_exception import DownloaderException
 from .win_downloader_exception import WinDownloaderException
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
+from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
 
 try:
@@ -27,7 +28,7 @@ except (ImportError):
 wininet = windll.wininet
 
 
-class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
+class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader, BasicAuthDownloader):
 
     """
     A downloader that uses the Windows WinINet DLL to perform downloads. This
@@ -270,6 +271,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
         username = url_info.username
         password = url_info.password
+
+        if not username and not password:
+            username, password = self.get_username_password()
 
         request_headers = {
             'Accept-Encoding': self.supported_encodings()

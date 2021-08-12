@@ -46,11 +46,12 @@ from .downloader_exception import DownloaderException
 from ..ca_certs import get_ca_bundle_path
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
+from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
 from .. import text
 
 
-class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
+class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader, BasicAuthDownloader):
 
     """
     A downloader that uses the Python urllib module
@@ -133,6 +134,8 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 user_agent = self.settings.get('user_agent')
                 if user_agent:
                     request_headers["User-Agent"] = user_agent
+
+                request_headers.update(self.build_auth_header(url))
 
                 request_headers = self.add_conditional_headers(url, request_headers)
                 request = Request(url, headers=request_headers)

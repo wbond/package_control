@@ -16,7 +16,7 @@ DOWNLOADERS = {
 # so it just needs to be configured properly, which is handled in
 # oscrypto_downloader.py.
 if sys.platform != 'linux' or sys.version_info[:2] != (3, 3) or \
-        ('sublime_text' not in sys.executable and 'plugin_host' not in sys.executable):
+        sys.executable != 'python3':
     from .oscrypto_downloader import OscryptoDownloader
     DOWNLOADERS['oscrypto'] = OscryptoDownloader
 

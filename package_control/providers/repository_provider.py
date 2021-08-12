@@ -19,6 +19,7 @@ from .schema_compat import platforms_to_releases
 from ..downloaders.downloader_exception import DownloaderException
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
+from ..clients.gitlab_client import GitLabClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..download_manager import downloader, update_url
 from ..versions import version_sort
@@ -50,7 +51,8 @@ class RepositoryProvider():
           `https_proxy`,
           `proxy_username`,
           `proxy_password`,
-          `query_string_params`
+          `query_string_params`,
+          `http_basic_auth`
     """
 
     def __init__(self, repo, settings):
@@ -326,6 +328,7 @@ class RepositoryProvider():
         debug = self.settings.get('debug')
 
         github_client = GitHubClient(self.settings)
+        gitlab_client = GitLabClient(self.settings)
         bitbucket_client = BitBucketClient(self.settings)
 
         if self.schema_major_version < 3:
@@ -399,22 +402,28 @@ class RepositoryProvider():
                             ))
 
                         github_url = False
+                        gitlab_url = False
                         bitbucket_url = False
                         extra = None
 
                         if tags:
                             github_url = github_client.make_tags_url(base)
+                            gitlab_url = gitlab_client.make_tags_url(base)
                             bitbucket_url = bitbucket_client.make_tags_url(base)
                             if tags is not True:
                                 extra = tags
 
                         if branch:
                             github_url = github_client.make_branch_url(base, branch)
+                            gitlab_url = gitlab_client.make_branch_url(base, branch)
                             bitbucket_url = bitbucket_client.make_branch_url(base, branch)
 
                         if github_url:
                             downloads = github_client.download_info(github_url, extra)
                             url = github_url
+                        elif gitlab_url:
+                            downloads = gitlab_client.download_info(gitlab_url, extra)
+                            url = gitlab_url
                         elif bitbucket_url:
                             downloads = bitbucket_client.download_info(bitbucket_url, extra)
                             url = bitbucket_url
@@ -556,6 +565,7 @@ class RepositoryProvider():
         debug = self.settings.get('debug')
 
         github_client = GitHubClient(self.settings)
+        gitlab_client = GitLabClient(self.settings)
         bitbucket_client = BitBucketClient(self.settings)
 
         # Backfill the "previous_names" keys for old schemas
@@ -592,13 +602,13 @@ class RepositoryProvider():
                     info[field] = package.get(field)
 
             # Schema version 2.0 allows for grabbing details about a package, or its
-            # download from "details" urls. See the GitHubClient and BitBucketClient
-            # classes for valid URLs.
+            # download from "details" urls. See the GitHubClient, GitLabClient
+            # and BitBucketClient classes for valid URLs.
             if self.schema_major_version >= 2:
                 details = package.get('details')
                 releases = package.get('releases')
 
-                # Try to grab package-level details from GitHub or BitBucket
+                # Try to grab package-level details from GitHub, GitLab or BitBucket
                 if details:
                     if invalid_sources is not None and details in invalid_sources:
                         continue
@@ -607,12 +617,15 @@ class RepositoryProvider():
 
                     try:
                         github_repo_info = github_client.repo_info(details)
+                        gitlab_repo_info = gitlab_client.repo_info(details)
                         bitbucket_repo_info = bitbucket_client.repo_info(details)
 
                         # When grabbing details, prefer explicit field values over the values
-                        # from the GitHub or BitBucket API
+                        # from the GitHub, GitLab or BitBucket API
                         if github_repo_info:
                             info = dict(chain(github_repo_info.items(), info.items()))
+                        elif gitlab_repo_info:
+                            info = dict(chain(gitlab_repo_info.items(), info.items()))
                         elif bitbucket_repo_info:
                             info = dict(chain(bitbucket_repo_info.items(), info.items()))
                         else:
@@ -694,9 +707,11 @@ class RepositoryProvider():
 
                             try:
                                 github_downloads = github_client.download_info(download_details)
+                                gitlab_downloads = gitlab_client.download_info(download_details)
                                 bitbucket_downloads = bitbucket_client.download_info(download_details)
 
-                                if github_downloads is False or bitbucket_downloads is False:
+                                if github_downloads is False or gitlab_downloads is False \
+                                        or bitbucket_downloads is False:
                                     raise ProviderException(text.format(
                                         u'''
                                         No valid semver tags found at %s for the package "%s" in the repository %s.
@@ -706,6 +721,8 @@ class RepositoryProvider():
 
                                 if github_downloads:
                                     downloads = github_downloads
+                                elif gitlab_downloads:
+                                    downloads = gitlab_downloads
                                 elif bitbucket_downloads:
                                     downloads = bitbucket_downloads
                                 else:
@@ -750,22 +767,28 @@ class RepositoryProvider():
                                     ))
 
                                 github_url = False
+                                gitlab_url = False
                                 bitbucket_url = False
                                 extra = None
 
                                 if tags:
                                     github_url = github_client.make_tags_url(base)
+                                    gitlab_url = gitlab_client.make_tags_url(base)
                                     bitbucket_url = bitbucket_client.make_tags_url(base)
                                     if tags is not True:
                                         extra = tags
 
                                 if branch:
                                     github_url = github_client.make_branch_url(base, branch)
+                                    gitlab_url = gitlab_client.make_branch_url(base, branch)
                                     bitbucket_url = bitbucket_client.make_branch_url(base, branch)
 
                                 if github_url:
                                     downloads = github_client.download_info(github_url, extra)
                                     url = github_url
+                                elif gitlab_url:
+                                    downloads = gitlab_client.download_info(gitlab_url, extra)
+                                    url = gitlab_url
                                 elif bitbucket_url:
                                     downloads = bitbucket_client.download_info(bitbucket_url, extra)
                                     url = bitbucket_url

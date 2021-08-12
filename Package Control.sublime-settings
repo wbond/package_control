@@ -88,6 +88,20 @@
 	// with the current version.
 	"user_agent": "Package Control v%s",
 
+	// Username and password support for private repositories, or for
+	// bypassing anonymous user download limits on services.
+	//
+	// Each entry should be a key of the domain name, with a 2-element list
+	// as the value, first the username and then the password. Examples of
+	// common hosting platforms below:
+	//
+	// {
+	//     "api.github.com": ["username", "personal access token"],
+	//     "gitlab.com": ["username", "personal access token"],
+	//     "api.bitbucket.org": ["username", "app password"],
+	// }
+	"http_basic_auth": {},
+
 	// A list of package names to ignore when performing operations. This will
 	// only affect packages that appear to be a git or hg repository, but will
 	// be especially useful for package developers who manually deal with the
