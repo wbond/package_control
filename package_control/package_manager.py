@@ -380,6 +380,8 @@ class PackageManager():
             '*'
         ]
 
+        st_version = self.settings['version']
+
         for platform_selector in platform_selectors:
             if platform_selector not in dependency_info:
                 continue
@@ -389,7 +391,7 @@ class PackageManager():
 
             # Sorting reverse will give us >, < then *
             for version_selector in sorted(versions, reverse=True):
-                if not is_compatible_version(version_selector):
+                if not is_compatible_version(version_selector, st_version):
                     continue
                 return platform_dependency[version_selector]
 

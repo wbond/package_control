@@ -20,6 +20,7 @@ TEST_CLASSES = [
     providers.GitLabUserProviderTests,
     providers.RepositoryProviderTests,
     providers.ChannelProviderTests,
+    providers.VersionSelectorTests
 ]
 
 
