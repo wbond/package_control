@@ -380,7 +380,7 @@ class PackageCleanup(threading.Thread):
         if not sublime_text and not platforms:
             return True
 
-        if not is_compatible_version(sublime_text):
+        if not is_compatible_version(sublime_text, int(sublime.version())):
             return False
 
         if not isinstance(platforms, list):

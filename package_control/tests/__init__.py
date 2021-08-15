@@ -21,6 +21,7 @@ TEST_CLASSES = [
     providers.RepositoryProviderTests,
     providers.ChannelProviderTests,
     distinfo.DistinfoTests,
+    providers.VersionSelectorTests,
 ]
 
 

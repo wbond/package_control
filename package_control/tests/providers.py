@@ -8,6 +8,7 @@ from ..providers.github_user_provider import GitHubUserProvider
 from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
 from ..providers.gitlab_user_provider import GitLabUserProvider
 from ..providers.repository_provider import RepositoryProvider
+from ..providers.release_selector import is_compatible_version
 
 from ._config import (
     BB_PASS,
@@ -2638,3 +2639,44 @@ class ChannelProviderTests(unittest.TestCase):
                 "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json"
             )
         )
+
+
+class VersionSelectorTests(unittest.TestCase):
+
+    def test_version_less_than(self):
+        self.assertTrue(is_compatible_version("<3176", 3175))
+
+    def test_version_not_less_than(self):
+        self.assertFalse(is_compatible_version("<3176", 3176))
+
+    def test_version_less_or_equal_than(self):
+        self.assertTrue(is_compatible_version("<=3176", 3175))
+        self.assertTrue(is_compatible_version("<=3176", 3176))
+
+    def test_version_not_less_or_equal_than(self):
+        self.assertFalse(is_compatible_version("<=3176", 3177))
+
+    def test_version_greater_than(self):
+        self.assertTrue(is_compatible_version(">3176", 3177))
+
+    def test_version_not_greater_than(self):
+        self.assertFalse(is_compatible_version(">3176", 3176))
+
+    def test_version_greater_or_equal_than(self):
+        self.assertTrue(is_compatible_version(">=3176", 3176))
+        self.assertTrue(is_compatible_version(">=3176", 3177))
+
+    def test_version_not_greater_or_equal_than(self):
+        self.assertFalse(is_compatible_version(">=3176", 3175))
+
+    def test_version_range_below_lower_bound(self):
+        self.assertFalse(is_compatible_version("3176 - 3211", 3175))
+
+    def test_version_range_lower_bound(self):
+        self.assertTrue(is_compatible_version("3176 - 3211", 3176))
+
+    def test_version_range_upper_bound(self):
+        self.assertTrue(is_compatible_version("3176 - 3211", 3211))
+
+    def test_version_range_above_upper_bound(self):
+        self.assertFalse(is_compatible_version("3176 - 3211", 3212))
