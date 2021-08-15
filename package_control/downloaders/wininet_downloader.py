@@ -266,7 +266,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         password = url_info.password
 
         if not username and not password:
-            username, password = self.get_username_password()
+            username, password = self.get_username_password(url)
 
         request_headers = {
             'Accept-Encoding': self.supported_encodings()

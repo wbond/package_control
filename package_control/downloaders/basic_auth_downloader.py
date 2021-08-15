@@ -59,7 +59,6 @@ class BasicAuthDownloader(object):
         domain_name = urlparse(url).netloc
 
         auth_settings = self.settings.get('http_basic_auth')
-        domain_name = urlparse(url).netloc
         if auth_settings and isinstance(auth_settings, dict):
             params = auth_settings.get(domain_name)
             if params and isinstance(params, (list, tuple)) and len(params) == 2:
