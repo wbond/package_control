@@ -355,6 +355,14 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
         root = os.path.abspath(os.path.join(deps_dir, '..'))
         install_lib = os.path.basename(deps_dir)
 
+        # Ensure we pick up previously installed packages when running
+        # setup.py. This is important for things like setuptools.
+        env = os.environ.copy()
+        if sys.version_info >= (3,):
+            env['PYTHONPATH'] = deps_dir
+        else:
+            env[b'PYTHONPATH'] = deps_dir.encode('utf-8')
+
         _execute(
             [
                 sys.executable,
@@ -364,7 +372,8 @@ def _extract_package(deps_dir, pkg_path, pkg_dir):
                 '--install-lib=%s' % install_lib,
                 '--no-compile'
             ],
-            setup_dir
+            setup_dir,
+            env=env
         )
 
     finally:
@@ -661,7 +670,7 @@ def _parse_requires(path):
     return packages
 
 
-def _execute(params, cwd, retry=None):
+def _execute(params, cwd, retry=None, env=None):
     """
     Executes a subprocess
 
@@ -682,7 +691,8 @@ def _execute(params, cwd, retry=None):
         params,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=cwd
+        cwd=cwd,
+        env=env
     )
     stdout, stderr = proc.communicate()
     code = proc.wait()
@@ -845,12 +855,13 @@ def _pep425tags():
         if sys.platform == 'win32':
             if 'amd64' in sys.version.lower():
                 arches = ['win_amd64']
-            arches = [sys.platform]
+            else:
+                arches = [sys.platform]
         elif hasattr(os, 'uname'):
             (plat, _, _, _, machine) = os.uname()
             plat = plat.lower().replace('/', '')
             machine.replace(' ', '_').replace('/', '_')
-            if plat == 'linux' and sys.maxsize == 2147483647:
+            if plat == 'linux' and sys.maxsize == 2147483647 and 'arm' not in machine:
                 machine = 'i686'
             arch = '%s_%s' % (plat, machine)
             if _pep425_supports_manylinux():
