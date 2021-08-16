@@ -37,7 +37,8 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
             'cache_length': 604800,
             'user_agent': USER_AGENT,
             'http_basic_auth': {
-                'api.github.com': [GH_USER, GH_PASS]
+                'api.github.com': [GH_USER, GH_PASS],
+                'raw.githubusercontent.com': [GH_USER, GH_PASS],
             }
         }
 
@@ -148,7 +149,8 @@ class GitHubUserProviderTests(unittest.TestCase):
             'cache_length': 604800,
             'user_agent': USER_AGENT,
             'http_basic_auth': {
-                'api.github.com': [GH_USER, GH_PASS]
+                'api.github.com': [GH_USER, GH_PASS],
+                'raw.githubusercontent.com': [GH_USER, GH_PASS],
             }
         }
 
@@ -548,8 +550,9 @@ class RepositoryProviderTests(unittest.TestCase):
             'cache': HttpCache(604800),
             'http_basic_auth': {
                 'api.github.com': [GH_USER, GH_PASS],
+                'raw.githubusercontent.com': [GH_USER, GH_PASS],
                 'gitlab.com': [GL_USER, GL_PASS],
-                'api.bitbucket.org': [BB_USER, BB_PASS]
+                'api.bitbucket.org': [BB_USER, BB_PASS],
             }
         }
 
@@ -1357,7 +1360,10 @@ class ChannelProviderTests(unittest.TestCase):
             'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
-            'user_agent': USER_AGENT
+            'user_agent': USER_AGENT,
+            'http_basic_auth': {
+                'raw.githubusercontent.com': [GH_USER, GH_PASS],
+            }
         }
 
     def test_get_name_map_12(self):

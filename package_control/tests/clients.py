@@ -33,7 +33,8 @@ class GitHubClientTests(unittest.TestCase):
             'cache_length': 604800,
             'user_agent': USER_AGENT,
             'http_basic_auth': {
-                'api.github.com': [GH_USER, GH_PASS]
+                'api.github.com': [GH_USER, GH_PASS],
+                'raw.githubusercontent.com': [GH_USER, GH_PASS],
             }
         }
 
