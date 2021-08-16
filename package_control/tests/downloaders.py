@@ -5,7 +5,7 @@ from ..downloaders.binary_not_found_error import BinaryNotFoundError
 from ..downloaders.downloader_exception import DownloaderException
 from ..http_cache import HttpCache
 
-from ._config import USER_AGENT, DEBUG
+from ._config import USER_AGENT, DEBUG, GH_USER, GH_PASS
 
 
 class DownloaderTestsMixin:
@@ -16,7 +16,10 @@ class DownloaderTestsMixin:
                 'debug': DEBUG,
                 'cache': HttpCache(cache_length),
                 'cache_length': cache_length,
-                'user_agent': USER_AGENT
+                'user_agent': USER_AGENT,
+                'http_basic_auth': {
+                    'raw.githubusercontent.com': [GH_USER, GH_PASS],
+                }
             })
         return self._downloader
 
