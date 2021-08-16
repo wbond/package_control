@@ -34,6 +34,7 @@ def run(matcher=None):
         A bool - if tests did not find any errors
     """
 
+    print('Python %s' % sys.version)
     print('Running tests')
 
     loader = unittest.TestLoader()

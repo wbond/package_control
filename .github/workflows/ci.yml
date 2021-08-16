@@ -9,24 +9,108 @@ on:
       - master
 
 jobs:
-  build:
-    name: Python ${{ matrix.python }} on ${{ matrix.os }} ${{ matrix.arch }}
+  build-38:
+    name: Python 3.8.7 on ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
+          - windows-2019
+          - macos-10.15
           - ubuntu-18.04
-        python:
-          - '3.3.7'
-          - '3.8.7'
         arch:
-          - 'x64'
+          - x86
+          - x64
+        exclude:
+          - os: macos-10.15
+            arch: x86
+          - os: ubuntu-18.04
+            arch: x86
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8.7'
+          architecture: ${{ matrix.arch }}
+      - name: Install dependencies
+        run: python dev/deps.py
+      - name: Run linter
+        run: python dev/lint.py
+      - name: Run tests
+        run: python dev/tests.py
+        env:
+          GH_PASS: ${{ secrets.GH_PASS }}
+          GL_PASS: ${{ secrets.GL_PASS }}
+          BB_PASS: ${{ secrets.BB_PASS }}
+
+  build-linux-33:
+    name: Python 3.3.7 on ubuntu-18.04 x64
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-python@main
         with:
-          python-version: ${{ matrix.python }}
-          architecture: ${{ matrix.arch }}
+          python-version: '3.3.7'
+          architecture: x64
+      - name: Install dependencies
+        run: python dev/deps.py
+      - name: Run linter
+        run: python dev/lint.py
+      - name: Run tests
+        run: python dev/tests.py
+        env:
+          GH_PASS: ${{ secrets.GH_PASS }}
+          GL_PASS: ${{ secrets.GL_PASS }}
+          BB_PASS: ${{ secrets.BB_PASS }}
+
+  build-mac-33:
+    name: Python 3.3.7 on macos-10.15 x64
+    runs-on: macos-10.15
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Check pyenv
+        id: check-pyenv
+        uses: actions/cache@v2
+        with:
+          path: ~/.pyenv
+          key: macos-10.15-3.3-pyenv
+
+      - name: Install Python 3.3
+        run: python dev/pyenv-install.py 3.3 >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: python dev/deps.py
+      - name: Run linter
+        run: python dev/lint.py
+      - name: Run tests
+        run: python dev/tests.py
+        env:
+          GH_PASS: ${{ secrets.GH_PASS }}
+          GL_PASS: ${{ secrets.GL_PASS }}
+          BB_PASS: ${{ secrets.BB_PASS }}
+
+  build-windows-33:
+    name: Python 3.3.5 on windows-2019 ${{ matrix.arch }}
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        arch:
+          - 'x86'
+          - 'x64'
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Cache Python
+        id: cache-python
+        uses: actions/cache@v2
+        with:
+          path: ~/AppData/Local/Python3.3-${{ matrix.arch }}
+          key: windows-2019-python-3.3-${{ matrix.arch }}
+
+      - name: Install Python 3.3.5
+        run: python dev/python-install.py 3.3 ${{ matrix.arch }} | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Install dependencies
         run: python dev/deps.py
       - name: Run linter
