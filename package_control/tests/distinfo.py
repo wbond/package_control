@@ -36,7 +36,7 @@ def _create_package_files(d):
 
     os.mkdir(module_dir)
 
-    with open(main_py, 'w', encoding='utf-8') as f:
+    with open(main_py, 'w', encoding='utf-8', newline='\n') as f:
         f.write(
             "print('Hello world!')\n"
             "\n"
@@ -44,10 +44,10 @@ def _create_package_files(d):
             "import testing.submod2\n"
         )
 
-    with open(submodule1, 'w', encoding='utf-8') as f:
+    with open(submodule1, 'w', encoding='utf-8', newline='\n') as f:
         f.write("print('Do you like my hat?')")
 
-    with open(submodule2, 'w', encoding='utf-8') as f:
+    with open(submodule2, 'w', encoding='utf-8', newline='\n') as f:
         f.write("print('I do not like your hat!')")
 
     return ([module_dir], ['testing.py'])
