@@ -52,7 +52,8 @@ class RepositoryProvider(BaseRepositoryProvider):
           `https_proxy`,
           `proxy_username`,
           `proxy_password`,
-          `query_string_params`
+          `query_string_params`,
+          `http_basic_auth`
     """
 
     def __init__(self, repo_url, settings):

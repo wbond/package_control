@@ -17,6 +17,7 @@ from .oscrypto_downloader_exception import OscryptoDownloaderException
 from ..ca_certs import get_user_ca_bundle_path
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
+from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
 from .. import text
 
@@ -45,7 +46,7 @@ from ..deps.oscrypto import tls  # noqa
 from ..deps.oscrypto import errors as oscrypto_errors  # noqa
 
 
-class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader):
+class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader, BasicAuthDownloader):
 
     """
     A downloader that uses the Python oscrypto.tls module
@@ -137,6 +138,8 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                 if user_agent:
                     req_headers["User-Agent"] = user_agent
                 req_headers = self.add_conditional_headers(url, req_headers)
+
+                req_headers.update(self.build_auth_header(url))
 
                 request = 'GET '
                 url_info = urlparse(url)
