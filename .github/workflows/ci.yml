@@ -36,5 +36,6 @@ jobs:
       - name: Run tests
         run: python dev/tests.py
         env:
-          GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
-          GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+          GH_PASS: ${{ secrets.GH_PASS }}
+          GL_PASS: ${{ secrets.GL_PASS }}
+          BB_PASS: ${{ secrets.BB_PASS }}

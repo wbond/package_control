@@ -9,23 +9,34 @@ from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
 from ..providers.gitlab_user_provider import GitLabUserProvider
 from ..providers.repository_provider import RepositoryProvider
 
-from ._config import LAST_COMMIT_TIMESTAMP, LAST_COMMIT_VERSION, CLIENT_ID, CLIENT_SECRET, USER_AGENT, DEBUG
+from ._config import (
+    BB_PASS,
+    BB_USER,
+    DEBUG,
+    GH_PASS,
+    GH_USER,
+    GL_PASS,
+    GL_USER,
+    LAST_COMMIT_TIMESTAMP,
+    LAST_COMMIT_VERSION,
+    USER_AGENT,
+)
 
 
 class GitHubRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
     def github_settings(self):
+        if not GH_PASS:
+            self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
+
         return {
             'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT,
-            'query_string_params': {
-                'api.github.com': {
-                    'client_id': CLIENT_ID,
-                    'client_secret': CLIENT_SECRET
-                }
+            'http_basic_auth': {
+                'api.github.com': [GH_USER, GH_PASS]
             }
         }
 
@@ -127,16 +138,16 @@ class GitHubUserProviderTests(unittest.TestCase):
     maxDiff = None
 
     def github_settings(self):
+        if not GH_PASS:
+            self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
+
         return {
             'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT,
-            'query_string_params': {
-                'api.github.com': {
-                    'client_id': CLIENT_ID,
-                    'client_secret': CLIENT_SECRET
-                }
+            'http_basic_auth': {
+                'api.github.com': [GH_USER, GH_PASS]
             }
         }
 
@@ -217,11 +228,17 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
     def gitlab_settings(self):
+        if not GL_PASS:
+            self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
+
         return {
             'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
-            'user_agent': USER_AGENT
+            'user_agent': USER_AGENT,
+            'http_basic_auth': {
+                'gitlab.com': [GL_USER, GL_PASS]
+            }
         }
 
     def test_match_url(self):
@@ -323,11 +340,17 @@ class GitLabUserProviderTests(unittest.TestCase):
     maxDiff = None
 
     def gitlab_settings(self):
+        if not GL_PASS:
+            self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
+
         return {
             'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
-            'user_agent': USER_AGENT
+            'user_agent': USER_AGENT,
+            'http_basic_auth': {
+                'gitlab.com': [GL_USER, GL_PASS]
+            }
         }
 
     def test_match_url(self):
@@ -405,11 +428,17 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
     def bitbucket_settings(self):
+        if not BB_PASS:
+            self.skipTest("BitBucket app password for %s not set via env var BB_PASS" % BB_USER)
+
         return {
             'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
-            'user_agent': USER_AGENT
+            'user_agent': USER_AGENT,
+            'http_basic_auth': {
+                'api.bitbucket.org': [BB_USER, BB_PASS]
+            }
         }
 
     def test_match_url(self):
@@ -506,16 +535,22 @@ class RepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
     def settings(self):
+        if not GH_PASS:
+            self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
+        if not GL_PASS:
+            self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
+        if not BB_PASS:
+            self.skipTest("BitBucket app password for %s not set via env var BB_PASS" % BB_USER)
+
         return {
             'debug': DEBUG,
             'cache': HttpCache(604800),
             'cache_length': 604800,
             'user_agent': USER_AGENT,
-            'query_string_params': {
-                'api.github.com': {
-                    'client_id': CLIENT_ID,
-                    'client_secret': CLIENT_SECRET
-                }
+            'http_basic_auth': {
+                'api.github.com': [GH_USER, GH_PASS],
+                'gitlab.com': [GL_USER, GL_PASS],
+                'api.bitbucket.org': [BB_USER, BB_PASS]
             }
         }
 
