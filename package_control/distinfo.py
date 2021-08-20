@@ -453,7 +453,7 @@ class DistInfoDir:
             desc,
             homepage
         )
-        with open(self.abs_path('METADATA'), 'w', encoding='utf-8') as fobj:
+        with open(self.abs_path('METADATA'), 'w', encoding='utf-8', newline='\n') as fobj:
             fobj.write(contents)
 
     def read_installer(self):
@@ -474,7 +474,7 @@ class DistInfoDir:
         """
 
         contents = self.generate_installer()
-        with open(self.abs_path('INSTALLER'), 'w', encoding='utf-8') as fobj:
+        with open(self.abs_path('INSTALLER'), 'w', encoding='utf-8', newline='\n') as fobj:
             fobj.write(contents)
 
     def read_record(self):
@@ -555,7 +555,7 @@ class DistInfoDir:
         record_path = self.abs_path('RECORD')
         open(record_path, 'wb').close()
         contents = self.generate_record(package_dirs, package_files)
-        with open(record_path, 'w', encoding='utf-8') as fobj:
+        with open(record_path, 'w', encoding='utf-8', newline='\n') as fobj:
             fobj.write(contents)
 
     def read_wheel(self):
@@ -587,7 +587,7 @@ class DistInfoDir:
         """
 
         contents = self.generate_wheel(python_version, plat_specific)
-        with open(self.abs_path('WHEEL'), 'w', encoding='utf-8') as fobj:
+        with open(self.abs_path('WHEEL'), 'w', encoding='utf-8', newline='\n') as fobj:
             fobj.write(contents)
 
     def verify_files(self):
