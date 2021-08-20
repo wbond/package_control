@@ -1969,7 +1969,7 @@ class PackageManager():
         lib_path = sys_path.lib_paths()["3.3"]
         try:
             library.remove(lib_path, library_name)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             return False
 
     def remove_package(self, package_name):
