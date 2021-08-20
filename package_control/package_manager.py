@@ -134,15 +134,12 @@ class PackageManager():
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
 
-    def get_metadata(self, package_name, is_library=False):
+    def get_metadata(self, package_name):
         """
         Returns the package metadata for an installed package
 
         :param package_name:
             The name of the package
-
-        :param is_library:
-            If the metadata is for a library
 
         :return:
             A dict with the keys:
@@ -153,9 +150,6 @@ class PackageManager():
         """
 
         metadata_filename = 'package-metadata.json'
-        if is_library:
-            metadata_filename = 'dependency-metadata.json'
-
         metadata_json = read_package_file(package_name, metadata_filename)
         if metadata_json:
             try:
@@ -1204,12 +1198,7 @@ class PackageManager():
                 return False
 
             if is_upgrade:
-                for rel_path in existing_did.top_level_paths():
-                    abs_path = os.path.join(existing_did.install_root, rel_path)
-                    if os.path.isdir(abs_path):
-                        shutil.rmtree(abs_path)
-                    else:
-                        os.unlink(abs_path)
+                library.remove(existing_did.install_root, library_name)
 
             for rel_path in temp_did.top_level_paths():
                 dest_path = os.path.join(lib_path, rel_path)
@@ -1229,7 +1218,7 @@ class PackageManager():
             # after we close it.
             sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
 
-    def install_package(self, package_name, is_library=False):
+    def install_package(self, package_name):
         """
         Downloads and installs (or upgrades) a package
 
@@ -1247,9 +1236,6 @@ class PackageManager():
 
         :param package_name:
             The package to download and install
-
-        :param is_library:
-            If the package is a library
 
         :return: bool if the package was successfully installed or None
                  if the package needs to be cleaned up on the next restart
@@ -1327,7 +1313,7 @@ class PackageManager():
 
                 return result
 
-            old_version = self.get_metadata(package_name, is_library=False).get('version')
+            old_version = self.get_metadata(package_name).get('version')
             is_upgrade = old_version is not None
 
             package_zip = self._download_zip_file(package_name, url, tmp_package_path)
@@ -1350,14 +1336,8 @@ class PackageManager():
             except (KeyError):
                 unpack = False
 
-            # Libraries are always unpacked. If it doesn't need to be
-            # unpacked, it probably should just be part of a package instead
-            # of being split out.
-            if is_library:
-                unpack = True
-
             # If libraries were not in the channel, try the package
-            if not is_library and not have_installed_libraries:
+            if not have_installed_libraries:
                 try:
                     lib_info_json = package_zip.read(libraries_path)
                     try:
@@ -1380,8 +1360,6 @@ class PackageManager():
                     pass
 
             metadata_filename = 'package-metadata.json'
-            if is_library:
-                metadata_filename = 'dependency-metadata.json'
 
             # If we already have a package-metadata.json file in
             # Packages/{package_name}/, but the package no longer contains
@@ -1558,19 +1536,15 @@ class PackageManager():
             self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 
             with open(package_metadata_file, 'w', encoding='utf-8') as fobj:
-                if is_library:
-                    url = packages[package_name]['issues']
-                else:
-                    url = packages[package_name]['homepage']
+                url = packages[package_name]['homepage']
                 metadata = {
                     "version": new_version,
                     "sublime_text": release['sublime_text'],
                     "platforms": release['platforms'],
                     "url": url,
-                    "description": packages[package_name]['description']
+                    "description": packages[package_name]['description'],
+                    'libraries': release.get('libraries', [])
                 }
-                if not is_library:
-                    metadata['libraries'] = release.get('libraries', [])
                 json.dump(metadata, fobj)
 
             # Submit install and upgrade info
@@ -1589,14 +1563,13 @@ class PackageManager():
                 }
             self.record_usage(params)
 
-            if not is_library:
-                # Record the install in the settings file so that you can move
-                # settings across computers and have the same packages installed
-                settings = sublime.load_settings(pc_settings_filename())
-                names = load_list_setting(settings, 'installed_packages')
-                if package_name not in names:
-                    names.append(package_name)
-                    save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
+            # Record the install in the settings file so that you can move
+            # settings across computers and have the same packages installed
+            settings = sublime.load_settings(pc_settings_filename())
+            names = load_list_setting(settings, 'installed_packages')
+            if package_name not in names:
+                names.append(package_name)
+                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
 
             # If we didn't extract directly into the Packages/{package_name}/
             # folder, we need to create a .sublime-package file and install it
@@ -1673,29 +1646,34 @@ class PackageManager():
 
         debug = self.settings.get('debug')
 
-        packages = self.list_available_libraries()
+        libraries = self.list_available_libraries()
+
+        # TODO: Handle 3.8
+        lib_path = sys_path.lib_paths()["3.3"]
 
         error = False
-        for lib_name in libraries:
+        for library_name, info in libraries.items():
             # Collect library information
-            # TODO: implement installation using new system
-            library_dir = os.path.join(sys_path.packages_path, lib_name)
-            library_git_dir = os.path.join(library_dir, '.git')
-            library_hg_dir = os.path.join(library_dir, '.hg')
-            library_metadata = self.get_metadata(lib_name, is_library=True)
 
-            library_releases = packages.get(lib_name, {}).get('releases', [])
+            try:
+                existing_did = library.find_dist_info_dir(lib_path, library_name)
+                installed_version = existing_did.read_metadata()['version']
+            except FileNotFoundError:
+                installed_version = None
+
+            # TODO: implement pep440 handling, since it is different than SemVer
+            installed_version = version_comparable(installed_version) if installed_version else None
+
+            library_releases = info.get('releases', [])
             library_release = library_releases[0] if library_releases else {}
 
-            installed_version = library_metadata.get('version')
-            installed_version = version_comparable(installed_version) if installed_version else None
             available_version = library_release.get('version')
             available_version = version_comparable(available_version) if available_version else None
 
             def library_write(msg):
-                msg = "The library '{lib_name}' " + msg
+                msg = "The library '{library_name}' " + msg
                 msg = msg.format(
-                    library=lib_name,
+                    library=library_name,
                     installed_version=installed_version,
                     available_version=available_version
                 )
@@ -1706,27 +1684,15 @@ class PackageManager():
                     library_write(msg)
 
             install_library = False
-            if not os.path.exists(library_dir):
+            if not installed_version:
                 install_library = True
                 library_write('is not currently installed; installing...')
-            elif os.path.exists(library_git_dir):
-                library_write_debug('is installed via git; leaving alone')
-            elif os.path.exists(library_hg_dir):
-                library_write_debug('is installed via hg; leaving alone')
-            elif not library_metadata:
-                library_write_debug('appears to be installed, but is missing metadata; leaving alone')
             elif not library_releases:
                 library_write('is installed, but there are no available releases; leaving alone')
             elif not available_version:
                 library_write(
                     'is installed, but the latest available release '
                     'could not be determined; leaving alone'
-                )
-            elif not installed_version:
-                install_library = True
-                library_write(
-                    'is installed, but its version is not known; '
-                    'upgrading to latest release {available_version}...'
                 )
             elif installed_version < available_version:
                 install_library = True
@@ -1738,7 +1704,7 @@ class PackageManager():
                 library_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
             if install_library:
-                library_result = self.install_package(lib_name, True)
+                library_result = self.install_library(library_name)
                 if not library_result:
                     library_write('could not be installed or updated')
                     if fail_early:
@@ -1774,7 +1740,7 @@ class PackageManager():
 
         error = False
         for lib_name in orphaned_libraries:
-            if self.remove_package(lib_name, is_library=True):
+            if self.remove_library(lib_name):
                 console_write(
                     '''
                     The orphaned library %s has been removed
@@ -1977,7 +1943,36 @@ class PackageManager():
 
         sublime.set_timeout(print_to_panel, 1)
 
-    def remove_package(self, package_name, is_library=False):
+    def remove_library(self, library_name):
+        """
+        Deletes a library
+
+        :param library_name:
+            The library to delete
+
+        :return:
+            bool if the library was successfully deleted
+        """
+
+        installed_libraries = self.list_libraries()
+
+        if library_name not in installed_libraries:
+            show_error(
+                '''
+                The library specified, %s, is not installed
+                ''',
+                (library_name,)
+            )
+            return False
+
+        # TODO: Handle 3.8
+        lib_path = sys_path.lib_paths()["3.3"]
+        try:
+            library.remove(lib_path, library_name)
+        except FileNotFoundError as e:
+            return False
+
+    def remove_package(self, package_name):
         """
         Deletes a package
 
@@ -1995,21 +1990,14 @@ class PackageManager():
                  and should not be reenabled
         """
 
-        if not is_library:
-            installed_packages = self.list_packages()
-        else:
-            installed_packages = self.list_libraries()
-
-        package_type = 'package'
-        if is_library:
-            package_type = 'library'
+        installed_packages = self.list_packages()
 
         if package_name not in installed_packages:
             show_error(
                 '''
-                The %s specified, %s, is not installed
+                The package specified, %s, is not installed
                 ''',
-                (package_type, package_name)
+                (package_name,)
             )
             return False
 
@@ -2019,7 +2007,7 @@ class PackageManager():
         installed_package_path = os.path.join(sys_path.installed_packages_path, package_filename)
         package_dir = self.get_package_dir(package_name)
 
-        version = self.get_metadata(package_name, is_library=is_library).get('version')
+        version = self.get_metadata(package_name).get('version')
 
         cleanup_complete = True
 
@@ -2051,24 +2039,22 @@ class PackageManager():
         }
         self.record_usage(params)
 
-        if not is_library:
-            settings = sublime.load_settings(pc_settings_filename())
-            names = load_list_setting(settings, 'installed_packages')
-            if package_name in names:
-                names.remove(package_name)
-                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
+        settings = sublime.load_settings(pc_settings_filename())
+        names = load_list_setting(settings, 'installed_packages')
+        if package_name in names:
+            names.remove(package_name)
+            save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
 
         if os.path.exists(package_dir) and can_delete_dir:
             unlink_or_delete_directory(package_dir)
 
-        if not is_library:
-            message = 'The package %s has been removed' % package_name
-            if not cleanup_complete:
-                message += ' and will be cleaned up on the next restart'
-            console_write(message)
+        message = 'The package %s has been removed' % package_name
+        if not cleanup_complete:
+            message += ' and will be cleaned up on the next restart'
+        console_write(message)
 
-            # Remove libraries that are no longer needed
-            self.cleanup_libraries(package_name)
+        # Remove libraries that are no longer needed
+        self.cleanup_libraries(package_name)
 
         return True if cleanup_complete else None
 

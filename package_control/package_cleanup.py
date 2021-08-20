@@ -56,6 +56,7 @@ class PackageCleanup(threading.Thread):
         found_packages = []
         installed_packages = list(installed_packages_at_start)
 
+        # TODO: handle new libraries infrastructure
         found_libraries = []
         installed_libraries = self.manager.list_libraries()
 
@@ -248,7 +249,6 @@ class PackageCleanup(threading.Thread):
                 found_packages.append(package_name)
 
         invalid_packages = []
-        invalid_libraries = []
 
         # Check metadata to verify packages were not improperly installed
         for package in found_packages:
@@ -259,13 +259,7 @@ class PackageCleanup(threading.Thread):
             if metadata and not self.is_compatible(metadata):
                 invalid_packages.append(package)
 
-        # Make sure installed libraries are not improperly installed
-        for library_name in found_libraries:
-            metadata = self.manager.get_metadata(library_name, is_library=True)
-            if metadata and not self.is_compatible(metadata):
-                invalid_libraries.append(library_name)
-
-        if invalid_packages or invalid_libraries:
+        if invalid_packages:
             def show_sync_error():
                 message = ''
                 if invalid_packages:
@@ -278,17 +272,6 @@ class PackageCleanup(threading.Thread):
 
                         ''',
                         (package_s, '\n'.join(invalid_packages))
-                    )
-                if invalid_libraries:
-                    library_s = 'ies were' if len(invalid_libraries) != 1 else 'y was'
-                    message += text.format(
-                        '''
-                        The following incompatible librar%s found installed:
-
-                        %s
-
-                        ''',
-                        (library_s, '\n'.join(invalid_libraries))
                     )
                 message += text.format(
                     '''

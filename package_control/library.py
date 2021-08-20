@@ -162,23 +162,13 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
 def remove(install_root, name):
     dist_info = find_dist_info_dir(install_root, name)
 
-    dir_names = set()
-
-    try:
-        record_infos = dist_info.read_record()
-    except FileNotFoundError:
-        raise FileNotFoundError('Library {} not installed!'.format(name))
-
-    for ri in record_infos:
-        dir_names.add(os.path.dirname(ri.absolute_path))
-        # TODO: finish this
-        print("removing", ri.absolute_path)
-        # os.remove(ri.absolute_path)
-
-    def sort_key(a):
-        return len(a.split(os.sep))
-
-    for dir_name in sorted(dir_names, key=sort_key, reverse=True):
-        # TODO: finish this
-        print("removing", dir_name)
-        # os.remove(dirname)
+    for rel_path in dist_info.top_level_paths():
+        abs_path = os.path.join(dist_info.install_root, rel_path)
+        if os.path.isdir(abs_path):
+            # TODO: test
+            print("removing dir", abs_path)
+            # shutil.rmtree(abs_path)
+        else:
+            # TODO: test
+            print("removing file", abs_path)
+            # os.unlink(abs_path)

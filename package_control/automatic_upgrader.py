@@ -157,7 +157,7 @@ class AutomaticUpgrader(threading.Thread):
             libraries_installed = 0
 
             for library in self.missing_libraries:
-                if self.installer.manager.install_package(library, is_library=True):
+                if self.installer.manager.install_library(library):
                     console_write('Installed missing library %s', library)
                     libraries_installed += 1
 
