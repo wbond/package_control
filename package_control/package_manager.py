@@ -1100,14 +1100,11 @@ class PackageManager():
             if common_folder is False:
                 return False
 
-            # TODO: backup libraries?
-            # self.backup_package_dir(library_name)
-
             os.mkdir(tmp_library_dir)
 
             extracted_files = set()
             extracted_dirs = set()
-            should_retry = self._extract_zip(
+            success = self._extract_zip(
                 library_name,
                 library_zip,
                 tmp_library_dir,
@@ -1115,22 +1112,12 @@ class PackageManager():
                 extracted_files,
                 common_folder
             )
+            if not success:
+                return False
             extracted_paths = extracted_files + extracted_dirs
 
             library_zip.close()
             library_zip = None
-
-            # If upgrading failed, queue the package to upgrade upon next start
-            if should_retry:
-                # TODO: test handling failed upgrades
-                show_error(
-                    '''
-                    An error occurred while trying to install the library %s. Please restart
-                    Sublime Text to finish the upgrade.
-                    ''',
-                    library_name
-                )
-                return False
 
             new_did_name = wheel_filename = '%s-%s.dist-info' % (library_name, release['version'])
             wheel_filename = new_did_name + '/WHEEL'
@@ -1198,7 +1185,17 @@ class PackageManager():
                 return False
 
             if is_upgrade:
-                library.remove(existing_did.install_root, library_name)
+                try:
+                    library.remove(existing_did.install_root, library_name)
+                except OSError:
+                    show_error(
+                        '''
+                        An error occurred while trying to upgrade the library %s. Please restart
+                        Sublime Text to finish the upgrade.
+                        ''',
+                        library_name
+                    )
+                    return False
 
             for rel_path in temp_did.top_level_paths():
                 dest_path = os.path.join(lib_path, rel_path)
@@ -1408,7 +1405,6 @@ class PackageManager():
                 os.mkdir(tmp_working_dir)
                 package_dir = tmp_working_dir
 
-            # TODO: Install libraries into lib dir
             package_metadata_file = os.path.join(package_dir, metadata_filename)
 
             if not os.path.exists(package_dir):
@@ -1969,7 +1965,19 @@ class PackageManager():
         lib_path = sys_path.lib_paths()["3.3"]
         try:
             library.remove(lib_path, library_name)
-        except FileNotFoundError:
+        except OSError:
+            # THe way library.remove() works is that the .dist-info dir is
+            # removed last. This means that any permissions errors will happen
+            # before we remove the metadata, and thus we'll still think the
+            # library is installed when ST restarts, and we can try removing
+            # it again in the future.
+            show_error(
+                '''
+                An error occurred while trying to remove the library %s.
+                Please restart Sublime Text to finish the cleanup.
+                ''',
+                (library_name,)
+            )
             return False
 
     def remove_package(self, package_name):

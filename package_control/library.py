@@ -160,15 +160,37 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
 
 
 def remove(install_root, name):
+    """
+    Deletes all of the files from a library
+
+    :param install_root:
+        A unicode string of directory libraries are installed in
+
+    :param name:
+        A unicode string of the library name
+
+    :raises:
+        OSError - when a permission error occurs trying to remove a file
+    """
+
     dist_info = find_dist_info_dir(install_root, name)
 
     for rel_path in dist_info.top_level_paths():
+        # Remove the .dist-info dir last so we have info for cleanup in case
+        # we hit an error along the way
+        if rel_path == dist_info.dir_name:
+            continue
+
         abs_path = os.path.join(dist_info.install_root, rel_path)
+
+        if not os.path.exists(abs_path):
+            continue
+
         if os.path.isdir(abs_path):
-            # TODO: test
-            print("removing dir", abs_path)
-            # shutil.rmtree(abs_path)
+            shutil.rmtree(abs_path)
         else:
-            # TODO: test
-            print("removing file", abs_path)
-            # os.unlink(abs_path)
+            os.unlink(abs_path)
+
+    abs_path = os.path.join(dist_info.install_root, dist_info.dir_name)
+    if os.path.exists(abs_path):
+        shutil.rmtree(abs_path)
