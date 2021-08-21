@@ -56,13 +56,10 @@ class PackageCleanup(threading.Thread):
         found_packages = []
         installed_packages = list(installed_packages_at_start)
 
-        # TODO: handle new libraries infrastructure
-        found_libraries = []
+        # TODO: handle 3.8
+        lib_path = sys_path.lib_paths()["3.3"]
         installed_libraries = self.manager.list_libraries()
 
-        # We scan the Installed Packages folder in ST3 before we check for
-        # libraries since some libraries might be specified by a
-        # .sublime-package-new that has not yet finished being installed.
         installed_path = sublime.installed_packages_path()
 
         for file in os.listdir(installed_path):
@@ -110,28 +107,25 @@ class PackageCleanup(threading.Thread):
                 found_packages.append(package_name)
 
         required_libraries = set(self.manager.find_required_libraries())
-        extra_libraries = list(set(installed_libraries) - required_libraries)
+        unmanaged_libraries = library.list_unmanaged(lib_path)
+        extra_libraries = list(set(installed_libraries) - required_libraries - set(unmanaged_libraries))
+
+        found_libraries = set(installed_libraries)
 
         # Clean up unneeded libraries so that found_libraries will only
         # end up having required libraries added to it
         for library_name in extra_libraries:
             try:
-                # TODO: Handle 3.8
-                library.remove(sys_path.lib_paths()["3.3"], library_name)
+                library.remove(lib_path, library_name)
                 console_write(
                     '''
-                    Removed directory for unneeded library %s
+                    Removed unneeded library %s
                     ''',
                     library_name
                 )
+                found_libraries.remove(library_name)
 
-            except FileNotFoundError:
-                pass
-
-            except Exception:
-                cleanup_file = os.path.join(sys_path.lib_paths()["3.3"], library_name, 'package-control.cleanup')
-                if not os.path.exists(cleanup_file):
-                    open(cleanup_file, 'wb').close()
+            except OSError:
                 console_write(
                     '''
                     Unable to remove directory for unneeded library %s -
@@ -139,6 +133,8 @@ class PackageCleanup(threading.Thread):
                     ''',
                     library_name
                 )
+
+        found_libraries = sorted(list(found_libraries))
 
         for package_name in os.listdir(sublime.packages_path()):
             found = True
@@ -149,7 +145,7 @@ class PackageCleanup(threading.Thread):
 
             clean_old_files(package_dir)
 
-            # Cleanup packages/libraries that could not be removed due to in-use files
+            # Cleanup packages that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
                 if unlink_or_delete_directory(package_dir):
