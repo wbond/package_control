@@ -194,3 +194,131 @@ def remove(install_root, name):
     abs_path = os.path.join(dist_info.install_root, dist_info.dir_name)
     if os.path.exists(abs_path):
         shutil.rmtree(abs_path)
+
+
+def _pep440_to_tuple(version_string):
+    """
+    Constructs a tuple of integers that allows comparing valid PEP440 versions
+
+    :param version_string:
+        A unicode PEP440 version string
+
+    :return:
+        A tuple of integers
+    """
+
+    match = re.search(
+        r'(?:(\d+)\!)?'
+        r'(\d+(?:\.\d+)*)'
+        r'([-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\.?\d*)?'
+        r'(-\d+|(?:[-._]?(?:rev|r|post)\.?\d*))?'
+        r'([-._]?dev\.?\d*)?',
+        version_string
+    )
+    if not match:
+        return tuple()
+
+    epoch = match.group(1)
+    if epoch:
+        epoch = int(epoch)
+    else:
+        epoch = 0
+
+    nums = tuple(map(int, match.group(2).split('.')))
+
+    pre = match.group(3)
+    if pre:
+        pre = pre.replace('alpha', 'a')
+        pre = pre.replace('beta', 'b')
+        pre = pre.replace('preview', 'rc')
+        pre = pre.replace('pre', 'rc')
+        pre = re.sub(r'(?<!r)c', 'rc', pre)
+        pre = pre.lstrip('._-')
+        pre_dig_match = re.search(r'\d+', pre)
+        if pre_dig_match:
+            pre_dig = int(pre_dig_match.group(0))
+        else:
+            pre_dig = 0
+        pre = pre.rstrip('0123456789')
+
+        pre_num = {
+            'a': -3,
+            'b': -2,
+            'rc': -1,
+        }[pre]
+
+        pre_tup = (pre_num, pre_dig)
+    else:
+        pre_tup = tuple()
+
+    post = match.group(4)
+    if post:
+        post_dig_match = re.search(r'\d+', post)
+        if post_dig_match:
+            post_dig = int(post_dig_match.group(0))
+        else:
+            post_dig = 0
+        post_tup = (1, post_dig)
+    else:
+        post_tup = tuple()
+
+    dev = match.group(5)
+    if dev:
+        dev_dig_match = re.search(r'\d+', dev)
+        if dev_dig_match:
+            dev_dig = int(dev_dig_match.group(0))
+        else:
+            dev_dig = 0
+        dev_tup = (-4, dev_dig)
+    else:
+        dev_tup = tuple()
+
+    normalized = [epoch, nums]
+    if pre_tup:
+        normalized.append(pre_tup)
+    if post_tup:
+        normalized.append(post_tup)
+    if dev_tup:
+        normalized.append(dev_tup)
+    # This ensures regular releases happen after dev and prerelease, but
+    # before post releases
+    if not pre_tup and not post_tup and not dev_tup:
+        normalized.append((0, 0))
+
+    return tuple(normalized)
+
+
+class PEP440Version():
+    string = ''
+    tup = tuple()
+
+    def __init__(self, string):
+        self.string = string
+        self.tup = _pep440_to_tuple(string)
+
+    def __str__(self):
+        return self.string
+
+    def __repr__(self):
+        return 'PEP440Version(' + repr(self.string) + ')'
+
+    def __eq__(self, rhs):
+        return self.string == rhs.string
+
+    def __ne__(self, rhs):
+        return self.string != rhs.string
+
+    def __lt__(self, rhs):
+        return self.tup < rhs.tup
+
+    def __le__(self, rhs):
+        return self.tup <= rhs.tup
+
+    def __gt__(self, rhs):
+        return self.tup > rhs.tup
+
+    def __ge__(self, rhs):
+        return self.tup >= rhs.tup
+
+    def __hash__(self):
+        return hash(self.string)

@@ -1,7 +1,7 @@
 import threading
 import unittest
 
-from . import clients, distinfo, downloaders, providers
+from . import clients, distinfo, downloaders, providers, library
 
 
 TEST_CLASSES = [
@@ -22,6 +22,7 @@ TEST_CLASSES = [
     providers.ChannelProviderTests,
     distinfo.DistinfoTests,
     providers.VersionSelectorTests,
+    library.LibraryTests
 ]
 
 
