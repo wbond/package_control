@@ -288,6 +288,21 @@ def _pep440_to_tuple(version_string):
     return tuple(normalized)
 
 
+def _norm_tup(a, b):
+    while len(a) < len(b):
+        a = a + ((0,),)
+    while len(a) > len(b):
+        b = b + ((0,),)
+
+    for i in range(1, len(a)):
+        while len(a[i]) < len(b[i]):
+            a = a[:i] + (a[i] + (0,),) + a[i + 1:]
+        while len(a[i]) > len(b[i]):
+            b = b[:i] + (b[i] + (0,),) + b[i + 1:]
+
+    return a, b
+
+
 class PEP440Version():
     string = ''
     tup = tuple()
@@ -303,22 +318,28 @@ class PEP440Version():
         return 'PEP440Version(' + repr(self.string) + ')'
 
     def __eq__(self, rhs):
-        return self.string == rhs.string
+        a, b = _norm_tup(self.tup, rhs.tup)
+        return a == b
 
     def __ne__(self, rhs):
-        return self.string != rhs.string
+        a, b = _norm_tup(self.tup, rhs.tup)
+        return a != b
 
     def __lt__(self, rhs):
-        return self.tup < rhs.tup
+        a, b = _norm_tup(self.tup, rhs.tup)
+        return a < b
 
     def __le__(self, rhs):
-        return self.tup <= rhs.tup
+        a, b = _norm_tup(self.tup, rhs.tup)
+        return a <= b
 
     def __gt__(self, rhs):
-        return self.tup > rhs.tup
+        a, b = _norm_tup(self.tup, rhs.tup)
+        return a > b
 
     def __ge__(self, rhs):
-        return self.tup >= rhs.tup
+        a, b = _norm_tup(self.tup, rhs.tup)
+        return a >= b
 
     def __hash__(self):
         return hash(self.string)
