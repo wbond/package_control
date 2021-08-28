@@ -1657,14 +1657,13 @@ class PackageManager():
             except FileNotFoundError:
                 installed_version = None
 
-            # TODO: implement pep440 handling, since it is different than SemVer
-            installed_version = version_comparable(installed_version) if installed_version else None
+            installed_version = library.PEP440Version(installed_version) if installed_version else None
 
             library_releases = info.get('releases', [])
             library_release = library_releases[0] if library_releases else {}
 
             available_version = library_release.get('version')
-            available_version = version_comparable(available_version) if available_version else None
+            available_version = library.PEP440Version(available_version) if available_version else None
 
             def library_write(msg):
                 msg = "The library '{library_name}' " + msg
