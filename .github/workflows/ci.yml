@@ -1,14 +1,6 @@
 name: CI
 
-on:
-  push:
-    branches:
-      - four-point-oh
-      - wbond-four-point-oh
-  pull_request:
-    branches:
-      - four-point-oh
-      - wbond-four-point-oh
+on: [push, pull_request]
 
 jobs:
   build-38:
