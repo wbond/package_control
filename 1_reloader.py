@@ -234,5 +234,5 @@ for suffix in mods_load_order:
     if mod in reload_mods:
         try:
             reload(sys.modules[mod])
-        except (ImportError):
+        except (ImportError, FileNotFoundError):
             pass  # Upgrade issues from PC 2.0 -> 3.0

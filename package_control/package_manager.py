@@ -1119,46 +1119,32 @@ class PackageManager():
             library_zip.close()
             library_zip = None
 
-            new_did_name = wheel_filename = '%s-%s.dist-info' % (library_name, release['version'])
+            new_did_name = '%s-%s.dist-info' % (library_name, release['version'])
             wheel_filename = new_did_name + '/WHEEL'
             is_whl = wheel_filename in extracted_paths
 
             if not is_whl:
-                ver = 'st3'
-                plat = sublime.platform()
-                arch = sublime.arch()
-
-                dep_sys_rel_paths = {
-                    'all': 'all',
-                    'ver': ver,
-                    'plat': '%s_%s' % (ver, plat),
-                    'arch': '%s_%s_%s' % (ver, plat, arch)
-                }
-                src_dir = None
-                plat_or_arch = False
-                for rel_type in ('arch', 'plat', 'ver', 'all'):
-                    if dep_sys_rel_paths[rel_type] in extracted_paths:
-                        src_dir = dep_sys_rel_paths[rel_type]
-                        plat_or_arch = rel_type in ('arch', 'plat')
-                        break
-                if not src_dir:
-                    show_error(
-                        '''
-                        An error occurred while trying to install the library %s. Unrecognized source archive layout.
-                        ''',
-                        library_name
-                    )
-                    return False
-                nested_dir = os.path.join(tmp_library_dir, src_dir)
 
                 lib = libraries[library_name]
-                temp_did = distinfo.DistInfoDir(nested_dir, new_did_name)
-                temp_did.ensure_exists()
-                temp_did.write_metadata(library_name, release['version'], lib.get('description'), lib.get('homepage'))
-                temp_did.write_installer()
-                # TODO: handle 3.8
-                temp_did.write_wheel("3.3", plat_or_arch)
-                temp_did.write_record([], sorted(extracted_files))
+                try:
+                    # TODO: handle 3.8
+                    temp_did = library.convert_dependency(
+                        tmp_library_dir,
+                        "3.3",
+                        library_name,
+                        release['version'],
+                        lib.get('description'),
+                        lib.get('homepage')
+                    )
+                except ValueError as e:
+                    show_error(
+                        '''
+                        An error occurred while trying to install the library %s: %s
+                        ''',
+                        library_name,
+                        str(e)
+                    )
+                    return False
 
             else:
                 temp_did = distinfo.DistInfoDir(tmp_library_dir, new_did_name)
@@ -1197,9 +1183,7 @@ class PackageManager():
                     )
                     return False
 
-            for rel_path in temp_did.top_level_paths():
-                dest_path = os.path.join(lib_path, rel_path)
-                shutil.move(os.path.join(temp_did.install_root, rel_path), dest_path)
+            library.install(temp_did, lib_path)
 
             os.chdir(sys.packages_path)
             return True

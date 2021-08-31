@@ -2,6 +2,8 @@ import os
 import re
 import shutil
 
+import sublime
+
 from .distinfo import DistInfoDir, find_dist_info_dir
 
 
@@ -76,16 +78,23 @@ def list_unmanaged(install_root):
     return out
 
 
-def install(dest_root, src_dir, name, version, description, url, plat_specific):
+def convert_dependency(dependency_path, python_version, name, version, description, url):
     """
-    :param dest_root:
-        A unicode path to the directory to install the library into. If a
-        library has a folder named A, it will be installed to: dest_root/A.
+    Modifies a directory containing an old-style dependency into a library,
+    in-place. This adds the .dist-info dir inside of the dependency_path
+    so that the top-level files and dirs can be copied to the final
+    destination.
 
-    :param src_dir:
-        A unicode path to the directory to copy files and folders from. For
-        most libraries, this directory will contain a single folder with
-        the name of the library.
+    :param dependency_path:
+        A unicode path the dependency was installed or extracted into.
+        This directory will contain one of the following folders:
+         - "all"
+         - "st3"
+         - "st3_{OS}"
+         - "st3_{OS}_{ARCH}"
+
+    :param python_version:
+        A unicode string of "3.3" or "3.8"
 
     :param name:
         A unicode string of the library name
@@ -98,23 +107,44 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
 
     :param url:
         An optional unicode string of the homepage for the library
-
-    :param plat_specific:
-        A bool indicating if the source files are platform or architecture
-        specific. Typically this would be set if the library contains any
-        shared libraries or executables.
     """
 
-    dist_info_dirname = '%s-%s.dist-info' % (name, version)
-    dist_info = DistInfoDir(dest_root, dist_info_dirname)
+    ver = 'st3'
+    plat = sublime.platform()
+    arch = sublime.arch()
 
-    extra_filenames = dist_info.extra_files()
-    shared_exts = dist_info.shared_lib_extensions()
+    install_rel_paths = {
+        'all': 'all',
+        'ver': ver,
+        'plat': '%s_%s' % (ver, plat),
+        'arch': '%s_%s_%s' % (ver, plat, arch)
+    }
 
-    # TEMP - linter
-    # found_license = False
-    # found_readme = False
+    src_dir = None
+    plat_specific = False
+    for variant in ('arch', 'plat', 'ver', 'all'):
+        install_path = os.path.join(dependency_path, install_rel_paths[variant])
+        if os.path.exists(install_path):
+            src_dir = install_path
+            plat_specific = variant in ('arch', 'plat')
+            break
 
+    if not src_dir:
+        raise ValueError('Unrecognized source archive layout')
+
+    did_name = '%s-%s.dist-info' % (name, version)
+    did = DistInfoDir(src_dir, did_name)
+    did.ensure_exists()
+    did.write_metadata(name, version, description, url)
+    did.write_installer()
+    did.write_wheel(python_version, plat_specific)
+
+    extra_filenames = did.extra_files()
+    shared_exts = did.shared_lib_extensions()
+
+    # We filter the list of files in dependencies to remove things like
+    # .sublime-* files since they aren't supported when located in the
+    # library folder.
     package_dirs = []
     package_files = []
     for fname in os.listdir(src_dir):
@@ -122,41 +152,49 @@ def install(dest_root, src_dir, name, version, description, url, plat_specific):
         ext = os.path.splitext(fname)[-1]
         lf = fname.lower()
         if os.path.isdir(path):
-            package_dirs.append((fname, path))
-        elif ext == '.py':
-            package_files.append((fname, path))
+            package_dirs.append(fname)
+        elif ext in {'.py', '.pyc'}:
+            package_files.append(fname)
         elif ext in shared_exts:
-            package_files.append((fname, path))
+            package_files.append(fname)
         elif lf in extra_filenames:
             # Extra files in the root need to be put into the
             # .dist-info dir since that is the only place we can
             # ensure there won't be name conflicts
-            package_files.append(('%s/%s' % (dist_info_dirname, fname), path))
-            # TEMP - linter
-            # if 'readme' in lf:
-            #     found_readme = True
-            # if 'license' in lf:
-            #     found_license = True
+            new_path = os.path.join(src_dir, did_name, fname)
+            shutil.copy(path, new_path)
+            # We don't add the paths to package_files, since the RECORD
+            # automatically includes everything in the .dist-info dir
 
-    dist_info.ensure_exists()
-    dist_info.write_wheel('3.3', plat_specific)
-    dist_info.write_metadata(name, version, description, url)
-    dist_info.write_installer()
+    # Also look in the root of the package for the extra files since most
+    # dependencies put the files there
+    for fname in os.listdir(dependency_path):
+        if fname.lower() in extra_filenames:
+            path = os.path.join(dependency_path, fname)
+            new_path = os.path.join(src_dir, did_name, fname)
+            shutil.copy(path, new_path)
 
-    package_dir_names = []
-    for dname, source in package_dirs:
-        package_dir_names.append(dname)
-        shutil.copytree(source, os.path.join(dest_root, dname))
+    did.write_record(package_dirs, package_files)
 
-    package_file_names = []
-    for rel_dest, source in package_files:
-        if '/' not in rel_dest:
-            package_file_names.append(rel_dest)
-        with open(source, 'rb') as sf:
-            with open(os.path.join(dest_root, rel_dest), 'wb') as df:
-                df.write(sf.read())
+    return did
 
-    dist_info.write_record(package_dir_names, package_file_names)
+
+def install(dist_info, new_install_root):
+    """
+    :param dist_info:
+        A distinfo.DistInfoDir() object of the package to install
+
+    :param new_install_root:
+        A unicode path to the directory to move the dist_info into
+    """
+
+    for rel_path in dist_info.top_level_paths():
+        src_path = os.path.join(dist_info.install_root, rel_path)
+        dest_path = os.path.join(new_install_root, rel_path)
+        dest_parent = os.path.dirname(dest_path)
+        if not os.path.exists(dest_parent):
+            os.makedirs(dest_parent)
+        shutil.move(src_path, dest_path)
 
 
 def remove(install_root, name):

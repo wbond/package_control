@@ -396,6 +396,7 @@ class DistInfoDir:
         """
 
         return {
+            '.dll',
             '.pyd',
             '.so',
             '.dylib'

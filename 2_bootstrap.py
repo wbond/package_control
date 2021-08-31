@@ -69,7 +69,7 @@ def _migrate_loaders(settings):
     """
 
     # All old dependencies that are being migrated are treated as for 3.3
-    lib_root = os.path.join(sys_path.data_dir, 'Lib', 'python33')
+    lib_path = sys_path.lib_paths()["3.3"]
 
     try:
         with zipfile.ZipFile(LOADER_PACKAGE_PATH, 'r') as z:
@@ -91,42 +91,15 @@ def _migrate_loaders(settings):
                         console_write('Error loading dependency metadata during migration - %s' % e)
                         continue
 
-                    src_dir = None
-                    plat_specific = False
-
-                    dependency_dir = os.path.join(sys_path.packages_path, name)
-
-                    ver = 'st3'
-                    plat = sublime.platform()
-                    arch = sublime.arch()
-
-                    dep_sys_paths = {
-                        'all': os.path.join(dependency_dir, 'all'),
-                        'ver': os.path.join(dependency_dir, ver),
-                        'plat': os.path.join(dependency_dir, '%s_%s' % (ver, plat)),
-                        'arch': os.path.join(dependency_dir, '%s_%s_%s' % (ver, plat, arch))
-                    }
-
-                    if os.path.exists(dep_sys_paths['arch']):
-                        src_dir = dep_sys_paths['arch']
-                        plat_specific = True
-                    elif os.path.exists(dep_sys_paths['plat']):
-                        src_dir = dep_sys_paths['plat']
-                        plat_specific = True
-                    elif os.path.exists(dep_sys_paths['ver']):
-                        src_dir = dep_sys_paths['ver']
-                    elif os.path.exists(dep_sys_paths['all']):
-                        src_dir = dep_sys_paths['all']
-
-                    library.install(
-                        lib_root,
-                        src_dir,
+                    did = library.convert_dependency(
+                        os.path.join(sys_path.packages_path, name),
+                        "3.3",
                         name,
                         metadata['version'],
                         metadata['description'],
-                        metadata['url'],
-                        plat_specific
+                        metadata['url']
                     )
+                    library.install(did, lib_path)
 
                     shutil.rmtree(dep_path)
 
