@@ -53,6 +53,22 @@ def _create_package_files(d):
     return ([module_dir], ['testing.py'])
 
 
+def _create_package_files_2(d):
+    module_dir = os.path.join(d, 'testing')
+    submodule1 = os.path.join(module_dir, 'submod1.py')
+    submodule2 = os.path.join(module_dir, 'submod2.py')
+
+    os.mkdir(module_dir)
+
+    with open(submodule1, 'w', encoding='utf-8', newline='\n') as f:
+        f.write("print('Do you like my hat?')")
+
+    with open(submodule2, 'w', encoding='utf-8', newline='\n') as f:
+        f.write("print('I do not like your hat!')")
+
+    return ([module_dir], [])
+
+
 class DistinfoTests(unittest.TestCase):
     def test_distinfo(self):
         with tmp_dir() as d:
@@ -334,6 +350,34 @@ class DistinfoTests(unittest.TestCase):
                     "testing",
                     "testing-1.0.0.dist-info",
                     "testing.py",
+                ],
+                paths
+            )
+
+    def test_distinfo_top_level_paths_2(self):
+        with tmp_dir() as d:
+            did_name = 'testing-1.0.0.dist-info'
+
+            package_dirs, package_files = _create_package_files_2(d)
+
+            did = DistInfoDir(d, did_name)
+            did.ensure_exists()
+            did.write_metadata(
+                "testing",
+                "1.0.0",
+                "A testing package",
+                "http://example.com"
+            )
+            did.write_installer()
+            did.write_wheel("3.8", False)
+            did.write_record(package_dirs, package_files)
+
+            paths = did.top_level_paths()
+            self.assertEqual(2, len(paths))
+            self.assertEqual(
+                [
+                    "testing",
+                    "testing-1.0.0.dist-info",
                 ],
                 paths
             )

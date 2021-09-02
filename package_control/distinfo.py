@@ -539,7 +539,7 @@ class DistInfoDir:
                     break
                 path_seg = _trim_segments(path_seg, num_levels)
 
-        return sorted(paths[min_level])
+        return sorted(paths[0])
 
     def write_record(self, package_dirs, package_files):
         """
