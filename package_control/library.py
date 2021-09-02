@@ -194,6 +194,11 @@ def install(dist_info, new_install_root):
         dest_parent = os.path.dirname(dest_path)
         if not os.path.exists(dest_parent):
             os.makedirs(dest_parent)
+        # shutil.move() will nest folders if the destination exists already
+        if os.path.isdir(src_path):
+            if os.path.exists(dest_path):
+                os.rmdir(dest_path)
+            dest_path = dest_parent
         shutil.move(src_path, dest_path)
 
 

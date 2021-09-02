@@ -3,7 +3,6 @@ import re
 import json
 import zipfile
 import shutil
-import sys
 from fnmatch import fnmatch
 import datetime
 import tempfile
@@ -999,9 +998,9 @@ class PackageManager():
                 os.makedirs(dest, exist_ok=True)
                 add_extracted_dirs(dest)
             else:
-                dest_dir = os.path.dirname(dest)
-                os.makedirs(dest_dir, exist_ok=True)
-                add_extracted_dirs(dest_dir)
+                parent_dir = os.path.dirname(dest)
+                os.makedirs(parent_dir, exist_ok=True)
+                add_extracted_dirs(parent_dir)
                 extracted_files.add(dest)
                 try:
                     with open(dest, 'wb') as fobj:
@@ -1104,7 +1103,7 @@ class PackageManager():
 
             extracted_files = set()
             extracted_dirs = set()
-            success = self._extract_zip(
+            should_retry = self._extract_zip(
                 library_name,
                 library_zip,
                 tmp_library_dir,
@@ -1112,9 +1111,9 @@ class PackageManager():
                 extracted_files,
                 common_folder
             )
-            if not success:
+            if should_retry:
                 return False
-            extracted_paths = extracted_files + extracted_dirs
+            extracted_paths = extracted_files | extracted_dirs
 
             library_zip.close()
             library_zip = None
@@ -1185,7 +1184,7 @@ class PackageManager():
 
             library.install(temp_did, lib_path)
 
-            os.chdir(sys.packages_path)
+            os.chdir(sys_path.packages_path)
             return True
 
         finally:
@@ -1319,26 +1318,22 @@ class PackageManager():
 
             # If libraries were not in the channel, try the package
             if not have_installed_libraries:
+                lib_info_json = package_zip.read(libraries_path)
                 try:
-                    lib_info_json = package_zip.read(libraries_path)
-                    try:
-                        lib_info = json.loads(lib_info_json.decode('utf-8'))
-                    except (ValueError):
-                        console_write(
-                            '''
-                            An error occurred while trying to parse the
-                            dependencies.json for %s.
-                            ''',
-                            package_name
-                        )
-                        return False
+                    lib_info = json.loads(lib_info_json.decode('utf-8'))
+                except (ValueError):
+                    console_write(
+                        '''
+                        An error occurred while trying to parse the
+                        dependencies.json for %s.
+                        ''',
+                        package_name
+                    )
+                    return False
 
-                    libraries = self.select_libraries(lib_info)
-                    if not self.install_libraries(libraries):
-                        return False
-
-                except (KeyError):
-                    pass
+                libraries = self.select_libraries(lib_info)
+                if not self.install_libraries(libraries):
+                    return False
 
             metadata_filename = 'package-metadata.json'
 
@@ -1396,95 +1391,23 @@ class PackageManager():
 
             os.chdir(package_dir)
 
-            # Here we don't use .extractall() since it was having issues on OS X
-            overwrite_failed = False
-            extracted_paths = set()
-            for info in package_zip.infolist():
-                path = info.filename
-                dest = path
-
-                try:
-                    if not isinstance(dest, str):
-                        dest = dest.decode('utf-8', 'strict')
-                except (UnicodeDecodeError):
-                    console_write(
-                        '''
-                        One or more of the zip file entries in %s is not
-                        encoded using UTF-8, aborting
-                        ''',
-                        package_name
-                    )
-                    return False
-
-                if os.name == 'nt':
-                    regex = r':|\*|\?|"|<|>|\|'
-                    if re.search(regex, dest) is not None:
-                        console_write(
-                            '''
-                            Skipping file from package named %s due to an
-                            invalid filename
-                            ''',
-                            package_name
-                        )
-                        continue
-
-                # If there was only a single directory in the package, we remove
-                # that folder name from the paths as we extract entries
-                if common_folder:
-                    dest = dest[len(common_folder):]
-
-                if os.name == 'nt':
-                    dest = dest.replace('/', '\\')
-                else:
-                    dest = dest.replace('\\', '/')
-
-                dest = os.path.join(package_dir, dest)
-
-                def add_extracted_dirs(dir_):
-                    while dir_ not in extracted_paths:
-                        extracted_paths.add(dir_)
-                        dir_ = os.path.dirname(dir_)
-                        if dir_ == package_dir:
-                            break
-
-                if path.endswith('/'):
-                    os.makedirs(dest, exist_ok=True)
-                    add_extracted_dirs(dest)
-                else:
-                    dest_dir = os.path.dirname(dest)
-                    os.makedirs(dest_dir, exist_ok=True)
-                    add_extracted_dirs(dest_dir)
-                    extracted_paths.add(dest)
-                    try:
-                        with open(dest, 'wb') as fobj:
-                            fobj.write(package_zip.read(path))
-                    except (IOError) as e:
-                        message = str(e)
-                        if re.search('[Ee]rrno 13', message):
-                            overwrite_failed = True
-                            break
-                        console_write(
-                            '''
-                            Skipping file from package named %s due to an
-                            invalid filename
-                            ''',
-                            package_name
-                        )
-
-                    except (UnicodeDecodeError):
-                        console_write(
-                            '''
-                            Skipping file from package named %s due to an
-                            invalid filename
-                            ''',
-                            package_name
-                        )
+            extracted_files = set()
+            extracted_dirs = set()
+            should_retry = self._extract_zip(
+                package_name,
+                package_zip,
+                package_dir,
+                extracted_dirs,
+                extracted_files,
+                common_folder
+            )
+            extracted_paths = extracted_dirs | extracted_files
 
             package_zip.close()
             package_zip = None
 
             # If upgrading failed, queue the package to upgrade upon next start
-            if overwrite_failed:
+            if should_retry:
                 reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
                 open(reinstall_file, 'wb').close()
 
@@ -1599,7 +1522,7 @@ class PackageManager():
                     )
                     return None
 
-            os.chdir(sys.packages_path)
+            os.chdir(sys_path.packages_path)
             return True
 
         finally:
@@ -1613,11 +1536,11 @@ class PackageManager():
             # after we close it.
             sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
 
-    def install_libraries(self, libraries, fail_early=True):
+    def install_libraries(self, library_names, fail_early=True):
         """
         Ensures a list of libraries are installed and up-to-date
 
-        :param libraries:
+        :param library_names:
             A list of library names
 
         :return:
@@ -1626,33 +1549,20 @@ class PackageManager():
 
         debug = self.settings.get('debug')
 
-        libraries = self.list_available_libraries()
+        available_libraries = self.list_available_libraries()
 
         # TODO: Handle 3.8
         lib_path = sys_path.lib_paths()["3.3"]
 
         error = False
-        for library_name, info in libraries.items():
-            # Collect library information
-
-            try:
-                existing_did = library.find_dist_info_dir(lib_path, library_name)
-                installed_version = existing_did.read_metadata()['version']
-            except FileNotFoundError:
-                installed_version = None
-
-            installed_version = library.PEP440Version(installed_version) if installed_version else None
-
-            library_releases = info.get('releases', [])
-            library_release = library_releases[0] if library_releases else {}
-
-            available_version = library_release.get('version')
-            available_version = library.PEP440Version(available_version) if available_version else None
+        for library_name in library_names:
+            installed_version = None
+            available_version = None
 
             def library_write(msg):
                 msg = "The library '{library_name}' " + msg
                 msg = msg.format(
-                    library=library_name,
+                    library_name=library_name,
                     installed_version=installed_version,
                     available_version=available_version
                 )
@@ -1661,6 +1571,31 @@ class PackageManager():
             def library_write_debug(msg):
                 if debug:
                     library_write(msg)
+
+            if library_name not in available_libraries:
+                library_write('is not available')
+                if fail_early:
+                    return False
+                error = True
+                continue
+
+            info = available_libraries[library_name]
+
+            try:
+                existing_did = library.find_dist_info_dir(lib_path, library_name)
+                installed_version = existing_did.read_metadata()['version']
+            except FileNotFoundError:
+                installed_version = None
+
+            if installed_version:
+                installed_version = library.PEP440Version(installed_version)
+
+            library_releases = info.get('releases', [])
+            library_release = library_releases[0] if library_releases else {}
+
+            available_version = library_release.get('version')
+            if available_version:
+                available_version = library.PEP440Version(available_version)
 
             install_library = False
             if not installed_version:

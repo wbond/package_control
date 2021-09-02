@@ -51,7 +51,7 @@ def match_dist_info_dir(dir_name, library_name):
     """
 
     match = _dist_info_pattern.match(dir_name)
-    if match and match['name'] == library_name:
+    if match and match.groupdict()['name'] == library_name:
         return match
     return False
 
