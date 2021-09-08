@@ -56,8 +56,6 @@ class PackageCleanup(threading.Thread):
         found_packages = []
         installed_packages = list(installed_packages_at_start)
 
-        # TODO: handle 3.8
-        lib_path = sys_path.lib_paths()["3.3"]
         installed_libraries = self.manager.list_libraries()
 
         installed_path = sublime.installed_packages_path()
@@ -106,35 +104,35 @@ class PackageCleanup(threading.Thread):
             else:
                 found_packages.append(package_name)
 
-        required_libraries = set(self.manager.find_required_libraries())
-        unmanaged_libraries = library.list_unmanaged(lib_path)
-        extra_libraries = list(set(installed_libraries) - required_libraries - set(unmanaged_libraries))
+        required_libraries = self.manager.find_required_libraries()
+        unmanaged_libraries = library.list_unmanaged()
+        extra_libraries = sorted(set(installed_libraries) - set(required_libraries) - set(unmanaged_libraries))
 
         found_libraries = set(installed_libraries)
 
         # Clean up unneeded libraries so that found_libraries will only
         # end up having required libraries added to it
-        for library_name in extra_libraries:
+        for lib in extra_libraries:
             try:
-                library.remove(lib_path, library_name)
+                library.remove(sys_path.lib_paths()[lib.python_version], lib.name)
                 console_write(
                     '''
-                    Removed unneeded library %s
+                    Removed unneeded library %s for Python %s
                     ''',
-                    library_name
+                    (lib.name, lib.python_version)
                 )
-                found_libraries.remove(library_name)
+                found_libraries.remove(lib)
 
             except OSError:
                 console_write(
                     '''
-                    Unable to remove directory for unneeded library %s -
-                    deferring until next start
+                    Unable to remove directory for unneeded library %s for
+                    Python %s - deferring until next start
                     ''',
-                    library_name
+                    (lib.name, lib.python_version)
                 )
 
-        found_libraries = sorted(list(found_libraries))
+        found_libraries = sorted(found_libraries)
 
         for package_name in os.listdir(sublime.packages_path()):
             found = True
@@ -392,7 +390,7 @@ class PackageCleanup(threading.Thread):
             currently installed on the filesystem.
 
         :param found_libraries:
-            A list of the string package names of all libraries that are
+            A list of library.Library() objects of all libraries that are
             currently installed on the filesystem.
         """
 

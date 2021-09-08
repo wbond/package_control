@@ -34,7 +34,8 @@ class AutomaticUpgrader(threading.Thread):
             installed on the machine.
 
         :param found_libraries:
-            A list of installed libraries found on the machine
+            A list of the library.Library() objects for all installed
+            libraries found on the machine
         """
 
         self.installer = PackageInstaller()
@@ -59,7 +60,7 @@ class AutomaticUpgrader(threading.Thread):
 
         # Detect if a package is missing that should be installed
         self.missing_packages = list(set(self.installed_packages) - set(found_packages))
-        self.missing_libraries = list(set(self.manager.find_required_libraries()) - set(found_libraries))
+        self.missing_libraries = sorted(set(self.manager.find_required_libraries()) - set(found_libraries))
 
         if self.auto_upgrade and self.next_run <= now:
             self.save_last_run(now)
@@ -156,9 +157,9 @@ class AutomaticUpgrader(threading.Thread):
 
             libraries_installed = 0
 
-            for library in self.missing_libraries:
-                if self.installer.manager.install_library(library):
-                    console_write('Installed missing library %s', library)
+            for lib in self.missing_libraries:
+                if self.installer.manager.install_library(lib.name, lib.python_version):
+                    console_write('Installed missing library %s for Python %s', (lib.name, lib.python_version))
                     libraries_installed += 1
 
             if libraries_installed:

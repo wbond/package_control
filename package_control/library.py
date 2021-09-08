@@ -4,7 +4,57 @@ import shutil
 
 import sublime
 
+from . import sys_path
 from .distinfo import DistInfoDir, find_dist_info_dir
+
+
+class Library():
+    name = None
+    python_version = None
+
+    def __init__(self, name, python_version):
+        if not isinstance(name, str):
+            raise TypeError("name must be a unicode string")
+        if not name:
+            raise ValueError("name must not be empty")
+
+        if not isinstance(python_version, str):
+            raise TypeError("python_version must be a unicode string")
+        if python_version not in set(["3.3", "3.8"]):
+            raise ValueError("python_version must be \"3.3\" or \"3.8\", not %r" % python_version)
+
+        self.name = name
+        self.python_version = python_version
+
+    def __repr__(self):
+        return "Library(%r, %r)" % (self.name, self.python_version)
+
+    def _to_tuple(self, lower=False):
+        return (self.name.lower() if lower else self.name, self.python_version)
+
+    def __hash__(self):
+        return hash(self._to_tuple())
+
+    def __eq__(self, rhs):
+        return self._to_tuple() == rhs._to_tuple()
+
+    def __ne__(self, rhs):
+        return self._to_tuple() != rhs._to_tuple()
+
+    def __lt__(self, rhs):
+        """
+        Default sorting is case insensitive
+        """
+
+        self_lt = self._to_tuple(lower=True)
+        rhs_lt = self._to_tuple(lower=True)
+        if self_lt == rhs_lt:
+            return self._to_tuple() < rhs._to_tuple()
+        return self_lt < rhs_lt
+
+    @property
+    def path(self):
+        return os.path.join(sys_path.lib_paths()[self.python_version], self.name)
 
 
 def _name_from_dist_info_dirname(dirname):
@@ -22,59 +72,63 @@ def _name_from_dist_info_dirname(dirname):
     )
 
 
-def list_all(install_root):
+def list_all():
     """
     List all dependencies installed
 
-    :param install_root:
-        A unicode path to the directory that contains all libraries
-
     :return:
-        A list of unicode strings containing library names
+        A list of Library() object
     """
 
     out = []
-    for filename in os.listdir(install_root):
-        if not filename.endswith(".dist-info"):
-            continue
-        path = os.path.join(install_root, filename)
-        if not os.path.isdir(path):
-            continue
-        record_path = os.path.join(path, 'RECORD')
-        if not os.path.isfile(record_path):
-            continue
-        out.append(_name_from_dist_info_dirname(filename))
-    return out
+    for python_version in ("3.3", "3.8"):
+        install_root = sys_path.lib_paths()[python_version]
+        for fname in os.listdir(install_root):
+            if not fname.endswith(".dist-info"):
+                continue
+            path = os.path.join(install_root, fname)
+            if not os.path.isdir(path):
+                continue
+            record_path = os.path.join(path, 'RECORD')
+            if not os.path.isfile(record_path):
+                continue
+            out.append(Library(
+                _name_from_dist_info_dirname(fname),
+                python_version
+            ))
+    return sorted(out)
 
 
-def list_unmanaged(install_root):
+def list_unmanaged():
     """
     List all dependencies installed that Package Control didn't install
 
-    :param install_root:
-        A unicode path to the directory that contains all libraries
-
     :return:
-        A list of unicode strings containing library names
+        A list of Library() objects
     """
 
     out = []
-    for filename in os.listdir(install_root):
-        if not filename.endswith(".dist-info"):
-            continue
-        path = os.path.join(install_root, filename)
-        if not os.path.isdir(path):
-            continue
-        installer_path = os.path.join(path, 'INSTALLER')
-        if not os.path.isfile(installer_path):
-            continue
-
-        # We ignore what we've installed since we want unmanaged libraries
-        with open(installer_path, 'r', encoding='utf-8') as f:
-            if f.read().strip().startswith('Package Control'):
+    for python_version in ("3.3", "3.8"):
+        install_root = sys_path.lib_paths()[python_version]
+        for fname in os.listdir(install_root):
+            if not fname.endswith(".dist-info"):
+                continue
+            path = os.path.join(install_root, fname)
+            if not os.path.isdir(path):
+                continue
+            installer_path = os.path.join(path, 'INSTALLER')
+            if not os.path.isfile(installer_path):
                 continue
 
-        out.append(_name_from_dist_info_dirname(filename))
+            # We ignore what we've installed since we want unmanaged libraries
+            with open(installer_path, 'r', encoding='utf-8') as f:
+                if f.read().strip().startswith('Package Control'):
+                    continue
+
+            out.append(Library(
+                _name_from_dist_info_dirname(fname),
+                python_version
+            ))
     return out
 
 

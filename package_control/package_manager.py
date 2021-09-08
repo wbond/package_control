@@ -133,6 +133,23 @@ class PackageManager():
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
 
+    def get_python_version(self, package_name):
+        """
+        Returns the version of python a package runs under
+
+        :param package_name:
+            The name of the package
+
+        :return:
+            A unicode string of "3.3" or "3.8"
+        """
+
+        python_version = read_package_file(package_name, ".python-version")
+        if python_version and python_version.strip() == "3.8":
+            return "3.8"
+
+        return "3.3"
+
     def get_metadata(self, package_name):
         """
         Returns the package metadata for an installed package
@@ -173,13 +190,17 @@ class PackageManager():
             The name of the package
 
         :return:
-            A list of library names
+            A list of library.Library() objects
         """
+
+        python_version = self.get_python_version(package_name)
+
+        names = None
 
         lib_info_json = read_package_file(package_name, 'dependencies.json')
         if lib_info_json:
             try:
-                return self.select_libraries(json.loads(lib_info_json))
+                names = self.select_libraries(json.loads(lib_info_json))
             except (ValueError):
                 console_write(
                     '''
@@ -189,9 +210,15 @@ class PackageManager():
                     package_name
                 )
 
-        metadata = self.get_metadata(package_name)
-        # "dependencies" key is for backwards compatibility
-        return metadata.get('libraries', metadata.get('dependencies', []))
+        if names is None:
+            metadata = self.get_metadata(package_name)
+            # "dependencies" key is for backwards compatibility
+            names = metadata.get('libraries', metadata.get('dependencies', []))
+
+        if not names:
+            return []
+
+        return [library.Library(name, python_version) for name in names]
 
     def _is_git_package(self, package_name):
         """
@@ -584,9 +611,13 @@ class PackageManager():
 
         return (packages, libraries)
 
-    def list_available_libraries(self):
+    def list_available_libraries(self, python_version):
         """
-        Returns a master list of every available library from all sources
+        Returns a master list of every available library from all sources that
+        are compatible with the version of Python specified
+
+        :param python_version:
+            A unicode string of "3.3" or "3.8"
 
         :return:
             A dict in the format:
@@ -598,7 +629,25 @@ class PackageManager():
             }
         """
 
-        return self._list_available()[1]
+        libraries = self._list_available()[1]
+        filtered_libraries = {}
+        for library_name in libraries:
+            lib_info = libraries[library_name]
+            filtered_releases = []
+            for release in lib_info.get("releases", []):
+                if "python_versions" not in release:
+                    lib_python_compat = ["3.3"]
+                else:
+                    lib_python_compat = release["python_versions"]
+                if python_version not in lib_python_compat:
+                    continue
+                filtered_releases.append(release)
+            if not filtered_releases:
+                continue
+            filtered_libraries[library_name] = lib_info.copy()
+            filtered_libraries[library_name]["releases"] = filtered_releases
+
+        return filtered_libraries
 
     def list_available_packages(self):
         """
@@ -630,18 +679,16 @@ class PackageManager():
             packages |= self._list_sublime_package_files(sys_path.installed_packages_path)
 
         packages -= set(self.list_default_packages())
-        packages -= set(self.list_libraries())
         packages -= set(['User', 'Default'])
         return sorted(packages, key=lambda s: s.lower())
 
     def list_libraries(self):
         """
-        :return: A list of all installed library names
+        :return:
+            A list of library.Library() objects for all installed libraries
         """
 
-        # TODO: Handle 3.8
-        lib_path = sys_path.lib_paths()["3.3"]
-        return sorted(library.list_all(lib_path), key=lambda s: s.lower())
+        return library.list_all()
 
     def list_all_packages(self):
         """
@@ -717,22 +764,16 @@ class PackageManager():
             The package to ignore when enumerating libraries
 
         :return:
-            A list of the libraries required by the installed packages
+            A list of library.Library() objects for the libraries required by
+            the installed packages
         """
 
-        output = []
-
+        output = set()
         for package in self.list_packages():
             if package == ignore_package:
                 continue
-            output.extend(self.get_libraries(package))
-
-        # TODO: Handle 3.8
-        lib_path = sys_path.lib_paths()["3.3"]
-        output.extend(library.list_unmanaged(lib_path))
-
-        output = list(set(output))
-        return sorted(output, key=lambda s: s.lower())
+            output |= self.get_libraries(package)
+        return sorted(output)
 
     def get_package_dir(self, package_name):
         """:return: The full filesystem path to the package directory"""
@@ -1028,8 +1069,8 @@ class PackageManager():
                     )
         return should_retry
 
-    def install_library(self, library_name):
-        libraries = self.list_available_libraries()
+    def install_library(self, library_name, python_version):
+        libraries = self.list_available_libraries(python_version)
 
         is_available = library_name in list(libraries.keys())
         is_unavailable = library_name in self.settings.get('unavailable_libraries', [])
@@ -1037,17 +1078,17 @@ class PackageManager():
         if is_unavailable and not is_available:
             console_write(
                 '''
-                The library "%s" is either not available on this platform or for
-                this version of Sublime Text
+                The library "%s" is either not available on this platform,
+                for Python %s, or for this version of Sublime Text
                 ''',
-                library_name
+                (library_name, python_version)
             )
             # If a library is not available on this machine, that means it
             # is not needed
             return True
 
         if not is_available:
-            console_write("The libary '%s' is not available", (library_name,))
+            console_write("The libary '%s' is not available for Python %s", (library_name, python_version))
             return False
 
         release = libraries[library_name]['releases'][0]
@@ -1066,8 +1107,7 @@ class PackageManager():
             tmp_library_archive = os.path.join(tmp_dir, library_filename)
             tmp_library_dir = os.path.join(tmp_dir, library_name)
 
-            # TODO: Handle 3.8
-            lib_path = sys_path.lib_paths()["3.3"]
+            lib_path = sys_path.lib_paths()[python_version]
             existing_did = None
             try:
                 existing_did = distinfo.find_dist_info_dir(lib_path, library_name)
@@ -1126,10 +1166,9 @@ class PackageManager():
 
                 lib = libraries[library_name]
                 try:
-                    # TODO: handle 3.8
                     temp_did = library.convert_dependency(
                         tmp_library_dir,
-                        "3.3",
+                        python_version,
                         library_name,
                         release['version'],
                         lib.get('description'),
@@ -1243,13 +1282,6 @@ class PackageManager():
 
         release = packages[package_name]['releases'][0]
 
-        have_installed_libraries = False
-        libraries = release.get('libraries', [])
-        if libraries:
-            if not self.install_libraries(libraries):
-                return False
-            have_installed_libraries = True
-
         url = release['url']
         package_filename = package_name + '.sublime-package'
 
@@ -1266,6 +1298,9 @@ class PackageManager():
             package_path = os.path.join(sys_path.installed_packages_path, package_filename)
 
             if self.is_vcs_package(package_name):
+                # We explicitly don't support the "libraries" key when dealing
+                # with packages installed via VCS
+
                 upgrader = self.instantiate_upgrader(package_name)
                 to_ignore = self.settings.get('ignore_vcs_packages')
 
@@ -1304,6 +1339,7 @@ class PackageManager():
             if common_folder is False:
                 return False
 
+            python_version_path = common_folder + '.python-version'
             libraries_path = common_folder + 'dependencies.json'
             no_package_file_zip_path = common_folder + '.no-sublime-package'
 
@@ -1316,11 +1352,28 @@ class PackageManager():
             except (KeyError):
                 unpack = False
 
+            python_version = "3.3"
+            try:
+                python_version_raw = package_zip.read(python_version_path)
+                if python_version_raw.decode('utf-8').strip() == "3.8":
+                    python_version = "3.8"
+            except (KeyError):
+                pass
+
+            have_installed_libraries = False
+            libraries = release.get('libraries', [])
+            if libraries:
+                if not self.install_libraries(libraries, python_version):
+                    return False
+                have_installed_libraries = True
+
             # If libraries were not in the channel, try the package
             if not have_installed_libraries:
-                lib_info_json = package_zip.read(libraries_path)
                 try:
+                    lib_info_json = package_zip.read(libraries_path)
                     lib_info = json.loads(lib_info_json.decode('utf-8'))
+                except (KeyError):
+                    pass
                 except (ValueError):
                     console_write(
                         '''
@@ -1332,7 +1385,7 @@ class PackageManager():
                     return False
 
                 libraries = self.select_libraries(lib_info)
-                if not self.install_libraries(libraries):
+                if not self.install_libraries(libraries, python_version):
                     return False
 
             metadata_filename = 'package-metadata.json'
@@ -1536,12 +1589,15 @@ class PackageManager():
             # after we close it.
             sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
 
-    def install_libraries(self, library_names, fail_early=True):
+    def install_libraries(self, library_names, python_version, fail_early=True):
         """
         Ensures a list of libraries are installed and up-to-date
 
         :param library_names:
             A list of library names
+
+        :param python_version:
+            A unicode string of "3.3" or "3.8"
 
         :return:
             A boolean indicating if the libraries are properly installed
@@ -1549,10 +1605,9 @@ class PackageManager():
 
         debug = self.settings.get('debug')
 
-        available_libraries = self.list_available_libraries()
+        available_libraries = self.list_available_libraries(python_version)
 
-        # TODO: Handle 3.8
-        lib_path = sys_path.lib_paths()["3.3"]
+        lib_path = sys_path.lib_paths()[python_version]
 
         error = False
         for library_name in library_names:
@@ -1649,17 +1704,17 @@ class PackageManager():
         if not required_libraries:
             required_libraries = self.find_required_libraries(ignore_package)
 
-        orphaned_libraries = set(installed_libraries) - set(required_libraries)
-        orphaned_libraries = sorted(orphaned_libraries, key=lambda s: s.lower())
+        unmanaged_libraries = library.list_unmanaged()
+        orphaned_libraries = sorted(set(installed_libraries) - set(required_libraries) - set(unmanaged_libraries))
 
         error = False
-        for lib_name in orphaned_libraries:
-            if self.remove_library(lib_name):
+        for lib in orphaned_libraries:
+            if self.remove_library(lib):
                 console_write(
                     '''
-                    The orphaned library %s has been removed
+                    The orphaned library %s for Python %s has been removed
                     ''',
-                    lib_name
+                    (lib.name, lib.python_version)
                 )
             else:
                 error = True
@@ -1857,12 +1912,12 @@ class PackageManager():
 
         sublime.set_timeout(print_to_panel, 1)
 
-    def remove_library(self, library_name):
+    def remove_library(self, lib):
         """
         Deletes a library
 
-        :param library_name:
-            The library to delete
+        :param lib:
+            The library.Library() to delete
 
         :return:
             bool if the library was successfully deleted
@@ -1870,19 +1925,18 @@ class PackageManager():
 
         installed_libraries = self.list_libraries()
 
-        if library_name not in installed_libraries:
+        if lib not in set(installed_libraries):
             show_error(
                 '''
-                The library specified, %s, is not installed
+                The library specified, %s for Python %s, is not installed
                 ''',
-                (library_name,)
+                (lib.name, lib.python_version)
             )
             return False
 
-        # TODO: Handle 3.8
-        lib_path = sys_path.lib_paths()["3.3"]
+        lib_path = sys_path.lib_paths()[lib.python_version]
         try:
-            library.remove(lib_path, library_name)
+            library.remove(lib_path, lib.name)
         except OSError:
             # THe way library.remove() works is that the .dist-info dir is
             # removed last. This means that any permissions errors will happen
@@ -1891,10 +1945,10 @@ class PackageManager():
             # it again in the future.
             show_error(
                 '''
-                An error occurred while trying to remove the library %s.
-                Please restart Sublime Text to finish the cleanup.
+                An error occurred while trying to remove the library %s for
+                Python %s. Please restart Sublime Text to finish the cleanup.
                 ''',
-                (library_name,)
+                (lib.name, lib.python_version)
             )
             return False
 
