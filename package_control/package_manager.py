@@ -16,7 +16,7 @@ from urllib.parse import urlencode, urlparse
 import sublime
 
 from . import __version__
-from . import library, sys_path, text
+from . import library, pep440, sys_path, text
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .clear_directory import clear_directory, delete_directory
 from .clients.client_exception import ClientException
@@ -1692,14 +1692,14 @@ class PackageManager:
                 installed_version = None
 
             if installed_version:
-                installed_version = library.PEP440Version(installed_version)
+                installed_version = pep440.PEP440Version(installed_version)
 
             library_releases = info.get('releases', [])
             library_release = library_releases[0] if library_releases else {}
 
             available_version = library_release.get('version')
             if available_version:
-                available_version = library.PEP440Version(available_version)
+                available_version = pep440.PEP440Version(available_version)
 
             install_library = False
             if not installed_version:

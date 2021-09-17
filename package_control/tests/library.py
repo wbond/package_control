@@ -1,7 +1,7 @@
 import unittest
 
 from .unittest_data import data_decorator, data
-from ..library import PEP440Version
+from ..pep440 import PEP440Version, pep440_version_specifier
 
 
 @data_decorator
@@ -76,3 +76,69 @@ class LibraryTests(unittest.TestCase):
             self.assertEqual(va, vb)
         else:
             self.assertNotEqual(va, vb)
+
+    @staticmethod
+    def specifier():
+        return (
+            # Implicit equal
+            ('1.0.0', '1', True),
+            ('1.0.0', '1.0', True),
+            ('1.0.0', '1.0.0', True),
+            ('1.1.0', '1.*', True),
+            ('1.1.0', '1.0', False),
+            ('1.1.0', '1.0.0', False),
+            # Dev releases aren't matched by implicit minor/patch
+            ('1.0.0rc', '1', False),
+            # Explicit equal
+            ('1.0.0', '==1', True),
+            ('1.0.0', '==1.0', True),
+            ('1.0.0', '==1.0.0', True),
+            ('1.1.0', '==1.*', True),
+            ('1.1.0', '==1.0', False),
+            ('1.1.0', '==1.0.0', False),
+            # Not equal
+            ('1.0.0', '!=1', False),
+            ('1.0.0', '!=1.0', False),
+            ('1.0.0', '!=1.0.0', False),
+            ('2.0.0', '!=1', True),
+            ('1.1.0', '!=1.*', False),
+            ('1.1.0', '!=1.0', True),
+            ('1.1.0', '!=1.0.0', True),
+            # Greater than
+            ('1.0.0', '>1', False),
+            ('1.0.0', '>1.0', False),
+            ('1.0.0', '>1.0.0', False),
+            ('1.1.0', '>1', True),
+            ('1.1.0', '>1.0', True),
+            ('1.1.0', '>1.0.0', True),
+            # Greater than or equal
+            ('1.0.0', '>=1', True),
+            ('1.0.0', '>=1.0', True),
+            ('1.0.0', '>=1.0.0', True),
+            ('1.1.0', '>=1', True),
+            ('1.1.0', '>=1.0', True),
+            ('1.1.0', '>=1.0.0', True),
+            # Less than
+            ('1.0.0', '<1', False),
+            ('1.0.0', '<1.0', False),
+            ('1.0.0', '<1.0.0', False),
+            ('1.1.0', '<2', True),
+            ('1.1.0', '<1.2', True),
+            ('1.1.0', '<1.2.0', True),
+            # Less than or equal
+            ('1.0.0', '<=1', True),
+            ('1.0.0', '<=1.0', True),
+            ('1.0.0', '<=1.0.0', True),
+            ('1.1.0', '<=2', True),
+            ('1.1.0', '<=1.1', True),
+            ('1.1.0', '<=1.1.0', True),
+        )
+
+    @data('specifier')
+    def pep440_specifier(self, version, version_specifier, result):
+        v = PEP440Version(version)
+        vs = pep440_version_specifier(version_specifier)
+        if result:
+            self.assertEqual(True, vs.check(v))
+        else:
+            self.assertEqual(False, vs.check(v))

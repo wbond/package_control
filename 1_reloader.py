@@ -30,6 +30,7 @@ mods_load_order = [
 
     '.sys_path',
     '.distinfo',
+    '.pep440',
     '.library',
     '.text',
     '.cache',
