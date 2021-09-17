@@ -1373,7 +1373,7 @@ class PackageManager():
                     lib_info_json = package_zip.read(libraries_path)
                     lib_info = json.loads(lib_info_json.decode('utf-8'))
                 except (KeyError):
-                    pass
+                    lib_info = {}
                 except (ValueError):
                     console_write(
                         '''
