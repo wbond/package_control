@@ -216,9 +216,9 @@ class PackageManager():
             names = metadata.get('libraries', metadata.get('dependencies', []))
 
         if not names:
-            return []
+            return set()
 
-        return [library.Library(name, python_version) for name in names]
+        return set(library.Library(name, python_version) for name in names)
 
     def _is_git_package(self, package_name):
         """
