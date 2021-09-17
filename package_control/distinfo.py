@@ -5,6 +5,7 @@ import re
 import sys
 
 from . import __version__ as pc_version
+from . import pep440
 from . import sys_path
 
 _dist_info_pattern = re.compile(
@@ -598,6 +599,33 @@ class DistInfoDir:
         contents = self.generate_wheel(python_version, plat_specific)
         with open(self.abs_path('WHEEL'), 'w', encoding='utf-8', newline='\n') as fobj:
             fobj.write(contents)
+
+    def verify_python_version(self, python_version):
+        """
+        Ensures the package is compatible with the specified version of Python
+
+        :param python_version:
+            A unicode string of "3.3" or "3.8"
+        """
+
+        metadata = self.read_metadata()
+        if metadata is False:
+            return
+
+        if "requires-python" not in metadata:
+            return
+
+        version_specifier = metadata.get("requires-python")
+        if not version_specifier:
+            return
+
+        specifiers = version_specifier.split(",")
+        for specifier_str in specifiers:
+            specifier = pep440.pep440_version_specifier(specifier_str)
+            if not specifier.check(python_version):
+                raise EnvironmentError(
+                    "The library %s is not compatible with Python %r", (metadata["name"], python_version)
+                )
 
     def verify_files(self):
         """
