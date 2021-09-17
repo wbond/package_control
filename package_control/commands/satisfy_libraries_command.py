@@ -43,7 +43,7 @@ class SatisfyLibrariesThread(threading.Thread):
         required_libraries = self.manager.find_required_libraries()
         error = False
 
-        if not self.manager.install_libraries(required_libraries, fail_early=False):
+        if not self.manager.install_libraries(required_libraries, "3.3", fail_early=False):
             self.show_error(
                 '''
                 One or more libraries could not be installed or updated.
