@@ -16,7 +16,7 @@ from urllib.parse import urlencode, urlparse
 import sublime
 
 from . import __version__
-from . import distinfo, library, sys_path, text
+from . import library, sys_path, text
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .clear_directory import clear_directory, delete_directory
 from .clients.client_exception import ClientException
@@ -1127,7 +1127,7 @@ class PackageManager:
             lib_path = sys_path.lib_paths()[python_version]
 
             try:
-                existing_did = distinfo.find_dist_info_dir(lib_path, library_name)
+                existing_did = library.distinfo.find_dist_info_dir(lib_path, library_name)
             except FileNotFoundError:
                 existing_did = None
 
@@ -1201,9 +1201,9 @@ class PackageManager:
                     return False
 
             else:
-                temp_did = distinfo.DistInfoDir(tmp_library_dir, new_did_name)
+                temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
 
-            new_did = distinfo.DistInfoDir(
+            new_did = library.distinfo.DistInfoDir(
                 lib_path,
                 "%s-%s.dist-info" % (library_name, release.get("version"))
             )
@@ -1686,7 +1686,7 @@ class PackageManager:
             info = available_libraries[library_name]
 
             try:
-                existing_did = library.find_dist_info_dir(lib_path, library_name)
+                existing_did = library.distinfo.find_dist_info_dir(lib_path, library_name)
                 installed_version = existing_did.read_metadata()['version']
             except FileNotFoundError:
                 installed_version = None
@@ -1966,7 +1966,7 @@ class PackageManager:
 
         try:
             library.remove(sys_path.lib_paths()[lib.python_version], lib.name)
-        except distinfo.DistInfoNotFoundError:
+        except library.distinfo.DistInfoNotFoundError:
             console_write(
                 '''
                 The library specified, "%s" for Python %s, is not installed

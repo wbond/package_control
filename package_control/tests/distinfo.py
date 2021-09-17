@@ -3,7 +3,7 @@ import sys
 import tempfile
 import unittest
 
-from ..distinfo import DistInfoDir
+from .. import distinfo
 from .. import __version__
 
 
@@ -75,14 +75,14 @@ class DistinfoTests(unittest.TestCase):
             did_name = 'testing-1.0.0.dist-info'
             os.mkdir(os.path.join(d, did_name))
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             self.assertEqual(True, did.exists())
 
     def test_distinfo_make_dir(self):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             self.assertEqual(False, did.exists())
             did.ensure_exists()
             self.assertEqual(True, did.exists())
@@ -91,7 +91,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_metadata(
                 "testing",
@@ -114,7 +114,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_metadata(
                 "testing",
@@ -138,7 +138,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_installer()
             installer_path = os.path.join(d, did_name, "INSTALLER")
@@ -152,7 +152,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_installer()
             self.assertEqual(
@@ -164,7 +164,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             with self.assertRaises(ValueError):
                 did.write_wheel("3.4", False)
@@ -173,7 +173,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_wheel("3.3", False)
             wheel_path = os.path.join(d, did_name, "WHEEL")
@@ -192,7 +192,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_wheel("3.3", True)
             wheel_path = os.path.join(d, did_name, "WHEEL")
@@ -211,7 +211,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_wheel("3.8", False)
             wheel_path = os.path.join(d, did_name, "WHEEL")
@@ -230,7 +230,7 @@ class DistinfoTests(unittest.TestCase):
         with tmp_dir() as d:
             did_name = 'testing-1.0.0.dist-info'
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_wheel("3.8", True)
             wheel_path = os.path.join(d, did_name, "WHEEL")
@@ -251,7 +251,7 @@ class DistinfoTests(unittest.TestCase):
 
             package_dirs, package_files = _create_package_files(d)
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_metadata(
                 "testing",
@@ -282,7 +282,7 @@ class DistinfoTests(unittest.TestCase):
 
             package_dirs, package_files = _create_package_files(d)
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_metadata(
                 "testing",
@@ -331,7 +331,7 @@ class DistinfoTests(unittest.TestCase):
 
             package_dirs, package_files = _create_package_files(d)
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_metadata(
                 "testing",
@@ -360,7 +360,7 @@ class DistinfoTests(unittest.TestCase):
 
             package_dirs, package_files = _create_package_files_2(d)
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_metadata(
                 "testing",
@@ -388,7 +388,7 @@ class DistinfoTests(unittest.TestCase):
 
             package_dirs, package_files = _create_package_files(d)
 
-            did = DistInfoDir(d, did_name)
+            did = distinfo.DistInfoDir(d, did_name)
             did.ensure_exists()
             did.write_metadata(
                 "testing",

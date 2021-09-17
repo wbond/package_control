@@ -5,7 +5,7 @@ import shutil
 import sublime
 
 from . import sys_path
-from .distinfo import DistInfoDir, find_dist_info_dir
+from . import distinfo
 
 
 class Library:
@@ -187,7 +187,7 @@ def convert_dependency(dependency_path, python_version, name, version, descripti
         raise ValueError('Unrecognized source archive layout')
 
     did_name = '%s-%s.dist-info' % (name, version)
-    did = DistInfoDir(src_dir, did_name)
+    did = distinfo.DistInfoDir(src_dir, did_name)
     did.ensure_exists()
     did.write_metadata(name, version, description, url)
     did.write_installer()
@@ -270,7 +270,7 @@ def remove(install_root, name):
         OSError - when a permission error occurs trying to remove a file
     """
 
-    dist_info = find_dist_info_dir(install_root, name)
+    dist_info = distinfo.find_dist_info_dir(install_root, name)
 
     for rel_path in dist_info.top_level_paths():
         # Remove the .dist-info dir last so we have info for cleanup in case
