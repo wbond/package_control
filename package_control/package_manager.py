@@ -1673,7 +1673,7 @@ class PackageManager():
                 library_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
             if install_library:
-                library_result = self.install_library(library_name)
+                library_result = self.install_library(library_name, python_version)
                 if not library_result:
                     library_write('could not be installed or updated')
                     if fail_early:
