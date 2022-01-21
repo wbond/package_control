@@ -42,15 +42,11 @@ def filter_releases(package, settings, releases):
         platforms = release.get('platforms', '*')
         if not isinstance(platforms, list):
             platforms = [platforms]
-
-        matched = False
         for selector in platform_selectors:
             if selector in platforms:
-                matched = True
                 break
-        if not matched:
+        else:
             continue
-
         # Default to '*' (for legacy reasons), see #604
         if not is_compatible_version(release.get('sublime_text', '*'), st_version):
             continue
