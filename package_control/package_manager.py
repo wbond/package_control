@@ -956,7 +956,7 @@ class PackageManager():
         if skip_root_dir:
             return root_level_paths[0]
 
-        return None
+        return ""
 
     def _extract_zip(self, name, zf, dest_dir, extracted_dirs, extracted_files, common_folder):
         """
