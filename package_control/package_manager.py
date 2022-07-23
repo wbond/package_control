@@ -950,10 +950,7 @@ class PackageManager():
         # If there is only a single directory at the top leve, the file
         # is most likely a zip from BitBucket or GitHub and we need
         # to skip the top-level dir when extracting
-        skip_root_dir = len(root_level_paths) == 1 and \
-            root_level_paths[0].endswith('/')
-
-        if skip_root_dir:
+        if len(root_level_paths) == 1 and root_level_paths[0].endswith('/'):
             return root_level_paths[0]
 
         return ""
