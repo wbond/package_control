@@ -40,11 +40,11 @@ class SatisfyLibrariesThread(threading.Thread):
         sublime.set_timeout(functools.partial(show_error, msg), 10)
 
     def run(self):
-        required_libraries = self.manager.find_required_libraries()
-        required_library_names = [library.name for library in required_libraries]
         error = False
 
-        if not self.manager.install_libraries(required_library_names, "3.3", fail_early=False):
+        required_libraries = self.manager.find_required_libraries()
+
+        if not self.manager.install_libraries(libraries=required_libraries, fail_early=False):
             self.show_error(
                 '''
                 One or more libraries could not be installed or updated.

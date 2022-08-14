@@ -1358,9 +1358,9 @@ class PackageManager():
                 pass
 
             have_installed_libraries = False
-            libraries = release.get('libraries', [])
-            if libraries:
-                if not self.install_libraries(libraries, python_version):
+            library_names = release.get('libraries', [])
+            if library_names:
+                if not self.install_libraries_by_name(library_names, python_version):
                     return False
                 have_installed_libraries = True
 
@@ -1381,8 +1381,8 @@ class PackageManager():
                     )
                     return False
 
-                libraries = self.select_libraries(lib_info)
-                if not self.install_libraries(libraries, python_version):
+                library_names = self.select_libraries(lib_info)
+                if not self.install_libraries_by_name(library_names, python_version):
                     return False
 
             metadata_filename = 'package-metadata.json'
@@ -1586,7 +1586,32 @@ class PackageManager():
             # after we close it.
             sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
 
-    def install_libraries(self, library_names, python_version, fail_early=True):
+    def install_libraries(self, libraries, fail_early=True):
+        """
+        Ensures a list of libraries are installed and up-to-date
+
+        :param libraries:
+            A list of library.Library() objects
+
+        :param fail_early:
+            Whether to abort installation if a library installation fails.
+
+        :return:
+            A boolean indicating if the libraries are properly installed
+        """
+
+        # group libraries by python_version
+        library_names = {}
+        for lib in libraries:
+            library_names.setdefault(lib.python_version, []).append(lib.name)
+
+        # install libraries per python_version
+        return all(
+            self.install_libraries_by_name(library_names, python_version, fail_early)
+            for python_version, library_names in library_names.items()
+        )
+
+    def install_libraries_by_name(self, library_names, python_version, fail_early=True):
         """
         Ensures a list of libraries are installed and up-to-date
 
@@ -1595,6 +1620,9 @@ class PackageManager():
 
         :param python_version:
             A unicode string of "3.3" or "3.8"
+
+        :param fail_early:
+            Whether to abort installation if a library installation fails.
 
         :return:
             A boolean indicating if the libraries are properly installed
@@ -1625,7 +1653,7 @@ class PackageManager():
                     library_write(msg)
 
             if library_name not in available_libraries:
-                library_write('is not available')
+                library_write('is not available for Python ' + python_version)
                 if fail_early:
                     return False
                 error = True
