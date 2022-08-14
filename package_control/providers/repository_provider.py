@@ -308,6 +308,16 @@ class RepositoryProvider(BaseRepositoryProvider):
                         (info['name'], self.repo_url)
                     ))
 
+                def assert_release_keys(download_info):
+                    for key in ('version', 'url', 'sublime_text', 'platforms', 'python_versions'):
+                        if key not in download_info:
+                            raise ProviderException(text.format(
+                                '''
+                                Missing "%s" key for one of the releases of the library "%s" in the repository %s.
+                                ''',
+                                (key, info['name'], self.repo_url)
+                            ))
+
                 for release in releases:
                     download_info = {}
 
@@ -408,6 +418,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                             del download['date']
                             new_download = download_info.copy()
                             new_download.update(download)
+                            assert_release_keys(new_download)
                             info['releases'].append(new_download)
 
                     elif 'url' in download_info:
@@ -421,17 +432,8 @@ class RepositoryProvider(BaseRepositoryProvider):
                                 (info['name'], self.repo_url)
                             ))
 
-                    # check required releases keys
-                    for key in ('version', 'url', 'sublime_text', 'platforms', 'python_versions'):
-                        if key not in download_info:
-                            raise ProviderException(text.format(
-                                '''
-                                Missing "%s" key for one of the releases of the library "%s" in the repository %s.
-                                ''',
-                                (key, info['name'], self.repo_url)
-                            ))
-
-                    info['releases'].append(download_info)
+                        assert_release_keys(download_info)
+                        info['releases'].append(download_info)
 
                 # check required library keys
                 for key in ('author', 'releases', 'issues', 'description'):
