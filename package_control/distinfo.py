@@ -18,6 +18,10 @@ _dist_info_pattern = re.compile(
 )
 
 
+class DistInfoNotFoundError(FileNotFoundError):
+    pass
+
+
 def match_dist_info_dir(dir_name, library_name):
     """
     Match a given directory name against the library name.
@@ -71,13 +75,13 @@ def find_dist_info_dir(install_root, library_name):
         An unicode string of the .dist-info directory.
 
     :raises:
-        FileNotFoundError if no .dist-info directory was found.
+        DistInfoNotFoundError if no .dist-info directory was found.
     """
 
     for dir_name in os.listdir(install_root):
         if match_dist_info_dir(dir_name, library_name):
             return DistInfoDir(install_root, dir_name)
-    raise FileNotFoundError('Library {} not installed!'.format(library_name))
+    raise DistInfoNotFoundError('Library {} not installed!'.format(library_name))
 
 
 def list_dist_info_dirs(install_root):

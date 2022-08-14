@@ -1920,9 +1920,9 @@ class PackageManager():
             bool if the library was successfully deleted
         """
 
-        installed_libraries = self.list_libraries()
-
-        if lib not in set(installed_libraries):
+        try:
+            library.remove(sys_path.lib_paths()[lib.python_version], lib.name)
+        except distinfo.DistInfoNotFoundError:
             show_error(
                 '''
                 The library specified, %s for Python %s, is not installed
@@ -1930,10 +1930,6 @@ class PackageManager():
                 (lib.name, lib.python_version)
             )
             return False
-
-        lib_path = sys_path.lib_paths()[lib.python_version]
-        try:
-            library.remove(lib_path, lib.name)
         except OSError:
             # THe way library.remove() works is that the .dist-info dir is
             # removed last. This means that any permissions errors will happen
@@ -1948,6 +1944,7 @@ class PackageManager():
                 (lib.name, lib.python_version)
             )
             return False
+        return True
 
     def remove_package(self, package_name):
         """
