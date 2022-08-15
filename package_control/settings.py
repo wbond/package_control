@@ -70,8 +70,7 @@ def save_list_setting(settings, filename, name, new_value, old_value=None):
     """
 
     # Clean up the list to only include unique values, sorted
-    new_value = list(set(new_value))
-    new_value = sorted(new_value, key=lambda s: s.lower())
+    new_value = sorted(set(new_value), key=lambda s: s.lower())
 
     if old_value is not None:
         if old_value == new_value:
