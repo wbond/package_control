@@ -75,6 +75,7 @@ class PackageManager():
             'git_update_command',
             'hg_binary',
             'hg_update_command',
+            'http_basic_auth',
             'http_cache',
             'http_cache_length',
             'http_proxy',
