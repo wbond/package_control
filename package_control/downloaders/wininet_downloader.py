@@ -265,12 +265,12 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         username = url_info.username
         password = url_info.password
 
-        if not username and not password:
-            username, password = self.get_username_password(url)
-
         request_headers = {
             'Accept-Encoding': self.supported_encodings()
         }
+        if not username and not password:
+            request_headers.update(self.build_auth_header(url))
+
         request_headers = self.add_conditional_headers(url, request_headers)
 
         created_connection = False
