@@ -40,11 +40,7 @@ def load_list_setting(settings, name):
     if not isinstance(value, list):
         return []
 
-    filtered_value = []
-    for v in value:
-        if not isinstance(v, str):
-            continue
-        filtered_value.append(v)
+    filtered_value = {v for v in value if isinstance(v, str)}
     return sorted(filtered_value, key=lambda s: s.lower())
 
 
