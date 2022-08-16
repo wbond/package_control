@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlencode, quote
+from urllib.parse import quote
 
 from ..downloaders.downloader_exception import DownloaderException
 from ..versions import version_process, version_sort
@@ -44,8 +44,7 @@ class GitLabClient(JSONApiClient):
         if not match:
             return False
 
-        return 'https://gitlab.com/%s/-/tree/%s' % (match.group(1),
-                                                    quote(branch))
+        return 'https://gitlab.com/%s/-/tree/%s' % (match.group(1), quote(branch))
 
     def download_info(self, url, tag_prefix=None):
         """
@@ -74,96 +73,68 @@ class GitLabClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match('https?://gitlab.com/([^/]+)/([^/]+)/-/tags/?$',
-                              url)
-
         version = None
-        url_pattern = 'https://gitlab.com/%s/-/archive/%s/%s-%s.zip'
+        url_pattern = 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip'
 
-        output = []
+        # tag based releases
+        tags_match = re.match('https?://gitlab.com/([^/]+)/([^/]+)/-/tags/?$', url)
         if tags_match:
-            (user_id, user_repo_type) = self._extract_user_id(tags_match.group(1))
+            user_name, repo_name = tags_match.groups()
+            repo_id = '%s%%2F%s' % (user_name, repo_name)
+            tags_url = self._make_api_url(repo_id, '/repository/tags?per_page=100')
+            tags_json = self.fetch_json(tags_url)
+            tags_list = {
+                tag['name']: tag['commit']['committed_date'][0:19].replace('T', ' ')
+                for tag in tags_json
+            }
 
-            repo_id, _ = self._extract_repo_id_default_branch(
-                user_id,
-                tags_match.group(2),
-                'users' if user_repo_type else 'groups'
-            )
-            if repo_id is None:
-                return None
-
-            user_repo = '%s/%s' % (tags_match.group(1), tags_match.group(2))
-            tags_url = self._make_api_url(
-                repo_id,
-                '/repository/tags?per_page=100'
-            )
-            tags_list = self.fetch_json(tags_url)
-            tags = [tag['name'] for tag in tags_list]
-            tag_info = version_process(tags, tag_prefix)
+            tag_info = version_process(tags_list.keys(), tag_prefix)
             tag_info = version_sort(tag_info, reverse=True)
             if not tag_info:
                 return False
 
-            used_versions = {}
+            output = []
+            used_versions = set()
             for info in tag_info:
                 version = info['version']
                 if version in used_versions:
                     continue
                 tag = info['prefix'] + version
-                repo_name = user_repo.split('/')[1]
                 output.append({
-                    'url': url_pattern % (user_repo, tag, repo_name, tag),
-                    'commit': tag,
+                    'url': url_pattern % (user_name, repo_name, tag, repo_name, tag),
                     'version': version,
+                    'date': tags_list[tag]
                 })
-                used_versions[version] = True
+                used_versions.add(version)
 
+            return output
+
+        # branch based releases
+        user_repo, branch = self._user_repo_ref(url)
+        if not user_repo:
+            return None
+
+        user_name, repo_name = user_repo.split('/')
+        repo_id = '%s%%2F%s' % (user_name, repo_name)
+
+        if branch is None:
+            repo_info = self.fetch_json(self._make_api_url(repo_id))
+            branch = repo_info.get('default_branch', 'master')
+
+        commit_url = self._make_api_url(repo_id, '/repository/commits?ref_name=%s' % branch)
+        commit_info = self.fetch_json(commit_url)
+        if not commit_info[0].get('commit'):
+            timestamp = commit_info[0]['committed_date'][0:19].replace('T', ' ')
         else:
-            user_repo, commit = self._user_repo_ref(url)
-            if not user_repo:
-                return user_repo
-            user, repo = user_repo.split('/')
-            (user_id, user_repo_type) = self._extract_user_id(user)
+            timestamp = commit_info[0]['commit']['committed_date'][0:19].replace('T', ' ')
 
-            repo_id, default_branch = self._extract_repo_id_default_branch(
-                user_id,
-                repo,
-                'users' if user_repo_type else 'groups'
-            )
-            if repo_id is None:
-                return None
-
-            if commit is None:
-                commit = default_branch
-
-            repo_name = user_repo.split('/')[1]
-            output.append({
-                'url': url_pattern % (user_repo, commit, repo_name, commit),
-                'commit': commit
-            })
-
-        for release in output:
-            query_string = urlencode({
-                'ref_name': release['commit'],
-                'per_page': 1
-            })
-            commit_url = self._make_api_url(
-                repo_id,
-                '/repository/commits?%s' % query_string
-            )
-            commit_info = self.fetch_json(commit_url)
-            if not commit_info[0].get('commit'):
-                timestamp = commit_info[0]['committed_date'][0:19].replace('T', ' ')
-            else:
-                timestamp = commit_info[0]['commit']['committed_date'][0:19].replace('T', ' ')
-
-            if 'version' not in release:
-                release['version'] = re.sub(r'[\-: ]', '.', timestamp)
-            release['date'] = timestamp
-
-            del release['commit']
-
-        return output
+        return [
+            {
+                'url': url_pattern % (user_name, repo_name, branch, repo_name, branch),
+                'version': re.sub(r'[\-: ]', '.', timestamp),
+                'date': timestamp
+            }
+        ]
 
     def repo_info(self, url):
         """
@@ -188,36 +159,23 @@ class GitLabClient(JSONApiClient):
 
         user_repo, branch = self._user_repo_ref(url)
         if not user_repo:
-            return user_repo
-
-        user, repo = user_repo.split('/')
-
-        (user_id, user_repo_type) = self._extract_user_id(user)
-
-        repo_id, default_branch = self._extract_repo_id_default_branch(
-            user_id,
-            repo,
-            'users' if user_repo_type else 'groups'
-        )
-        if repo_id is None:
             return None
 
-        if branch is None:
-            branch = default_branch
+        user_name, repo_name = user_repo.split('/')
+        repo_id = '%s%%2F%s' % (user_name, repo_name)
+        repo_url = self._make_api_url(repo_id)
+        repo_info = self.fetch_json(repo_url)
 
-        api_url = self._make_api_url(repo_id)
-        info = self.fetch_json(api_url)
+        output = self._extract_repo_info(repo_info)
+        if output['readme']:
+            if branch is None:
+                branch = repo_info.get('default_branch', 'master')
 
-        output = self._extract_repo_info(info)
-
-        if not output['readme']:
-            return output
-
-        output['readme'] = 'https://gitlab.com/%s/-/%s/%s' % (
-            user_repo,
-            branch,
-            output['readme'].split('/')[-1],
-        )
+            output['readme'] = 'https://gitlab.com/%s/-/%s/%s' % (
+                user_repo,
+                branch,
+                output['readme'].split('/')[-1],
+            )
         return output
 
     def user_info(self, url):
@@ -394,37 +352,3 @@ class GitLabClient(JSONApiClient):
             return (None, None)
 
         return (repos_info[0]['id'], False)
-
-    def _extract_repo_id_default_branch(self, user_id, repo_name, repo_type):
-        """
-        Extract the repo id from the repo results
-
-        :param user_id:
-            The user_id of the user who owns the repo
-
-        :param repo_name:
-            The name of the repository
-
-        :param repo_type:
-            A string "users" or "groups", based on the user_id being from a
-            user or a group
-
-        :return:
-            A 2-element tuple, (repo_id, default_branch) or (None, None) if no match
-        """
-
-        user_url = 'https://gitlab.com/api/v4/%s/%s/projects' % (repo_type, user_id)
-        try:
-            repos_info = self.fetch_json(user_url)
-        except (DownloaderException) as e:
-            if str(e).find('HTTP error 404') != -1:
-                return (None, None)
-            raise
-
-        repo_info = next(
-            (repo for repo in repos_info if repo['name'].lower() == repo_name.lower()), None)
-
-        if not repo_info:
-            return (None, None)
-
-        return (repo_info['id'], repo_info['default_branch'])

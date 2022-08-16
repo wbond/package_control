@@ -90,7 +90,7 @@ class GitHubClient(JSONApiClient):
             if not tag_info:
                 return False
 
-            used_versions = {}
+            used_versions = set()
             for info in tag_info:
                 version = info['version']
                 if version in used_versions:
@@ -101,7 +101,7 @@ class GitHubClient(JSONApiClient):
                     'commit': tag,
                     'version': version
                 })
-                used_versions[version] = True
+                used_versions.add(version)
 
         else:
             user_repo, branch = self._user_repo_branch(url)
