@@ -63,7 +63,6 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
             'https://github.com/packagecontrol-test/package_control-tester',
             self.github_settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester',
@@ -94,7 +93,7 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
                     'last_modified': LAST_COMMIT_TIMESTAMP
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_sources(self):
@@ -172,7 +171,6 @@ class GitHubUserProviderTests(unittest.TestCase):
 
     def test_get_packages(self):
         provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester',
@@ -203,7 +201,7 @@ class GitHubUserProviderTests(unittest.TestCase):
                     'last_modified': LAST_COMMIT_TIMESTAMP
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_sources(self):
@@ -265,7 +263,6 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
             'https://gitlab.com/packagecontrol-test/package_control-tester',
             self.gitlab_settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester',
@@ -297,7 +294,7 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
                     'last_modified': '2020-07-15 10:50:38'
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_sources(self):
@@ -374,7 +371,6 @@ class GitLabUserProviderTests(unittest.TestCase):
 
     def test_get_packages(self):
         provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester',
@@ -403,7 +399,7 @@ class GitLabUserProviderTests(unittest.TestCase):
                     'last_modified': '2020-07-15 10:50:38'
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_sources(self):
@@ -463,7 +459,6 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
             'https://bitbucket.org/wbond/package_control-tester',
             self.bitbucket_settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester',
@@ -492,7 +487,7 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
                     'last_modified': LAST_COMMIT_TIMESTAMP
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_sources(self):
@@ -563,7 +558,6 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester-1.0',
@@ -611,7 +605,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     ]
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_libraries_10(self):
@@ -626,7 +620,6 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester-1.2',
@@ -674,7 +667,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     ]
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_libraries_12(self):
@@ -689,7 +682,6 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester-2.0',
@@ -746,7 +738,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     ]
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_libraries_20(self):
@@ -761,7 +753,6 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester-2.0-gh',
@@ -820,7 +811,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     ]
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_packages_20_bitbucket(self):
@@ -829,7 +820,6 @@ class RepositoryProviderTests(unittest.TestCase):
             '/master/repository-2.0-bitbucket_details.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester-2.0-bb',
@@ -883,7 +873,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     ]
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_packages_300_explicit(self):
@@ -891,7 +881,6 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester-3.0.0',
@@ -949,7 +938,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     ]
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_libraries_300_explicit(self):
@@ -1037,7 +1026,6 @@ class RepositoryProviderTests(unittest.TestCase):
             '/master/repository-3.0.0-github_releases.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [
                 (
@@ -1219,7 +1207,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     }
                 )
             ],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_packages_300_gitlab(self):
@@ -1228,7 +1216,6 @@ class RepositoryProviderTests(unittest.TestCase):
             '/master/repository-3.0.0-gitlab_releases.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [
                 (
@@ -1364,7 +1351,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     }
                 )
             ],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_packages_300_bitbucket(self):
@@ -1373,7 +1360,6 @@ class RepositoryProviderTests(unittest.TestCase):
             '/master/repository-3.0.0-bitbucket_releases.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [
                 (
@@ -1491,7 +1477,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     }
                 )
             ],
-            packages
+            list(provider.get_packages())
         )
 
     def test_get_libraries_400_explicit(self):
@@ -1556,7 +1542,6 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json',
             self.settings()
         )
-        packages = [package for package in provider.get_packages()]
         self.assertEqual(
             [(
                 'package_control-tester-4.0.0',
@@ -1614,7 +1599,7 @@ class RepositoryProviderTests(unittest.TestCase):
                     ]
                 }
             )],
-            packages
+            list(provider.get_packages())
         )
 
 
