@@ -110,7 +110,7 @@ class GitLabClient(JSONApiClient):
             return output
 
         # branch based releases
-        user_repo, branch = self._user_repo_ref(url)
+        user_repo, branch = self._user_repo_branch(url)
         if not user_repo:
             return None
 
@@ -157,7 +157,7 @@ class GitLabClient(JSONApiClient):
               `donate` - URL of a donate page
         """
 
-        user_repo, branch = self._user_repo_ref(url)
+        user_repo, branch = self._user_repo_branch(url)
         if not user_repo:
             return None
 
@@ -269,37 +269,29 @@ class GitLabClient(JSONApiClient):
 
         return 'https://gitlab.com/api/v4/projects/%s%s' % (project_id, suffix)
 
-    def _user_repo_ref(self, url):
+    def _user_repo_branch(self, url):
         """
-        Extract the username/repo and ref name from the URL
+        Extract the username/repo and branch name from the URL
 
         :param url:
             The URL to extract the info from, in one of the forms:
               https://gitlab.com/{user}/{repo}
-              https://gitlab.com/{user}/{repo}/-/tree/{ref}
+              https://gitlab.com/{user}/{repo}/-/tree/{branch}
 
         :return:
-            A tuple of (user/repo, ref name) or (None, None) if no match.
-            The ref name may be a branch name or a commit
+            A tuple of (user/repo, branch name) or (None, None) if no match.
+            The branch name may be a branch name or a commit
         """
 
-        branch = None
-        branch_match = re.match(
-            r'https?://gitlab.com/[^/]+/[^/]+/-/tree/([^/]+)/?$',
-            url
-        )
-        if branch_match is not None:
-            branch = branch_match.group(1)
+        branch_match = re.match('https?://gitlab.com/([^/]+/[^/]+)/-/tree/([^/]+)/?$', url)
+        if branch_match:
+            return branch_match.groups()
 
-        repo_match = re.match(
-            r'https?://gitlab.com/([^/]+/[^/]+)($|/.*$)',
-            url
-        )
-        if repo_match is None:
-            return (None, None)
+        repo_match = re.match('https?://gitlab.com/([^/]+/[^/]+)(?:$|/.*$)', url)
+        if repo_match:
+            return (repo_match.group(1), None)
 
-        user_repo = repo_match.group(1)
-        return (user_repo, branch)
+        return (None, None)
 
     def _extract_user_id(self, username):
         """

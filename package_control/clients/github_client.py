@@ -309,14 +309,12 @@ class GitHubClient(JSONApiClient):
             A tuple of (user/repo, branch name) or (None, None) if no match
         """
 
-        branch = None
-        branch_match = re.match('https?://github.com/[^/]+/[^/]+/tree/([^/]+)/?$', url)
-        if branch_match is not None:
-            branch = branch_match.group(1)
+        branch_match = re.match('https?://github.com/([^/]+/[^/]+)/tree/([^/]+)/?$', url)
+        if branch_match:
+            return branch_match.groups()
 
-        repo_match = re.match('https?://github.com/([^/]+/[^/]+)($|/.*$)', url)
-        if repo_match is None:
-            return (None, None)
+        repo_match = re.match('https?://github.com/([^/]+/[^/]+)(?:$|/.*$)', url)
+        if repo_match:
+            return (repo_match.group(1), None)
 
-        user_repo = repo_match.group(1)
-        return (user_repo, branch)
+        return (None, None)

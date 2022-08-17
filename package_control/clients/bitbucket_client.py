@@ -128,6 +128,10 @@ class BitBucketClient(JSONApiClient):
             if not user_repo:
                 return user_repo
 
+            if branch is None:
+                repo_info = self.fetch_json(self._make_api_url(user_repo))
+                branch = repo_info['mainbranch'].get('name', 'master')
+
             branch_url = self._make_api_url(user_repo, '/refs/branches/%s' % branch)
             branch_info = self.fetch_json(branch_url)
 
@@ -283,18 +287,12 @@ class BitBucketClient(JSONApiClient):
             A tuple of (user/repo, branch name) or (None, None) if not matching
         """
 
-        repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
         branch_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/src/([^/]+)/?$', url)
+        if branch_match:
+            return branch_match.groups()
 
+        repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
         if repo_match:
-            user_repo = repo_match.group(1)
-            branch = self._main_branch_name(user_repo)
+            return (repo_match.group(1), None)
 
-        elif branch_match:
-            user_repo = branch_match.group(1)
-            branch = branch_match.group(2)
-
-        else:
-            return (None, None)
-
-        return (user_repo, branch)
+        return (None, None)
