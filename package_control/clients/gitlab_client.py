@@ -73,6 +73,8 @@ class GitLabClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
+        output = []
+
         version = None
         url_pattern = 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip'
 
@@ -93,12 +95,12 @@ class GitLabClient(JSONApiClient):
             if not tag_info:
                 return False
 
-            output = []
             used_versions = set()
             for info in tag_info:
                 version = info['version']
                 if version in used_versions:
                     continue
+
                 tag = info['prefix'] + version
                 output.append({
                     'url': url_pattern % (user_name, repo_name, tag, repo_name, tag),
@@ -107,34 +109,31 @@ class GitLabClient(JSONApiClient):
                 })
                 used_versions.add(version)
 
-            return output
-
         # branch based releases
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
-            return None
-
-        user_name, repo_name = user_repo.split('/')
-        repo_id = '%s%%2F%s' % (user_name, repo_name)
-
-        if branch is None:
-            repo_info = self.fetch_json(self._make_api_url(repo_id))
-            branch = repo_info.get('default_branch', 'master')
-
-        commit_url = self._make_api_url(repo_id, '/repository/commits?ref_name=%s' % branch)
-        commit_info = self.fetch_json(commit_url)
-        if not commit_info[0].get('commit'):
-            timestamp = commit_info[0]['committed_date'][0:19].replace('T', ' ')
         else:
-            timestamp = commit_info[0]['commit']['committed_date'][0:19].replace('T', ' ')
+            user_repo, branch = self._user_repo_branch(url)
+            if not user_repo:
+                return None
 
-        return [
-            {
+            user_name, repo_name = user_repo.split('/')
+            repo_id = '%s%%2F%s' % (user_name, repo_name)
+
+            if branch is None:
+                repo_info = self.fetch_json(self._make_api_url(repo_id))
+                branch = repo_info.get('default_branch', 'master')
+
+            branch_url = self._make_api_url(repo_id, '/repository/branches/%s' % branch)
+            branch_info = self.fetch_json(branch_url)
+
+            timestamp = branch_info['commit']['committed_date'][0:19].replace('T', ' ')
+
+            output = [{
                 'url': url_pattern % (user_name, repo_name, branch, repo_name, branch),
                 'version': re.sub(r'[\-: ]', '.', timestamp),
                 'date': timestamp
-            }
-        ]
+            }]
+
+        return output
 
     def repo_info(self, url):
         """

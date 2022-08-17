@@ -88,12 +88,13 @@ class BitBucketClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
+        output = []
 
         version = None
         url_pattern = 'https://bitbucket.org/%s/get/%s.zip'
 
-        output = []
+        # tag based releases
+        tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
         if tags_match:
             user_repo = tags_match.group(1)
 
@@ -115,6 +116,7 @@ class BitBucketClient(JSONApiClient):
                 version = info['version']
                 if version in used_versions:
                     continue
+
                 tag = info['prefix'] + version
                 output.append({
                     'url': url_pattern % (user_repo, tag),
@@ -123,10 +125,11 @@ class BitBucketClient(JSONApiClient):
                 })
                 used_versions.add(version)
 
+        # branch based releases
         else:
             user_repo, branch = self._user_repo_branch(url)
             if not user_repo:
-                return user_repo
+                return None
 
             if branch is None:
                 repo_info = self.fetch_json(self._make_api_url(user_repo))
@@ -137,11 +140,11 @@ class BitBucketClient(JSONApiClient):
 
             timestamp = branch_info['target']['date'][0:19].replace('T', ' ')
 
-            output.append({
+            output = [{
                 'url': url_pattern % (user_repo, branch),
                 'version': re.sub(r'[\-: ]', '.', timestamp),
                 'date': timestamp
-            })
+            }]
 
         return output
 

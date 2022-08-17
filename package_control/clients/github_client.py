@@ -74,18 +74,19 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
+        output = []
 
         version = None
         url_pattern = 'https://codeload.github.com/%s/zip/%s'
 
-        output = []
+        # tag based releases
+        tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
         if tags_match:
             user_repo = tags_match.group(1)
             tags_url = self._make_api_url(user_repo, '/tags?per_page=100')
-            tags_list = self.fetch_json(tags_url)
-            tags = [tag['name'] for tag in tags_list]
-            tag_info = version_process(tags, tag_prefix)
+            tags_json = self.fetch_json(tags_url)
+            tag_urls = {tag['name']: tag['commit']['url'] for tag in tags_json}
+            tag_info = version_process(tag_urls.keys(), tag_prefix)
             tag_info = version_sort(tag_info, reverse=True)
             if not tag_info:
                 return False
@@ -95,40 +96,38 @@ class GitHubClient(JSONApiClient):
                 version = info['version']
                 if version in used_versions:
                     continue
+
                 tag = info['prefix'] + version
+                tag_info = self.fetch_json(tag_urls[tag])
+                timestamp = tag_info['commit']['committer']['date'][0:19].replace('T', ' ')
+
                 output.append({
                     'url': url_pattern % (user_repo, tag),
-                    'commit': tag,
-                    'version': version
+                    'version': version,
+                    'date': timestamp
                 })
                 used_versions.add(version)
 
+        # branch based releases
         else:
             user_repo, branch = self._user_repo_branch(url)
             if not user_repo:
-                return user_repo
+                return None
 
             if branch is None:
                 repo_info = self.fetch_json(self._make_api_url(user_repo))
                 branch = repo_info.get('default_branch', 'master')
 
-            output.append({
+            branch_url = self._make_api_url(user_repo, '/branches/%s' % branch)
+            branch_info = self.fetch_json(branch_url)
+
+            timestamp = branch_info['commit']['commit']['committer']['date'][0:19].replace('T', ' ')
+
+            output = [{
                 'url': url_pattern % (user_repo, branch),
-                'commit': branch
-            })
-
-        for release in output:
-            query_string = urlencode({'sha': release['commit'], 'per_page': 1})
-            commit_url = self._make_api_url(user_repo, '/commits?%s' % query_string)
-            commit_info = self.fetch_json(commit_url)
-
-            timestamp = commit_info[0]['commit']['committer']['date'][0:19].replace('T', ' ')
-
-            if 'version' not in release:
-                release['version'] = re.sub(r'[\-: ]', '.', timestamp)
-            release['date'] = timestamp
-
-            del release['commit']
+                'version': re.sub(r'[\-: ]', '.', timestamp),
+                'date': timestamp
+            }]
 
         return output
 
