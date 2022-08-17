@@ -161,21 +161,12 @@ class GitHubClient(JSONApiClient):
             return user_repo
 
         api_url = self._make_api_url(user_repo)
+        repo_info = self.fetch_json(api_url)
 
-        info = self.fetch_json(api_url)
         if branch is None:
-            branch = info.get('default_branch', 'master')
+            branch = repo_info.get('default_branch', 'master')
 
-        output = self._extract_repo_info(info)
-        output['readme'] = None
-
-        readme_info = self._readme_info(user_repo, branch)
-        if not readme_info:
-            return output
-
-        output['readme'] = 'https://raw.githubusercontent.com/%s/%s/%s' % (
-            user_repo, branch, readme_info['path'])
-        return output
+        return self._extract_repo_info(branch, repo_info)
 
     def user_info(self, url):
         """
@@ -210,25 +201,17 @@ class GitHubClient(JSONApiClient):
 
         repos_info = self.fetch_json(api_url)
 
-        output = []
-        for info in repos_info:
-            user_repo = '%s/%s' % (user, info['name'])
-            branch = info.get('default_branch', 'master')
+        return [
+            self._extract_repo_info(info.get('default_branch', 'master'), info)
+            for info in repos_info
+        ]
 
-            repo_output = self._extract_repo_info(info)
-            repo_output['readme'] = None
-
-            readme_info = self._readme_info(user_repo, branch)
-            if readme_info:
-                repo_output['readme'] = 'https://raw.githubusercontent.com/%s/%s/%s' % (
-                    user_repo, branch, readme_info['path'])
-
-            output.append(repo_output)
-        return output
-
-    def _extract_repo_info(self, result):
+    def _extract_repo_info(self, branch, result):
         """
         Extracts information about a repository from the API result
+
+        :param branch:
+            The branch to return data from
 
         :param result:
             A dict representing the data returned from the GitHub API
@@ -239,18 +222,26 @@ class GitHubClient(JSONApiClient):
               `description`
               `homepage` - URL of the homepage
               `author`
+              `readme` - URL of the homepage
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
         """
 
-        issues_url = 'https://github.com/%s/%s/issues' % (result['owner']['login'], result['name'])
+        user_name = result['owner']['login']
+        repo_name = result['name']
+        user_repo = '%s/%s' % (user_name, repo_name)
+
+        issues_url = None
+        if result['has_issues']:
+            issues_url = 'https://github.com/%s/issues' % user_repo
 
         return {
-            'name': result['name'],
+            'name': repo_name,
             'description': result['description'] or 'No description provided',
             'homepage': result['homepage'] or result['html_url'],
-            'author': result['owner']['login'],
-            'issues': issues_url if result['has_issues'] else None,
+            'author': user_name,
+            'readme': self._readme_url(user_repo, branch),
+            'issues': issues_url,
             'donate': None
         }
 
@@ -270,7 +261,7 @@ class GitHubClient(JSONApiClient):
 
         return 'https://api.github.com/repos/%s%s' % (user_repo, suffix)
 
-    def _readme_info(self, user_repo, branch, prefer_cached=False):
+    def _readme_url(self, user_repo, branch, prefer_cached=False):
         """
         Fetches the raw GitHub API information about a readme
 
@@ -293,12 +284,17 @@ class GitHubClient(JSONApiClient):
 
         query_string = urlencode({'ref': branch})
         readme_url = self._make_api_url(user_repo, '/readme?%s' % query_string)
+
         try:
-            return self.fetch_json(readme_url, prefer_cached)
+            readme_file = self.fetch_json(readme_url, prefer_cached).get('path')
+            if readme_file:
+                return 'https://raw.githubusercontent.com/%s/%s/%s' % (user_repo, branch, readme_file)
+
         except (DownloaderException) as e:
-            if str(e).find('HTTP error 404') != -1:
-                return None
-            raise
+            if 'HTTP error 404' not in str(e):
+                raise
+
+        return None
 
     def _user_repo_branch(self, url):
         """

@@ -166,17 +166,10 @@ class GitLabClient(JSONApiClient):
         repo_url = self._make_api_url(repo_id)
         repo_info = self.fetch_json(repo_url)
 
-        output = self._extract_repo_info(repo_info)
-        if output['readme']:
-            if branch is None:
-                branch = repo_info.get('default_branch', 'master')
+        if not branch:
+            branch = repo_info.get('default_branch', 'master')
 
-            output['readme'] = 'https://gitlab.com/%s/-/raw/%s/%s' % (
-                user_repo,
-                branch,
-                output['readme'].split('/')[-1],
-            )
-        return output
+        return self._extract_repo_info(branch, repo_info)
 
     def user_info(self, url):
         """
@@ -207,32 +200,24 @@ class GitLabClient(JSONApiClient):
             return None
 
         user = user_match.group(1)
-        (user_id, user_repo_type) = self._extract_user_id(user)
+        user_id, user_repo_type = self._extract_user_id(user)
 
         api_url = 'https://gitlab.com/api/v4/%s/%s/projects' % (
             'users' if user_repo_type else 'groups', user_id)
 
         repos_info = self.fetch_json(api_url)
 
-        output = []
-        for info in repos_info:
-            user_repo = '%s/%s' % (user, info['name'])
-            branch = info['default_branch']
+        return [
+            self._extract_repo_info(info.get('default_branch', 'master'), info)
+            for info in repos_info
+        ]
 
-            repo_output = self._extract_repo_info(info)
-
-            if repo_output['readme']:
-                repo_output['readme'] = 'https://gitlab.com/%s/-/raw/%s/%s' % (
-                    user_repo,
-                    branch,
-                    repo_output['readme'].split('/')[-1],
-                )
-            output.append(repo_output)
-        return output
-
-    def _extract_repo_info(self, result):
+    def _extract_repo_info(self, branch, result):
         """
         Extracts information about a repository from the API result
+
+        :param branch:
+            The branch to return data from
 
         :param result:
             A dict representing the data returned from the GitLab API
@@ -243,16 +228,27 @@ class GitLabClient(JSONApiClient):
               `description`
               `homepage` - URL of the homepage
               `author`
+              `readme` - URL of the homepage
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
         """
 
+        user_name = result['owner']['username'] if result.get('owner') else result['namespace']['name']
+        repo_name = result['name']
+        user_repo = '%s/%s' % (user_name, repo_name)
+
+        readme_url = None
+        if result['readme_url']:
+            readme_url = 'https://gitlab.com/%s/-/raw/%s/%s' % (
+                user_repo, branch, result['readme_url'].split('/')[-1]
+            )
+
         return {
-            'name': result['name'],
+            'name': repo_name,
             'description': result['description'] or 'No description provided',
             'homepage': result['web_url'] or None,
-            'readme': result['readme_url'] if result['readme_url'] else None,
-            'author': result['owner']['username'] if result.get('owner') else result['namespace']['name'],
+            'author': user_name,
+            'readme': readme_url,
             'issues': result.get('issues', None) if result.get('_links') else None,
             'donate': None,
         }
