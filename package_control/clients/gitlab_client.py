@@ -171,7 +171,7 @@ class GitLabClient(JSONApiClient):
             if branch is None:
                 branch = repo_info.get('default_branch', 'master')
 
-            output['readme'] = 'https://gitlab.com/%s/-/%s/%s' % (
+            output['readme'] = 'https://gitlab.com/%s/-/raw/%s/%s' % (
                 user_repo,
                 branch,
                 output['readme'].split('/')[-1],

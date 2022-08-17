@@ -168,7 +168,7 @@ class GitLabClientTests(unittest.TestCase):
                     'A test of Package Control upgrade messages with explicit versions, but date-based releases.',
                 'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                 'readme':
-                    'https://gitlab.com/packagecontrol-test/package_control-tester/-/master/readme.md',
+                    'https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md',
                 'author': 'packagecontrol-test',
                 'issues': None,
                 'donate': None

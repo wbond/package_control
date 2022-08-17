@@ -276,7 +276,7 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
                     'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                     'author': 'packagecontrol-test',
                     'readme': 'https://gitlab.com/packagecontrol-test/'
-                              'package_control-tester/-/master/readme.md',
+                              'package_control-tester/-/raw/master/readme.md',
                     'issues': None,
                     'donate': None,
                     'buy': None,
@@ -1240,7 +1240,7 @@ class RepositoryProviderTests(unittest.TestCase):
                                        'explicit versions, but date-based releases.',
                         'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                         'readme': 'https://gitlab.com/packagecontrol-test/'
-                                  'package_control-tester/-/master/readme.md',
+                                  'package_control-tester/-/raw/master/readme.md',
                         'issues': None,
                         'donate': None,
                         'buy': None,
@@ -1304,7 +1304,7 @@ class RepositoryProviderTests(unittest.TestCase):
                                        'explicit versions, but date-based releases.',
                         'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                         'readme': 'https://gitlab.com/packagecontrol-test/'
-                                  'package_control-tester/-/master/readme.md',
+                                  'package_control-tester/-/raw/master/readme.md',
                         'issues': None,
                         'donate': None,
                         'buy': None,
@@ -1338,7 +1338,7 @@ class RepositoryProviderTests(unittest.TestCase):
                         'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
                         'author': 'packagecontrol-test',
                         'readme': 'https://gitlab.com/packagecontrol-test/'
-                                  'package_control-tester/-/master/readme.md',
+                                  'package_control-tester/-/raw/master/readme.md',
                         'issues': None,
                         'donate': None,
                         'buy': None,
@@ -2392,6 +2392,9 @@ class ChannelProviderTests(unittest.TestCase):
                     "issues": None,
                     "donate": None,
                     "buy": None,
+                    # Note:
+                    # Shold be"https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md"
+                    # Needs update of test data repository!
                     "readme": "https://gitlab.com/packagecontrol-test/package_control-tester/-/master/readme.md",
                     "previous_names": [],
                     "labels": [],
@@ -2416,6 +2419,9 @@ class ChannelProviderTests(unittest.TestCase):
                     "issues": None,
                     "donate": None,
                     "buy": None,
+                    # Note:
+                    # Shold be"https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md"
+                    # Needs update of test data repository!
                     "readme": "https://gitlab.com/packagecontrol-test/package_control-tester/-/master/readme.md",
                     "previous_names": [],
                     "labels": [],
@@ -2440,6 +2446,9 @@ class ChannelProviderTests(unittest.TestCase):
                     "issues": None,
                     "donate": None,
                     "buy": None,
+                    # Note:
+                    # Shold be"https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md"
+                    # Needs update of test data repository!
                     "readme": "https://gitlab.com/packagecontrol-test/package_control-tester/-/master/readme.md",
                     "previous_names": [],
                     "labels": [],
@@ -2464,6 +2473,9 @@ class ChannelProviderTests(unittest.TestCase):
                     "issues": None,
                     "donate": None,
                     "buy": None,
+                    # Note:
+                    # Shold be"https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md"
+                    # Needs update of test data repository!
                     "readme": "https://gitlab.com/packagecontrol-test/package_control-tester/-/master/readme.md",
                     "previous_names": [],
                     "labels": [],
