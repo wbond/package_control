@@ -195,6 +195,19 @@ class BitBucketClient(JSONApiClient):
             'issues': issues_url if repo_info['has_issues'] else None
         }
 
+    def user_info(self, url):
+        """
+        For API compatibility with other clients.
+
+        :param url:
+            The URL to the repository, in one of the forms:
+              https://bitbucket.org/{user}
+
+        :return:
+            None
+        """
+        return None
+
     def _main_branch_name(self, user_repo):
         """
         Fetch the name of the default branch
