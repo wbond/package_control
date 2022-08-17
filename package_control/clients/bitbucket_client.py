@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 from ..versions import version_sort, version_process
 from .json_api_client import JSONApiClient
+from ..downloaders.downloader_exception import DownloaderException
 
 
 # A predefined list of readme filenames to look for
@@ -249,14 +250,19 @@ class BitBucketClient(JSONApiClient):
 
         listing_url = self._make_api_url(user_repo, '/src/%s/?pagelen=100' % branch)
 
-        while listing_url:
-            root_dir_info = self.fetch_json(listing_url, prefer_cached)
+        try:
+            while listing_url:
+                root_dir_info = self.fetch_json(listing_url, prefer_cached)
 
-            for entry in root_dir_info['values']:
-                if entry['path'].lower() in _readme_filenames:
-                    return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
+                for entry in root_dir_info['values']:
+                    if entry['path'].lower() in _readme_filenames:
+                        return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
 
-            listing_url = root_dir_info['next'] if 'next' in root_dir_info else None
+                listing_url = root_dir_info['next'] if 'next' in root_dir_info else None
+
+        except (DownloaderException) as e:
+            if 'HTTP error 404' not in str(e):
+                raise
 
         return None
 
