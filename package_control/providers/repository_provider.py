@@ -660,7 +660,7 @@ class RepositoryProvider(BaseRepositoryProvider):
 
                                 for client in clients:
                                     downloads = client.download_info(download_details)
-                                    if downloads:
+                                    if downloads is not None:
                                         break
 
                                 if downloads is False:
