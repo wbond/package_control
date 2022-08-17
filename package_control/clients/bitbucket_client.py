@@ -169,23 +169,25 @@ class BitBucketClient(JSONApiClient):
             return user_repo
 
         api_url = self._make_api_url(user_repo)
+        repo_info = self.fetch_json(api_url)
 
-        info = self.fetch_json(api_url)
+        if branch is None:
+            branch = repo_info['mainbranch'].get('name', 'master')
 
         issues_url = 'https://bitbucket.org/%s/issues' % user_repo
 
-        author = info['owner'].get('nickname')
+        author = repo_info['owner'].get('nickname')
         if author is None:
-            author = info['owner'].get('username')
+            author = repo_info['owner'].get('username')
 
         return {
-            'name': info['name'],
-            'description': info['description'] or 'No description provided',
-            'homepage': info['website'] or url,
+            'name': repo_info['name'],
+            'description': repo_info['description'] or 'No description provided',
+            'homepage': repo_info['website'] or url,
             'author': author,
             'donate': None,
             'readme': self._readme_url(user_repo, branch),
-            'issues': issues_url if info['has_issues'] else None
+            'issues': issues_url if repo_info['has_issues'] else None
         }
 
     def _main_branch_name(self, user_repo):
