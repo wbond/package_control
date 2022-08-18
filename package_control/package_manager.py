@@ -1764,12 +1764,13 @@ class PackageManager():
         if not os.path.exists(package_dir):
             return True
 
+        backup_dir = os.path.join(os.path.dirname(
+            sys_path.packages_path), 'Backup',
+            datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+        package_backup_dir = os.path.join(backup_dir, package_name)
+
         try:
-            backup_dir = os.path.join(os.path.dirname(
-                sys_path.packages_path), 'Backup',
-                datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
             os.makedirs(backup_dir, exist_ok=True)
-            package_backup_dir = os.path.join(backup_dir, package_name)
             if os.path.exists(package_backup_dir):
                 console_write(
                     '''
@@ -1841,18 +1842,19 @@ class PackageManager():
                 return '\n  %s\n' % fobj.read().rstrip().replace('\n', '\n  ')
 
         output = ''
-        if not is_upgrade and message_info.get('install'):
-            try:
-                install_file = message_info.get('install')
-                install_path = os.path.join(package_dir, install_file)
-                output += read_message(install_path)
-            except (FileNotFoundError):
-                console_write(
-                    '''
-                    Error opening install message for %s from %s
-                    ''',
-                    (package_name, install_file)
-                )
+        if not is_upgrade:
+            install_file = message_info.get('install')
+            if install_file:
+                try:
+                    install_path = os.path.join(package_dir, install_file)
+                    output += read_message(install_path)
+                except (FileNotFoundError):
+                    console_write(
+                        '''
+                        Error opening install message for %s from %s
+                        ''',
+                        (package_name, install_file)
+                    )
 
         elif is_upgrade and old_version:
             upgrade_messages = list(set(message_info.keys()) - set(['install']))
@@ -1869,9 +1871,10 @@ class PackageManager():
                 if version_cmp > new_version_cmp:
                     continue
 
+                upgrade_file = message_info.get(version)
+                upgrade_path = os.path.join(package_dir, upgrade_file)
+
                 try:
-                    upgrade_file = message_info.get(version)
-                    upgrade_path = os.path.join(package_dir, upgrade_file)
                     output += read_message(upgrade_path)
                 except (FileNotFoundError):
                     console_write(

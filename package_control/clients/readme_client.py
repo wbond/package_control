@@ -63,7 +63,7 @@ class ReadmeClient(JSONApiClient):
         if not contents:
             contents = self.fetch(url)
 
-        basename, ext = os.path.splitext(url)
+        _, ext = os.path.splitext(url)
         format = 'txt'
         ext = ext.lower()
         if ext in _readme_formats:
