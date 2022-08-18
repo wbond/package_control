@@ -94,7 +94,8 @@ class BitBucketClient(JSONApiClient):
             tag that is a valid semver version.
 
         :param tag_prefix:
-            If the URL is a tags URL, only match tags that have this prefix
+            If the URL is a tags URL, only match tags that have this prefix.
+            If tag_prefix is None, match only tags without prefix.
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -131,6 +132,8 @@ class BitBucketClient(JSONApiClient):
             if not tag_info:
                 return False
 
+            max_releases = self.settings.get('max_releases', 0)
+
             used_versions = set()
             for info in tag_info:
                 version = info['version']
@@ -144,6 +147,8 @@ class BitBucketClient(JSONApiClient):
                     'date': tags_list[tag]
                 })
                 used_versions.add(version)
+                if max_releases > 0 and len(used_versions) >= max_releases:
+                    break
 
         # branch based releases
         else:

@@ -107,6 +107,8 @@ class PackageManager():
         if self.settings.get('https_proxy') is False:
             self.settings['https_proxy'] = ''
 
+        self.settings['max_releases'] = 1  # fetch latest release only, from code hosters
+
         # We cache these to prevent IPC calls between plugin_host and the main
         # Sublime Text executable
         self.settings['platform'] = sublime.platform()

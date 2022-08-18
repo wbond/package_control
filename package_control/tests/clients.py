@@ -128,6 +128,21 @@ class GitHubClientTests(unittest.TestCase):
             client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags')
         )
 
+    def test_github_client_limited_tags_downloads(self):
+        settings = self.github_settings()
+        settings['max_releases'] = 1
+        client = GitHubClient(settings)
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-12 15:52:35',
+                    'version': '1.0.1',
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1'
+                }
+            ],
+            client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags')
+        )
+
     def test_github_client_tags_prefix_downloads(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
@@ -351,6 +366,21 @@ class BitBucketClientTests(unittest.TestCase):
                     'date': '2014-11-12 02:02:22',
                     'version': '0.9.0',
                     'url': 'https://bitbucket.org/wbond/package_control-tester/get/0.9.0.zip'
+                }
+            ],
+            client.download_info('https://bitbucket.org/wbond/package_control-tester#tags')
+        )
+
+    def test_bitbucket_client_limited_tags_downloads(self):
+        settings = self.bitbucket_settings()
+        settings['max_releases'] = 1
+        client = BitBucketClient(settings)
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-12 15:52:35',
+                    'version': '1.0.1',
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/1.0.1.zip'
                 }
             ],
             client.download_info('https://bitbucket.org/wbond/package_control-tester#tags')
