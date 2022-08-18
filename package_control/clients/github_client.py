@@ -26,40 +26,42 @@ class GitHubClient(JSONApiClient):
 
         return 'https://github.com/%s/%s' % (quote(owner_name), quote(repo_name))
 
-    def make_tags_url(self, repo):
+    @staticmethod
+    def make_tags_url(repo_url):
         """
         Generate the tags URL for a GitHub repo if the value passed is a GitHub
         repository URL
 
-        :param repo:
+        :param repo_url:
             The repository URL
 
         :return:
-            The tags URL if repo was a GitHub repo, otherwise False
+            The tags URL if repo was a GitHub repo_url, otherwise False
         """
 
-        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo)
+        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo_url)
         if not match:
             return False
 
         return 'https://github.com/%s/tags' % match.group(1)
 
-    def make_branch_url(self, repo, branch):
+    @staticmethod
+    def make_branch_url(repo_url, branch):
         """
         Generate the branch URL for a GitHub repo if the value passed is a GitHub
         repository URL
 
-        :param repo:
+        :param repo_url:
             The repository URL
 
         :param branch:
             The branch name
 
         :return:
-            The branch URL if repo was a GitHub repo, otherwise False
+            The branch URL if repo_url was a GitHub repo, otherwise False
         """
 
-        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo)
+        match = re.match('https?://github.com/([^/]+/[^/]+)/?$', repo_url)
         if not match:
             return False
 
