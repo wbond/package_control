@@ -673,9 +673,8 @@ class RepositoryProvider(BaseRepositoryProvider):
                                     ))
 
                                 for download in downloads:
-                                    new_download = download_info.copy()
-                                    new_download.update(download)
-                                    info['releases'].append(new_download)
+                                    download.update(download_info)
+                                    info['releases'].append(download)
 
                             except (DownloaderException, ClientException, ProviderException) as e:
                                 self.broken_packages[info['name']] = e
@@ -742,9 +741,8 @@ class RepositoryProvider(BaseRepositoryProvider):
                                     ))
 
                                 for download in downloads:
-                                    new_download = download_info.copy()
-                                    new_download.update(download)
-                                    info['releases'].append(new_download)
+                                    download.update(download_info)
+                                    info['releases'].append(download)
 
                             except (DownloaderException, ClientException, ProviderException) as e:
                                 self.broken_packages[info['name']] = e
