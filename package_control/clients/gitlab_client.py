@@ -7,6 +7,25 @@ from .json_api_client import JSONApiClient
 
 
 class GitLabClient(JSONApiClient):
+
+    @staticmethod
+    def make_repo_url(owner_name, repo_name):
+        """
+        Generate the tags URL for a GitHub repo if the value passed is a GitHub
+        repository URL
+
+        :param owener_name:
+            The repository owner name
+
+        :param repo_name:
+            The repository name
+
+        :return:
+            The repositoy URL of given owner and repo name
+        """
+
+        return 'https://gitlab.com/%s/%s' % (quote(owner_name), quote(repo_name))
+
     def make_tags_url(self, repo):
         """
         Generate the tags URL for a GitLab repo if the value passed is a GitLab

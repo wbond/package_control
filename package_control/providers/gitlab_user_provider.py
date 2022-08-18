@@ -100,11 +100,11 @@ class GitLabUserProvider(BaseRepositoryProvider):
 
         output = {}
         for repo_info in user_repos:
-            try:
-                name = repo_info['name']
-                repo_url = 'https://gitlab.com/%s/%s' % (repo_info['author'],
-                                                         name)
+            author = repo_info['author']
+            name = repo_info['name']
+            repo_url = client.make_repo_url(author, name)
 
+            try:
                 releases = []
                 for download in client.download_info(repo_url):
                     download['sublime_text'] = '*'
@@ -115,7 +115,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
                     'name': name,
                     'description': repo_info['description'],
                     'homepage': repo_info['homepage'],
-                    'author': repo_info['author'],
+                    'author': author,
                     'last_modified': releases[0].get('date'),
                     'releases': releases,
                     'previous_names': [],
