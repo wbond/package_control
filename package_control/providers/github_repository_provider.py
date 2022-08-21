@@ -40,11 +40,21 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
 
     @classmethod
     def match_url(cls, repo_url):
-        """Indicates if this provider can handle the provided repo_url"""
+        """
+        Indicates if this provider can handle the provided repo_url
 
-        master = re.search('^https?://github.com/[^/]+/[^/]+/?$', repo_url)
-        branch = re.search('^https?://github.com/[^/]+/[^/]+/tree/[^/]+/?$', repo_url)
-        return master is not None or branch is not None
+        :param repo_url:
+            The URL to the repository, in one of the forms:
+                https://github.com/{user}/{repo}.git
+                https://github.com/{user}/{repo}
+                https://github.com/{user}/{repo}/
+                https://github.com/{user}/{repo}/tree/{branch}
+                https://github.com/{user}/{repo}/tree/{branch}/
+
+        :return:
+            True if repo_url matches an supported scheme.
+        """
+        return re.match(r'^https?://github.com/[^/]+/[^/]+(?:\.git|(?:/tree/[^/]+)?/?)$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """

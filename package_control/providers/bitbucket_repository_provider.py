@@ -34,9 +34,22 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
 
     @classmethod
     def match_url(cls, repo_url):
-        """Indicates if this provider can handle the provided repo_url"""
+        """
+        Indicates if this provider can handle the provided repo_url
 
-        return re.search('^https?://bitbucket.org/([^/]+/[^/]+)/?$', repo_url) is not None
+        :param repo_url:
+            The URL to the repository, in one of the forms:
+                https://bitbucket.org/{user}/{repo}.git
+                https://bitbucket.org/{user}/{repo}
+                https://bitbucket.org/{user}/{repo}/
+                https://bitbucket.org/{user}/{repo}/src/{branch}
+                https://bitbucket.org/{user}/{repo}/src/{branch}/
+
+        :return:
+            True if repo_url matches an supported scheme.
+        """
+
+        return re.match(r'^https?://bitbucket.org/[^/]+/[^/]+(?:\.git|(/src/[^/]+)?/?)$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """

@@ -35,9 +35,16 @@ class GitLabUserProvider(BaseRepositoryProvider):
     def match_url(cls, repo_url):
         """
         Indicates if this provider can handle the provided repo_url
-        """
 
-        return re.search('^https?://gitlab.com/[^/]+/?$', repo_url) is not None
+        :param repo_url:
+            The URL to the repository, in one of the forms:
+                https://gitlab.com/{user}
+                https://gitlab.com/{user}/
+
+        :return:
+            True if repo_url matches an supported scheme.
+        """
+        return re.match(r'^https?://gitlab.com/[^/]+/?$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """

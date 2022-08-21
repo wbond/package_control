@@ -33,9 +33,18 @@ class GitHubUserProvider(BaseRepositoryProvider):
 
     @classmethod
     def match_url(cls, repo_url):
-        """Indicates if this provider can handle the provided repo_url"""
+        """
+        Indicates if this provider can handle the provided repo_url
 
-        return re.search('^https?://github.com/[^/]+/?$', repo_url) is not None
+        :param repo_url:
+            The URL to the repository, in one of the forms:
+                https://github.com/{user}
+                https://github.com/{user}/
+
+        :return:
+            True if repo_url matches an supported scheme.
+        """
+        return re.match(r'^https?://github.com/[^/]+/?$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """
