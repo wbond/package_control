@@ -1,5 +1,7 @@
 import os
 
+__all__ = ['list_process_names']
+
 if os.name == 'nt':
     import ctypes
     from ctypes import windll, wintypes, POINTER, sizeof, byref, cast
@@ -33,12 +35,13 @@ if os.name == 'nt':
 
     def list_process_names():
         """
-        Returns a list of the names of running processes
+        List names of running processes.
 
         :return:
-            A list of unicode strings
+            A generator of process names
         """
 
+        process_ids = []
         process_id_array_size = 1024
         entries = 0
 
@@ -50,15 +53,12 @@ if os.name == 'nt':
 
             res = psapi.EnumProcesses(cast(process_ids, wintypes.PDWORD), sizeof(process_ids), byref(bytes_used))
             if not res:
-                return []
+                return
 
             entries = int(bytes_used.value / sizeof(wintypes.DWORD))
             process_id_array_size += 512
 
-        output = []
-        index = 0
-        while index < entries:
-            process_id = process_ids[index]
+        for process_id in process_ids[:entries]:
             process_handle = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, process_id)
             if process_handle:
                 module = wintypes.HANDLE()
@@ -73,12 +73,11 @@ if os.name == 'nt':
                     length = 260
                     buffer = ctypes.create_unicode_buffer(length)
                     psapi.GetModuleBaseNameW(process_handle, module, buffer, length)
+                    kernel32.CloseHandle(process_handle)
                     name = buffer.value
-                    output.append(name)
-            kernel32.CloseHandle(process_handle)
-            index += 1
-
-        return output
+                    yield name.lower()
+                    continue
+                kernel32.CloseHandle(process_handle)
 
 else:
 
