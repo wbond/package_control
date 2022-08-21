@@ -42,7 +42,7 @@ class GitUpgrader(VcsUpgrader):
             )
             return False
 
-        if os.name == 'nt':
+        if os.name == 'nt' and 'GIT_SSH' not in os.environ:
             tortoise_plink = self.find_binary('TortoisePlink.exe')
             if tortoise_plink and 'pageant.exe' in list_process_names():
                 os.environ.setdefault('GIT_SSH', tortoise_plink)
