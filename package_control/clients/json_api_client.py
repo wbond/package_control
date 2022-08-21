@@ -20,7 +20,11 @@ class JSONApiClient():
         :param prefer_cached:
             If a cached copy of the content is preferred
 
-        :return: The bytes/string
+        :raises:
+            DownloaderException: when there is an error downloading
+
+        :return:
+            The bytes/string
         """
 
         # If there are extra params for the domain name, add them
@@ -45,7 +49,11 @@ class JSONApiClient():
         :param prefer_cached:
             If a cached copy of the JSON is preferred
 
-        :return: A dict or list from the JSON
+        :raises:
+            ClientException: when there is an error parsing the response
+
+        :return:
+            A dict or list from the JSON
         """
 
         repository_json = self.fetch(url, prefer_cached)

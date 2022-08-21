@@ -205,11 +205,6 @@ class RepositoryProvider(BaseRepositoryProvider):
         :param invalid_sources:
             A list of URLs that are permissible to fetch data from
 
-        :raises:
-            ProviderException: when an error occurs trying to open a file
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-
         :return:
             A generator of
             (
@@ -242,7 +237,7 @@ class RepositoryProvider(BaseRepositoryProvider):
             return
 
         if invalid_sources is not None and self.repo_url in invalid_sources:
-            raise StopIteration()
+            return
 
         if not self.fetch():
             return
@@ -462,11 +457,6 @@ class RepositoryProvider(BaseRepositoryProvider):
         :param invalid_sources:
             A list of URLs that are permissible to fetch data from
 
-        :raises:
-            ProviderException: when an error occurs trying to open a file
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-
         :return:
             A generator of
             (
@@ -505,7 +495,7 @@ class RepositoryProvider(BaseRepositoryProvider):
             return
 
         if invalid_sources is not None and self.repo_url in invalid_sources:
-            raise StopIteration()
+            return
 
         if not self.fetch():
             return

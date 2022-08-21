@@ -46,10 +46,6 @@ class GitLabUserProvider(BaseRepositoryProvider):
         :param invalid_sources:
             A list of URLs that should be ignored
 
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-
         :return:
             A generator of
             (
@@ -87,7 +83,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
             return
 
         if invalid_sources is not None and self.repo_url in invalid_sources:
-            raise StopIteration()
+            return
 
         client = GitLabClient(self.settings)
 
@@ -96,7 +92,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
         except (DownloaderException, ClientException) as e:
             self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
-            raise
+            return
 
         output = {}
         for repo_info in user_repos:
@@ -129,8 +125,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
                 output[name] = details
                 yield (name, details)
 
-            except (DownloaderException, ClientException,
-                    ProviderException) as e:
+            except (DownloaderException, ClientException, ProviderException) as e:
                 self.failed_sources[repo_url] = e
 
         self.cache['get_packages'] = output

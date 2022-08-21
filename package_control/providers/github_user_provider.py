@@ -44,10 +44,6 @@ class GitHubUserProvider(BaseRepositoryProvider):
         :param invalid_sources:
             A list of URLs that should be ignored
 
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-
         :return:
             A generator of
             (
@@ -85,7 +81,7 @@ class GitHubUserProvider(BaseRepositoryProvider):
             return
 
         if invalid_sources is not None and self.repo_url in invalid_sources:
-            raise StopIteration()
+            return
 
         client = GitHubClient(self.settings)
 
@@ -94,7 +90,7 @@ class GitHubUserProvider(BaseRepositoryProvider):
         except (DownloaderException, ClientException) as e:
             self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
-            raise
+            return
 
         output = {}
         for repo_info in user_repos:

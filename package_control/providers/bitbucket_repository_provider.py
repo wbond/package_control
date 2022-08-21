@@ -45,10 +45,6 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
         :param invalid_sources:
             A list of URLs that should be ignored
 
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
-
         :return:
             A generator of
             (
@@ -86,7 +82,7 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
             return
 
         if invalid_sources is not None and self.repo_url in invalid_sources:
-            raise StopIteration()
+            return
 
         client = BitBucketClient(self.settings)
 
@@ -121,4 +117,3 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
         except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
-            raise StopIteration()

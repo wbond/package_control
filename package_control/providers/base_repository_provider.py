@@ -53,10 +53,6 @@ class BaseRepositoryProvider:
     def prefetch(self):
         """
         Go out and perform HTTP operations, caching the result
-
-        :raises:
-            DownloaderException: when there is an issue download package info
-            ClientException: when there is an issue parsing package info
         """
 
         [name for name, info in self.get_packages()]
