@@ -182,7 +182,7 @@ class GitHubClient(JSONApiClient):
 
         user_repo, branch = self._user_repo_branch(url)
         if not user_repo:
-            return user_repo
+            return None
 
         api_url = self._make_api_url(user_repo)
         repo_info = self.fetch_json(api_url)
