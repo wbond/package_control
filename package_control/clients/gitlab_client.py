@@ -136,12 +136,9 @@ class GitLabClient(JSONApiClient):
         branch_info = self.fetch_json(branch_url)
 
         timestamp = branch_info['commit']['committed_date'][0:19].replace('T', ' ')
+        version = re.sub(r'[\-: ]', '.', timestamp)
 
-        return [{
-            'url': 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip' % (user_repo, branch),
-            'version': re.sub(r'[\-: ]', '.', timestamp),
-            'date': timestamp
-        }]
+        return [self._make_download_info(user_name, repo_name, branch, version, timestamp)]
 
     def download_info_from_tags(self, url, tag_prefix=None):
         """
@@ -196,12 +193,8 @@ class GitLabClient(JSONApiClient):
                 continue
 
             tag = info['prefix'] + version
-            output.append({
-                'url': 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip' % (
-                    user_name, repo_name, tag, repo_name, tag),
-                'version': version,
-                'date': tags_list[tag]
-            })
+            output.append(self._make_download_info(user_name, repo_name, tag, version, tags_list[tag]))
+
             used_versions.add(version)
             if max_releases > 0 and len(used_versions) >= max_releases:
                 break
@@ -215,9 +208,11 @@ class GitLabClient(JSONApiClient):
             The URL to the repository, in one of the forms:
               https://gitlab.com/{user}/{repo}
               https://gitlab.com/{user}/{repo}/-/tree/{branch}
+
         :raises:
             DownloaderException: when there is an error downloading
             ClientException: when there is an error parsing the response
+
         :return:
             None if no match, or a dict with the following keys:
               `name`
@@ -323,6 +318,43 @@ class GitLabClient(JSONApiClient):
             'readme': readme_url,
             'issues': result.get('issues', None) if result.get('_links') else None,
             'donate': None,
+        }
+
+    def _make_download_info(self, user_name, repo_name, ref_name, version, timestamp):
+        """
+        Generate a download_info record
+
+        :param user_name:
+            The owner of the repository
+
+        :param repo_name:
+            The name of the repository
+
+        :param ref_name:
+            The git reference (branch, commit, tag)
+
+        :param version:
+            The prefixed version to add to the record
+
+        :param timestamp:
+            The timestamp the revision was created
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            A dictionary with following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        return {
+            'url': 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip' % (
+                user_name, repo_name, ref_name, repo_name, ref_name),
+            'version': version,
+            'date': timestamp
         }
 
     def _make_api_url(self, project_id, suffix=''):

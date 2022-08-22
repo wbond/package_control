@@ -146,12 +146,9 @@ class BitBucketClient(JSONApiClient):
         branch_info = self.fetch_json(branch_url)
 
         timestamp = branch_info['target']['date'][0:19].replace('T', ' ')
+        version = re.sub(r'[\-: ]', '.', timestamp)
 
-        return [{
-            'url': 'https://bitbucket.org/%s/get/%s.zip' % (user_repo, branch),
-            'version': re.sub(r'[\-: ]', '.', timestamp),
-            'date': timestamp
-        }]
+        return [self._make_download_info(user_repo, branch, version, timestamp)]
 
     def download_info_from_tags(self, url, tag_prefix=None):
         """
@@ -207,11 +204,9 @@ class BitBucketClient(JSONApiClient):
                 continue
 
             tag = info['prefix'] + version
-            output.append({
-                'url': 'https://bitbucket.org/%s/get/%s.zip' % (user_repo, tag),
-                'version': version,
-                'date': tags_list[tag]
-            })
+
+            output.append(self._make_download_info(user_repo, tag, version, tags_list[tag]))
+
             used_versions.add(version)
             if max_releases > 0 and len(used_versions) >= max_releases:
                 break
@@ -299,6 +294,39 @@ class BitBucketClient(JSONApiClient):
         main_branch_url = self._make_api_url(user_repo)
         main_branch_info = self.fetch_json(main_branch_url, True)
         return main_branch_info['mainbranch']['name']
+
+    def _make_download_info(self, user_repo, ref_name, version, timestamp):
+        """
+        Generate a download_info record
+
+        :param user_repo:
+            The user/repo of the repository
+
+        :param ref_name:
+            The git reference (branch, commit, tag)
+
+        :param version:
+            The prefixed version to add to the record
+
+        :param timestamp:
+            The timestamp the revision was created
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            A dictionary with following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        return {
+            'url': 'https://bitbucket.org/%s/get/%s.zip' % (user_repo, ref_name),
+            'version': version,
+            'date': timestamp
+        }
 
     def _make_api_url(self, user_repo, suffix=''):
         """
