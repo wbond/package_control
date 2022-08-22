@@ -54,7 +54,7 @@ class GitLabRepositoryProvider(BaseRepositoryProvider):
         :return:
             True if repo_url matches an supported scheme.
         """
-        return re.match(r'^https?://gitlab.com/[^/]+/[^/]+(?:\.git|(?:/-/tree/[^/]+)?/?)$', repo_url) is not None
+        return re.match(r'^https?://gitlab\.com/[^/]+/[^/]+(?:\.git|(?:/-/tree/[^/]+)?/?)$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """

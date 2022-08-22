@@ -49,7 +49,7 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
             True if repo_url matches an supported scheme.
         """
 
-        return re.match(r'^https?://bitbucket.org/[^/]+/[^/]+(?:\.git|(/src/[^/]+)?/?)$', repo_url) is not None
+        return re.match(r'^https?://bitbucket\.org/[^/]+/[^/]+(?:\.git|(/src/[^/]+)?/?)$', repo_url) is not None
 
     def get_packages(self, invalid_sources=None):
         """
