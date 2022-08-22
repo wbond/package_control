@@ -1,5 +1,3 @@
-import re
-
 from ..clients.client_exception import ClientException
 from ..clients.gitlab_client import GitLabClient
 from ..downloaders.downloader_exception import DownloaderException
@@ -44,7 +42,8 @@ class GitLabUserProvider(BaseRepositoryProvider):
         :return:
             True if repo_url matches an supported scheme.
         """
-        return re.match(r'^https?://gitlab\.com/[^/]+/?$', repo_url) is not None
+        user, repo, _ = GitLabClient.user_repo_branch(repo_url)
+        return bool(user and not repo)
 
     def get_packages(self, invalid_sources=None):
         """

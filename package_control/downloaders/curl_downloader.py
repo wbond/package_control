@@ -101,7 +101,7 @@ class CurlDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
         for name, value in request_headers.items():
             command.extend(['--header', "%s: %s" % (name, value)])
 
-        secure_url_match = re.match('^https://([^/]+)', url)
+        secure_url_match = re.match(r'^https://([^/#?]+)', url)
         if secure_url_match is not None:
             bundle_path = get_ca_bundle_path(self.settings)
             command.extend(['--cacert', bundle_path])

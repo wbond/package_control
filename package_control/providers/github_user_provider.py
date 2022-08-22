@@ -1,5 +1,3 @@
-import re
-
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..downloaders.downloader_exception import DownloaderException
@@ -44,7 +42,8 @@ class GitHubUserProvider(BaseRepositoryProvider):
         :return:
             True if repo_url matches an supported scheme.
         """
-        return re.match(r'^https?://github\.com/[^/]+/?$', repo_url) is not None
+        user, repo, _ = GitHubClient.user_repo_branch(repo_url)
+        return bool(user and not repo)
 
     def get_packages(self, invalid_sources=None):
         """

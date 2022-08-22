@@ -49,6 +49,10 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             True,
+            GitHubRepositoryProvider.match_url('https://github.com/packagecontrol-test/package_control-tester/')
+        )
+        self.assertEqual(
+            True,
             GitHubRepositoryProvider.match_url(
                 'https://github.com/packagecontrol-test/package_control-tester/tree/master'
             )
@@ -56,6 +60,18 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
         self.assertEqual(
             False,
             GitHubRepositoryProvider.match_url('https://github.com/packagecontrol-test')
+        )
+        self.assertEqual(
+            False,
+            GitHubRepositoryProvider.match_url('https://github,com/packagecontrol-test/package_control-tester')
+        )
+        self.assertEqual(
+            False,
+            GitHubRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester')
+        )
+        self.assertEqual(
+            False,
+            GitHubRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester')
         )
 
     def test_get_packages(self):
@@ -159,14 +175,24 @@ class GitHubUserProviderTests(unittest.TestCase):
             GitHubUserProvider.match_url('https://github.com/packagecontrol-test')
         )
         self.assertEqual(
-            False,
-            GitHubUserProvider.match_url(
-                'https://github.com/packagecontrol-test/package_control-tester/tree/master'
-            )
+            True,
+            GitHubUserProvider.match_url('https://github.com/packagecontrol-test/')
         )
         self.assertEqual(
             False,
-            GitHubUserProvider.match_url('https://bitbucket.org/packagecontrol')
+            GitHubUserProvider.match_url('https://github,com/packagecontrol-test')
+        )
+        self.assertEqual(
+            False,
+            GitHubUserProvider.match_url('https://github.com/packagecontrol-test/package_control-tester')
+        )
+        self.assertEqual(
+            False,
+            GitHubUserProvider.match_url('https://github.com/packagecontrol-test/package_control-tester/tree/master')
+        )
+        self.assertEqual(
+            False,
+            GitHubUserProvider.match_url('https://bitbucket.org/packagecontrol-test')
         )
 
     def test_get_packages(self):
@@ -249,6 +275,10 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             True,
+            GitLabRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester/')
+        )
+        self.assertEqual(
+            True,
             GitLabRepositoryProvider.match_url(
                 'https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master'
             )
@@ -256,6 +286,18 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
         self.assertEqual(
             False,
             GitLabRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test')
+        )
+        self.assertEqual(
+            False,
+            GitLabRepositoryProvider.match_url('https://gitlab,com/packagecontrol-test/package_control-tester')
+        )
+        self.assertEqual(
+            False,
+            GitLabRepositoryProvider.match_url('https://github.com/packagecontrol-test/package_control-tester')
+        )
+        self.assertEqual(
+            False,
+            GitLabRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester')
         )
 
     def test_get_packages(self):
@@ -359,14 +401,24 @@ class GitLabUserProviderTests(unittest.TestCase):
             GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test')
         )
         self.assertEqual(
-            False,
-            GitLabUserProvider.match_url(
-                'https://github.com/packagecontrol-test/package_control-tester/tree/master'
-            )
+            True,
+            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test/')
         )
         self.assertEqual(
             False,
-            GitLabUserProvider.match_url('https://bitbucket.org/packagecontrol')
+            GitLabUserProvider.match_url('https://gitlab,com/packagecontrol-test')
+        )
+        self.assertEqual(
+            False,
+            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester')
+        )
+        self.assertEqual(
+            False,
+            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master')
+        )
+        self.assertEqual(
+            False,
+            GitLabUserProvider.match_url('https://bitbucket.org/packagecontrol-test')
         )
 
     def test_get_packages(self):
@@ -446,12 +498,30 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
             BitBucketRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester')
         )
         self.assertEqual(
+            True,
+            BitBucketRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester/')
+        )
+        self.assertEqual(
+            True,
+            BitBucketRepositoryProvider.match_url(
+                'https://bitbucket.org/wbond/package_control-tester/src/master'
+            )
+        )
+        self.assertEqual(
             False,
             BitBucketRepositoryProvider.match_url('https://bitbucket.org/wbond')
         )
         self.assertEqual(
             False,
+            BitBucketRepositoryProvider.match_url('https://bitbucket,org/wbond/package_control-tester')
+        )
+        self.assertEqual(
+            False,
             BitBucketRepositoryProvider.match_url('https://github.com/wbond/package_control-tester')
+        )
+        self.assertEqual(
+            False,
+            BitBucketRepositoryProvider.match_url('https://gitlab.com/wbond/package_control-tester')
         )
 
     def test_get_packages(self):

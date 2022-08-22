@@ -9,6 +9,34 @@ from .json_api_client import JSONApiClient
 class GitLabClient(JSONApiClient):
 
     @staticmethod
+    def user_repo_branch(url):
+        """
+        Extract the username, repo and branch name from the URL
+
+        :param url:
+            The URL to extract the info from, in one of the forms:
+              https://gitlab.com/{user}
+              https://gitlab.com/{user}/{repo}
+              https://gitlab.com/{user}/{repo}.git
+              https://gitlab.com/{user}/{repo}/-/tree/{branch}
+
+        :return:
+            A tuple of
+                (user name, repo name, branch name) or
+                (user name, repo name, None) or
+                (user name, None, None) or
+                (None, None, None) if no match.
+
+            The branch name may be a branch name or a commit
+        """
+
+        match = re.match(r'^https?://gitlab\.com/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/-/tree/([^/#?]+)/?|/?)|/?)$', url)
+        if match:
+            return match.groups()
+
+        return (None, None, None)
+
+    @staticmethod
     def make_repo_url(owner_name, repo_name):
         """
         Generate the tags URL for a GitHub repo if the value passed is a GitHub
@@ -124,11 +152,10 @@ class GitLabClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
             return None
 
-        user_name, repo_name = user_repo.split('/')
         repo_id = '%s%%2F%s' % (user_name, repo_name)
 
         if branch is None:
@@ -170,7 +197,7 @@ class GitLabClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match(r'https?://gitlab\.com/([^/]+)/([^/]+)/-/tags/?$', url)
+        tags_match = re.match(r'https?://gitlab\.com/([^/#?]+)/([^/#?]+)/-/tags/?$', url)
         if not tags_match:
             return None
 
@@ -230,11 +257,10 @@ class GitLabClient(JSONApiClient):
               `default_branch`
         """
 
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
             return None
 
-        user_name, repo_name = user_repo.split('/')
         repo_id = '%s%%2F%s' % (user_name, repo_name)
         repo_url = self._make_api_url(repo_id)
         repo_info = self.fetch_json(repo_url)
@@ -269,7 +295,7 @@ class GitLabClient(JSONApiClient):
               `default_branch`
         """
 
-        user_match = re.match(r'https?://gitlab\.com/([^/]+)/?$', url)
+        user_match = re.match(r'https?://gitlab\.com/([^/#?]+)/?$', url)
         if user_match is None:
             return None
 
@@ -381,30 +407,6 @@ class GitLabClient(JSONApiClient):
         """
 
         return 'https://gitlab.com/api/v4/projects/%s%s' % (project_id, suffix)
-
-    def _user_repo_branch(self, url):
-        """
-        Extract the username/repo and branch name from the URL
-
-        :param url:
-            The URL to extract the info from, in one of the forms:
-              https://gitlab.com/{user}/{repo}
-              https://gitlab.com/{user}/{repo}/-/tree/{branch}
-
-        :return:
-            A tuple of (user/repo, branch name) or (None, None) if no match.
-            The branch name may be a branch name or a commit
-        """
-
-        branch_match = re.match(r'https?://gitlab\.com/([^/]+/[^/]+)/-/tree/([^/]+)/?$', url)
-        if branch_match:
-            return branch_match.groups()
-
-        repo_match = re.match(r'https?://gitlab\.com/([^/]+/[^/]+)(?:$|/.*$)', url)
-        if repo_match:
-            return (repo_match.group(1), None)
-
-        return (None, None)
 
     def _extract_user_id(self, username):
         """

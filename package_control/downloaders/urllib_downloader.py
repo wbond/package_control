@@ -289,7 +289,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     (http_proxy, https_proxy, proxy_username, proxy_password)
                 )
 
-            secure_url_match = re.match('^https://([^/]+)', url)
+            secure_url_match = re.match(r'^https://([^/#?]+)', url)
             if secure_url_match is not None:
                 bundle_path = get_ca_bundle_path(self.settings)
                 bundle_path = bundle_path.encode(sys.getfilesystemencoding())

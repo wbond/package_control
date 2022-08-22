@@ -9,6 +9,31 @@ from .json_api_client import JSONApiClient
 class GitHubClient(JSONApiClient):
 
     @staticmethod
+    def user_repo_branch(url):
+        """
+        Extract the username, repo and branch name from the URL
+
+        :param url:
+            The URL to extract the info from, in one of the forms:
+              https://github.com/{user}
+              https://github.com/{user}/{repo}
+              https://github.com/{user}/{repo}.git
+              https://github.com/{user}/{repo}/tree/{branch}
+
+        :return:
+            A tuple of
+                (user name, repo name, branch name) or
+                (user name, repo name, None) or
+                (user name, None, None) or
+                (None, None, None) if no match.
+        """
+        match = re.match(r'^https?://github\.com/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/tree/([^/#?]+)/?|/?)|/?)$', url)
+        if match:
+            return match.groups()
+
+        return (None, None, None)
+
+    @staticmethod
     def make_repo_url(owner_name, repo_name):
         """
         Generate the tags URL for a GitHub repo if the value passed is a GitHub
@@ -124,9 +149,11 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
             return None
+
+        user_repo = "%s/%s" % (user_name, repo_name)
 
         if branch is None:
             branch = default_branch
@@ -167,7 +194,7 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match(r'https?://github\.com/([^/]+/[^/]+)/tags/?$', url)
+        tags_match = re.match(r'https?://github\.com/([^/#?]+/[^/#?]+)/tags/?$', url)
         if not tags_match:
             return None
 
@@ -226,10 +253,11 @@ class GitHubClient(JSONApiClient):
               `default_branch`
         """
 
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
             return None
 
+        user_repo = "%s/%s" % (user_name, repo_name)
         api_url = self._make_api_url(user_repo)
         repo_info = self.fetch_json(api_url)
 
@@ -263,7 +291,7 @@ class GitHubClient(JSONApiClient):
               `default_branch`
         """
 
-        user_match = re.match(r'https?://github\.com/([^/]+)/?$', url)
+        user_match = re.match(r'https?://github\.com/([^/#?]+)/?$', url)
         if user_match is None:
             return None
 
@@ -401,26 +429,3 @@ class GitHubClient(JSONApiClient):
                 raise
 
         return None
-
-    def _user_repo_branch(self, url):
-        """
-        Extract the username/repo and branch name from the URL
-
-        :param url:
-            The URL to extract the info from, in one of the forms:
-              https://github.com/{user}/{repo}
-              https://github.com/{user}/{repo}/tree/{branch}
-
-        :return:
-            A tuple of (user/repo, branch name) or (None, None) if no match
-        """
-
-        branch_match = re.match(r'https?://github\.com/([^/]+/[^/]+)/tree/([^/]+)/?$', url)
-        if branch_match:
-            return branch_match.groups()
-
-        repo_match = re.match(r'https?://github\.com/([^/]+/[^/]+)(?:$|/.*$)', url)
-        if repo_match:
-            return (repo_match.group(1), None)
-
-        return (None, None)

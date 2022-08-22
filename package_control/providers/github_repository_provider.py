@@ -54,7 +54,8 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
         :return:
             True if repo_url matches an supported scheme.
         """
-        return re.match(r'^https?://github\.com/[^/]+/[^/]+(?:\.git|(?:/tree/[^/]+)?/?)$', repo_url) is not None
+        user, repo, _ = GitHubClient.user_repo_branch(repo_url)
+        return bool(user and repo)
 
     def get_packages(self, invalid_sources=None):
         """

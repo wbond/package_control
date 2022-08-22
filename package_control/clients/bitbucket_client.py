@@ -23,6 +23,32 @@ _readme_filenames = [
 class BitBucketClient(JSONApiClient):
 
     @staticmethod
+    def user_repo_branch(url):
+        """
+        Extract the username, repo and branch name from the URL
+
+        :param url:
+            The URL to extract the info from, in one of the forms:
+              https://bitbucket.org/{user}
+              https://bitbucket.org/{user}/{repo}
+              https://bitbucket.org/{user}/{repo}.git
+              https://bitbucket.org/{user}/{repo}/src/{branch}
+
+        :return:
+            A tuple of
+                (user name, repo name, branch name) or
+                (user name, repo name, None) or
+                (user name, None, None) or
+                (None, None, None) if no match.
+        """
+
+        match = re.match(r'^https?://bitbucket\.org/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/src/([^/#?]+)/?|/?)|/?)$', url)
+        if match:
+            return match.groups()
+
+        return (None, None, None)
+
+    @staticmethod
     def make_repo_url(owner_name, repo_name):
         """
         Generate the tags URL for a GitHub repo if the value passed is a GitHub
@@ -137,9 +163,11 @@ class BitBucketClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
             return None
+
+        user_repo = "%s/%s" % (user_name, repo_name)
 
         if branch is None:
             branch = default_branch
@@ -180,7 +208,7 @@ class BitBucketClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match(r'https?://bitbucket\.org/([^/]+/[^#/]+)/?#tags$', url)
+        tags_match = re.match(r'https?://bitbucket\.org/([^/#?]+/[^/#?]+)/?#tags$', url)
         if not tags_match:
             return None
 
@@ -243,10 +271,11 @@ class BitBucketClient(JSONApiClient):
               `default_branch`
         """
 
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
             return None
 
+        user_repo = "%s/%s" % (user_name, repo_name)
         api_url = self._make_api_url(user_repo)
         repo_info = self.fetch_json(api_url)
 
@@ -371,30 +400,3 @@ class BitBucketClient(JSONApiClient):
                 raise
 
         return None
-
-    def _user_repo_branch(self, url):
-        """
-        Extract the username/repo and branch name from the URL
-
-        :param url:
-            The URL to extract the info from, in one of the forms:
-              https://bitbucket.org/{user}/{repo}
-              https://bitbucket.org/{user}/{repo}/src/{branch}
-
-        :raises:
-            DownloaderException: when there is an error downloading
-            ClientException: when there is an error parsing the response
-
-        :return:
-            A tuple of (user/repo, branch name) or (None, None) if not matching
-        """
-
-        branch_match = re.match(r'https?://bitbucket\.org/([^/]+/[^/]+)/src/([^/]+)/?$', url)
-        if branch_match:
-            return branch_match.groups()
-
-        repo_match = re.match(r'https?://bitbucket\.org/([^/]+/[^/]+)/?$', url)
-        if repo_match:
-            return (repo_match.group(1), None)
-
-        return (None, None)

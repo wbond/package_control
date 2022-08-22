@@ -1,5 +1,3 @@
-import re
-
 from ..clients.bitbucket_client import BitBucketClient
 from ..clients.client_exception import ClientException
 from ..downloaders.downloader_exception import DownloaderException
@@ -48,8 +46,8 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
         :return:
             True if repo_url matches an supported scheme.
         """
-
-        return re.match(r'^https?://bitbucket\.org/[^/]+/[^/]+(?:\.git|(/src/[^/]+)?/?)$', repo_url) is not None
+        user, repo, _ = BitBucketClient.user_repo_branch(repo_url)
+        return bool(user and repo)
 
     def get_packages(self, invalid_sources=None):
         """
