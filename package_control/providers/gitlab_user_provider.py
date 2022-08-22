@@ -109,7 +109,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
 
             try:
                 releases = []
-                for download in client.download_info(repo_url):
+                for download in client.download_info_from_branch(repo_url):
                     download['sublime_text'] = '*'
                     download['platforms'] = ['*']
                     releases.append(download)

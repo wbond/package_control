@@ -95,69 +95,116 @@ class GitLabClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
+        output = self.download_info_from_tags(url, tag_prefix)
+        if output is None:
+            output = self.download_info_from_branch(url)
+        return output
+
+    def download_info_from_branch(self, url):
+        """
+        Retrieve information about downloading a package
+
+        :param url:
+            The URL of the repository, in one of the forms:
+              https://gitlab.com/{user}/{repo}
+              https://gitlab.com/{user}/{repo}/-/tree/{branch}
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        user_repo, branch = self._user_repo_branch(url)
+        if not user_repo:
+            return None
+
+        user_name, repo_name = user_repo.split('/')
+        repo_id = '%s%%2F%s' % (user_name, repo_name)
+
+        if branch is None:
+            repo_info = self.fetch_json(self._make_api_url(repo_id))
+            branch = repo_info.get('default_branch', 'master')
+
+        branch_url = self._make_api_url(repo_id, '/repository/branches/%s' % branch)
+        branch_info = self.fetch_json(branch_url)
+
+        timestamp = branch_info['commit']['committed_date'][0:19].replace('T', ' ')
+
+        return [{
+            'url': 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip' % (user_repo, branch),
+            'version': re.sub(r'[\-: ]', '.', timestamp),
+            'date': timestamp
+        }]
+
+    def download_info_from_tags(self, url, tag_prefix=None):
+        """
+        Retrieve information about downloading a package
+
+        :param url:
+            The URL of the repository, in one of the forms:
+              https://gitlab.com/{user}/{repo}/-/tags
+            Grabs the info from the newest tag(s) that is a valid semver version.
+
+        :param tag_prefix:
+            If the URL is a tags URL, only match tags that have this prefix.
+            If tag_prefix is None, match only tags without prefix.
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        tags_match = re.match(r'https?://gitlab.com/([^/]+)/([^/]+)/-/tags/?$', url)
+        if not tags_match:
+            return None
+
+        user_name, repo_name = tags_match.groups()
+        repo_id = '%s%%2F%s' % (user_name, repo_name)
+        tags_url = self._make_api_url(repo_id, '/repository/tags?per_page=100')
+        tags_json = self.fetch_json(tags_url)
+        tags_list = {
+            tag['name']: tag['commit']['committed_date'][0:19].replace('T', ' ')
+            for tag in tags_json
+        }
+
+        tag_info = version_process(tags_list.keys(), tag_prefix)
+        tag_info = version_sort(tag_info, reverse=True)
+        if not tag_info:
+            return False
+
+        max_releases = self.settings.get('max_releases', 0)
+
         output = []
+        used_versions = set()
+        for info in tag_info:
+            version = info['version']
+            if version in used_versions:
+                continue
 
-        version = None
-        url_pattern = 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip'
-
-        # tag based releases
-        tags_match = re.match('https?://gitlab.com/([^/]+)/([^/]+)/-/tags/?$', url)
-        if tags_match:
-            user_name, repo_name = tags_match.groups()
-            repo_id = '%s%%2F%s' % (user_name, repo_name)
-            tags_url = self._make_api_url(repo_id, '/repository/tags?per_page=100')
-            tags_json = self.fetch_json(tags_url)
-            tags_list = {
-                tag['name']: tag['commit']['committed_date'][0:19].replace('T', ' ')
-                for tag in tags_json
-            }
-
-            tag_info = version_process(tags_list.keys(), tag_prefix)
-            tag_info = version_sort(tag_info, reverse=True)
-            if not tag_info:
-                return False
-
-            max_releases = self.settings.get('max_releases', 0)
-
-            used_versions = set()
-            for info in tag_info:
-                version = info['version']
-                if version in used_versions:
-                    continue
-
-                tag = info['prefix'] + version
-                output.append({
-                    'url': url_pattern % (user_name, repo_name, tag, repo_name, tag),
-                    'version': version,
-                    'date': tags_list[tag]
-                })
-                used_versions.add(version)
-                if max_releases > 0 and len(used_versions) >= max_releases:
-                    break
-
-        # branch based releases
-        else:
-            user_repo, branch = self._user_repo_branch(url)
-            if not user_repo:
-                return None
-
-            user_name, repo_name = user_repo.split('/')
-            repo_id = '%s%%2F%s' % (user_name, repo_name)
-
-            if branch is None:
-                repo_info = self.fetch_json(self._make_api_url(repo_id))
-                branch = repo_info.get('default_branch', 'master')
-
-            branch_url = self._make_api_url(repo_id, '/repository/branches/%s' % branch)
-            branch_info = self.fetch_json(branch_url)
-
-            timestamp = branch_info['commit']['committed_date'][0:19].replace('T', ' ')
-
-            output = [{
-                'url': url_pattern % (user_name, repo_name, branch, repo_name, branch),
-                'version': re.sub(r'[\-: ]', '.', timestamp),
-                'date': timestamp
-            }]
+            tag = info['prefix'] + version
+            output.append({
+                'url': 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip' % (
+                    user_name, repo_name, tag, repo_name, tag),
+                'version': version,
+                'date': tags_list[tag]
+            })
+            used_versions.add(version)
+            if max_releases > 0 and len(used_versions) >= max_releases:
+                break
 
         return output
 

@@ -95,64 +95,110 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
+        output = self.download_info_from_tags(url, tag_prefix)
+        if output is None:
+            output = self.download_info_from_branch(url)
+        return output
+
+    def download_info_from_branch(self, url):
+        """
+        Retrieve information about downloading a package
+
+        :param url:
+            The URL of the repository, in one of the forms:
+              https://github.com/{user}/{repo}
+              https://github.com/{user}/{repo}/tree/{branch}
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        user_repo, branch = self._user_repo_branch(url)
+        if not user_repo:
+            return None
+
+        if branch is None:
+            repo_info = self.fetch_json(self._make_api_url(user_repo))
+            branch = repo_info.get('default_branch', 'master')
+
+        branch_url = self._make_api_url(user_repo, '/branches/%s' % branch)
+        branch_info = self.fetch_json(branch_url)
+
+        timestamp = branch_info['commit']['commit']['committer']['date'][0:19].replace('T', ' ')
+
+        return [{
+            'url': 'https://codeload.github.com/%s/zip/%s' % (user_repo, branch),
+            'version': re.sub(r'[\-: ]', '.', timestamp),
+            'date': timestamp
+        }]
+
+    def download_info_from_tags(self, url, tag_prefix=None):
+        """
+        Retrieve information about downloading a package
+
+        :param url:
+            The URL of the repository, in one of the forms:
+              https://github.com/{user}/{repo}/tags
+            Grabs the info from the newest tag(s) that is a valid semver version.
+
+        :param tag_prefix:
+            If the URL is a tags URL, only match tags that have this prefix.
+            If tag_prefix is None, match only tags without prefix.
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        tags_match = re.match(r'https?://github.com/([^/]+/[^/]+)/tags/?$', url)
+        if not tags_match:
+            return None
+
+        user_repo = tags_match.group(1)
+        tags_url = self._make_api_url(user_repo, '/tags?per_page=100')
+        tags_json = self.fetch_json(tags_url)
+        tag_urls = {tag['name']: tag['commit']['url'] for tag in tags_json}
+        tag_info = version_process(tag_urls.keys(), tag_prefix)
+        tag_info = version_sort(tag_info, reverse=True)
+        if not tag_info:
+            return False
+
+        max_releases = self.settings.get('max_releases', 0)
+
         output = []
+        used_versions = set()
+        for info in tag_info:
+            version = info['version']
+            if version in used_versions:
+                continue
 
-        version = None
-        url_pattern = 'https://codeload.github.com/%s/zip/%s'
+            tag = info['prefix'] + version
+            tag_info = self.fetch_json(tag_urls[tag])
+            timestamp = tag_info['commit']['committer']['date'][0:19].replace('T', ' ')
 
-        # tag based releases
-        tags_match = re.match('https?://github.com/([^/]+/[^/]+)/tags/?$', url)
-        if tags_match:
-            user_repo = tags_match.group(1)
-            tags_url = self._make_api_url(user_repo, '/tags?per_page=100')
-            tags_json = self.fetch_json(tags_url)
-            tag_urls = {tag['name']: tag['commit']['url'] for tag in tags_json}
-            tag_info = version_process(tag_urls.keys(), tag_prefix)
-            tag_info = version_sort(tag_info, reverse=True)
-            if not tag_info:
-                return False
-
-            max_releases = self.settings.get('max_releases', 0)
-
-            used_versions = set()
-            for info in tag_info:
-                version = info['version']
-                if version in used_versions:
-                    continue
-
-                tag = info['prefix'] + version
-                tag_info = self.fetch_json(tag_urls[tag])
-                timestamp = tag_info['commit']['committer']['date'][0:19].replace('T', ' ')
-
-                output.append({
-                    'url': url_pattern % (user_repo, tag),
-                    'version': version,
-                    'date': timestamp
-                })
-                used_versions.add(version)
-                if max_releases > 0 and len(used_versions) >= max_releases:
-                    break
-
-        # branch based releases
-        else:
-            user_repo, branch = self._user_repo_branch(url)
-            if not user_repo:
-                return None
-
-            if branch is None:
-                repo_info = self.fetch_json(self._make_api_url(user_repo))
-                branch = repo_info.get('default_branch', 'master')
-
-            branch_url = self._make_api_url(user_repo, '/branches/%s' % branch)
-            branch_info = self.fetch_json(branch_url)
-
-            timestamp = branch_info['commit']['commit']['committer']['date'][0:19].replace('T', ' ')
-
-            output = [{
-                'url': url_pattern % (user_repo, branch),
-                'version': re.sub(r'[\-: ]', '.', timestamp),
+            output.append({
+                'url': 'https://codeload.github.com/%s/zip/%s' % (user_repo, tag),
+                'version': version,
                 'date': timestamp
-            }]
+            })
+            used_versions.add(version)
+            if max_releases > 0 and len(used_versions) >= max_releases:
+                break
 
         return output
 
