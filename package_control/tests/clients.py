@@ -50,7 +50,8 @@ class GitHubClientTests(unittest.TestCase):
                 'readme': 'https://raw.githubusercontent.com/packagecontrol-test'
                           '/package_control-tester/master/readme.md',
                 'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
-                'donate': None
+                'donate': None,
+                'default_branch': 'master'
             },
             client.repo_info('https://github.com/packagecontrol-test/package_control-tester')
         )
@@ -68,7 +69,8 @@ class GitHubClientTests(unittest.TestCase):
                 'readme': 'https://raw.githubusercontent.com/packagecontrol-test'
                           '/package_control-tester/master/readme.md',
                 'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
-                'donate': None
+                'donate': None,
+                'default_branch': 'master'
             }],
             client.user_info('https://github.com/packagecontrol-test')
         )
@@ -186,7 +188,8 @@ class GitLabClientTests(unittest.TestCase):
                     'https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md',
                 'author': 'packagecontrol-test',
                 'issues': None,
-                'donate': None
+                'donate': None,
+                'default_branch': 'master'
             },
             client.repo_info(
                 'https://gitlab.com/packagecontrol-test/package_control-tester'
@@ -205,7 +208,8 @@ class GitLabClientTests(unittest.TestCase):
                     'readme': 'https://gitlab.com/packagecontrol-test/package_control-tester/-/raw/master/readme.md',
                     'author': 'packagecontrol-test',
                     'issues': None,
-                    'donate': None
+                    'donate': None,
+                    'default_branch': 'master'
                 }
             ],
             client.user_info(
@@ -309,7 +313,8 @@ class BitBucketClientTests(unittest.TestCase):
                 'author': 'wbond',
                 'readme': 'https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md',
                 'issues': 'https://bitbucket.org/wbond/package_control-tester/issues',
-                'donate': None
+                'donate': None,
+                'default_branch': 'master'
             },
             client.repo_info('https://bitbucket.org/wbond/package_control-tester')
         )

@@ -109,7 +109,7 @@ class GitHubUserProvider(BaseRepositoryProvider):
 
             try:
                 releases = []
-                for download in client.download_info_from_branch(repo_url):
+                for download in client.download_info_from_branch(repo_url, repo_info['default_branch']):
                     download['sublime_text'] = '*'
                     download['platforms'] = ['*']
                     releases.append(download)

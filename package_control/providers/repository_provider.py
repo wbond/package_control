@@ -560,14 +560,15 @@ class RepositoryProvider(BaseRepositoryProvider):
                             repo_info = client.repo_info(details)
                             if repo_info:
                                 break
-
-                        if not repo_info:
+                        else:
                             raise ProviderException(text.format(
                                 '''
                                 Invalid "details" value "%s" for one of the packages in the repository %s.
                                 ''',
                                 (details, self.repo_url)
                             ))
+
+                        del repo_info['default_branch']
 
                         # When grabbing details, prefer explicit field values over the values
                         # from the GitHub or BitBucket API

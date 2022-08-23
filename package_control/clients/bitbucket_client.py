@@ -113,7 +113,7 @@ class BitBucketClient(JSONApiClient):
             output = self.download_info_from_branch(url)
         return output
 
-    def download_info_from_branch(self, url):
+    def download_info_from_branch(self, url, default_branch=None):
         """
         Retrieve information about downloading a package
 
@@ -121,6 +121,9 @@ class BitBucketClient(JSONApiClient):
             The URL of the repository, in one of the forms:
               https://bitbucket.org/{user}/{repo}
               https://bitbucket.org/{user}/{repo}/src/{branch}
+
+        :param default_branch:
+            The branch to use, in case url is a repo url
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -139,8 +142,10 @@ class BitBucketClient(JSONApiClient):
             return None
 
         if branch is None:
-            repo_info = self.fetch_json(self._make_api_url(user_repo))
-            branch = repo_info['mainbranch'].get('name', 'master')
+            branch = default_branch
+            if branch is None:
+                repo_info = self.fetch_json(self._make_api_url(user_repo))
+                branch = repo_info['mainbranch'].get('name', 'master')
 
         branch_url = self._make_api_url(user_repo, '/refs/branches/%s' % branch)
         branch_info = self.fetch_json(branch_url)
@@ -235,6 +240,7 @@ class BitBucketClient(JSONApiClient):
               `readme` - URL of the readme
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
         user_repo, branch = self._user_repo_branch(url)
@@ -260,7 +266,8 @@ class BitBucketClient(JSONApiClient):
             'author': author,
             'donate': None,
             'readme': self._readme_url(user_repo, branch),
-            'issues': issues_url if repo_info['has_issues'] else None
+            'issues': issues_url if repo_info['has_issues'] else None,
+            'default_branch': branch
         }
 
     def user_info(self, url):
@@ -275,25 +282,6 @@ class BitBucketClient(JSONApiClient):
             None
         """
         return None
-
-    def _main_branch_name(self, user_repo):
-        """
-        Fetch the name of the default branch
-
-        :param user_repo:
-            The user/repo name to get the main branch for
-
-        :raises:
-            DownloaderException: when there is an error downloading
-            ClientException: when there is an error parsing the response
-
-        :return:
-            The name of the main branch - `master` or `default`
-        """
-
-        main_branch_url = self._make_api_url(user_repo)
-        main_branch_info = self.fetch_json(main_branch_url, True)
-        return main_branch_info['mainbranch']['name']
 
     def _make_download_info(self, user_repo, ref_name, version, timestamp):
         """

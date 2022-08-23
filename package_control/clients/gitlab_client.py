@@ -100,7 +100,7 @@ class GitLabClient(JSONApiClient):
             output = self.download_info_from_branch(url)
         return output
 
-    def download_info_from_branch(self, url):
+    def download_info_from_branch(self, url, default_branch=None):
         """
         Retrieve information about downloading a package
 
@@ -108,6 +108,9 @@ class GitLabClient(JSONApiClient):
             The URL of the repository, in one of the forms:
               https://gitlab.com/{user}/{repo}
               https://gitlab.com/{user}/{repo}/-/tree/{branch}
+
+        :param default_branch:
+            The branch to use, in case url is a repo url
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -129,8 +132,10 @@ class GitLabClient(JSONApiClient):
         repo_id = '%s%%2F%s' % (user_name, repo_name)
 
         if branch is None:
-            repo_info = self.fetch_json(self._make_api_url(repo_id))
-            branch = repo_info.get('default_branch', 'master')
+            branch = default_branch
+            if branch is None:
+                repo_info = self.fetch_json(self._make_api_url(repo_id))
+                branch = repo_info.get('default_branch', 'master')
 
         branch_url = self._make_api_url(repo_id, '/repository/branches/%s' % branch)
         branch_info = self.fetch_json(branch_url)
@@ -222,6 +227,7 @@ class GitLabClient(JSONApiClient):
               `readme` - URL of the readme
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
         user_repo, branch = self._user_repo_branch(url)
@@ -260,6 +266,7 @@ class GitLabClient(JSONApiClient):
               `readme` - URL of the readme
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
         user_match = re.match(r'https?://gitlab\.com/([^/]+)/?$', url)
@@ -298,6 +305,7 @@ class GitLabClient(JSONApiClient):
               `readme` - URL of the homepage
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
         user_name = result['owner']['username'] if result.get('owner') else result['namespace']['name']
@@ -318,6 +326,7 @@ class GitLabClient(JSONApiClient):
             'readme': readme_url,
             'issues': result.get('issues', None) if result.get('_links') else None,
             'donate': None,
+            'default_branch': branch
         }
 
     def _make_download_info(self, user_name, repo_name, ref_name, version, timestamp):

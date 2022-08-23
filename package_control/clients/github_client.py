@@ -100,7 +100,7 @@ class GitHubClient(JSONApiClient):
             output = self.download_info_from_branch(url)
         return output
 
-    def download_info_from_branch(self, url):
+    def download_info_from_branch(self, url, default_branch=None):
         """
         Retrieve information about downloading a package
 
@@ -108,6 +108,9 @@ class GitHubClient(JSONApiClient):
             The URL of the repository, in one of the forms:
               https://github.com/{user}/{repo}
               https://github.com/{user}/{repo}/tree/{branch}
+
+        :param default_branch:
+            The branch to use, in case url is a repo url
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -126,8 +129,10 @@ class GitHubClient(JSONApiClient):
             return None
 
         if branch is None:
-            repo_info = self.fetch_json(self._make_api_url(user_repo))
-            branch = repo_info.get('default_branch', 'master')
+            branch = default_branch
+            if branch is None:
+                repo_info = self.fetch_json(self._make_api_url(user_repo))
+                branch = repo_info.get('default_branch', 'master')
 
         branch_url = self._make_api_url(user_repo, '/branches/%s' % branch)
         branch_info = self.fetch_json(branch_url)
@@ -218,6 +223,7 @@ class GitHubClient(JSONApiClient):
               `readme` - URL of the readme
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
         user_repo, branch = self._user_repo_branch(url)
@@ -254,6 +260,7 @@ class GitHubClient(JSONApiClient):
               `readme` - URL of the readme
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
         user_match = re.match(r'https?://github\.com/([^/]+)/?$', url)
@@ -289,6 +296,7 @@ class GitHubClient(JSONApiClient):
               `readme` - URL of the homepage
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
         user_name = result['owner']['login']
@@ -306,7 +314,8 @@ class GitHubClient(JSONApiClient):
             'author': user_name,
             'readme': self._readme_url(user_repo, branch),
             'issues': issues_url,
-            'donate': None
+            'donate': None,
+            'default_branch': branch
         }
 
     def _make_download_info(self, user_repo, ref_name, version, timestamp):
