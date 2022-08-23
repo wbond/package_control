@@ -2,7 +2,11 @@ from ..clients.client_exception import ClientException
 from ..clients.gitlab_client import GitLabClient
 from ..downloaders.downloader_exception import DownloaderException
 from .base_repository_provider import BaseRepositoryProvider
-from .provider_exception import ProviderException
+from .provider_exception import (
+    GitProviderDownloadInfoException,
+    GitProviderUserInfoException,
+    ProviderException,
+)
 
 
 class GitLabUserProvider(BaseRepositoryProvider):
@@ -95,7 +99,9 @@ class GitLabUserProvider(BaseRepositoryProvider):
 
         try:
             user_repos = client.user_info(self.repo_url)
-        except (DownloaderException, ClientException) as e:
+            if not user_repos:
+                raise GitProviderUserInfoException(self)
+        except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo_url] = e
             self.cache['get_packages'] = {}
             return
@@ -107,26 +113,28 @@ class GitLabUserProvider(BaseRepositoryProvider):
             repo_url = client.make_repo_url(author, name)
 
             try:
-                releases = []
-                for download in client.download_info_from_branch(repo_url, repo_info['default_branch']):
+                downloads = client.download_info_from_branch(repo_url, repo_info['default_branch'])
+                if not downloads:
+                    raise GitProviderDownloadInfoException(self)
+
+                for download in downloads:
                     download['sublime_text'] = '*'
                     download['platforms'] = ['*']
-                    releases.append(download)
 
                 details = {
                     'name': name,
                     'description': repo_info['description'],
                     'homepage': repo_info['homepage'],
                     'author': author,
-                    'last_modified': releases[0].get('date'),
-                    'releases': releases,
+                    'last_modified': downloads[0].get('date'),
+                    'releases': downloads,
                     'previous_names': [],
                     'labels': [],
                     'sources': [self.repo_url],
                     'readme': repo_info['readme'],
                     'issues': repo_info['issues'],
                     'donate': repo_info['donate'],
-                    'buy': None,
+                    'buy': None
                 }
                 output[name] = details
                 yield (name, details)

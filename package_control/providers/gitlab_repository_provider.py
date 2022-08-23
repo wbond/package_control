@@ -4,7 +4,11 @@ from ..clients.client_exception import ClientException
 from ..clients.gitlab_client import GitLabClient
 from ..downloaders.downloader_exception import DownloaderException
 from .base_repository_provider import BaseRepositoryProvider
-from .provider_exception import ProviderException
+from .provider_exception import (
+    GitProviderDownloadInfoException,
+    GitProviderRepoInfoException,
+    ProviderException,
+)
 
 
 class GitLabRepositoryProvider(BaseRepositoryProvider):
@@ -107,12 +111,16 @@ class GitLabRepositoryProvider(BaseRepositoryProvider):
 
         try:
             repo_info = client.repo_info(self.repo_url)
+            if not repo_info:
+                raise GitProviderRepoInfoException(self)
 
-            releases = []
-            for download in client.download_info_from_branch(self.repo_url, repo_info['default_branch']):
+            downloads = client.download_info_from_branch(self.repo_url, repo_info['default_branch'])
+            if not downloads:
+                raise GitProviderDownloadInfoException(self)
+
+            for download in downloads:
                 download['sublime_text'] = '*'
                 download['platforms'] = ['*']
-                releases.append(download)
 
             name = repo_info['name']
             details = {
@@ -120,8 +128,8 @@ class GitLabRepositoryProvider(BaseRepositoryProvider):
                 'description': repo_info['description'],
                 'homepage': repo_info['homepage'],
                 'author': repo_info['author'],
-                'last_modified': releases[0].get('date'),
-                'releases': releases,
+                'last_modified': downloads[0].get('date'),
+                'releases': downloads,
                 'previous_names': [],
                 'labels': [],
                 'sources': [self.repo_url],

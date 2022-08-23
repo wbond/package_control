@@ -122,7 +122,7 @@ class GitHubClient(JSONApiClient):
 
         output = self.download_info_from_tags(url, tag_prefix)
         if output is None:
-            output = self.download_info_from_branch(url)
+            output = self.download_info_from_branch(url)            
         return output
 
     def download_info_from_branch(self, url, default_branch=None):
@@ -142,8 +142,7 @@ class GitHubClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match, False if no commit, or a list of dicts with the
-            following keys:
+            None if no match or a dict with the following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
