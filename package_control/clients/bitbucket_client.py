@@ -66,47 +66,6 @@ class BitBucketClient(JSONApiClient):
 
         return 'https://bitbucket.com/%s/%s' % (quote(owner_name), quote(repo_name))
 
-    @staticmethod
-    def make_tags_url(repo_url):
-        """
-        Generate the tags URL for a BitBucket repo if the value passed is a BitBucket
-        repository URL
-
-        :param repo_url:
-            The repository URL
-
-        :return:
-            The tags URL if repo_url was a BitBucket repo, otherwise False
-        """
-
-        match = re.match(r'https?://bitbucket\.org/([^/]+/[^/]+)/?$', repo_url)
-        if not match:
-            return False
-
-        return 'https://bitbucket.org/%s#tags' % match.group(1)
-
-    @staticmethod
-    def make_branch_url(repo_url, branch):
-        """
-        Generate the branch URL for a BitBucket repo if the value passed is a BitBucket
-        repository URL
-
-        :param repo_url:
-            The repository URL
-
-        :param branch:
-            The branch name
-
-        :return:
-            The branch URL if repo_url was a BitBucket repo, otherwise False
-        """
-
-        match = re.match(r'https?://bitbucket\.org/([^/]+/[^/]+)/?$', repo_url)
-        if not match:
-            return False
-
-        return 'https://bitbucket.org/%s/src/%s' % (match.group(1), quote(branch))
-
     def download_info(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package
@@ -134,9 +93,10 @@ class BitBucketClient(JSONApiClient):
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
         """
-        output = self.download_info_from_tags(url, tag_prefix)
+
+        output = self.download_info_from_branch(url)
         if output is None:
-            output = self.download_info_from_branch(url)
+            output = self.download_info_from_tags(url, tag_prefix)
         return output
 
     def download_info_from_branch(self, url, default_branch=None):
@@ -188,6 +148,7 @@ class BitBucketClient(JSONApiClient):
 
         :param url:
             The URL of the repository, in one of the forms:
+              https://bitbucket.org/{user}/{repo}
               https://bitbucket.org/{user}/{repo}/#tags
             Grabs the info from the newest tag(s) that is a valid semver version.
 
@@ -207,7 +168,7 @@ class BitBucketClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match(r'https?://bitbucket\.org/([^/#?]+/[^/#?]+)/?#tags$', url)
+        tags_match = re.match(r'https?://bitbucket\.org/([^/#?]+/[^/#?]+)/?(?:#tags)?$', url)
         if not tags_match:
             return None
 

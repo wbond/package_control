@@ -224,6 +224,62 @@ class GitHubClientTests(unittest.TestCase):
             client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags', 'win-')
         )
 
+    def test_download_info_from_branch_via_repo_url(self):
+        client = GitHubClient(self.github_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': LAST_COMMIT_TIMESTAMP,
+                    'version': LAST_COMMIT_VERSION,
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/master'
+                }
+            ],
+            client.download_info_from_branch('https://github.com/packagecontrol-test/package_control-tester', 'master')
+        )
+
+    def test_download_info_from_tags_via_repo_url(self):
+        client = GitHubClient(self.github_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-12 15:52:35',
+                    'version': '1.0.1',
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1'
+                },
+                {
+                    'date': '2014-11-12 15:14:23',
+                    'version': '1.0.1-beta',
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1-beta'
+                },
+                {
+                    'date': '2014-11-12 15:14:13',
+                    'version': '1.0.0',
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.0'
+                },
+                {
+                    'date': '2014-11-12 02:02:22',
+                    'version': '0.9.0',
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/0.9.0'
+                }
+            ],
+            client.download_info_from_tags('https://github.com/packagecontrol-test/package_control-tester')
+        )
+
+    def test_download_info_from_tags_via_repo_url_with_prefix(self):
+        client = GitHubClient(self.github_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-28 20:54:15',
+                    'version': '1.0.2',
+                    'url': 'https://codeload.github.com/packagecontrol-test/package_control-tester/zip/win-1.0.2'
+                }
+            ],
+            client.download_info_from_tags(
+                'https://github.com/packagecontrol-test/package_control-tester', 'win-'
+            )
+        )
+
 
 class GitLabClientTests(unittest.TestCase):
     maxDiff = None
@@ -416,6 +472,58 @@ class GitLabClientTests(unittest.TestCase):
             )
         )
 
+    def test_download_info_from_branch_via_repo_url(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2020-07-15 10:50:38',
+                    'version': '2020.07.15.10.50.38',
+                    'url':
+                        'https://gitlab.com/packagecontrol-test/package_control-tester'
+                        '/-/archive/master/package_control-tester-master.zip'
+                }
+            ],
+            client.download_info_from_branch(
+                'https://gitlab.com/packagecontrol-test/package_control-tester'
+            )
+        )
+
+    def test_download_info_from_tags_via_repo_url(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2020-07-15 10:50:38',
+                    'version': '1.0.1',
+                    'url':
+                        'https://gitlab.com/packagecontrol-test/package_control-tester'
+                        '/-/archive/1.0.1/package_control-tester-1.0.1.zip'
+                }
+            ],
+            client.download_info_from_tags(
+                'https://gitlab.com/packagecontrol-test/package_control-tester'
+            )
+        )
+
+    def test_download_info_from_tags_via_repo_url_with_prefix(self):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2020-07-15 10:50:38',
+                    'version': '1.0.1',
+                    'url':
+                        'https://gitlab.com/packagecontrol-test/package_control-tester/'
+                        '-/archive/win-1.0.1/package_control-tester-win-1.0.1.zip'
+                }
+            ],
+            client.download_info_from_tags(
+                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                'win-'
+            )
+        )
+
 
 class BitBucketClientTests(unittest.TestCase):
     maxDiff = None
@@ -600,4 +708,60 @@ class BitBucketClientTests(unittest.TestCase):
                 }
             ],
             client.download_info('https://bitbucket.org/wbond/package_control-tester#tags', 'win-')
+        )
+
+    def test_download_info_from_branch_via_repo_url(self):
+        client = BitBucketClient(self.bitbucket_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': LAST_COMMIT_TIMESTAMP,
+                    'version': LAST_COMMIT_VERSION,
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/master.zip'
+                }
+            ],
+            client.download_info_from_branch(
+                'https://bitbucket.org/wbond/package_control-tester', 'master'
+            )
+        )
+
+    def test_download_info_from_tags_via_repo_url(self):
+        client = BitBucketClient(self.bitbucket_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-12 15:52:35',
+                    'version': '1.0.1',
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/1.0.1.zip'
+                },
+                {
+                    'date': '2014-11-12 15:14:23',
+                    'version': '1.0.1-beta',
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/1.0.1-beta.zip'
+                },
+                {
+                    'date': '2014-11-12 15:14:13',
+                    'version': '1.0.0',
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/1.0.0.zip'
+                },
+                {
+                    'date': '2014-11-12 02:02:22',
+                    'version': '0.9.0',
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/0.9.0.zip'
+                }
+            ],
+            client.download_info_from_tags('https://bitbucket.org/wbond/package_control-tester')
+        )
+
+    def test_download_info_from_tags_via_repo_url_with_prefix(self):
+        client = BitBucketClient(self.bitbucket_settings())
+        self.assertEqual(
+            [
+                {
+                    'date': '2014-11-28 20:54:15',
+                    'version': '1.0.2',
+                    'url': 'https://bitbucket.org/wbond/package_control-tester/get/win-1.0.2.zip'
+                }
+            ],
+            client.download_info_from_tags('https://bitbucket.org/wbond/package_control-tester', 'win-')
         )

@@ -51,47 +51,6 @@ class GitHubClient(JSONApiClient):
 
         return 'https://github.com/%s/%s' % (quote(owner_name), quote(repo_name))
 
-    @staticmethod
-    def make_tags_url(repo_url):
-        """
-        Generate the tags URL for a GitHub repo if the value passed is a GitHub
-        repository URL
-
-        :param repo_url:
-            The repository URL
-
-        :return:
-            The tags URL if repo was a GitHub repo_url, otherwise False
-        """
-
-        match = re.match(r'https?://github\.com/([^/]+/[^/]+)/?$', repo_url)
-        if not match:
-            return False
-
-        return 'https://github.com/%s/tags' % match.group(1)
-
-    @staticmethod
-    def make_branch_url(repo_url, branch):
-        """
-        Generate the branch URL for a GitHub repo if the value passed is a GitHub
-        repository URL
-
-        :param repo_url:
-            The repository URL
-
-        :param branch:
-            The branch name
-
-        :return:
-            The branch URL if repo_url was a GitHub repo, otherwise False
-        """
-
-        match = re.match(r'https?://github\.com/([^/]+/[^/]+)/?$', repo_url)
-        if not match:
-            return False
-
-        return 'https://github.com/%s/tree/%s' % (match.group(1), quote(branch))
-
     def download_info(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package
@@ -120,9 +79,9 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        output = self.download_info_from_tags(url, tag_prefix)
+        output = self.download_info_from_branch(url)
         if output is None:
-            output = self.download_info_from_branch(url)            
+            output = self.download_info_from_tags(url, tag_prefix)
         return output
 
     def download_info_from_branch(self, url, default_branch=None):
@@ -174,6 +133,7 @@ class GitHubClient(JSONApiClient):
 
         :param url:
             The URL of the repository, in one of the forms:
+              https://github.com/{user}/{repo}
               https://github.com/{user}/{repo}/tags
             Grabs the info from the newest tag(s) that is a valid semver version.
 
@@ -193,7 +153,7 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match(r'https?://github\.com/([^/#?]+/[^/#?]+)/tags/?$', url)
+        tags_match = re.match(r'https?://github\.com/([^/#?]+/[^/#?]+)(?:/tags)?/?$', url)
         if not tags_match:
             return None
 
