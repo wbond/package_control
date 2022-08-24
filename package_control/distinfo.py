@@ -430,8 +430,11 @@ class DistInfoDir:
         with open(self.abs_path('METADATA'), 'r', encoding='utf-8') as fobj:
             entries = {}
             for line in fobj.readlines():
-                key, value = line.split(': ')
-                entries[key.strip().lower()] = value.strip()
+                try:
+                    key, value = line.split(': ', 1)
+                    entries[key.strip().lower()] = value.strip()
+                except ValueError:
+                    break
             return entries
         return False
 
