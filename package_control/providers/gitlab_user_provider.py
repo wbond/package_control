@@ -110,7 +110,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
         for repo_info in user_repos:
             author = repo_info['author']
             name = repo_info['name']
-            repo_url = client.make_repo_url(author, name)
+            repo_url = client.repo_url(author, name)
 
             try:
                 downloads = client.download_info_from_branch(repo_url, repo_info['default_branch'])

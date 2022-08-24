@@ -37,7 +37,7 @@ class GitLabClient(JSONApiClient):
         return (None, None, None)
 
     @staticmethod
-    def make_repo_url(owner_name, repo_name):
+    def repo_url(user_name, repo_name):
         """
         Generate the tags URL for a GitHub repo if the value passed is a GitHub
         repository URL
@@ -52,7 +52,7 @@ class GitLabClient(JSONApiClient):
             The repositoy URL of given owner and repo name
         """
 
-        return 'https://gitlab.com/%s/%s' % (quote(owner_name), quote(repo_name))
+        return 'https://gitlab.com/%s/%s' % (quote(user_name), quote(repo_name))
 
     def download_info(self, url, tag_prefix=None):
         """
