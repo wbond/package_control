@@ -131,10 +131,10 @@ class BitBucketClient(JSONApiClient):
         if branch is None:
             branch = default_branch
             if branch is None:
-                repo_info = self.fetch_json(self._make_api_url(user_repo))
+                repo_info = self.fetch_json(self._api_url(user_repo))
                 branch = repo_info['mainbranch'].get('name', 'master')
 
-        branch_url = self._make_api_url(user_repo, '/refs/branches/%s' % branch)
+        branch_url = self._api_url(user_repo, '/refs/branches/%s' % branch)
         branch_info = self.fetch_json(branch_url)
 
         timestamp = branch_info['target']['date'][0:19].replace('T', ' ')
@@ -175,7 +175,7 @@ class BitBucketClient(JSONApiClient):
         user_repo = tags_match.group(1)
 
         tags_list = {}
-        tags_url = self._make_api_url(user_repo, '/refs/tags?pagelen=100')
+        tags_url = self._api_url(user_repo, '/refs/tags?pagelen=100')
         while tags_url:
             tags_json = self.fetch_json(tags_url)
             for tag in tags_json['values']:
@@ -236,7 +236,7 @@ class BitBucketClient(JSONApiClient):
             return None
 
         user_repo = "%s/%s" % (user_name, repo_name)
-        api_url = self._make_api_url(user_repo)
+        api_url = self._api_url(user_repo)
         repo_info = self.fetch_json(api_url)
 
         if branch is None:
@@ -305,7 +305,7 @@ class BitBucketClient(JSONApiClient):
             'date': timestamp
         }
 
-    def _make_api_url(self, user_repo, suffix=''):
+    def _api_url(self, user_repo, suffix=''):
         """
         Generate a URL for the BitBucket API
 
@@ -343,7 +343,7 @@ class BitBucketClient(JSONApiClient):
             The URL to the readme file, or None
         """
 
-        listing_url = self._make_api_url(user_repo, '/src/%s/?pagelen=100' % branch)
+        listing_url = self._api_url(user_repo, '/src/%s/?pagelen=100' % branch)
 
         try:
             while listing_url:

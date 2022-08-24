@@ -119,10 +119,10 @@ class GitLabClient(JSONApiClient):
         if branch is None:
             branch = default_branch
             if branch is None:
-                repo_info = self.fetch_json(self._make_api_url(repo_id))
+                repo_info = self.fetch_json(self._api_url(repo_id))
                 branch = repo_info.get('default_branch', 'master')
 
-        branch_url = self._make_api_url(repo_id, '/repository/branches/%s' % branch)
+        branch_url = self._api_url(repo_id, '/repository/branches/%s' % branch)
         branch_info = self.fetch_json(branch_url)
 
         timestamp = branch_info['commit']['committed_date'][0:19].replace('T', ' ')
@@ -162,7 +162,7 @@ class GitLabClient(JSONApiClient):
 
         user_name, repo_name = tags_match.groups()
         repo_id = '%s%%2F%s' % (user_name, repo_name)
-        tags_url = self._make_api_url(repo_id, '/repository/tags?per_page=100')
+        tags_url = self._api_url(repo_id, '/repository/tags?per_page=100')
         tags_json = self.fetch_json(tags_url)
         tags_list = {
             tag['name']: tag['commit']['committed_date'][0:19].replace('T', ' ')
@@ -221,7 +221,7 @@ class GitLabClient(JSONApiClient):
             return None
 
         repo_id = '%s%%2F%s' % (user_name, repo_name)
-        repo_url = self._make_api_url(repo_id)
+        repo_url = self._api_url(repo_id)
         repo_info = self.fetch_json(repo_url)
 
         if not branch:
@@ -351,7 +351,7 @@ class GitLabClient(JSONApiClient):
             'date': timestamp
         }
 
-    def _make_api_url(self, project_id, suffix=''):
+    def _api_url(self, project_id, suffix=''):
         """
         Generate a URL for the GitLab API
 

@@ -116,10 +116,10 @@ class GitHubClient(JSONApiClient):
         if branch is None:
             branch = default_branch
             if branch is None:
-                repo_info = self.fetch_json(self._make_api_url(user_repo))
+                repo_info = self.fetch_json(self._api_url(user_repo))
                 branch = repo_info.get('default_branch', 'master')
 
-        branch_url = self._make_api_url(user_repo, '/branches/%s' % branch)
+        branch_url = self._api_url(user_repo, '/branches/%s' % branch)
         branch_info = self.fetch_json(branch_url)
 
         timestamp = branch_info['commit']['commit']['committer']['date'][0:19].replace('T', ' ')
@@ -158,7 +158,7 @@ class GitHubClient(JSONApiClient):
             return None
 
         user_repo = tags_match.group(1)
-        tags_url = self._make_api_url(user_repo, '/tags?per_page=100')
+        tags_url = self._api_url(user_repo, '/tags?per_page=100')
         tags_json = self.fetch_json(tags_url)
         tag_urls = {tag['name']: tag['commit']['url'] for tag in tags_json}
         tag_info = version_process(tag_urls.keys(), tag_prefix)
@@ -217,7 +217,7 @@ class GitHubClient(JSONApiClient):
             return None
 
         user_repo = "%s/%s" % (user_name, repo_name)
-        api_url = self._make_api_url(user_repo)
+        api_url = self._api_url(user_repo)
         repo_info = self.fetch_json(api_url)
 
         if branch is None:
@@ -338,7 +338,7 @@ class GitHubClient(JSONApiClient):
             'date': timestamp
         }
 
-    def _make_api_url(self, user_repo, suffix=''):
+    def _api_url(self, user_repo, suffix=''):
         """
         Generate a URL for the BitBucket API
 
@@ -376,7 +376,7 @@ class GitHubClient(JSONApiClient):
         """
 
         query_string = urlencode({'ref': branch})
-        readme_url = self._make_api_url(user_repo, '/readme?%s' % query_string)
+        readme_url = self._api_url(user_repo, '/readme?%s' % query_string)
 
         try:
             readme_file = self.fetch_json(readme_url, prefer_cached).get('path')
