@@ -38,7 +38,7 @@ class GitHubClientTests(unittest.TestCase):
             }
         }
 
-    def test_github_client_repo_user_branch_00(self):
+    def test_repo_user_branch_00(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             (None, None, None),
@@ -49,7 +49,7 @@ class GitHubClientTests(unittest.TestCase):
             client.user_repo_branch('https://github.com/')
         )
 
-    def test_github_client_repo_user_branch_01(self):
+    def test_repo_user_branch_01(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             ('packagecontrol-test', None, None),
@@ -60,7 +60,7 @@ class GitHubClientTests(unittest.TestCase):
             client.user_repo_branch('https://github.com/packagecontrol-test/')
         )
 
-    def test_github_client_repo_user_branch_02(self):
+    def test_repo_user_branch_02(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             ('packagecontrol-test', 'package_control-tester', None),
@@ -75,7 +75,7 @@ class GitHubClientTests(unittest.TestCase):
             client.user_repo_branch('https://github.com/packagecontrol-test/package_control-tester.git')
         )
 
-    def test_github_client_repo_user_branch_03(self):
+    def test_repo_user_branch_03(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             ('packagecontrol-test', 'package_control-tester', 'master'),
@@ -86,7 +86,7 @@ class GitHubClientTests(unittest.TestCase):
             client.user_repo_branch('https://github.com/packagecontrol-test/package_control-tester/tree/master/')
         )
 
-    def test_github_client_repo_user_branch_04(self):
+    def test_repo_user_branch_04(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             (None, None, None),
@@ -97,14 +97,14 @@ class GitHubClientTests(unittest.TestCase):
             client.user_repo_branch('https://github.com/packagecontrol-test/package_control-tester/tags/')
         )
 
-    def test_github_client_repo_user_branch_05(self):
+    def test_repo_user_branch_05(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             (None, None, None),
             client.user_repo_branch('https://github;com/packagecontrol-test/package_control-tester')
         )
 
-    def test_github_client_repo_info(self):
+    def test_repo_info(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             {
@@ -122,7 +122,7 @@ class GitHubClientTests(unittest.TestCase):
             client.repo_info('https://github.com/packagecontrol-test/package_control-tester')
         )
 
-    def test_github_client_user_info(self):
+    def test_user_info(self):
         client = GitHubClient(self.github_settings())
 
         self.assertEqual(
@@ -141,7 +141,7 @@ class GitHubClientTests(unittest.TestCase):
             client.user_info('https://github.com/packagecontrol-test')
         )
 
-    def test_github_readme(self):
+    def test_readme(self):
         client = ReadmeClient(self.github_settings())
         self.assertEqual(
             {
@@ -155,7 +155,7 @@ class GitHubClientTests(unittest.TestCase):
             )
         )
 
-    def test_github_client_branch_downloads(self):
+    def test_download_info_branch_downloads(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             [
@@ -168,7 +168,7 @@ class GitHubClientTests(unittest.TestCase):
             client.download_info('https://github.com/packagecontrol-test/package_control-tester')
         )
 
-    def test_github_client_tags_downloads(self):
+    def test_download_info_tags_downloads(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             [
@@ -196,7 +196,7 @@ class GitHubClientTests(unittest.TestCase):
             client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags')
         )
 
-    def test_github_client_limited_tags_downloads(self):
+    def test_download_info_limited_tags_downloads(self):
         settings = self.github_settings()
         settings['max_releases'] = 1
         client = GitHubClient(settings)
@@ -211,7 +211,7 @@ class GitHubClientTests(unittest.TestCase):
             client.download_info('https://github.com/packagecontrol-test/package_control-tester/tags')
         )
 
-    def test_github_client_tags_prefix_downloads(self):
+    def test_download_info_tags_prefix_downloads(self):
         client = GitHubClient(self.github_settings())
         self.assertEqual(
             [
@@ -298,7 +298,7 @@ class GitLabClientTests(unittest.TestCase):
             }
         }
 
-    def test_gitlab_client_repo_user_branch_00(self):
+    def test_repo_user_branch_00(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             (None, None, None),
@@ -309,7 +309,7 @@ class GitLabClientTests(unittest.TestCase):
             client.user_repo_branch('https://gitlab.com/')
         )
 
-    def test_gitlab_client_repo_user_branch_01(self):
+    def test_repo_user_branch_01(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             ('packagecontrol-test', None, None),
@@ -320,7 +320,7 @@ class GitLabClientTests(unittest.TestCase):
             client.user_repo_branch('https://gitlab.com/packagecontrol-test/')
         )
 
-    def test_gitlab_client_repo_user_branch_02(self):
+    def test_repo_user_branch_02(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             ('packagecontrol-test', 'package_control-tester', None),
@@ -335,7 +335,7 @@ class GitLabClientTests(unittest.TestCase):
             client.user_repo_branch('https://gitlab.com/packagecontrol-test/package_control-tester.git')
         )
 
-    def test_gitlab_client_repo_user_branch_03(self):
+    def test_repo_user_branch_03(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             ('packagecontrol-test', 'package_control-tester', 'master'),
@@ -346,7 +346,7 @@ class GitLabClientTests(unittest.TestCase):
             client.user_repo_branch('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master/')
         )
 
-    def test_gitlab_client_repo_user_branch_04(self):
+    def test_repo_user_branch_04(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             (None, None, None),
@@ -357,14 +357,14 @@ class GitLabClientTests(unittest.TestCase):
             client.user_repo_branch('https://gitlab.com/packagecontrol-test/package_control-tester/-/tags/')
         )
 
-    def test_gitlab_client_repo_user_branch_05(self):
+    def test_repo_user_branch_05(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             (None, None, None),
             client.user_repo_branch('https://gitlab;com/packagecontrol-test/package_control-tester')
         )
 
-    def test_gitlab_client_repo_info(self):
+    def test_repo_info(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             {
@@ -384,7 +384,7 @@ class GitLabClientTests(unittest.TestCase):
             )
         )
 
-    def test_gitlab_client_user_info(self):
+    def test_user_info(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             [
@@ -405,7 +405,7 @@ class GitLabClientTests(unittest.TestCase):
             )
         )
 
-    def test_gitlab_readme(self):
+    def test_readme(self):
         client = ReadmeClient(self.gitlab_settings())
         self.assertEqual(
             {
@@ -420,7 +420,7 @@ class GitLabClientTests(unittest.TestCase):
             )
         )
 
-    def test_gitlab_client_branch_downloads(self):
+    def test_download_info_branch_downloads(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             [
@@ -437,7 +437,7 @@ class GitLabClientTests(unittest.TestCase):
             )
         )
 
-    def test_gitlab_client_tags_downloads(self):
+    def test_download_info_tags_downloads(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             [
@@ -454,7 +454,7 @@ class GitLabClientTests(unittest.TestCase):
             )
         )
 
-    def test_gitlab_client_tags_prefix_downloads(self):
+    def test_download_info_tags_prefix_downloads(self):
         client = GitLabClient(self.gitlab_settings())
         self.assertEqual(
             [
@@ -553,7 +553,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.user_repo_branch('https://bitbucket.org/')
         )
 
-    def test_bitbucket_client_repo_user_branch_01(self):
+    def test_repo_user_branch_01(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             ('packagecontrol-test', None, None),
@@ -564,7 +564,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.user_repo_branch('https://bitbucket.org/packagecontrol-test/')
         )
 
-    def test_bitbucket_client_repo_user_branch_02(self):
+    def test_repo_user_branch_02(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             ('packagecontrol-test', 'package_control-tester', None),
@@ -579,7 +579,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.user_repo_branch('https://bitbucket.org/packagecontrol-test/package_control-tester.git')
         )
 
-    def test_bitbucket_client_repo_user_branch_03(self):
+    def test_repo_user_branch_03(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             ('packagecontrol-test', 'package_control-tester', 'master'),
@@ -590,7 +590,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.user_repo_branch('https://bitbucket.org/packagecontrol-test/package_control-tester/src/master/')
         )
 
-    def test_bitbucket_client_repo_user_branch_04(self):
+    def test_repo_user_branch_04(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             (None, None, None),
@@ -601,14 +601,14 @@ class BitBucketClientTests(unittest.TestCase):
             client.user_repo_branch('https://bitbucket.org/packagecontrol-test/package_control-tester/#tags')
         )
 
-    def test_bitbucket_client_repo_user_branch_05(self):
+    def test_repo_user_branch_05(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             (None, None, None),
             client.user_repo_branch('https://bitbucket;com/packagecontrol-test/package_control-tester')
         )
 
-    def test_bitbucket_client_repo_info(self):
+    def test_repo_info(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             {
@@ -625,11 +625,11 @@ class BitBucketClientTests(unittest.TestCase):
             client.repo_info('https://bitbucket.org/wbond/package_control-tester')
         )
 
-    def test_bitbucket_client_user_info(self):
+    def test_user_info(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(None, client.user_info('https://bitbucket.org/wbond'))
 
-    def test_bitbucket_readme(self):
+    def test_readme(self):
         client = ReadmeClient(self.bitbucket_settings())
         self.assertEqual(
             {
@@ -641,7 +641,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.readme_info('https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md')
         )
 
-    def test_bitbucket_client_branch_downloads(self):
+    def test_download_info_branch_downloads(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             [
@@ -654,7 +654,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.download_info('https://bitbucket.org/wbond/package_control-tester')
         )
 
-    def test_bitbucket_client_tags_downloads(self):
+    def test_download_info_tags_downloads(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             [
@@ -682,7 +682,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.download_info('https://bitbucket.org/wbond/package_control-tester#tags')
         )
 
-    def test_bitbucket_client_limited_tags_downloads(self):
+    def test_download_info_limited_tags_downloads(self):
         settings = self.bitbucket_settings()
         settings['max_releases'] = 1
         client = BitBucketClient(settings)
@@ -697,7 +697,7 @@ class BitBucketClientTests(unittest.TestCase):
             client.download_info('https://bitbucket.org/wbond/package_control-tester#tags')
         )
 
-    def test_bitbucket_client_tags_prefix_downloads(self):
+    def test_download_info_tags_prefix_downloads(self):
         client = BitBucketClient(self.bitbucket_settings())
         self.assertEqual(
             [
