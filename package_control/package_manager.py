@@ -1088,7 +1088,7 @@ class PackageManager():
             return True
 
         if not is_available:
-            console_write("The libary '%s' is not available for Python %s", (library_name, python_version))
+            console_write("The library '%s' is not available for Python %s", (library_name, python_version))
             return False
 
         release = libraries[library_name]['releases'][0]
@@ -1123,7 +1123,7 @@ class PackageManager():
 
             if len(modified_paths):
                 console_write(
-                    "Unable to upgrade the libary '%s' because files on disk have been modified: '%s'",
+                    "Unable to upgrade the library '%s' because files on disk have been modified: '%s'",
                     (
                         library_name,
                         "', '".join(sorted(list(modified_paths)))
@@ -1200,7 +1200,7 @@ class PackageManager():
 
             if len(modified_paths):
                 console_write(
-                    "Unable to upgrade the libary '%s' because files in the archive have been modified: '%s'",
+                    "Unable to upgrade the library '%s' because files in the archive have been modified: '%s'",
                     (
                         library_name,
                         "', '".join(sorted(list(modified_paths)))
