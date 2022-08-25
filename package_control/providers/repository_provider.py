@@ -536,6 +536,9 @@ class RepositoryProvider(BaseRepositoryProvider):
                 if package.get(field):
                     info[field] = package.get(field)
 
+            details = None
+            releases = None
+
             # Schema version 2.0 allows for grabbing details about a package, or its
             # download from "details" urls. See the GitHubClient and BitBucketClient
             # classes for valid URLs.
