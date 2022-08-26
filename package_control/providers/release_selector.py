@@ -27,6 +27,7 @@ def filter_releases(package, settings, releases):
         sublime.platform(),
         '*'
     ]
+    st_version = int(sublime.version())
 
     install_prereleases = settings.get('install_prereleases')
     allow_prereleases = install_prereleases is True
@@ -37,22 +38,16 @@ def filter_releases(package, settings, releases):
         releases = version_exclude_prerelease(releases)
 
     output = []
-    st_version = int(sublime.version())
     for release in releases:
-        platforms = release.get('platforms', '*')
+        platforms = release.get('platforms') or ['*']
         if not isinstance(platforms, list):
             platforms = [platforms]
 
-        matched = False
-        for selector in platform_selectors:
-            if selector in platforms:
-                matched = True
-                break
-        if not matched:
+        if not any(selector in platforms for selector in platform_selectors):
             continue
 
         # Default to '*' (for legacy reasons), see #604
-        if not is_compatible_version(release.get('sublime_text', '*'), st_version):
+        if not is_compatible_version(release.get('sublime_text') or '*', st_version):
             continue
 
         output.append(release)
