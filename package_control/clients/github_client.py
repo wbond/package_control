@@ -101,7 +101,8 @@ class GitHubClient(JSONApiClient):
             ClientException: when there is an error parsing the response
 
         :return:
-            None if no match or a dict with the following keys:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
