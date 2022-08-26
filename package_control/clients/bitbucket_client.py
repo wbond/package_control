@@ -1,8 +1,8 @@
 import re
-from urllib.parse import quote
+from urllib.parse import urlencode, quote
 
 from ..downloaders.downloader_exception import DownloaderException
-from ..versions import version_sort, version_process
+from ..versions import version_match_prefix
 from .json_api_client import JSONApiClient
 
 
@@ -173,36 +173,37 @@ class BitBucketClient(JSONApiClient):
         if not tags_match:
             return None
 
+        def _get_releases(user_repo, tag_prefix, page_size=100):
+            used_versions = set()
+            query_string = urlencode({'pagelen': page_size})
+            tags_url = self._api_url(user_repo, '/refs/tags?%s' % query_string)
+            while tags_url:
+                tags_json = self.fetch_json(tags_url)
+                for tag in tags_json['values']:
+                    version = version_match_prefix(tag['name'], tag_prefix)
+                    if version and version not in used_versions:
+                        used_versions.add(version)
+                        yield (
+                            version,
+                            tag['name'],
+                            tag['target']['date'][0:19].replace('T', ' ')
+                        )
+
+                tags_url = tags_json.get('next')
+
         user_repo = tags_match.group(1)
 
-        tags_list = {}
-        tags_url = self._api_url(user_repo, '/refs/tags?pagelen=100')
-        while tags_url:
-            tags_json = self.fetch_json(tags_url)
-            for tag in tags_json['values']:
-                tags_list[tag['name']] = tag['target']['date'][0:19].replace('T', ' ')
-            tags_url = tags_json['next'] if 'next' in tags_json else None
-
-        tag_info = version_process(tags_list.keys(), tag_prefix)
-        tag_info = version_sort(tag_info, reverse=True)
-        if not tag_info:
-            return False
-
         max_releases = self.settings.get('max_releases', 0)
+        num_releases = 0
 
         output = []
-        used_versions = set()
-        for info in tag_info:
-            version = info['version']
-            if version in used_versions:
-                continue
+        for release in sorted(_get_releases(user_repo, tag_prefix), reverse=True):
+            version, tag, timestamp = release
 
-            tag = info['prefix'] + version
+            output.append(self._make_download_info(user_repo, tag, str(version), timestamp))
 
-            output.append(self._make_download_info(user_repo, tag, version, tags_list[tag]))
-
-            used_versions.add(version)
-            if max_releases > 0 and len(used_versions) >= max_releases:
+            num_releases += not version.prerelease
+            if max_releases > 0 and num_releases >= max_releases:
                 break
 
         return output

@@ -79,6 +79,26 @@ def version_exclude_prerelease(versions):
     return output
 
 
+def version_match_prefix(version, filter_prefix):
+    """
+    Create a SemVer for a given version, if it matches filter_prefix.
+
+    :param      version:        The version
+    :type       version:        { type_description }
+    :param      filter_prefix:  The filter prefix
+    :type       filter_prefix:  { type_description }
+    """
+    try:
+        if filter_prefix:
+            if version.startswith(filter_prefix):
+                return version_comparable(version[len(filter_prefix):])
+        else:
+            return version_comparable(version)
+    except ValueError:
+        pass
+    return None
+
+
 def version_process(versions, filter_prefix):
     """
     Filter a list of versions to ones that are valid SemVers, if a prefix
