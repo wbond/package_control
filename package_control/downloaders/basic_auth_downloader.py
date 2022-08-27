@@ -3,7 +3,7 @@ import base64
 from urllib.parse import urlparse
 
 
-class BasicAuthDownloader(object):
+class BasicAuthDownloader:
 
     """
     A base for downloaders to add an HTTP basic auth header

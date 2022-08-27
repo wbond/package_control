@@ -8,7 +8,7 @@ from ..package_manager import PackageManager
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class ExistingPackagesCommand():
+class ExistingPackagesCommand:
 
     """
     Allows listing installed packages and their current version

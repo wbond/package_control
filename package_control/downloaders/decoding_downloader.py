@@ -10,7 +10,7 @@ except (ImportError):
 from .downloader_exception import DownloaderException
 
 
-class DecodingDownloader(object):
+class DecodingDownloader:
 
     """
     A base for downloaders that provides the ability to decode bzip2ed, gzipped

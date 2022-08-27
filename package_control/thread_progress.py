@@ -1,7 +1,7 @@
 import sublime
 
 
-class ThreadProgress():
+class ThreadProgress:
 
     """
     Animates an indicator, [=   ], in the status area while a thread runs

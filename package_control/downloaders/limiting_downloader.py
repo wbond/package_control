@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from .rate_limit_exception import RateLimitException
 
 
-class LimitingDownloader(object):
+class LimitingDownloader:
 
     """
     A base for downloaders that checks for rate limiting headers.

@@ -19,7 +19,7 @@ except (ImportError):
     events = None
 
 
-class PackageDisabler():
+class PackageDisabler:
     old_color_scheme_package = None
     old_color_scheme = None
 

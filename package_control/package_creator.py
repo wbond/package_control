@@ -7,7 +7,7 @@ from .show_quick_panel import show_quick_panel
 from .package_manager import PackageManager
 
 
-class PackageCreator():
+class PackageCreator:
 
     """
     Abstract class for commands that create .sublime-package files

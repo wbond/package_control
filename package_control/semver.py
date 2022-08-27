@@ -400,7 +400,7 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
         return 0
 
 
-class SemComparator(object):
+class SemComparator:
 
     """Holds a SemVer object and a comparing operator and can match these against a given version.
 

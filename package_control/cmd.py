@@ -46,7 +46,7 @@ def create_cmd(args, basename_binary=False):
         return ' '.join(escaped_args)
 
 
-class Cli(object):
+class Cli:
 
     """
     Base class for running command line apps

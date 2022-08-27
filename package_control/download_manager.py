@@ -147,7 +147,7 @@ def update_url(url, debug):
     return url
 
 
-class DownloadManager(object):
+class DownloadManager:
 
     def __init__(self, settings):
         # Cache the downloader for re-use

@@ -7,7 +7,7 @@ from .non_clean_exit_error import NonCleanExitError
 from .binary_not_found_error import BinaryNotFoundError
 
 
-class CliDownloader(object):
+class CliDownloader:
 
     """
     Base for downloaders that use a command line program

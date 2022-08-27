@@ -5,7 +5,7 @@ from .client_exception import ClientException
 from ..download_manager import downloader
 
 
-class JSONApiClient():
+class JSONApiClient:
 
     def __init__(self, settings):
         self.settings = settings

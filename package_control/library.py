@@ -8,7 +8,7 @@ from . import sys_path
 from .distinfo import DistInfoDir, find_dist_info_dir
 
 
-class Library():
+class Library:
     name = None
     python_version = None
 
@@ -400,7 +400,7 @@ def _norm_tup(a, b):
     return a, b
 
 
-class PEP440Version():
+class PEP440Version:
     string = ''
     tup = tuple()
 

@@ -42,7 +42,7 @@ OLD_DEFAULT_CHANNELS = set([
 ])
 
 
-class PackageManager():
+class PackageManager:
 
     """
     Allows downloading, creating, installing, upgrading, and deleting packages

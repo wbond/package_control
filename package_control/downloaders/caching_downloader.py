@@ -5,7 +5,7 @@ import hashlib
 from ..console_write import console_write
 
 
-class CachingDownloader(object):
+class CachingDownloader:
 
     """
     A base downloader that will use a caching backend to cache HTTP requests
