@@ -218,9 +218,8 @@ def _install_injectors(settings):
     injector_code = dedent(injector_code).strip() + "\n"
     injector_code = injector_code.encode('utf-8')
 
-    lib_paths = sys_path.lib_paths()
-    for version in lib_paths:
-        injector_path = os.path.join(lib_paths[version], 'package_control.py')
+    for lib_path in sys_path.lib_paths().values():
+        injector_path = os.path.join(lib_path, 'package_control.py')
         try:
             with open(injector_path, 'xb') as fobj:
                 fobj.write(injector_code)
