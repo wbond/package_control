@@ -81,8 +81,7 @@ def list_all():
     """
 
     out = []
-    for python_version in ("3.3", "3.8"):
-        install_root = sys_path.lib_paths()[python_version]
+    for python_version, install_root in sys_path.lib_paths().items():
         for fname in os.listdir(install_root):
             if not fname.endswith(".dist-info"):
                 continue
@@ -108,8 +107,7 @@ def list_unmanaged():
     """
 
     out = []
-    for python_version in ("3.3", "3.8"):
-        install_root = sys_path.lib_paths()[python_version]
+    for python_version, install_root in sys_path.lib_paths().items():
         for fname in os.listdir(install_root):
             if not fname.endswith(".dist-info"):
                 continue

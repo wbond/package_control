@@ -1353,12 +1353,13 @@ class PackageManager:
                 unpack = False
 
             python_version = "3.3"
-            try:
-                python_version_raw = package_zip.read(python_version_path)
-                if python_version_raw.decode('utf-8').strip() == "3.8":
-                    python_version = "3.8"
-            except (KeyError):
-                pass
+            if self.settings['version'] >= 4000:
+                try:
+                    python_version_raw = package_zip.read(python_version_path)
+                    if python_version_raw.decode('utf-8').strip() == "3.8":
+                        python_version = "3.8"
+                except (KeyError):
+                    pass
 
             have_installed_libraries = False
             library_names = release.get('libraries', [])

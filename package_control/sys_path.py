@@ -82,16 +82,16 @@ def lib_paths():
     :return:
         A dict with the key "3.3" and possibly the key "3.8"
     """
-
-    if int(sublime.version()) >= 4000:
-        return {
+    try:
+        return lib_paths.cache
+    except AttributeError:
+        lib_paths.cache = {
             "3.3": os.path.join(data_dir, "Lib", "python33"),
-            "3.8": os.path.join(data_dir, "Lib", "python38"),
+            "3.8": os.path.join(data_dir, "Lib", "python38")
+        } if int(sublime.version()) >= 4000 else {
+            "3.3": os.path.join(data_dir, "Lib", "python3.3")
         }
-
-    return {
-        "3.3": os.path.join(data_dir, "Lib", "python3.3"),
-    }
+        return lib_paths.cache
 
 
 def pc_cache_dir():
