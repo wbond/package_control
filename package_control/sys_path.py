@@ -7,7 +7,6 @@ import sublime
 
 
 data_dir = None
-cache_dir = None
 packages_path = None
 installed_packages_path = None
 pc_package_path = None
@@ -102,12 +101,11 @@ def pc_cache_dir():
         A unicode string of the Package Control cache dir
     """
 
-    global cache_dir
-
-    if cache_dir is None:
-        cache_dir = sublime.cache_path()
-
-    return os.path.join(cache_dir, 'Package Control')
+    try:
+        return pc_cache_dir.cache
+    except AttributeError:
+        pc_cache_dir.cache = os.path.join(sublime.cache_path(), 'Package Control')
+        return pc_cache_dir.cache
 
 
 def user_config_dir():
@@ -118,4 +116,8 @@ def user_config_dir():
         A unicode string of the user's config dir
     """
 
-    return os.path.join(sublime.packages_path(), 'User')
+    try:
+        return user_config_dir.cache
+    except AttributeError:
+        user_config_dir.cache = os.path.join(sublime.packages_path(), 'User')
+        return user_config_dir.cache
