@@ -71,12 +71,7 @@ def version_exclude_prerelease(versions):
         The list of versions with pre-releases removed
     """
 
-    output = []
-    for version in versions:
-        if SemVer(semver_compat(version)).prerelease is not None:
-            continue
-        output.append(version)
-    return output
+    return [v for v in versions if not version_comparable(v).prerelease]
 
 
 def version_match_prefix(version, filter_prefix):
