@@ -9,8 +9,8 @@ from .distinfo import DistInfoDir, find_dist_info_dir
 
 
 class Library:
-    name = None
-    python_version = None
+
+    __slots__ = ['name', 'python_version']
 
     def __init__(self, name, python_version):
         if not isinstance(name, str):
