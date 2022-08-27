@@ -7,7 +7,7 @@ import sublime
 from .thread_progress import ThreadProgress
 from .package_manager import PackageManager
 from .package_disabler import PackageDisabler
-from .versions import version_comparable
+from .versions import PackageVersion
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
@@ -111,8 +111,8 @@ class PackageInstaller(PackageDisabler):
                         action = 'overwrite'
                         extra = ' %s with %s' % (installed_version_name, new_version)
                     else:
-                        installed_version = version_comparable(installed_version)
-                        new_version_cmp = version_comparable(release['version'])
+                        installed_version = PackageVersion(installed_version)
+                        new_version_cmp = PackageVersion(release['version'])
                         if new_version_cmp > installed_version:
                             action = 'upgrade'
                             extra = ' to %s from %s' % (new_version, installed_version_name)

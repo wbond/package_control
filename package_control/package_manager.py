@@ -18,7 +18,7 @@ from .show_error import show_error
 from .console_write import console_write
 from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
-from .versions import version_comparable, version_sort
+from .versions import PackageVersion, version_sort
 from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.downloader_exception import DownloaderException
 from .providers.provider_exception import ProviderException
@@ -1859,11 +1859,11 @@ class PackageManager:
         elif is_upgrade and old_version:
             upgrade_messages = list(set(message_info.keys()) - set(['install']))
             upgrade_messages = version_sort(upgrade_messages, reverse=True)
-            old_version_cmp = version_comparable(old_version)
-            new_version_cmp = version_comparable(new_version)
+            old_version_cmp = PackageVersion(old_version)
+            new_version_cmp = PackageVersion(new_version)
 
             for version in upgrade_messages:
-                version_cmp = version_comparable(version)
+                version_cmp = PackageVersion(version)
                 if version_cmp <= old_version_cmp:
                     break
                 # If the package developer sets up release notes for future

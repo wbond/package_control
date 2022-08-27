@@ -1,10 +1,11 @@
 import threading
 import unittest
 
-from . import clients, distinfo, downloaders, providers, library
+from . import clients, distinfo, downloaders, providers, library, versions
 
 
 TEST_CLASSES = [
+    versions.PackageVersionTests,
     downloaders.CurlDownloaderTests,
     downloaders.OscryptoDownloaderTests,
     downloaders.UrlLibDownloaderTests,
