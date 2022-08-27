@@ -1,5 +1,5 @@
 from ..download_manager import update_url
-from ..semver import SemVer
+from ..deps.semver import SemVer
 
 
 def platforms_to_releases(info, debug):

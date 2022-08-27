@@ -43,7 +43,7 @@ mods_load_order = [
     '.show_quick_panel',
     '.thread_progress',
     '.package_io',
-    '.semver',
+    '.deps.semver',
     '.versions',
 
     '.deps.asn1crypto._errors',

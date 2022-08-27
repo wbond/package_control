@@ -10,8 +10,8 @@ The [Sublime Text](http://www.sublimetext.com) package manager. Visit
 
 Package Control is licensed under the MIT license.
 
-All of the source code (except for `package_control/semver.py`), is under the
-license:
+All of the source code (except for `package_control/deps/semver.py`), is under
+the license:
 
 ```
 Copyright (c) 2011-2020 Will Bond <will@wbond.net>
@@ -35,7 +35,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-`package_control/semver.py` is under the license:
+`package_control/deps/semver.py` is under the license:
 
 ```
 Copyright (c) 2013 Zachary King, FichteFoll

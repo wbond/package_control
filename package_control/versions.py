@@ -1,6 +1,6 @@
 import re
 
-from .semver import SemVer
+from .deps.semver import SemVer
 from .console_write import console_write
 
 
