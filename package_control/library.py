@@ -20,8 +20,10 @@ class Library:
 
         if not isinstance(python_version, str):
             raise TypeError("python_version must be a unicode string")
-        if python_version not in set(["3.3", "3.8"]):
-            raise ValueError("python_version must be \"3.3\" or \"3.8\", not %r" % python_version)
+        if python_version not in sys_path.lib_paths():
+            raise ValueError("python_version must be one of %s, not %r" % (
+                    list(sys_path.lib_paths().keys()), python_version)
+            )
 
         self.name = name
         self.python_version = python_version
