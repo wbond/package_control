@@ -16,6 +16,7 @@ from .downloaders import DOWNLOADERS
 from .downloaders.urllib_downloader import UrlLibDownloader
 from .downloaders.binary_not_found_error import BinaryNotFoundError
 from .downloaders.rate_limit_exception import RateLimitException
+from .downloaders.rate_limit_exception import RateLimitSkipException
 from .downloaders.downloader_exception import DownloaderException
 from .downloaders.win_downloader_exception import WinDownloaderException
 from .downloaders.oscrypto_downloader_exception import OscryptoDownloaderException
@@ -318,14 +319,10 @@ class DownloadManager:
                 )
 
         if hostname in rate_limited_domains:
-            error_string = 'Skipping due to hitting rate limit for %s' % hostname
+            exception = RateLimitSkipException(hostname)
             if self.settings.get('debug'):
-                console_write(
-                    '  %s',
-                    error_string,
-                    prefix=False
-                )
-            raise DownloaderException(error_string)
+                console_write('  %s' % exception, prefix=False)
+            raise exception
 
         try:
             return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
