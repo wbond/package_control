@@ -98,11 +98,17 @@ def version_match_prefix(version, filter_prefix):
     """
     Create a SemVer for a given version, if it matches filter_prefix.
 
-    :param      version:        The version
-    :type       version:        { type_description }
-    :param      filter_prefix:  The filter prefix
-    :type       filter_prefix:  { type_description }
+    :param version:
+        The version string to match
+
+    :param filter_prefix:
+        The prefix to match versions against
+
+    :returns:
+        SemVer, if version is valid and matches given filter_prefix
+        None, if version is invalid or doesn't match filter_prefix
     """
+
     try:
         if filter_prefix:
             if version.startswith(filter_prefix):
