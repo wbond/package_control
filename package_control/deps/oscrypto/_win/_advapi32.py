@@ -34,7 +34,7 @@ def open_context_handle(provider, verify_only=True):
     else:
         raise ValueError('Invalid provider specified: %s' % provider)
 
-    # Ths DSS provider needs a container to allow importing and exporting
+    # The DSS provider needs a container to allow importing and exporting
     # private keys, but all of the RSA stuff works fine with CRYPT_VERIFYCONTEXT
     if verify_only or provider != Advapi32Const.MS_ENH_DSS_DH_PROV:
         container_name = null()

@@ -73,6 +73,8 @@ P_EVP_MD_CTX = c_void_p
 P_EVP_MD = c_void_p
 
 P_ENGINE = c_void_p
+OSSL_PROVIDER = c_void_p
+OSSL_LIB_CTX = c_void_p
 
 P_EVP_PKEY = c_void_p
 EVP_PKEY_CTX = c_void_p
@@ -96,6 +98,13 @@ try:
 
         libcrypto.ERR_free_strings.argtypes = []
         libcrypto.ERR_free_strings.restype = None
+
+    if version_info >= (3, ):
+        libcrypto.OSSL_PROVIDER_available.argtypes = [OSSL_LIB_CTX, c_char_p]
+        libcrypto.OSSL_PROVIDER_available.restype = c_int
+
+        libcrypto.OSSL_PROVIDER_load.argtypes = [OSSL_LIB_CTX, c_char_p]
+        libcrypto.OSSL_PROVIDER_load.restype = POINTER(OSSL_PROVIDER)
 
     libcrypto.ERR_get_error.argtypes = []
     libcrypto.ERR_get_error.restype = c_ulong
@@ -301,10 +310,16 @@ try:
     libcrypto.EVP_sha512.argtypes = []
     libcrypto.EVP_sha512.restype = P_EVP_MD
 
-    libcrypto.EVP_PKEY_size.argtypes = [
-        P_EVP_PKEY
-    ]
-    libcrypto.EVP_PKEY_size.restype = c_int
+    if version_info < (3, 0):
+        libcrypto.EVP_PKEY_size.argtypes = [
+            P_EVP_PKEY
+        ]
+        libcrypto.EVP_PKEY_size.restype = c_int
+    else:
+        libcrypto.EVP_PKEY_get_size.argtypes = [
+            P_EVP_PKEY
+        ]
+        libcrypto.EVP_PKEY_get_size.restype = c_int
 
     libcrypto.EVP_PKEY_get1_RSA.argtypes = [
         P_EVP_PKEY

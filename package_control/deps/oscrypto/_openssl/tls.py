@@ -65,6 +65,25 @@ _PROTOCOL_MAP = {
 }
 
 
+def _homogenize_openssl3_error(error_tuple):
+    """
+    Takes a 3-element tuple from peek_openssl_error() and modifies it
+    to handle the changes in OpenSSL 3.0. That release removed the
+    concept of an error function, meaning the second item in the tuple
+    will always be 0.
+
+    :param error_tuple:
+        A 3-element tuple of integers
+
+    :return:
+        A 3-element tuple of integers
+    """
+
+    if libcrypto_version_info < (3,):
+        return error_tuple
+    return (error_tuple[0], 0, error_tuple[2])
+
+
 class TLSSession(object):
     """
     A TLS session object that multiple TLSSocket objects can share for the
@@ -372,7 +391,7 @@ class TLSSocket(object):
     def __init__(self, address, port, timeout=10, session=None):
         """
         :param address:
-            A unicode string of the domain name or IP address to conenct to
+            A unicode string of the domain name or IP address to connect to
 
         :param port:
             An integer of the port number to connect to
@@ -516,16 +535,22 @@ class TLSSocket(object):
                         LibsslConst.SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM,
                         LibsslConst.SSL_R_DH_KEY_TOO_SMALL
                     )
+                    dh_key_info_1 = _homogenize_openssl3_error(dh_key_info_1)
+
                     dh_key_info_2 = (
                         LibsslConst.ERR_LIB_SSL,
                         LibsslConst.SSL_F_TLS_PROCESS_SKE_DHE,
                         LibsslConst.SSL_R_DH_KEY_TOO_SMALL
                     )
+                    dh_key_info_2 = _homogenize_openssl3_error(dh_key_info_2)
+
                     dh_key_info_3 = (
                         LibsslConst.ERR_LIB_SSL,
                         LibsslConst.SSL_F_SSL3_GET_KEY_EXCHANGE,
                         LibsslConst.SSL_R_BAD_DH_P_LENGTH
                     )
+                    dh_key_info_3 = _homogenize_openssl3_error(dh_key_info_3)
+
                     if info == dh_key_info_1 or info == dh_key_info_2 or info == dh_key_info_3:
                         raise_dh_params()
 
@@ -541,6 +566,8 @@ class TLSSocket(object):
                             LibsslConst.SSL_F_SSL3_GET_RECORD,
                             LibsslConst.SSL_R_WRONG_VERSION_NUMBER
                         )
+                        unknown_protocol_info = _homogenize_openssl3_error(unknown_protocol_info)
+
                     if info == unknown_protocol_info:
                         raise_protocol_error(handshake_server_bytes)
 
@@ -549,6 +576,7 @@ class TLSSocket(object):
                         LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
                         LibsslConst.SSL_R_TLSV1_ALERT_PROTOCOL_VERSION
                     )
+                    tls_version_info_error = _homogenize_openssl3_error(tls_version_info_error)
                     if info == tls_version_info_error:
                         raise_protocol_version()
 
@@ -557,7 +585,9 @@ class TLSSocket(object):
                         LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
                         LibsslConst.SSL_R_SSLV3_ALERT_HANDSHAKE_FAILURE
                     )
-                    if info == handshake_error_info:
+                    # OpenSSL 3.0 no longer has func codes, so this can be confused
+                    # with the following handler which needs to check for client auth
+                    if libcrypto_version_info < (3, ) and info == handshake_error_info:
                         raise_handshake()
 
                     handshake_failure_info = (
@@ -565,6 +595,7 @@ class TLSSocket(object):
                         LibsslConst.SSL_F_SSL3_READ_BYTES,
                         LibsslConst.SSL_R_SSLV3_ALERT_HANDSHAKE_FAILURE
                     )
+                    handshake_failure_info = _homogenize_openssl3_error(handshake_failure_info)
                     if info == handshake_failure_info:
                         saw_client_auth = False
                         for record_type, _, record_data in parse_tls_records(handshake_server_bytes):
@@ -590,6 +621,7 @@ class TLSSocket(object):
                             LibsslConst.SSL_F_TLS_PROCESS_SERVER_CERTIFICATE,
                             LibsslConst.SSL_R_CERTIFICATE_VERIFY_FAILED
                         )
+                        cert_verify_failed_info = _homogenize_openssl3_error(cert_verify_failed_info)
 
                     # It would appear that some versions of OpenSSL (such as on Fedora 30)
                     # don't even have the MD5 digest algorithm included any longer? To
@@ -599,6 +631,7 @@ class TLSSocket(object):
                         LibsslConst.ASN1_F_ASN1_ITEM_VERIFY,
                         LibsslConst.ASN1_R_UNKNOWN_MESSAGE_DIGEST_ALGORITHM
                     )
+                    unknown_hash_algo_info = _homogenize_openssl3_error(unknown_hash_algo_info)
 
                     if info == unknown_hash_algo_info:
                         chain = extract_chain(handshake_server_bytes)

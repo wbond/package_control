@@ -250,8 +250,18 @@ class Certificate(_CertificateBase):
         """
 
         if not self._public_key and self.sec_certificate_ref:
+            if self.asn1.signature_algo == "rsassa_pss":
+                # macOS doesn't like importing RSA PSS certs, so we treat it like a
+                # traditional RSA cert
+                asn1 = self.asn1.copy()
+                asn1['tbs_certificate']['subject_public_key_info']['algorithm']['algorithm'] = 'rsa'
+                temp_cert = _load_x509(asn1)
+                sec_cert_ref = temp_cert.sec_certificate_ref
+            else:
+                sec_cert_ref = self.sec_certificate_ref
+
             sec_public_key_ref_pointer = new(Security, 'SecKeyRef *')
-            res = Security.SecCertificateCopyPublicKey(self.sec_certificate_ref, sec_public_key_ref_pointer)
+            res = Security.SecCertificateCopyPublicKey(sec_cert_ref, sec_public_key_ref_pointer)
             handle_sec_error(res)
             sec_public_key_ref = unwrap(sec_public_key_ref_pointer)
             self._public_key = PublicKey(sec_public_key_ref, self.asn1['tbs_certificate']['subject_public_key_info'])
@@ -274,6 +284,8 @@ class Certificate(_CertificateBase):
 
                 if signature_algo == 'rsassa_pkcs1v15':
                     verify_func = rsa_pkcs1v15_verify
+                elif signature_algo == 'rsassa_pss':
+                    verify_func = rsa_pss_verify
                 elif signature_algo == 'dsa':
                     verify_func = dsa_verify
                 elif signature_algo == 'ecdsa':
@@ -832,7 +844,14 @@ def _load_key(key_object):
         ))
 
     if isinstance(key_object, PublicKeyInfo):
-        source = key_object.dump()
+        if key_object.algorithm == 'rsassa_pss':
+            # We have to masquerade an RSA PSS key as plain RSA or it won't
+            # import properly
+            temp_key_object = key_object.copy()
+            temp_key_object['algorithm']['algorithm'] = 'rsa'
+            source = temp_key_object.dump()
+        else:
+            source = key_object.dump()
         item_type = SecurityConst.kSecItemTypePublicKey
 
     else:
@@ -1392,7 +1411,8 @@ def rsa_pss_verify(certificate_or_public_key, signature, data, hash_algorithm):
             type_name(data)
         ))
 
-    if certificate_or_public_key.algorithm != 'rsa':
+    cp_algo = certificate_or_public_key.algorithm
+    if cp_algo != 'rsa' and cp_algo != 'rsassa_pss':
         raise ValueError('The key specified is not an RSA public key')
 
     hash_length = {
@@ -1735,7 +1755,8 @@ def rsa_pss_sign(private_key, data, hash_algorithm):
             type_name(data)
         ))
 
-    if private_key.algorithm != 'rsa':
+    pk_algo = private_key.algorithm
+    if pk_algo != 'rsa' and pk_algo != 'rsassa_pss':
         raise ValueError('The key specified is not an RSA private key')
 
     hash_length = {

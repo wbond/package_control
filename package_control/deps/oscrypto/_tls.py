@@ -465,6 +465,22 @@ def raise_self_signed(certificate):
     raise TLSVerificationError(message, certificate)
 
 
+def raise_lifetime_too_long(certificate):
+    """
+    Raises a TLSVerificationError due to a certificate lifetime exceeding
+    the CAB forum certificate lifetime limit
+
+    :param certificate:
+        An asn1crypto.x509.Certificate object
+
+    :raises:
+        TLSVerificationError
+    """
+
+    message = 'Server certificate verification failed - certificate lifetime is too long'
+    raise TLSVerificationError(message, certificate)
+
+
 def raise_expired_not_yet_valid(certificate):
     """
     Raises a TLSVerificationError due to certificate being expired, or not yet

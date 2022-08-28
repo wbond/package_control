@@ -790,8 +790,8 @@ def _encrypt(cipher, key, data, iv, padding):
 
     if cipher != 'rc4' and not padding:
         # AES in CBC mode can be allowed with no padding if
-        # the data is an exact multiple of the key size
-        if not (cipher == 'aes' and padding is False and len(data) % len(key) == 0):
+        # the data is an exact multiple of the block size
+        if not (cipher == 'aes' and len(data) % 16 == 0):
             raise ValueError('padding must be specified')
 
     if _backend == 'winlegacy':
@@ -1014,7 +1014,7 @@ def _decrypt(cipher, key, data, iv, padding):
             type_name(iv)
         ))
 
-    if cipher != 'rc4' and padding is None:
+    if cipher not in set(['rc4', 'aes']) and not padding:
         raise ValueError('padding must be specified')
 
     if _backend == 'winlegacy':

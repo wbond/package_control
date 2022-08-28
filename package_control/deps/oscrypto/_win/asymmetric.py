@@ -567,6 +567,8 @@ class Certificate(_WinKey, _CertificateBase):
 
                 if signature_algo == 'rsassa_pkcs1v15':
                     verify_func = rsa_pkcs1v15_verify
+                elif signature_algo == 'rsassa_pss':
+                    verify_func = rsa_pss_verify
                 elif signature_algo == 'dsa':
                     verify_func = dsa_verify
                 elif signature_algo == 'ecdsa':
@@ -1650,8 +1652,10 @@ def _advapi32_load_key(key_object, key_info, container):
 
     key_type = 'public' if isinstance(key_info, PublicKeyInfo) else 'private'
     algo = key_info.algorithm
+    if algo == 'rsassa_pss':
+        algo = 'rsa'
 
-    if algo == 'rsa':
+    if algo == 'rsa' or algo == 'rsassa_pss':
         provider = Advapi32Const.MS_ENH_RSA_AES_PROV
     else:
         provider = Advapi32Const.MS_ENH_DSS_DH_PROV
@@ -1844,6 +1848,8 @@ def _bcrypt_load_key(key_object, key_info, container, curve_name):
 
     key_type = 'public' if isinstance(key_info, PublicKeyInfo) else 'private'
     algo = key_info.algorithm
+    if algo == 'rsassa_pss':
+        algo = 'rsa'
 
     try:
         alg_selector = key_info.curve[1] if algo == 'ec' else algo
@@ -2282,7 +2288,9 @@ def rsa_pss_verify(certificate_or_public_key, signature, data, hash_algorithm):
         OSError - when an error is returned by the OS crypto library
     """
 
-    if certificate_or_public_key.algorithm != 'rsa':
+    cp_alg = certificate_or_public_key.algorithm
+
+    if cp_alg != 'rsa' and cp_alg != 'rsassa_pss':
         raise ValueError('The key specified is not an RSA public key')
 
     return _verify(certificate_or_public_key, signature, data, hash_algorithm, rsa_pss_padding=True)
@@ -2397,13 +2405,16 @@ def _verify(certificate_or_public_key, signature, data, hash_algorithm, rsa_pss_
             type_name(data)
         ))
 
+    cp_alg = certificate_or_public_key.algorithm
+    cp_is_rsa = cp_alg == 'rsa' or cp_alg == 'rsassa_pss'
+
     valid_hash_algorithms = set(['md5', 'sha1', 'sha256', 'sha384', 'sha512'])
-    if certificate_or_public_key.algorithm == 'rsa' and not rsa_pss_padding:
+    if cp_is_rsa and not rsa_pss_padding:
         valid_hash_algorithms |= set(['raw'])
 
     if hash_algorithm not in valid_hash_algorithms:
         valid_hash_algorithms_error = '"md5", "sha1", "sha256", "sha384", "sha512"'
-        if certificate_or_public_key.algorithm == 'rsa' and not rsa_pss_padding:
+        if cp_is_rsa and not rsa_pss_padding:
             valid_hash_algorithms_error += ', "raw"'
         raise ValueError(pretty_message(
             '''
@@ -2413,13 +2424,13 @@ def _verify(certificate_or_public_key, signature, data, hash_algorithm, rsa_pss_
             repr(hash_algorithm)
         ))
 
-    if certificate_or_public_key.algorithm != 'rsa' and rsa_pss_padding is not False:
+    if not cp_is_rsa and rsa_pss_padding is not False:
         raise ValueError(pretty_message(
             '''
             PSS padding may only be used with RSA keys - signing via a %s key
             was requested
             ''',
-            certificate_or_public_key.algorithm.upper()
+            cp_alg.upper()
         ))
 
     if hash_algorithm == 'raw':
@@ -2468,8 +2479,9 @@ def _advapi32_verify(certificate_or_public_key, signature, data, hash_algorithm,
     """
 
     algo = certificate_or_public_key.algorithm
+    algo_is_rsa = algo == 'rsa' or algo == 'rsassa_pss'
 
-    if algo == 'rsa' and rsa_pss_padding:
+    if algo_is_rsa and rsa_pss_padding:
         hash_length = {
             'sha1': 20,
             'sha224': 28,
@@ -2483,7 +2495,7 @@ def _advapi32_verify(certificate_or_public_key, signature, data, hash_algorithm,
             raise SignatureError('Signature is invalid')
         return
 
-    if algo == 'rsa' and hash_algorithm == 'raw':
+    if algo_is_rsa and hash_algorithm == 'raw':
         padded_plaintext = raw_rsa_public_crypt(certificate_or_public_key, signature)
         try:
             plaintext = remove_pkcs1v15_signature_padding(certificate_or_public_key.byte_size, padded_plaintext)
@@ -2591,7 +2603,10 @@ def _bcrypt_verify(certificate_or_public_key, signature, data, hash_algorithm, r
     padding_info = null()
     flags = 0
 
-    if certificate_or_public_key.algorithm == 'rsa':
+    cp_alg = certificate_or_public_key.algorithm
+    cp_is_rsa = cp_alg == 'rsa' or cp_alg == 'rsassa_pss'
+
+    if cp_is_rsa:
         if rsa_pss_padding:
             flags = BcryptConst.BCRYPT_PAD_PSS
             padding_info_struct_pointer = struct(bcrypt, 'BCRYPT_PSS_PADDING_INFO')
@@ -2694,7 +2709,9 @@ def rsa_pss_sign(private_key, data, hash_algorithm):
         A byte string of the signature
     """
 
-    if private_key.algorithm != 'rsa':
+    pkey_alg = private_key.algorithm
+
+    if pkey_alg != 'rsa' and pkey_alg != 'rsassa_pss':
         raise ValueError('The key specified is not an RSA private key')
 
     return _sign(private_key, data, hash_algorithm, rsa_pss_padding=True)
@@ -2797,13 +2814,16 @@ def _sign(private_key, data, hash_algorithm, rsa_pss_padding=False):
             type_name(data)
         ))
 
+    pkey_alg = private_key.algorithm
+    pkey_is_rsa = pkey_alg == 'rsa' or pkey_alg == 'rsassa_pss'
+
     valid_hash_algorithms = set(['md5', 'sha1', 'sha256', 'sha384', 'sha512'])
     if private_key.algorithm == 'rsa' and not rsa_pss_padding:
         valid_hash_algorithms |= set(['raw'])
 
     if hash_algorithm not in valid_hash_algorithms:
         valid_hash_algorithms_error = '"md5", "sha1", "sha256", "sha384", "sha512"'
-        if private_key.algorithm == 'rsa' and not rsa_pss_padding:
+        if pkey_is_rsa and not rsa_pss_padding:
             valid_hash_algorithms_error += ', "raw"'
         raise ValueError(pretty_message(
             '''
@@ -2813,13 +2833,13 @@ def _sign(private_key, data, hash_algorithm, rsa_pss_padding=False):
             repr(hash_algorithm)
         ))
 
-    if private_key.algorithm != 'rsa' and rsa_pss_padding is not False:
+    if not pkey_is_rsa and rsa_pss_padding is not False:
         raise ValueError(pretty_message(
             '''
             PSS padding may only be used with RSA keys - signing via a %s key
             was requested
             ''',
-            private_key.algorithm.upper()
+            pkey_alg.upper()
         ))
 
     if hash_algorithm == 'raw':
@@ -2867,12 +2887,13 @@ def _advapi32_sign(private_key, data, hash_algorithm, rsa_pss_padding=False):
     """
 
     algo = private_key.algorithm
+    algo_is_rsa = algo == 'rsa' or algo == 'rsassa_pss'
 
-    if algo == 'rsa' and hash_algorithm == 'raw':
+    if algo_is_rsa and hash_algorithm == 'raw':
         padded_data = add_pkcs1v15_signature_padding(private_key.byte_size, data)
         return raw_rsa_private_crypt(private_key, padded_data)
 
-    if algo == 'rsa' and rsa_pss_padding:
+    if algo_is_rsa and rsa_pss_padding:
         hash_length = {
             'sha1': 20,
             'sha224': 28,
@@ -3003,7 +3024,10 @@ def _bcrypt_sign(private_key, data, hash_algorithm, rsa_pss_padding=False):
     padding_info = null()
     flags = 0
 
-    if private_key.algorithm == 'rsa':
+    pkey_alg = private_key.algorithm
+    pkey_is_rsa = pkey_alg == 'rsa' or pkey_alg == 'rsassa_pss'
+
+    if pkey_is_rsa:
         if rsa_pss_padding:
             hash_length = {
                 'md5': 16,
@@ -3032,7 +3056,7 @@ def _bcrypt_sign(private_key, data, hash_algorithm, rsa_pss_padding=False):
                 padding_info_struct.pszAlgId = cast(bcrypt, 'wchar_t *', hash_buffer)
         padding_info = cast(bcrypt, 'void *', padding_info_struct_pointer)
 
-    if private_key.algorithm == 'dsa' and private_key.bit_size > 1024 and hash_algorithm in set(['md5', 'sha1']):
+    if pkey_alg == 'dsa' and private_key.bit_size > 1024 and hash_algorithm in set(['md5', 'sha1']):
         raise ValueError(pretty_message(
             '''
             Windows does not support sha1 signatures with DSA keys based on
@@ -3056,7 +3080,7 @@ def _bcrypt_sign(private_key, data, hash_algorithm, rsa_pss_padding=False):
     buffer_len = deref(out_len)
     buffer = buffer_from_bytes(buffer_len)
 
-    if private_key.algorithm == 'rsa':
+    if pkey_is_rsa:
         padding_info = cast(bcrypt, 'void *', padding_info_struct_pointer)
 
     res = bcrypt.BCryptSignHash(
@@ -3072,7 +3096,7 @@ def _bcrypt_sign(private_key, data, hash_algorithm, rsa_pss_padding=False):
     handle_error(res)
     signature = bytes_from_buffer(buffer, deref(out_len))
 
-    if private_key.algorithm != 'rsa':
+    if not pkey_is_rsa:
         # Windows doesn't use the ASN.1 Sequence for DSA/ECDSA signatures,
         # so we have to convert it here for the verification to work
         signature = DSASignature.from_p1363(signature).dump()
