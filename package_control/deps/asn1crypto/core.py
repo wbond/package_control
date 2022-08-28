@@ -4113,6 +4113,10 @@ class Sequence(Asn1Value):
         if self._header is not None and self._header[-1:] == b'\x80':
             force = True
 
+        # We can't force encoding if we don't have a spec
+        if force and self._fields == [] and self.__class__ is Sequence:
+            force = False
+
         if force:
             self._set_contents(force=force)
 

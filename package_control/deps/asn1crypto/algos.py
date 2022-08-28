@@ -260,6 +260,9 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
         '1.2.840.113549.1.1.1': 'rsassa_pkcs1v15',
         '1.2.840.10040.4.1': 'dsa',
         '1.2.840.10045.4': 'ecdsa',
+        # RFC 8410 -- https://tools.ietf.org/html/rfc8410
+        '1.3.101.112': 'ed25519',
+        '1.3.101.113': 'ed448',
     }
 
     _reverse_map = {
@@ -286,6 +289,8 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
         'sha3_256_ecdsa': '2.16.840.1.101.3.4.3.10',
         'sha3_384_ecdsa': '2.16.840.1.101.3.4.3.11',
         'sha3_512_ecdsa': '2.16.840.1.101.3.4.3.12',
+        'ed25519': '1.3.101.112',
+        'ed448': '1.3.101.113',
     }
 
 
@@ -304,8 +309,8 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
     def signature_algo(self):
         """
         :return:
-            A unicode string of "rsassa_pkcs1v15", "rsassa_pss", "dsa" or
-            "ecdsa"
+            A unicode string of "rsassa_pkcs1v15", "rsassa_pss", "dsa",
+            "ecdsa", "ed25519" or "ed448"
         """
 
         algorithm = self['algorithm'].native
@@ -334,6 +339,8 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
             'sha3_384_ecdsa': 'ecdsa',
             'sha3_512_ecdsa': 'ecdsa',
             'ecdsa': 'ecdsa',
+            'ed25519': 'ed25519',
+            'ed448': 'ed448',
         }
         if algorithm in algo_map:
             return algo_map[algorithm]
@@ -350,7 +357,7 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
         """
         :return:
             A unicode string of "md2", "md5", "sha1", "sha224", "sha256",
-            "sha384", "sha512", "sha512_224", "sha512_256"
+            "sha384", "sha512", "sha512_224", "sha512_256" or "shake256"
         """
 
         algorithm = self['algorithm'].native
@@ -371,6 +378,8 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
             'sha256_ecdsa': 'sha256',
             'sha384_ecdsa': 'sha384',
             'sha512_ecdsa': 'sha512',
+            'ed25519': 'sha512',
+            'ed448': 'shake256',
         }
         if algorithm in algo_map:
             return algo_map[algorithm]
@@ -402,9 +411,21 @@ class Pbkdf2Params(Sequence):
     ]
 
 
+class ScryptParams(Sequence):
+    # https://tools.ietf.org/html/rfc7914#section-7
+    _fields = [
+        ('salt', OctetString),
+        ('cost_parameter', Integer),
+        ('block_size', Integer),
+        ('parallelization_parameter', Integer),
+        ('key_length', Integer, {'optional': True}),
+    ]
+
+
 class KdfAlgorithmId(ObjectIdentifier):
     _map = {
-        '1.2.840.113549.1.5.12': 'pbkdf2'
+        '1.2.840.113549.1.5.12': 'pbkdf2',
+        '1.3.6.1.4.1.11591.4.11': 'scrypt',
     }
 
 
@@ -415,7 +436,8 @@ class KdfAlgorithm(Sequence):
     ]
     _oid_pair = ('algorithm', 'parameters')
     _oid_specs = {
-        'pbkdf2': Pbkdf2Params
+        'pbkdf2': Pbkdf2Params,
+        'scrypt': ScryptParams,
     }
 
 
@@ -738,6 +760,8 @@ class EncryptionAlgorithm(_ForceNullParameters, Sequence):
         encryption_algo = self['algorithm'].native
 
         if encryption_algo == 'pbes2':
+            if self.kdf == 'scrypt':
+                return None
             return self['parameters']['key_derivation_func']['parameters']['prf']['algorithm'].native
 
         if encryption_algo.find('.') == -1:
@@ -818,6 +842,8 @@ class EncryptionAlgorithm(_ForceNullParameters, Sequence):
         encryption_algo = self['algorithm'].native
 
         if encryption_algo == 'pbes2':
+            if self.kdf == 'scrypt':
+                return None
             return self['parameters']['key_derivation_func']['parameters']['iteration_count'].native
 
         if encryption_algo.find('.') == -1:
@@ -874,8 +900,7 @@ class EncryptionAlgorithm(_ForceNullParameters, Sequence):
             return cipher_lengths[encryption_algo]
 
         if encryption_algo == 'rc2':
-            rc2_params = self['parameters'].parsed['encryption_scheme']['parameters'].parsed
-            rc2_parameter_version = rc2_params['rc2_parameter_version'].native
+            rc2_parameter_version = self['parameters']['rc2_parameter_version'].native
 
             # See page 24 of
             # http://www.emc.com/collateral/white-papers/h11302-pkcs5v2-1-password-based-cryptography-standard-wp.pdf
@@ -1042,7 +1067,7 @@ class EncryptionAlgorithm(_ForceNullParameters, Sequence):
             return cipher_map[encryption_algo]
 
         if encryption_algo == 'rc5':
-            return self['parameters'].parsed['block_size_in_bits'].native / 8
+            return self['parameters']['block_size_in_bits'].native // 8
 
         if encryption_algo == 'pbes2':
             return self['parameters']['encryption_scheme'].encryption_block_size
@@ -1084,7 +1109,7 @@ class EncryptionAlgorithm(_ForceNullParameters, Sequence):
         encryption_algo = self['algorithm'].native
 
         if encryption_algo in set(['rc2', 'rc5']):
-            return self['parameters'].parsed['iv'].native
+            return self['parameters']['iv'].native
 
         # For DES/Triple DES and AES the IV is the entirety of the parameters
         octet_string_iv_oids = set([

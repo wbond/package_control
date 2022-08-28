@@ -30,6 +30,7 @@ from .algos import (
     _ForceNullParameters,
     DigestAlgorithm,
     EncryptionAlgorithm,
+    EncryptionAlgorithmId,
     HmacAlgorithm,
     KdfAlgorithm,
     RSAESOAEPParams,
@@ -100,6 +101,8 @@ class CMSAttributeType(ObjectIdentifier):
         '1.2.840.113549.1.9.4': 'message_digest',
         '1.2.840.113549.1.9.5': 'signing_time',
         '1.2.840.113549.1.9.6': 'counter_signature',
+        # https://datatracker.ietf.org/doc/html/rfc2633#section-2.5.2
+        '1.2.840.113549.1.9.15': 'smime_capabilities',
         # https://tools.ietf.org/html/rfc2633#page-26
         '1.2.840.113549.1.9.16.2.11': 'encrypt_key_pref',
         # https://tools.ietf.org/html/rfc3161#page-20
@@ -273,7 +276,7 @@ class V2Form(Sequence):
 class AttCertIssuer(Choice):
     _alternatives = [
         ('v1_form', GeneralNames),
-        ('v2_form', V2Form, {'explicit': 0}),
+        ('v2_form', V2Form, {'implicit': 0}),
     ]
 
 
@@ -315,7 +318,7 @@ class SetOfSvceAuthInfo(SetOf):
 class RoleSyntax(Sequence):
     _fields = [
         ('role_authority', GeneralNames, {'implicit': 0, 'optional': True}),
-        ('role_name', GeneralName, {'implicit': 1}),
+        ('role_name', GeneralName, {'explicit': 1}),
     ]
 
 
@@ -337,7 +340,7 @@ class ClassList(BitString):
 class SecurityCategory(Sequence):
     _fields = [
         ('type', ObjectIdentifier, {'implicit': 0}),
-        ('value', Any, {'implicit': 1}),
+        ('value', Any, {'explicit': 1}),
     ]
 
 
@@ -347,9 +350,9 @@ class SetOfSecurityCategory(SetOf):
 
 class Clearance(Sequence):
     _fields = [
-        ('policy_id', ObjectIdentifier, {'implicit': 0}),
-        ('class_list', ClassList, {'implicit': 1, 'default': 'unclassified'}),
-        ('security_categories', SetOfSecurityCategory, {'implicit': 2, 'optional': True}),
+        ('policy_id', ObjectIdentifier),
+        ('class_list', ClassList, {'default': set(['unclassified'])}),
+        ('security_categories', SetOfSecurityCategory, {'optional': True}),
     ]
 
 
@@ -946,6 +949,21 @@ class SMIMEEncryptionKeyPreferences(SetOf):
     _child_spec = SMIMEEncryptionKeyPreference
 
 
+class SMIMECapabilityIdentifier(Sequence):
+    _fields = [
+        ('capability_id', EncryptionAlgorithmId),
+        ('parameters', Any, {'optional': True}),
+    ]
+
+
+class SMIMECapabilites(SequenceOf):
+    _child_spec = SMIMECapabilityIdentifier
+
+
+class SetOfSMIMECapabilites(SetOf):
+    _child_spec = SMIMECapabilites
+
+
 ContentInfo._oid_specs = {
     'data': OctetString,
     'signed_data': SignedData,
@@ -981,4 +999,5 @@ CMSAttribute._oid_specs = {
     'microsoft_nested_signature': SetOfContentInfo,
     'microsoft_time_stamp_token': SetOfContentInfo,
     'encrypt_key_pref': SMIMEEncryptionKeyPreferences,
+    'smime_capabilities': SetOfSMIMECapabilites,
 }
