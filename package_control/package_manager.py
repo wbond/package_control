@@ -340,7 +340,7 @@ class PackageManager:
             release for release in releases
             if is_compatible_platform(release['platforms'])
             and is_compatible_version(release['sublime_text'])
-            and allow_prereleases or not PackageVersion(release['version']).prerelease
+            and (allow_prereleases or not PackageVersion(release['version']).prerelease)
         ]
 
     def select_libraries(self, library_info):
