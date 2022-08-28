@@ -892,7 +892,7 @@ class PackageManager:
     def _download_zip_file(self, name, url, tmp_zip_path):
         try:
             with downloader(url, self.settings) as manager:
-                data = manager.fetch(url, 'Error downloading library.')
+                data = manager.fetch(url, 'Error downloading zip file.')
         except (DownloaderException) as e:
             console_write(e)
             show_error(
