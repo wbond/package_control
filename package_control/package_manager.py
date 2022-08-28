@@ -24,11 +24,11 @@ from .downloaders.downloader_exception import DownloaderException
 from .providers.provider_exception import ProviderException
 from .clients.client_exception import ClientException
 from .download_manager import downloader
-from .providers.release_selector import filter_releases, is_compatible_version
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
+from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
 from . import distinfo, library, sys_path, text
 from . import __version__
@@ -315,6 +315,34 @@ class PackageManager:
 
         return None
 
+    def select_releases(self, package_name, releases):
+        """
+        Returns all releases in the list of releases that are compatible with
+        the current platform and version of Sublime Text
+
+        :param package_name:
+            The name of the package
+
+        :param releases:
+            A list of release dicts
+
+        :return:
+            A list of release dicts
+        """
+
+        install_prereleases = self.settings.get('install_prereleases')
+        allow_prereleases = (
+            install_prereleases is True
+            or isinstance(install_prereleases, list) and package_name in install_prereleases
+        )
+
+        return [
+            release for release in releases
+            if is_compatible_platform(release['platforms'])
+            and is_compatible_version(release['sublime_text'])
+            and allow_prereleases or not PackageVersion(release['version']).prerelease
+        ]
+
     def select_libraries(self, library_info):
         """
         Takes the a dict from a dependencies.json file and returns the
@@ -327,26 +355,16 @@ class PackageManager:
             A list of library names
         """
 
-        platform_selectors = [
-            self.settings['platform'] + '-' + self.settings['arch'],
-            self.settings['platform'],
-            '*'
-        ]
-
-        st_version = self.settings['version']
-
-        for platform_selector in platform_selectors:
-            if platform_selector not in library_info:
-                continue
-
+        platforms = list(library_info.keys())
+        platform_selector = get_compatible_platform(platforms)
+        if platform_selector:
             platform_library = library_info[platform_selector]
-            versions = platform_library.keys()
 
             # Sorting reverse will give us >, < then *
-            for version_selector in sorted(versions, reverse=True):
-                if not is_compatible_version(version_selector, st_version):
-                    continue
-                return platform_library[version_selector]
+            versions = sorted(platform_library.keys(), reverse=True)
+            for version_selector in versions:
+                if is_compatible_version(version_selector):
+                    return platform_library[version_selector]
 
         # If there were no matches in the info, but there also weren't any
         # errors, then it just means there are not libraries for this machine
@@ -416,7 +434,7 @@ class PackageManager:
                         filtered_packages = {}
                         for package in original_packages:
                             info = original_packages[package]
-                            info['releases'] = filter_releases(package, self.settings, info['releases'])
+                            info['releases'] = self.select_releases(package, info['releases'])
                             if info['releases']:
                                 filtered_packages[package] = info
                             else:
@@ -428,7 +446,7 @@ class PackageManager:
                         filtered_libraries = {}
                         for lib_name in original_libraries:
                             info = original_libraries[lib_name]
-                            info['releases'] = filter_releases(lib_name, self.settings, info['releases'])
+                            info['releases'] = self.select_releases(lib_name, info['releases'])
                             if info['releases']:
                                 filtered_libraries[lib_name] = info
                             else:
@@ -564,7 +582,7 @@ class PackageManager:
             for name, info in provider.get_packages():
                 name = name_map.get(name, name)
                 info['name'] = name
-                info['releases'] = filter_releases(name, self.settings, info['releases'])
+                info['releases'] = self.select_releases(name, info['releases'])
                 if info['releases']:
                     repository_packages[name] = info
                 else:
@@ -572,7 +590,7 @@ class PackageManager:
 
             repository_libraries = {}
             for name, info in provider.get_libraries():
-                info['releases'] = filter_releases(name, self.settings, info['releases'])
+                info['releases'] = self.select_releases(name, info['releases'])
                 if info['releases']:
                     repository_libraries[name] = info
                 else:

@@ -27,6 +27,18 @@ def packages_path():
     return os.path.join(_TEMP_DIR, 'Packages')
 
 
+def arch():
+    return "x64"
+
+
+def platform():
+    return "linux"
+
+
+def version():
+    return '4126'
+
+
 def _cleanup_temp_dir():
     if _TEMP_DIR:
         shutil.rmtree(_TEMP_DIR)

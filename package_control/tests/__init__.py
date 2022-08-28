@@ -1,7 +1,7 @@
 import threading
 import unittest
 
-from . import clients, distinfo, downloaders, providers, library, versions
+from . import clients, distinfo, downloaders, providers, library, selectors, versions
 
 
 TEST_CLASSES = [
@@ -21,8 +21,9 @@ TEST_CLASSES = [
     providers.GitLabUserProviderTests,
     providers.RepositoryProviderTests,
     providers.ChannelProviderTests,
+    selectors.PlatformSelectorTests,
+    selectors.VersionSelectorTests,
     distinfo.DistinfoTests,
-    providers.VersionSelectorTests,
     library.LibraryTests
 ]
 

@@ -10,9 +10,9 @@ from .clear_directory import clear_directory, unlink_or_delete_directory, clean_
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
 from .package_io import package_file_exists
+from .selectors import is_compatible_platform, is_compatible_version
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 from . import library, sys_path, text, __version__
-from .providers.release_selector import is_compatible_version
 
 
 class PackageCleanup(threading.Thread):
@@ -357,23 +357,7 @@ class PackageCleanup(threading.Thread):
         if not sublime_text and not platforms:
             return True
 
-        if not is_compatible_version(sublime_text, int(sublime.version())):
-            return False
-
-        if not isinstance(platforms, list):
-            platforms = [platforms]
-
-        platform_selectors = [
-            sublime.platform() + '-' + sublime.arch(),
-            sublime.platform(),
-            '*'
-        ]
-
-        for selector in platform_selectors:
-            if selector in platforms:
-                return True
-
-        return False
+        return is_compatible_platform(platforms) and is_compatible_version(sublime_text)
 
     def finish(self, installed_packages, found_packages, found_libraries):
         """

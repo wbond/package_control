@@ -80,20 +80,6 @@ class PackageVersion(SemVer):
         raise ValueError("'%s' is not a valid SemVer string" % ver)
 
 
-def version_exclude_prerelease(versions):
-    """
-    Remove prerelease versions for a list of SemVer versions
-
-    :param versions:
-        The list of versions to filter
-
-    :return:
-        The list of versions with pre-releases removed
-    """
-
-    return [v for v in versions if not PackageVersion(v).prerelease]
-
-
 def version_match_prefix(version, filter_prefix):
     """
     Create a SemVer for a given version, if it matches filter_prefix.
