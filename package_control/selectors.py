@@ -74,24 +74,20 @@ def is_compatible_version(version_range, st_version=ST_VERSION):
     if version_range == '*':
         return True
 
-    gt_match = re.match(r'>(\d{4})$', version_range)
-    if gt_match:
-        return st_version > int(gt_match.group(1))
+    match = re.match(r'([<>]=?)(\d{4})$', version_range)
+    if match:
+        op, ver = match.groups()
+        if op == '>':
+            return st_version > int(ver)
+        if op == '>=':
+            return st_version >= int(ver)
+        if op == '<':
+            return st_version < int(ver)
+        if op == '<=':
+            return st_version <= int(ver)
 
-    ge_match = re.match(r'>=(\d{4})$', version_range)
-    if ge_match:
-        return st_version >= int(ge_match.group(1))
-
-    lt_match = re.match(r'<(\d{4})$', version_range)
-    if lt_match:
-        return st_version < int(lt_match.group(1))
-
-    le_match = re.match(r'<=(\d{4})$', version_range)
-    if le_match:
-        return st_version <= int(le_match.group(1))
-
-    range_match = re.match(r'(\d{4}) - (\d{4})$', version_range)
-    if range_match:
-        return st_version >= int(range_match.group(1)) and st_version <= int(range_match.group(2))
+    match = re.match(r'(\d{4}) - (\d{4})$', version_range)
+    if match:
+        return st_version >= int(match.group(1)) and st_version <= int(match.group(2))
 
     return None
