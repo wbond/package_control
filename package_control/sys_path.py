@@ -7,6 +7,7 @@ import sublime
 
 
 data_dir = None
+default_packages_path = os.path.join(os.path.dirname(sublime.executable_path()), 'Packages')
 packages_path = None
 installed_packages_path = None
 pc_package_path = None

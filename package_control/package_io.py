@@ -6,6 +6,59 @@ import sublime
 from .console_write import console_write
 
 
+def list_sublime_package_dirs(path):
+    """
+    Return a set of directories in the folder specified that are not
+    hidden and are not marked to be removed
+
+    :param path:
+        The folder to list the directories inside of
+
+    :return:
+        A generator of directory names
+    """
+
+    try:
+        for filename in os.listdir(path):
+            if filename[0] == '.':
+                continue
+            file_path = os.path.join(path, filename)
+            if not os.path.isdir(file_path):
+                continue
+            # Don't include a dir if it is going to be cleaned up
+            if os.path.exists(os.path.join(file_path, 'package-control.cleanup')):
+                continue
+            yield filename
+
+    except FileNotFoundError:
+        pass
+
+
+def list_sublime_package_files(path):
+    """
+    Return a set of all .sublime-package files in a folder
+
+    :param path:
+        The directory to look in for .sublime-package files
+
+    :return:
+        A generator of package names with .sublime-package suffix removed
+    """
+
+    try:
+        for filename in os.listdir(path):
+            name, ext = os.path.splitext(filename)
+            if ext.lower() != '.sublime-package':
+                continue
+            file_path = os.path.join(path, filename)
+            if not os.path.isfile(file_path):
+                continue
+            yield name
+
+    except FileNotFoundError:
+        pass
+
+
 def read_package_file(package, relative_path, binary=False):
     """
     Reads the contents of a file that is part of a package

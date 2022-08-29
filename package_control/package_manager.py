@@ -26,7 +26,7 @@ from .clients.client_exception import ClientException
 from .download_manager import downloader
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
-from .package_io import read_package_file
+from .package_io import list_sublime_package_dirs, list_sublime_package_files, read_package_file
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
@@ -698,19 +698,20 @@ class PackageManager:
 
     def list_packages(self, unpacked_only=False):
         """
+        List installed packages on the machine
+
         :param unpacked_only:
             Only list packages that are not inside of .sublime-package files
 
-        :return: A list of all installed, non-default, non-library, package names
+        :return:
+            A list of all installed, non-default, non-library, package names
         """
 
-        packages = self._list_visible_dirs(sys_path.packages_path)
-
+        packages = set(list_sublime_package_dirs(sys_path.packages_path))
         if unpacked_only is False:
-            packages |= self._list_sublime_package_files(sys_path.installed_packages_path)
-
-        packages -= set(self.list_default_packages())
-        packages -= set(['User', 'Default'])
+            packages |= set(list_sublime_package_files(sys_path.installed_packages_path))
+        packages -= set(list_sublime_package_files(sys_path.default_packages_path))
+        packages -= {'User', 'Default'}
         return sorted(packages, key=lambda s: s.lower())
 
     def list_all_packages(self):
@@ -718,65 +719,14 @@ class PackageManager:
         Lists all packages on the machine
 
         :return:
-            A list of all installed package names, including default packages
+            A list of all package names, including default packages
         """
 
-        packages = self.list_default_packages() + self.list_packages()
+        packages = set(list_sublime_package_dirs(sys_path.packages_path))
+        packages |= set(list_sublime_package_files(sys_path.installed_packages_path))
+        packages |= set(list_sublime_package_files(sys_path.default_packages_path))
+        packages -= {'User', 'Default'}
         return sorted(packages, key=lambda s: s.lower())
-
-    def list_default_packages(self):
-        """ :return: A list of all default package names"""
-
-        app_dir = os.path.dirname(sublime.executable_path())
-        packages = self._list_sublime_package_files(os.path.join(app_dir, 'Packages'))
-
-        packages -= set(['User', 'Default'])
-        return sorted(packages, key=lambda s: s.lower())
-
-    def _list_visible_dirs(self, path):
-        """
-        Return a set of directories in the folder specified that are not
-        hidden and are not marked to be removed
-
-        :param path:
-            The folder to list the directories inside of
-
-        :return:
-            A set of directory names
-        """
-
-        output = set()
-        for filename in os.listdir(path):
-            if filename[0] == '.':
-                continue
-            file_path = os.path.join(path, filename)
-            if not os.path.isdir(file_path):
-                continue
-            # Don't include a dir if it is going to be cleaned up
-            if os.path.exists(os.path.join(file_path, 'package-control.cleanup')):
-                continue
-            output.add(filename)
-        return output
-
-    def _list_sublime_package_files(self, path):
-        """
-        Return a set of all .sublime-package files in a folder
-
-        :param path:
-            The directory to look in for .sublime-package files
-
-        :return:
-            A set of the package names - i.e. with the .sublime-package suffix removed
-        """
-
-        output = set()
-        if not os.path.exists(path):
-            return output
-        for filename in os.listdir(path):
-            if not re.search(r'\.sublime-package$', filename):
-                continue
-            output.add(filename.replace('.sublime-package', ''))
-        return output
 
     def find_required_libraries(self, ignore_package=None):
         """
