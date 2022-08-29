@@ -388,27 +388,25 @@ class PackageManager:
             A list of all available repositories
         """
 
-        cache_ttl = self.settings.get('cache_length')
+        cache_ttl = self.settings.get('cache_length', 300)
 
-        repositories = self.settings.get('repositories')[:]
-        channels = self.settings.get('channels')
+        repositories = self.settings.get('repositories', [])
+        channels = self.settings.get('channels', [])
 
         # Update any old default channel URLs users have in their config
-        updated_channels = []
         found_default = False
         for channel in channels:
+            channel = channel.strip()
+
             if re.match(r'https?://([^.]+\.)*package-control\.io', channel):
                 console_write('Removed malicious channel %s' % channel)
                 continue
-            if channel in OLD_DEFAULT_CHANNELS:
-                if not found_default:
-                    updated_channels.append(DEFAULT_CHANNEL)
-                    found_default = True
-                continue
-            updated_channels.append(channel)
 
-        for channel in updated_channels:
-            channel = channel.strip()
+            if channel in OLD_DEFAULT_CHANNELS:
+                if found_default:
+                    continue
+                found_default = True
+                channel = DEFAULT_CHANNEL
 
             # Caches various info from channels for performance
             cache_key = channel + '.repositories'
@@ -427,6 +425,8 @@ class PackageManager:
                     if provider_class.match_url(channel):
                         provider = provider_class(channel, self.settings)
                         break
+                else:
+                    continue
 
                 try:
                     channel_repositories = provider.get_repositories()
@@ -489,6 +489,7 @@ class PackageManager:
                     continue
 
             repositories.extend(channel_repositories)
+
         return [repo.strip() for repo in repositories]
 
     def _list_available(self):
@@ -529,7 +530,7 @@ class PackageManager:
                 )
             )
 
-        cache_ttl = self.settings.get('cache_length')
+        cache_ttl = self.settings.get('cache_length', 300)
         repositories = self.list_repositories()
         packages = {}
         libraries = {}
@@ -553,7 +554,8 @@ class PackageManager:
 
                 cache_key = repo + '.libraries'
                 repository_libraries = get_cache(cache_key)
-                libraries.update(repository_libraries)
+                if repository_libraries:
+                    libraries.update(repository_libraries)
 
             else:
                 domain = urlparse(repo).hostname
@@ -603,7 +605,7 @@ class PackageManager:
                     unavailable_libraries.append(name)
 
             # Display errors we encountered while fetching package info
-            for url, exception in provider.get_failed_sources():
+            for _, exception in provider.get_failed_sources():
                 console_write(exception)
             for name, exception in provider.get_broken_packages():
                 console_write(exception)
@@ -1075,22 +1077,22 @@ class PackageManager:
         library_filename = library_name + suffix
 
         tmp_dir = tempfile.mkdtemp('')
+        tmp_library_archive = os.path.join(tmp_dir, library_filename)
+        tmp_library_dir = os.path.join(tmp_dir, library_name)
+
+        # This is refers to the zipfile later on, so we define it here so we can
+        # close the zip file if set during the finally clause
+        library_zip = None
 
         try:
-            # This is refers to the zipfile later on, so we define it here so we can
-            # close the zip file if set during the finally clause
-            library_zip = None
-
-            tmp_library_archive = os.path.join(tmp_dir, library_filename)
-            tmp_library_dir = os.path.join(tmp_dir, library_name)
-
             lib_path = sys_path.lib_paths()[python_version]
-            existing_did = None
+
             try:
                 existing_did = distinfo.find_dist_info_dir(lib_path, library_name)
-                is_upgrade = True
             except FileNotFoundError:
-                is_upgrade = False
+                existing_did = None
+
+            is_upgrade = existing_did is not None
 
             modified_paths = set()
             if is_upgrade:
@@ -1156,8 +1158,7 @@ class PackageManager:
                         '''
                         An error occurred while trying to install the library %s: %s
                         ''',
-                        library_name,
-                        str(e)
+                        (library_name, str(e))
                     )
                     return False
 
@@ -1273,13 +1274,11 @@ class PackageManager:
         package_zip = None
 
         try:
-            if self.is_vcs_package(package_name):
+            upgrader = self.instantiate_upgrader(package_name)
+            if upgrader:
                 # We explicitly don't support the "libraries" key when dealing
                 # with packages installed via VCS
-
-                upgrader = self.instantiate_upgrader(package_name)
                 to_ignore = self.settings.get('ignore_vcs_packages')
-
                 if to_ignore is True:
                     show_error(
                         '''
@@ -2000,10 +1999,10 @@ class PackageManager:
         except (OSError, IOError):
             cleanup_complete = False
 
-        if os.path.exists(package_dir):
+        can_delete_dir = os.path.exists(package_dir)
+        if can_delete_dir:
             # We don't delete the actual package dir immediately due to a bug
             # in sublime_plugin.py
-            can_delete_dir = True
             if is_directory_symlink(package_dir):
                 # Assuming that deleting symlink won't fail in later step so
                 # not having any cleanup handling here
@@ -2064,7 +2063,7 @@ class PackageManager:
             if isinstance(params[param], str):
                 params[param] = params[param].encode('utf-8')
 
-        url = self.settings.get('submit_url') + '?' + urlencode(params)
+        url = self.settings.get('submit_url', '') + '?' + urlencode(params)
 
         try:
             with downloader(url, self.settings) as manager:
