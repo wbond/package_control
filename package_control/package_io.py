@@ -78,7 +78,7 @@ def read_package_file(package, relative_path, binary=False):
     if relative_path is None:
         return False
 
-    package_dir = _get_package_dir(package)
+    package_dir = get_package_dir(package)
 
     if os.path.exists(package_dir) and _regular_file_exists(package, relative_path):
         return _read_regular_file(package, relative_path, binary)
@@ -104,7 +104,7 @@ def package_file_exists(package, relative_path):
     if relative_path is None:
         return False
 
-    package_dir = _get_package_dir(package)
+    package_dir = get_package_dir(package)
 
     if os.path.exists(package_dir):
         result = _regular_file_exists(package, relative_path)
@@ -114,14 +114,36 @@ def package_file_exists(package, relative_path):
     return _zip_file_exists(package, relative_path)
 
 
-def _get_package_dir(package):
-    """:return: The full filesystem path to the package directory"""
+def get_package_dir(package):
+    """
+    Return the absolute path of the package.
+
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the package directory
+    """
 
     return os.path.join(sys_path.packages_path, package)
 
 
+def get_installed_package_path(package):
+    """
+    Generate the absolute sublime-package file path of a package.
+
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the sublime-package file
+    """
+
+    return os.path.join(sys_path.installed_packages_path, package + '.sublime-package')
+
+
 def _read_regular_file(package, relative_path, binary=False):
-    package_dir = _get_package_dir(package)
+    package_dir = get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
 
     mode, encoding = ('rb', None) if binary else ('r', 'utf-8')
@@ -130,7 +152,7 @@ def _read_regular_file(package, relative_path, binary=False):
 
 
 def _read_zip_file(package, relative_path, binary=False):
-    zip_path = os.path.join(sys_path.installed_packages_path, package + '.sublime-package')
+    zip_path = get_installed_package_path(package)
 
     if not os.path.exists(zip_path):
         return False
@@ -188,13 +210,13 @@ def _read_zip_file(package, relative_path, binary=False):
 
 
 def _regular_file_exists(package, relative_path):
-    package_dir = _get_package_dir(package)
+    package_dir = get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
     return os.path.exists(file_path)
 
 
 def _zip_file_exists(package, relative_path):
-    zip_path = os.path.join(sys_path.installed_packages_path, package + '.sublime-package')
+    zip_path = get_installed_package_path(package)
 
     if not os.path.exists(zip_path):
         return False

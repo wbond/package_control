@@ -26,7 +26,13 @@ from .clients.client_exception import ClientException
 from .download_manager import downloader
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
-from .package_io import list_sublime_package_dirs, list_sublime_package_files, read_package_file
+from .package_io import (
+    list_sublime_package_dirs,
+    list_sublime_package_files,
+    get_package_dir,
+    get_installed_package_path,
+    read_package_file
+)
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
@@ -234,7 +240,7 @@ class PackageManager:
             If the package is installed via git
         """
 
-        git_dir = os.path.join(self.get_package_dir(package_name), '.git')
+        git_dir = os.path.join(get_package_dir(package_name), '.git')
         return os.path.isdir(git_dir) or os.path.isfile(git_dir)
 
     def _is_hg_package(self, package_name):
@@ -246,7 +252,7 @@ class PackageManager:
             If the package is installed via hg
         """
 
-        hg_dir = os.path.join(self.get_package_dir(package_name), '.hg')
+        hg_dir = os.path.join(get_package_dir(package_name), '.hg')
         return os.path.isdir(hg_dir)
 
     def is_vcs_package(self, package_name):
@@ -299,7 +305,7 @@ class PackageManager:
             return GitUpgrader(
                 self.settings['git_binary'],
                 self.settings['git_update_command'],
-                self.get_package_dir(package_name),
+                get_package_dir(package_name),
                 self.settings['cache_length'],
                 self.settings['debug']
             )
@@ -308,7 +314,7 @@ class PackageManager:
             return HgUpgrader(
                 self.settings['hg_binary'],
                 self.settings['hg_update_command'],
-                self.get_package_dir(package_name),
+                get_package_dir(package_name),
                 self.settings['cache_length'],
                 self.settings['debug']
             )
@@ -749,9 +755,17 @@ class PackageManager:
         return sorted(output)
 
     def get_package_dir(self, package_name):
-        """:return: The full filesystem path to the package directory"""
+        """
+        Return the absolute path of the package.
 
-        return os.path.join(sys_path.packages_path, package_name)
+        :param package:
+            The package name to return path for.
+
+        :return:
+            The full filesystem path to the package directory
+        """
+
+        return get_package_dir(package_name)
 
     def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""
@@ -779,7 +793,7 @@ class PackageManager:
         :return: bool if the package file was successfully created
         """
 
-        package_dir = self.get_package_dir(package_name)
+        package_dir = get_package_dir(package_name)
         if not os.path.isdir(package_dir):
             show_error(
                 '''
@@ -1253,20 +1267,19 @@ class PackageManager:
         release = packages[package_name]['releases'][0]
 
         url = release['url']
-        package_filename = package_name + '.sublime-package'
+
+        unpacked_package_dir = get_package_dir(package_name)
+        package_path = get_installed_package_path(package_name)
+        package_filename = os.path.basename(package_path)
 
         tmp_dir = tempfile.mkdtemp('')
+        tmp_package_path = os.path.join(tmp_dir, package_filename)
+
+        # This is refers to the zipfile later on, so we define it here so we can
+        # close the zip file if set during the finally clause
+        package_zip = None
 
         try:
-            # This is refers to the zipfile later on, so we define it here so we can
-            # close the zip file if set during the finally clause
-            package_zip = None
-
-            tmp_package_path = os.path.join(tmp_dir, package_filename)
-
-            unpacked_package_dir = self.get_package_dir(package_name)
-            package_path = os.path.join(sys_path.installed_packages_path, package_filename)
-
             if self.is_vcs_package(package_name):
                 # We explicitly don't support the "libraries" key when dealing
                 # with packages installed via VCS
@@ -1981,9 +1994,8 @@ class PackageManager:
 
         os.chdir(sys_path.packages_path)
 
-        package_filename = package_name + '.sublime-package'
-        installed_package_path = os.path.join(sys_path.installed_packages_path, package_filename)
-        package_dir = self.get_package_dir(package_name)
+        installed_package_path = get_installed_package_path(package_name)
+        package_dir = get_package_dir(package_name)
 
         version = self.get_metadata(package_name).get('version')
 
