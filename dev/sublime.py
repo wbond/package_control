@@ -27,6 +27,10 @@ def packages_path():
     return os.path.join(_TEMP_DIR, 'Packages')
 
 
+def executable_path():
+    return "/opt/sublime_text/sublime_text"
+
+
 def arch():
     return "x64"
 
