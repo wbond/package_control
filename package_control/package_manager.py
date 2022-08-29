@@ -195,7 +195,7 @@ class PackageManager:
             The name of the package
 
         :return:
-            A list of library.Library() objects
+            A set of library.Library() objects
         """
 
         python_version = self.get_python_version(package_name)
@@ -688,6 +688,14 @@ class PackageManager:
 
         return self._list_available()[0]
 
+    def list_libraries(self):
+        """
+        :return:
+            A list of library.Library() objects for all installed libraries
+        """
+
+        return library.list_all()
+
     def list_packages(self, unpacked_only=False):
         """
         :param unpacked_only:
@@ -704,14 +712,6 @@ class PackageManager:
         packages -= set(self.list_default_packages())
         packages -= set(['User', 'Default'])
         return sorted(packages, key=lambda s: s.lower())
-
-    def list_libraries(self):
-        """
-        :return:
-            A list of library.Library() objects for all installed libraries
-        """
-
-        return library.list_all()
 
     def list_all_packages(self):
         """
