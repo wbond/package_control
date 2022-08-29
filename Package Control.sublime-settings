@@ -151,7 +151,7 @@
 	// The "curl" and "wget" options require the command line "curl" or "wget"
 	// program installed and present in the PATH.
 	"downloader_precedence": {
-		"windows": ["wininet", "oscrypto"],
+		"windows": ["wininet", "oscrypto", "urllib"],
 		"osx": ["urllib", "oscrypto", "curl"],
 		"linux": ["urllib", "oscrypto", "curl", "wget"]
 	},

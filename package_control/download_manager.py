@@ -205,7 +205,7 @@ class DownloadManager:
         downloader_precedence = self.settings.get(
             'downloader_precedence',
             {
-                "windows": ["wininet", "oscrypto"],
+                "windows": ["wininet", "oscrypto", "urllib"],
                 "osx": ["urllib", "oscrypto", "curl"],
                 "linux": ["urllib", "oscrypto", "curl", "wget"]
             }
@@ -227,15 +227,15 @@ class DownloadManager:
         if not self.downloader or (
                 (is_ssl and not self.downloader.supports_ssl())
                 or (not is_ssl and not self.downloader.supports_plaintext())):
+
             for downloader_name in downloader_list:
 
-                if downloader_name not in DOWNLOADERS:
-                    # We ignore oscrypto not being present on Linux since it
-                    # can't be used with on Linux with Sublime Text 3
-                    if sys.version_info[:2] == (3, 3) and \
-                            sys.platform == 'linux' and \
-                            downloader_name == 'oscrypto':
+                try:
+                    downloader_class = DOWNLOADERS[downloader_name]
+                    if downloader_class is None:
                         continue
+
+                except KeyError:
                     error_string = text.format(
                         '''
                         The downloader "%s" from the "downloader_precedence"
@@ -247,14 +247,15 @@ class DownloadManager:
                     raise DownloaderException(error_string)
 
                 try:
-                    downloader = DOWNLOADERS[downloader_name](self.settings)
+                    downloader = downloader_class(self.settings)
                     if is_ssl and not downloader.supports_ssl():
                         continue
                     if not is_ssl and not downloader.supports_plaintext():
                         continue
                     self.downloader = downloader
                     break
-                except (BinaryNotFoundError):
+
+                except BinaryNotFoundError:
                     pass
 
         if not self.downloader:
