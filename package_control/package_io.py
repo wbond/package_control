@@ -1,8 +1,7 @@
 import os
 import zipfile
 
-import sublime
-
+from . import sys_path
 from .console_write import console_write
 
 
@@ -118,7 +117,7 @@ def package_file_exists(package, relative_path):
 def _get_package_dir(package):
     """:return: The full filesystem path to the package directory"""
 
-    return os.path.join(sublime.packages_path(), package)
+    return os.path.join(sys_path.packages_path, package)
 
 
 def _read_regular_file(package, relative_path, binary=False):
@@ -131,7 +130,7 @@ def _read_regular_file(package, relative_path, binary=False):
 
 
 def _read_zip_file(package, relative_path, binary=False):
-    zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
+    zip_path = os.path.join(sys_path.installed_packages_path, package + '.sublime-package')
 
     if not os.path.exists(zip_path):
         return False
@@ -195,7 +194,7 @@ def _regular_file_exists(package, relative_path):
 
 
 def _zip_file_exists(package, relative_path):
-    zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
+    zip_path = os.path.join(sys_path.installed_packages_path, package + '.sublime-package')
 
     if not os.path.exists(zip_path):
         return False
