@@ -1003,14 +1003,7 @@ class PackageManager:
 
             # If there was only a single directory in the package, we remove
             # that folder name from the paths as we extract entries
-            dest = dest[len(common_folder):]
-
-            if os.name == 'nt':
-                dest = dest.replace('/', '\\')
-            else:
-                dest = dest.replace('\\', '/')
-
-            dest = os.path.join(dest_dir, dest)
+            dest = os.path.normpath(os.path.join(dest_dir, dest[len(common_folder):]))
 
             def add_extracted_dirs(dir_):
                 while dir_ not in extracted_dirs:
