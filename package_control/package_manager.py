@@ -275,8 +275,8 @@ class PackageManager:
         if version:
             return version
 
-        if self.is_vcs_package(package_name):
-            upgrader = self.instantiate_upgrader(package_name)
+        upgrader = self.instantiate_upgrader(package_name)
+        if upgrader:
             version = upgrader.latest_commit()
             if version:
                 return '%s commit %s' % (upgrader.cli_name, version)
