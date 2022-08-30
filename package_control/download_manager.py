@@ -1,24 +1,23 @@
 import re
 import socket
-from threading import Lock, Timer
 import sys
+from threading import Lock, Timer
 from urllib.parse import urlparse
 
 from . import __version__
-
-from .show_error import show_error
-from .console_write import console_write
-from .cache import set_cache, get_cache
 from . import text
+from .cache import set_cache, get_cache
+from .console_write import console_write
+from .show_error import show_error
 
 from .downloaders import DOWNLOADERS
-from .downloaders.urllib_downloader import UrlLibDownloader
 from .downloaders.binary_not_found_error import BinaryNotFoundError
+from .downloaders.downloader_exception import DownloaderException
+from .downloaders.oscrypto_downloader_exception import OscryptoDownloaderException
 from .downloaders.rate_limit_exception import RateLimitException
 from .downloaders.rate_limit_exception import RateLimitSkipException
-from .downloaders.downloader_exception import DownloaderException
+from .downloaders.urllib_downloader import UrlLibDownloader
 from .downloaders.win_downloader_exception import WinDownloaderException
-from .downloaders.oscrypto_downloader_exception import OscryptoDownloaderException
 from .http_cache import HttpCache
 
 
