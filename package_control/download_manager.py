@@ -23,23 +23,23 @@ from .downloaders.oscrypto_downloader_exception import OscryptoDownloaderExcepti
 from .http_cache import HttpCache
 
 
-# A dict of domains - each points to a list of downloaders
 _managers = {}
+"""A dict of domains - each points to a list of downloaders"""
 
-# How many managers are currently checked out
 _in_use = 0
+"""How many managers are currently checked out"""
 
-# Make sure connection management doesn't run into threading issues
 _lock = Lock()
+"""Make sure connection management doesn't run into threading issues"""
 
-# A timer used to disconnect all managers after a period of no usage
 _timer = None
+"""A timer used to disconnect all managers after a period of no usage"""
 
 
 @contextmanager
 def downloader(url, settings):
+    manager = None
     try:
-        manager = None
         manager = _grab(url, settings)
         yield manager
 
@@ -75,7 +75,10 @@ def _release(url, manager):
     global _managers, _lock, _in_use, _timer
 
     with _lock:
-        hostname = urlparse(url).hostname.lower()
+        parsed = urlparse(url)
+        if not parsed or not parsed.hostname:
+            raise DownloaderException('The URL "%s" is malformed' % url)
+        hostname = parsed.hostname.lower()
 
         # This means the package was reloaded between _grab and _release,
         # so the downloader is using old code and we want to discard it
@@ -103,7 +106,7 @@ def close_all_connections():
             _timer.cancel()
             _timer = None
 
-        for domain, managers in _managers.items():
+        for managers in _managers.values():
             for manager in managers:
                 manager.close()
         _managers = {}
@@ -276,9 +279,11 @@ class DownloadManager:
             raise DownloaderException(error_string.replace('\n\n', ' '))
 
         url = url.replace(' ', '%20')
-        hostname = urlparse(url).hostname
-        if hostname:
-            hostname = hostname.lower()
+        parsed = urlparse(url)
+        if not parsed or not parsed.hostname:
+            raise DownloaderException('The URL "%s" is malformed' % url)
+        hostname = parsed.hostname.lower()
+
         timeout = self.settings.get('timeout', 3)
 
         rate_limited_domains = get_cache('rate_limited_domains', [])
@@ -329,13 +334,16 @@ class DownloadManager:
             return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
 
         except (RateLimitException) as e:
-
             rate_limited_domains.append(hostname)
-            set_cache('rate_limited_domains', rate_limited_domains, self.settings.get('cache_length'))
+            set_cache(
+                'rate_limited_domains',
+                rate_limited_domains,
+                self.settings.get('cache_length', 604800)
+            )
 
             console_write(
                 '''
-                Hit rate limit of %s for %s. Skipping all futher download
+                Hit rate limit of %s for %s. Skipping all further download
                 requests for this domain.
                 ''',
                 (e.limit, e.domain)
@@ -355,12 +363,11 @@ class DownloadManager:
             return self.fetch(url, error_message, prefer_cached)
 
         except (WinDownloaderException) as e:
-
             console_write(
                 '''
                 Attempting to use Urllib downloader due to WinINet error: %s
                 ''',
-                e
+                str(e)
             )
 
             # Here we grab the proxy info extracted from WinInet to fill in
