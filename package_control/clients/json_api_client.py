@@ -2,7 +2,7 @@ import json
 from urllib.parse import urlencode, urlparse
 
 from .client_exception import ClientException
-from ..download_manager import downloader
+from ..download_manager import http_get
 
 
 class JSONApiClient:
@@ -35,9 +35,7 @@ class JSONApiClient:
             joiner = '?%s' if url.find('?') == -1 else '&%s'
             url += joiner % params
 
-        with downloader(url, self.settings) as manager:
-            content = manager.fetch(url, 'Error downloading repository.', prefer_cached)
-        return content
+        return http_get(url, self.settings, 'Error downloading repository.', prefer_cached)
 
     def fetch_json(self, url, prefer_cached=False):
         """

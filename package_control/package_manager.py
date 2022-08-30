@@ -23,7 +23,7 @@ from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.downloader_exception import DownloaderException
 from .providers.provider_exception import ProviderException
 from .clients.client_exception import ClientException
-from .download_manager import downloader
+from .download_manager import http_get
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import (
@@ -857,8 +857,7 @@ class PackageManager:
 
     def _download_zip_file(self, name, url, tmp_zip_path):
         try:
-            with downloader(url, self.settings) as manager:
-                data = manager.fetch(url, 'Error downloading zip file.')
+            data = http_get(url, self.settings, 'Error downloading zip file.')
         except (DownloaderException) as e:
             console_write(e)
             show_error(
@@ -2066,8 +2065,7 @@ class PackageManager:
         url = self.settings.get('submit_url', '') + '?' + urlencode(params)
 
         try:
-            with downloader(url, self.settings) as manager:
-                result = manager.fetch(url, 'Error submitting usage information.')
+            result = http_get(url, self.settings, 'Error submitting usage information.')
         except (DownloaderException) as e:
             console_write(e)
             return

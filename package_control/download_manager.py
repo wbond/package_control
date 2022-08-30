@@ -1,7 +1,6 @@
 import re
 import socket
 from threading import Lock, Timer
-from contextlib import contextmanager
 import sys
 from urllib.parse import urlparse
 
@@ -36,16 +35,53 @@ _timer = None
 """A timer used to disconnect all managers after a period of no usage"""
 
 
-@contextmanager
-def downloader(url, settings):
+def http_get(url, settings, error_message='', prefer_cached=False):
+    """
+    Performs a HTTP GET request using best matching downloader.
+
+    :param url:
+        The string URL to download
+
+    :param settings:
+        The dictionary with downloader settings.
+
+          - ``debug``
+          - ``downloader_precedence``
+          - ``http_basic_auth``
+          - ``http_cache``
+          - ``http_cache_length``
+          - ``http_proxy``
+          - ``https_proxy``
+          - ``proxy_username``
+          - ``proxy_password``
+          - ``user_agent``
+          - ``timeout``
+
+    :param error_message:
+        The error message to include if the download fails
+
+    :param prefer_cached:
+        If cached version of the URL content is preferred over a new request
+
+    :raises:
+        DownloaderException: if there was an error downloading the URL
+
+    :return:
+        The string contents of the URL
+    """
+
     manager = None
+    result = None
+
     try:
         manager = _grab(url, settings)
-        yield manager
+        result = manager.fetch(url, error_message, prefer_cached)
 
     finally:
         if manager:
             _release(url, manager)
+
+    return result
 
 
 def _grab(url, settings):

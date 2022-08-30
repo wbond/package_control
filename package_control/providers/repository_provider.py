@@ -10,7 +10,7 @@ from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.gitlab_client import GitLabClient
 from ..console_write import console_write
-from ..download_manager import downloader, update_url
+from ..download_manager import http_get, update_url
 from ..downloaders.downloader_exception import DownloaderException
 from ..versions import version_sort
 from .base_repository_provider import BaseRepositoryProvider
@@ -157,8 +157,7 @@ class RepositoryProvider(BaseRepositoryProvider):
         """
 
         if re.match(r'https?://', location, re.I):
-            with downloader(location, self.settings) as manager:
-                json_string = manager.fetch(location, 'Error downloading repository.')
+            json_string = http_get(location, self.settings, 'Error downloading repository.')
 
         # Anything that is not a URL is expected to be a filesystem path
         else:

@@ -4,7 +4,7 @@ import re
 from urllib.parse import urljoin
 
 from ..console_write import console_write
-from ..download_manager import downloader, update_url
+from ..download_manager import http_get, update_url
 from ..versions import version_sort
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
@@ -92,8 +92,7 @@ class ChannelProvider:
             return
 
         if re.match(r'https?://', self.channel_url, re.I):
-            with downloader(self.channel_url, self.settings) as manager:
-                json_string = manager.fetch(self.channel_url, 'Error downloading channel.')
+            json_string = http_get(self.channel_url, self.settings, 'Error downloading channel.')
 
         # All other channels are expected to be filesystem paths
         else:
