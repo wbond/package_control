@@ -157,11 +157,29 @@ class DownloadManager:
         # Cache the downloader for re-use
         self.downloader = None
 
-        user_agent = settings.get('user_agent')
-        if user_agent and user_agent.find('%s') != -1:
-            settings['user_agent'] = user_agent % __version__
+        keys_to_copy = {
+            'debug',
+            'downloader_precedence',
+            'http_basic_auth',
+            'http_proxy',
+            'https_proxy',
+            'proxy_username',
+            'proxy_password',
+            'user_agent',
+            'timeout',
+        }
 
-        self.settings = settings
+        # Copy required settings to avoid manipulating caller's environment.
+        # It's needed as e.g. `cache_length` is defined with different meaning in PackageManager's
+        # settings. Also `cache` object shouldn't be propagated to caller.
+        self.settings = {key: value for key, value in settings.items() if key in keys_to_copy}
+
+        # add package control version to user agent
+        user_agent = self.settings.get('user_agent')
+        if user_agent and '%s' in user_agent:
+            self.settings['user_agent'] = user_agent % __version__
+
+        # setup private http cache storage driver
         if settings.get('http_cache'):
             cache_length = settings.get('http_cache_length', 604800)
             self.settings['cache'] = HttpCache(cache_length)
