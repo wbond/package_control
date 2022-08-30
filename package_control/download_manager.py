@@ -361,10 +361,9 @@ class DownloadManager:
 
             console_write(
                 '''
-                Hit rate limit of %s for %s. Skipping all further download
-                requests for this domain.
+                %s Skipping all further download requests for this domain.
                 ''',
-                (e.limit, e.domain)
+                str(e)
             )
             raise
 

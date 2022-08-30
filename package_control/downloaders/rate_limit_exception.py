@@ -12,7 +12,7 @@ class RateLimitException(DownloaderException):
         self.limit = limit
 
     def __str__(self):
-        return 'Rate limit of %s exceeded for %s' % (self.limit, self.domain)
+        return 'Hit rate limit of %s for %s.' % (self.limit, self.domain)
 
 
 class RateLimitSkipException(DownloaderException):
@@ -25,4 +25,4 @@ class RateLimitSkipException(DownloaderException):
         self.domain = domain
 
     def __str__(self):
-        return 'Skipping due to hitting rate limit for %s' % self.domain
+        return 'Skipping %s due to rate limit.' % self.domain
