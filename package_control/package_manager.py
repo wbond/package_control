@@ -10,6 +10,7 @@ import tempfile
 import zipfile
 
 from fnmatch import fnmatch
+from io import BytesIO
 from urllib.parse import urlencode, urlparse
 
 import sublime
@@ -855,7 +856,7 @@ class PackageManager:
             return False
         return True
 
-    def _download_zip_file(self, name, url, tmp_zip_path):
+    def _download_zip_file(self, name, url):
         try:
             data = http_get(url, self.settings, 'Error downloading zip file.')
         except (DownloaderException) as e:
@@ -869,11 +870,8 @@ class PackageManager:
             )
             return False
 
-        with open(tmp_zip_path, "wb") as zf:
-            zf.write(data)
-
         try:
-            z = zipfile.ZipFile(tmp_zip_path, 'r')
+            z = zipfile.ZipFile(BytesIO(data))
         except (zipfile.BadZipfile):
             show_error(
                 '''
@@ -1076,7 +1074,6 @@ class PackageManager:
         library_filename = library_name + suffix
 
         tmp_dir = tempfile.mkdtemp('')
-        tmp_library_archive = os.path.join(tmp_dir, library_filename)
         tmp_library_dir = os.path.join(tmp_dir, library_name)
 
         # This is refers to the zipfile later on, so we define it here so we can
@@ -1109,7 +1106,7 @@ class PackageManager:
                 )
                 return False
 
-            library_zip = self._download_zip_file(library_name, url, tmp_library_archive)
+            library_zip = self._download_zip_file(library_name, url)
             if library_zip is False:
                 return False
 
@@ -1305,7 +1302,7 @@ class PackageManager:
             old_version = self.get_metadata(package_name).get('version')
             is_upgrade = old_version is not None
 
-            package_zip = self._download_zip_file(package_name, url, tmp_package_path)
+            package_zip = self._download_zip_file(package_name, url)
             if package_zip is False:
                 return False
 
@@ -1505,8 +1502,6 @@ class PackageManager:
             # folder, we need to create a .sublime-package file and install it
             if not unpack:
                 try:
-                    # Remove the downloaded file since we are going to overwrite it
-                    os.remove(tmp_package_path)
                     package_zip = zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED)
                 except (OSError, IOError) as e:
                     show_error(
