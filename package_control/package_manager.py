@@ -542,7 +542,7 @@ class PackageManager:
 
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
-        for repo in repositories[::-1]:
+        for repo in reversed(repositories):
             if re.match(r'https?://([^.]+\.)*package-control\.io', repo):
                 console_write('Removed malicious repository %s' % repo)
                 continue
@@ -550,15 +550,16 @@ class PackageManager:
             cache_key = repo + '.packages'
             repository_packages = get_cache(cache_key)
 
-            if repository_packages is not None:
+            if repository_packages:
                 packages.update(repository_packages)
 
-                cache_key = repo + '.libraries'
-                repository_libraries = get_cache(cache_key)
-                if repository_libraries:
-                    libraries.update(repository_libraries)
+            cache_key = repo + '.libraries'
+            repository_libraries = get_cache(cache_key)
 
-            else:
+            if repository_libraries:
+                libraries.update(repository_libraries)
+
+            if repository_packages is None and repository_libraries is None:
                 domain = urlparse(repo).hostname
                 if domain not in bg_downloaders:
                     bg_downloaders[domain] = BackgroundDownloader(
@@ -566,7 +567,7 @@ class PackageManager:
                 bg_downloaders[domain].add_url(repo)
                 repos_to_download.append(repo)
 
-        for bg_downloader in list(bg_downloaders.values()):
+        for bg_downloader in bg_downloaders.values():
             bg_downloader.start()
             active.append(bg_downloader)
 
