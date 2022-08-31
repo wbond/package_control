@@ -1493,7 +1493,13 @@ class PackageManager:
             # folder, we need to create a .sublime-package file and install it
             if not unpack:
                 try:
-                    package_zip = zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED)
+                    with zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED) as fobj:
+                        for root, _, files in os.walk(package_dir):
+                            for file in files:
+                                full_path = os.path.join(root, file)
+                                relative_path = os.path.relpath(full_path, package_dir)
+                                fobj.write(full_path, relative_path)
+
                 except (OSError, IOError) as e:
                     show_error(
                         '''
@@ -1504,20 +1510,6 @@ class PackageManager:
                         (package_filename, tmp_dir, str(e))
                     )
                     return False
-
-                package_dir_regex = re.compile('^' + re.escape(package_dir))
-                for root, dirs, files in os.walk(package_dir):
-                    paths = dirs
-                    paths.extend(files)
-                    for path in paths:
-                        full_path = os.path.join(root, path)
-                        relative_path = re.sub(package_dir_regex, '', full_path)
-                        if os.path.isdir(full_path):
-                            continue
-                        package_zip.write(full_path, relative_path)
-
-                package_zip.close()
-                package_zip = None
 
                 try:
                     if os.path.exists(package_path):
