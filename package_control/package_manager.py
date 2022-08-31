@@ -1044,22 +1044,18 @@ class PackageManager:
     def install_library(self, library_name, python_version):
         libraries = self.list_available_libraries(python_version)
 
-        is_available = library_name in list(libraries.keys())
-        is_unavailable = library_name in self.settings.get('unavailable_libraries', [])
+        if not library_name in libraries:
+            if library_name in self.settings.get('unavailable_libraries', []):
+                console_write(
+                    '''
+                    The library "%s" is either not available on this platform,
+                    for Python %s, or for this version of Sublime Text
+                    ''',
+                    (library_name, python_version)
+                )
+                # If a library is not available on this machine, that means it is not needed
+                return True
 
-        if is_unavailable and not is_available:
-            console_write(
-                '''
-                The library "%s" is either not available on this platform,
-                for Python %s, or for this version of Sublime Text
-                ''',
-                (library_name, python_version)
-            )
-            # If a library is not available on this machine, that means it
-            # is not needed
-            return True
-
-        if not is_available:
             console_write("The library '%s' is not available for Python %s", (library_name, python_version))
             return False
 
@@ -1233,20 +1229,17 @@ class PackageManager:
 
         packages = self.list_available_packages()
 
-        is_available = package_name in list(packages.keys())
-        is_unavailable = package_name in self.settings.get('unavailable_packages', [])
+        if package_name not in packages:
+            if package_name in self.settings.get('unavailable_packages', []):
+                console_write(
+                    '''
+                    The package "%s" is either not available on this platform or for
+                    this version of Sublime Text
+                    ''',
+                    package_name
+                )
+                return False
 
-        if is_unavailable and not is_available:
-            console_write(
-                '''
-                The package "%s" is either not available on this platform or for
-                this version of Sublime Text
-                ''',
-                package_name
-            )
-            return False
-
-        if not is_available:
             show_error("The package '%s' is not available", (package_name,))
             return False
 
