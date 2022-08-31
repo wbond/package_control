@@ -1327,15 +1327,9 @@ class PackageManager:
             except (KeyError):
                 pass
 
-            have_installed_libraries = False
-            library_names = release.get('libraries', [])
-            if library_names:
-                if not self.install_libraries_by_name(library_names, python_version):
-                    return False
-                have_installed_libraries = True
-
-            # If libraries were not in the channel, try the package
-            if not have_installed_libraries:
+            library_names = release.get('libraries')
+            if not library_names:
+                # If libraries were not in the channel, try the package
                 try:
                     lib_info_json = package_zip.read(libraries_path)
                     lib_info = json.loads(lib_info_json.decode('utf-8'))
@@ -1352,8 +1346,9 @@ class PackageManager:
                     return False
 
                 library_names = self.select_libraries(lib_info)
-                if not self.install_libraries_by_name(library_names, python_version):
-                    return False
+
+            if library_names and not self.install_libraries_by_name(library_names, python_version):
+                return False
 
             metadata_filename = 'package-metadata.json'
 
