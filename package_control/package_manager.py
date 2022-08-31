@@ -858,21 +858,19 @@ class PackageManager:
 
     def _download_zip_file(self, name, url):
         try:
-            data = http_get(url, self.settings, 'Error downloading zip file.')
-        except (DownloaderException) as e:
+            return zipfile.ZipFile(BytesIO(http_get(url, self.settings, 'Error downloading zip file.')))
+
+        except DownloaderException as e:
             console_write(e)
             show_error(
                 '''
-                Unable to download %s. Please view the console for
-                more details.
+                Unable to download %s. Please view the console for more details.
                 ''',
                 name
             )
             return False
 
-        try:
-            z = zipfile.ZipFile(BytesIO(data))
-        except (zipfile.BadZipfile):
+        except zipfile.BadZipfile:
             show_error(
                 '''
                 An error occurred while trying to unzip the file for %s.
@@ -880,8 +878,6 @@ class PackageManager:
                 name
             )
             return False
-
-        return z
 
     def _common_folder(self, name, zf):
         """
