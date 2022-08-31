@@ -1,43 +1,43 @@
-import os
-import re
-import json
-import zipfile
-import shutil
-from fnmatch import fnmatch
+import compileall
 import datetime
-import tempfile
+import json
 # To prevent import errors in thread with datetime
 import locale  # noqa
-from urllib.parse import urlencode, urlparse
-import compileall
+import os
+import re
+import shutil
+import tempfile
+import zipfile
 
+from fnmatch import fnmatch
+from urllib.parse import urlencode, urlparse
 
 import sublime
 
-from .show_error import show_error
-from .console_write import console_write
-from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
+from . import __version__
+from . import distinfo, library, sys_path, text
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
-from .versions import PackageVersion, version_sort
+from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
+from .clients.client_exception import ClientException
+from .console_write import console_write
+from .download_manager import http_get
 from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.downloader_exception import DownloaderException
-from .providers.provider_exception import ProviderException
-from .clients.client_exception import ClientException
-from .download_manager import http_get
-from .upgraders.git_upgrader import GitUpgrader
-from .upgraders.hg_upgrader import HgUpgrader
 from .package_io import (
+    get_installed_package_path,
+    get_package_dir,
     list_sublime_package_dirs,
     list_sublime_package_files,
-    get_package_dir,
-    get_installed_package_path,
     read_package_file
 )
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
+from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
 from .settings import pc_settings_filename, load_list_setting, save_list_setting
-from . import distinfo, library, sys_path, text
-from . import __version__
+from .show_error import show_error
+from .upgraders.git_upgrader import GitUpgrader
+from .upgraders.hg_upgrader import HgUpgrader
+from .versions import PackageVersion, version_sort
 
 
 DEFAULT_CHANNEL = 'https://packagecontrol.io/channel_v3.json'
