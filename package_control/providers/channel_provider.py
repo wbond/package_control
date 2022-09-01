@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from itertools import chain
 from urllib.parse import urljoin
 
 from ..console_write import console_write
@@ -167,14 +168,13 @@ class ChannelProvider:
 
         if self.schema_version.major >= 2:
             output = {}
-            if 'packages_cache' in self.channel_info:
-                for repo in self.channel_info['packages_cache']:
-                    for package in self.channel_info['packages_cache'][repo]:
-                        previous_names = package.get('previous_names', [])
-                        if not isinstance(previous_names, list):
-                            previous_names = [previous_names]
-                        for previous_name in previous_names:
-                            output[previous_name] = package['name']
+            for package in chain(*self.channel_info.get('packages_cache', {}).values()):
+                previous_names = package.get('previous_names', [])
+                if not isinstance(previous_names, list):
+                    previous_names = [previous_names]
+                for previous_name in previous_names:
+                    output[previous_name] = package['name']
+
             return output
 
         return self.channel_info.get('renamed_packages', {})
