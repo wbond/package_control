@@ -2661,7 +2661,6 @@ class ChannelProviderTests(unittest.TestCase):
             {
                 'bz2': {
                     "name": "bz2",
-                    "load_order": "02",
                     "author": "wbond",
                     "description": "Python bz2 module",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -2670,13 +2669,14 @@ class ChannelProviderTests(unittest.TestCase):
                             "version": "1.0.0",
                             "url": "https://packagecontrol.io/bz2.sublime-package",
                             "sublime_text": "*",
-                            "platforms": ["*"]
+                            "platforms": ["*"],
+                            "python_versions": ["3.3"]
+
                         }
                     ]
                 },
                 'ssl-linux': {
                     "name": "ssl-linux",
-                    "load_order": "01",
                     "description": "Python _ssl module for Linux",
                     "author": "wbond",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -2686,13 +2686,13 @@ class ChannelProviderTests(unittest.TestCase):
                             "url": "http://packagecontrol.io/ssl-linux.sublime-package",
                             "sublime_text": "*",
                             "platforms": ["linux"],
+                            "python_versions": ["3.3"],
                             "sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
                         }
                     ]
                 },
                 'ssl-windows': {
                     "name": "ssl-windows",
-                    "load_order": "01",
                     "description": "Python _ssl module for Sublime Text 2 on Windows",
                     "author": "wbond",
                     "issues": "https://github.com/wbond/package_control/issues",
@@ -2702,6 +2702,7 @@ class ChannelProviderTests(unittest.TestCase):
                             "url": "http://packagecontrol.io/ssl-windows.sublime-package",
                             "sublime_text": "<3000",
                             "platforms": ["windows"],
+                            "python_versions": ["3.3"],
                             "sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
                         }
                     ]

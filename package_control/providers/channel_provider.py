@@ -114,7 +114,7 @@ class ChannelProvider:
 
         try:
             channel_info = json.loads(json_string.decode('utf-8'))
-        except (ValueError):
+        except ValueError:
             raise InvalidChannelFileException(self, 'parsing JSON failed.')
 
         try:
@@ -124,17 +124,10 @@ class ChannelProvider:
         except ValueError as e:
             raise InvalidChannelFileException(self, e)
 
-        # Fix any out-dated repository URLs in the package cache
-        debug = self.settings.get('debug')
-        packages_key = 'packages_cache' if schema_version.major >= 2 else 'packages'
-        if packages_key in channel_info:
-            original_cache = channel_info[packages_key]
-            new_cache = {}
-            for repo in original_cache:
-                new_cache[update_url(repo, debug)] = original_cache[repo]
-            channel_info[packages_key] = new_cache
+        if 'repositories' not in channel_info:
+            raise InvalidChannelFileException(self, 'the "repositories" JSON key is missing.')
 
-        self.channel_info = channel_info
+        self.channel_info = self._migrate_channel_info(channel_info, schema_version)
         self.schema_version = schema_version
 
     def get_name_map(self):
@@ -191,39 +184,7 @@ class ChannelProvider:
 
         self.fetch()
 
-        if 'repositories' not in self.channel_info:
-            raise InvalidChannelFileException(
-                self, 'the "repositories" JSON key is missing.')
-
-        # Determine a relative root so repositories can be defined
-        # relative to the location of the channel file.
-        scheme_match = re.match(r'(https?:)//', self.channel_url, re.I)
-        if scheme_match is None:
-            relative_base = os.path.dirname(self.channel_url)
-            is_http = False
-        else:
-            is_http = True
-
-        debug = self.settings.get('debug')
-        output = []
-        for repository in self.channel_info['repositories']:
-            if repository.startswith('//'):
-                if scheme_match is not None:
-                    repository = scheme_match.group(1) + repository
-                else:
-                    repository = 'https:' + repository
-            elif repository.startswith('/'):
-                # We don't allow absolute repositories
-                continue
-            elif repository.startswith('./') or repository.startswith('../'):
-                if is_http:
-                    repository = urljoin(self.channel_url, repository)
-                else:
-                    repository = os.path.join(relative_base, repository)
-                    repository = os.path.normpath(repository)
-            output.append(update_url(repository, debug))
-
-        return output
+        return self.channel_info['repositories']
 
     def get_sources(self):
         """
@@ -278,55 +239,10 @@ class ChannelProvider:
 
         self.fetch()
 
-        repo_url = update_url(repo_url, self.settings.get('debug'))
-
-        # The 2.0 channel schema renamed the key cached package info was
-        # stored under in order to be more clear to new users.
-        packages_key = 'packages_cache' if self.schema_version.major >= 2 else 'packages'
-
-        output = {}
-        for package in self.channel_info.get(packages_key, {}).get(repo_url, []):
-            copy = package.copy()
-
-            # In schema version 2.0, we store a list of dicts containing info
-            # about all available releases. These include "version" and
-            # "platforms" keys that are used to pick the download for the
-            # current machine.
-            if self.schema_version.major < 2:
-                copy['releases'] = platforms_to_releases(copy, self.settings.get('debug'))
-                del copy['platforms']
-            else:
-                last_modified = None
-
-                for release in copy.get('releases', []):
-                    date = release.get('date')
-                    if not last_modified or (date and date > last_modified):
-                        last_modified = date
-
-                    if self.schema_version.major < 4:
-                        if 'dependencies' in release:
-                            release['libraries'] = release['dependencies']
-                            del release['dependencies']
-
-                copy['last_modified'] = last_modified
-
-            defaults = {
-                'buy': None,
-                'issues': None,
-                'labels': [],
-                'previous_names': [],
-                'readme': None,
-                'donate': None
-            }
-            for field in defaults:
-                if field not in copy:
-                    copy[field] = defaults[field]
-
-            copy['releases'] = version_sort(copy['releases'], 'platforms', reverse=True)
-
-            output[copy['name']] = copy
-
-        return output
+        return {
+            package['name']: package
+            for package in self.channel_info.get('packages_cache', {}).get(repo_url, [])
+        }
 
     def get_libraries(self, repo_url):
         """
@@ -352,6 +268,7 @@ class ChannelProvider:
                         {
                             'sublime_text': '*',
                             'platforms': ['*'],
+                            'python_versions': ['3.3', '3.8'],
                             'url': url,
                             'date': date,
                             'version': version,
@@ -365,15 +282,157 @@ class ChannelProvider:
 
         self.fetch()
 
-        repo_url = update_url(repo_url, self.settings.get('debug'))
+        return {
+            library['name']: library
+            for library in self.channel_info.get('libraries_cache', {}).get(repo_url, [])
+        }
 
-        # The 4.0.0 channel schema renamed the key cached package info was
-        # stored under in order to be more clear to new users.
-        libraries_key = 'libraries_cache' if self.schema_version.major >= 4 else 'dependencies_cache'
+    def _migrate_channel_info(self, channel_info, schema_version):
+        """
+        Transform input channel_info to scheme version 4.0.0
 
-        output = {}
-        for library in self.channel_info.get(libraries_key, {}).get(repo_url, []):
-            library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
-            output[library['name']] = library
+        :param channel_info:
+            The input channel information of any scheme version
+
+        :param schema_version:
+            The schema version of the input channel information
+
+        :returns:
+            channel_info object of scheme version 4.0.0
+        """
+
+        channel_info['repositories'] = self._migrate_repositories(channel_info, schema_version)
+        channel_info['packages_cache'] = self._migrate_packages_cache(channel_info, schema_version)
+        channel_info['libraries_cache'] = self._migrate_libraries_cache(channel_info, schema_version)
+        return channel_info
+
+    def _migrate_repositories(self, channel_info, schema_version):
+
+        debug = self.settings.get('debug')
+
+        # Determine a relative root so repositories can be defined
+        # relative to the location of the channel file.
+        scheme_match = re.match(r'(https?:)//', self.channel_url, re.I)
+        if scheme_match is None:
+            relative_base = os.path.dirname(self.channel_url)
+            is_http = False
+        else:
+            relative_base = ''
+            is_http = True
+
+        output = []
+        for repository in channel_info['repositories']:
+            if repository.startswith('//'):
+                if scheme_match is not None:
+                    repository = scheme_match.group(1) + repository
+                else:
+                    repository = 'https:' + repository
+            elif repository.startswith('/'):
+                # We don't allow absolute repositories
+                continue
+            elif repository.startswith('./') or repository.startswith('../'):
+                if is_http:
+                    repository = urljoin(self.channel_url, repository)
+                else:
+                    repository = os.path.join(relative_base, repository)
+                    repository = os.path.normpath(repository)
+            output.append(update_url(repository, debug))
 
         return output
+
+    def _migrate_packages_cache(self, channel_info, schema_version):
+        """
+        Transform input packages cache to scheme version 4.0.0
+
+        :param channel_info:
+            The input channel information of any scheme version
+
+        :param schema_version:
+            The schema version of the input channel information
+
+        :returns:
+            packages_cache object of scheme version 4.0.0
+        """
+
+        debug = self.settings.get('debug')
+
+        if schema_version.major < 2:
+            # The 2.0 channel schema renamed the key cached package info was
+            # stored under in order to be more clear to new users.
+            channel_info['packages_cache'] = channel_info.pop('packages', {})
+
+        package_cache = channel_info.get('packages_cache', {})
+
+        defaults = {
+            'buy': None,
+            'issues': None,
+            'labels': [],
+            'previous_names': [],
+            'readme': None,
+            'donate': None
+        }
+
+        for package in chain(*package_cache.values()):
+
+            for field in defaults:
+                if field not in package:
+                    package[field] = defaults[field]
+
+            # In schema version 2.0, we store a list of dicts containing info
+            # about all available releases. These include "version" and
+            # "platforms" keys that are used to pick the download for the
+            # current machine.
+            if schema_version.major < 2:
+                package['releases'] = version_sort(
+                    platforms_to_releases(package, debug), 'platforms', reverse=True)
+                del package['platforms']
+
+            else:
+                releases = version_sort(package.get('releases', []), 'platforms', reverse=True)
+                package['releases'] = releases
+                package['last_modified'] = releases[0]['date'] if releases else None
+
+            # The 4.0.0 channel schema renamed the `dependencies` key to `libraries`.
+            if schema_version.major < 4:
+                for release in package['releases']:
+                    if 'dependencies' in release:
+                        release['libraries'] = release.pop('dependencies')
+
+        # Fix any out-dated repository URLs in packages cache
+        return {update_url(name, debug): info for name, info in package_cache.items()}
+
+    def _migrate_libraries_cache(self, channel_info, schema_version):
+        """
+        Transform input libraries cache to scheme version 4.0.0
+
+        :param channel_info:
+            The input channel information of any scheme version
+
+        :param schema_version:
+            The schema version of the input channel information
+
+        :returns:
+            libraries_cache object of scheme version 4.0.0
+        """
+
+        debug = self.settings.get('debug')
+
+        if schema_version.major < 4:
+            # The 4.0.0 channel schema renamed the key cached package info was
+            # stored under in order to be more clear to new users.
+            libraries_cache = channel_info.pop('dependencies_cache', {})
+
+            # The 4.0.0 channel scheme drops 'load_order' from each library
+            # and adds a required 'python_versions' list to each release.
+            for library in chain(*libraries_cache.values()):
+                del library['load_order']
+                for release in library['releases']:
+                    release['python_versions'] = ['3.3']
+        else:
+            libraries_cache = channel_info.get('libraries_cache', {})
+
+        for library in chain(*libraries_cache.values()):
+            library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
+
+        # Fix any out-dated repository URLs in libraries cache
+        return {update_url(name, debug): info for name, info in libraries_cache.items()}

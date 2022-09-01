@@ -663,22 +663,15 @@ class PackageManager:
         """
 
         libraries = self._list_available()[1]
+
         filtered_libraries = {}
-        for library_name in libraries:
-            lib_info = libraries[library_name]
-            filtered_releases = []
-            for release in lib_info.get("releases", []):
-                if "python_versions" not in release:
-                    lib_python_compat = ["3.3"]
-                else:
-                    lib_python_compat = release["python_versions"]
-                if python_version not in lib_python_compat:
-                    continue
-                filtered_releases.append(release)
-            if not filtered_releases:
-                continue
-            filtered_libraries[library_name] = lib_info.copy()
-            filtered_libraries[library_name]["releases"] = filtered_releases
+        for library_name, lib_info in libraries.items():
+            filtered_releases = [
+                release for release in lib_info["releases"]
+                if python_version in release["python_versions"]
+            ]
+            if filtered_releases:
+                filtered_libraries[library_name] = lib_info
 
         return filtered_libraries
 
