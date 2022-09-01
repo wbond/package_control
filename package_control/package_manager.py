@@ -1902,7 +1902,7 @@ class PackageManager:
         try:
             library.remove(sys_path.lib_paths()[lib.python_version], lib.name)
         except distinfo.DistInfoNotFoundError:
-            show_error(
+            console_write(
                 '''
                 The library specified, %s for Python %s, is not installed
                 ''',
@@ -1915,10 +1915,10 @@ class PackageManager:
             # before we remove the metadata, and thus we'll still think the
             # library is installed when ST restarts, and we can try removing
             # it again in the future.
-            show_error(
+            console_write(
                 '''
                 An error occurred while trying to remove the library %s for
-                Python %s. Please restart Sublime Text to finish the cleanup.
+                Python %s. It will be removed during next start of Sublime Text.
                 ''',
                 (lib.name, lib.python_version)
             )
