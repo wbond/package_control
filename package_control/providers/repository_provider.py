@@ -210,7 +210,6 @@ class RepositoryProvider(BaseRepositoryProvider):
                 'Library Name',
                 {
                     'name': name,
-                    'load_order': two digit string,
                     'description': description,
                     'author': author,
                     'issues': URL,
@@ -462,6 +461,13 @@ class RepositoryProvider(BaseRepositoryProvider):
                     'description': description,
                     'author': author,
                     'homepage': homepage,
+                    'previous_names': [old_name, ...],
+                    'labels': [label, ...],
+                    'sources': [url, ...],
+                    'readme': url,
+                    'issues': url,
+                    'donate': url,
+                    'buy': url,
                     'last_modified': last modified date,
                     'releases': [
                         {
@@ -473,13 +479,6 @@ class RepositoryProvider(BaseRepositoryProvider):
                             'libraries': [library name, ...]
                         }, ...
                     ]
-                    'previous_names': [old_name, ...],
-                    'labels': [label, ...],
-                    'sources': [url, ...],
-                    'readme': url,
-                    'issues': url,
-                    'donate': url,
-                    'buy': url
                 }
             )
             tuples

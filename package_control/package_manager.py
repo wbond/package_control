@@ -437,27 +437,23 @@ class PackageManager:
                     unavailable_libraries = []
 
                     for repo in channel_repositories:
-                        original_packages = provider.get_packages(repo)
                         filtered_packages = {}
-                        for package in original_packages:
-                            info = original_packages[package]
-                            info['releases'] = self.select_releases(package, info['releases'])
+                        for name, info in provider.get_packages(repo):
+                            info['releases'] = self.select_releases(name, info['releases'])
                             if info['releases']:
-                                filtered_packages[package] = info
+                                filtered_packages[name] = info
                             else:
-                                unavailable_packages.append(package)
+                                unavailable_packages.append(name)
                         packages_cache_key = repo + '.packages'
                         set_cache(packages_cache_key, filtered_packages, cache_ttl)
 
-                        original_libraries = provider.get_libraries(repo)
                         filtered_libraries = {}
-                        for lib_name in original_libraries:
-                            info = original_libraries[lib_name]
-                            info['releases'] = self.select_releases(lib_name, info['releases'])
+                        for name, info in provider.get_libraries(repo):
+                            info['releases'] = self.select_releases(name, info['releases'])
                             if info['releases']:
-                                filtered_libraries[lib_name] = info
+                                filtered_libraries[name] = info
                             else:
-                                unavailable_libraries.append(lib_name)
+                                unavailable_libraries.append(name)
                         libraries_cache_key = repo + '.libraries'
                         set_cache(libraries_cache_key, filtered_libraries, cache_ttl)
 

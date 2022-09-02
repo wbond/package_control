@@ -209,40 +209,40 @@ class ChannelProvider:
             DownloaderException: when an error occurs trying to open a URL
 
         :return:
-            A dict in the format:
-            {
-                'Package Name': {
+            A generator of
+            (
+                'Package Name',
+                {
                     'name': name,
                     'description': description,
                     'author': author,
                     'homepage': homepage,
-                    'last_modified': last modified date,
-                    'releases': [
-                        {
-                            'sublime_text': '*',
-                            'platforms': ['*'],
-                            'url': url,
-                            'date': date,
-                            'version': version
-                        }, ...
-                    ],
                     'previous_names': [old_name, ...],
                     'labels': [label, ...],
                     'readme': url,
                     'issues': url,
                     'donate': url,
-                    'buy': url
-                },
-                ...
-            }
+                    'buy': url,
+                    'last_modified': last modified date,
+                    'releases': [
+                        {
+                            'sublime_text': compatible version,
+                            'platforms': [platform name, ...],
+                            'url': url,
+                            'date': date,
+                            'version': version,
+                            'libraries': [library name, ...]
+                        }, ...
+                    ]
+                }
+            )
+            tuples
         """
 
         self.fetch()
 
-        return {
-            package['name']: package
-            for package in self.channel_info.get('packages_cache', {}).get(repo_url, [])
-        }
+        for package in self.channel_info.get('packages_cache', {}).get(repo_url, []):
+            yield (package['name'], package)
 
     def get_libraries(self, repo_url):
         """
@@ -256,36 +256,33 @@ class ChannelProvider:
             DownloaderException: when an error occurs trying to open a URL
 
         :return:
-            A dict in the format:
-            {
-                'Library Name': {
+            A generator of
+            (
+                'Library Name',
+                {
                     'name': name,
-                    'load_order': two digit string,
                     'description': description,
                     'author': author,
                     'issues': URL,
                     'releases': [
                         {
-                            'sublime_text': '*',
-                            'platforms': ['*'],
+                            'sublime_text': compatible version,
+                            'platforms': [platform name, ...],
                             'python_versions': ['3.3', '3.8'],
                             'url': url,
-                            'date': date,
                             'version': version,
-                            'sha256': hex_hash
+                            'sha256': hex hash
                         }, ...
                     ]
-                },
-                ...
-            }
+                }
+            )
+            tuples
         """
 
         self.fetch()
 
-        return {
-            library['name']: library
-            for library in self.channel_info.get('libraries_cache', {}).get(repo_url, [])
-        }
+        for library in self.channel_info.get('libraries_cache', {}).get(repo_url, []):
+            yield (library['name'], library)
 
     def _migrate_channel_info(self, channel_info, schema_version):
         """
