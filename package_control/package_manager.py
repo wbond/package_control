@@ -413,7 +413,6 @@ class PackageManager:
             cache_key = channel + '.repositories'
             channel_repositories = get_cache(cache_key)
 
-            merge_cache_under_settings(self, 'package_name_map', channel)
             merge_cache_under_settings(self, 'renamed_packages', channel)
             merge_cache_under_settings(self, 'unavailable_packages', channel, list_=True)
             merge_cache_under_settings(self, 'unavailable_libraries', channel, list_=True)
@@ -456,10 +455,6 @@ class PackageManager:
                                 unavailable_libraries.append(name)
                         libraries_cache_key = repo + '.libraries'
                         set_cache(libraries_cache_key, filtered_libraries, cache_ttl)
-
-                    # Have the local name map override the one from the channel
-                    name_map = provider.get_name_map()
-                    set_cache_under_settings(self, 'package_name_map', channel, name_map, cache_ttl)
 
                     renamed_packages = provider.get_renamed_packages()
                     set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)

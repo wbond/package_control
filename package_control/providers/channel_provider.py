@@ -7,7 +7,6 @@ from ..console_write import console_write
 from ..download_manager import http_get, resolve_urls, update_url
 from ..versions import version_sort
 from .provider_exception import ProviderException
-from .schema_compat import platforms_to_releases
 from .schema_compat import SchemaVersion
 
 
@@ -129,23 +128,6 @@ class ChannelProvider:
         self.channel_info = self._migrate_channel_info(channel_info, schema_version)
         self.schema_version = schema_version
 
-    def get_name_map(self):
-        """
-        :raises:
-            ProviderException: when an error occurs with the channel contents
-            DownloaderException: when an error occurs trying to open a URL
-
-        :return:
-            A dict of the mapping for URL slug -> package name
-        """
-
-        self.fetch()
-
-        if self.schema_version.major >= 2:
-            return {}
-
-        return self.channel_info.get('package_name_map', {})
-
     def get_renamed_packages(self):
         """
         :raises:
@@ -158,18 +140,15 @@ class ChannelProvider:
 
         self.fetch()
 
-        if self.schema_version.major >= 2:
-            output = {}
-            for package in chain(*self.channel_info.get('packages_cache', {}).values()):
-                previous_names = package.get('previous_names', [])
-                if not isinstance(previous_names, list):
-                    previous_names = [previous_names]
-                for previous_name in previous_names:
-                    output[previous_name] = package['name']
+        output = {}
+        for package in chain(*self.channel_info.get('packages_cache', {}).values()):
+            previous_names = package.get('previous_names', [])
+            if not isinstance(previous_names, list):
+                previous_names = [previous_names]
+            for previous_name in previous_names:
+                output[previous_name] = package['name']
 
-            return output
-
-        return self.channel_info.get('renamed_packages', {})
+        return output
 
     def get_repositories(self):
         """
@@ -365,11 +344,6 @@ class ChannelProvider:
 
         debug = self.settings.get('debug')
 
-        if schema_version.major < 2:
-            # The 2.0 channel schema renamed the key cached package info was
-            # stored under in order to be more clear to new users.
-            channel_info['packages_cache'] = channel_info.pop('packages', {})
-
         package_cache = channel_info.get('packages_cache', {})
 
         defaults = {
@@ -387,19 +361,9 @@ class ChannelProvider:
                 if field not in package:
                     package[field] = defaults[field]
 
-            # In schema version 2.0, we store a list of dicts containing info
-            # about all available releases. These include "version" and
-            # "platforms" keys that are used to pick the download for the
-            # current machine.
-            if schema_version.major < 2:
-                package['releases'] = version_sort(
-                    platforms_to_releases(package, debug), 'platforms', reverse=True)
-                del package['platforms']
-
-            else:
-                releases = version_sort(package.get('releases', []), 'platforms', reverse=True)
-                package['releases'] = releases
-                package['last_modified'] = releases[0]['date'] if releases else None
+            releases = version_sort(package.get('releases', []), 'platforms', reverse=True)
+            package['releases'] = releases
+            package['last_modified'] = releases[0]['date'] if releases else None
 
             # The 4.0.0 channel schema renamed the `dependencies` key to `libraries`.
             if schema_version.major < 4:

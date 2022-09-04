@@ -2,7 +2,7 @@ import unittest
 
 from ..http_cache import HttpCache
 from ..providers.bitbucket_repository_provider import BitBucketRepositoryProvider
-from ..providers.channel_provider import ChannelProvider
+from ..providers.channel_provider import ChannelProvider, InvalidChannelFileException
 from ..providers.github_repository_provider import GitHubRepositoryProvider
 from ..providers.github_user_provider import GitHubUserProvider
 from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
@@ -627,55 +627,7 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json',
             self.settings()
         )
-        self.assertEqual(
-            [(
-                'package_control-tester-1.0',
-                {
-                    "name": "package_control-tester-1.0",
-                    "author": "packagecontrol",
-                    "description": "A test of Package Control upgrade messages with "
-                                   "explicit versions, but date-based releases.",
-                    "homepage": "https://github.com/packagecontrol-test/package_control-tester",
-                    "issues": None,
-                    "donate": None,
-                    "buy": None,
-                    "readme": None,
-                    "previous_names": [],
-                    "labels": [],
-                    "sources": [
-                        'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json'
-                    ],
-                    "last_modified": "2011-08-01 00:00:00",
-                    "releases": [
-                        {
-                            "version": "1.0.1",
-                            "date": "2011-08-01 00:00:00",
-                            "url": "https://codeload.github.com/packagecontrol-test"
-                                   "/package_control-tester/zip/1.0.1",
-                            "sublime_text": "<3000",
-                            "platforms": ["windows"]
-                        },
-                        {
-                            "version": "1.0.1-beta",
-                            "date": "2011-08-01 00:00:00",
-                            "url": "https://codeload.github.com/packagecontrol-test"
-                                   "/package_control-tester/zip/1.0.1-beta",
-                            "sublime_text": "<3000",
-                            "platforms": ["windows"]
-                        },
-                        {
-                            "version": "1.0.0",
-                            "date": "2011-08-01 00:00:00",
-                            "url": "https://codeload.github.com/packagecontrol-test"
-                                   "/package_control-tester/zip/1.0.0",
-                            "sublime_text": "<3000",
-                            "platforms": ["*"]
-                        }
-                    ]
-                }
-            )],
-            list(provider.get_packages())
-        )
+        self.assertEqual([], list(provider.get_packages()))
 
     def test_get_libraries_10(self):
         provider = RepositoryProvider(
@@ -689,55 +641,7 @@ class RepositoryProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json',
             self.settings()
         )
-        self.assertEqual(
-            [(
-                'package_control-tester-1.2',
-                {
-                    "name": "package_control-tester-1.2",
-                    "author": "packagecontrol",
-                    "description": "A test of Package Control upgrade messages with "
-                                   "explicit versions, but date-based releases.",
-                    "homepage": "https://github.com/packagecontrol-test/package_control-tester",
-                    "issues": None,
-                    "donate": None,
-                    "buy": None,
-                    "readme": None,
-                    "previous_names": [],
-                    "labels": [],
-                    "sources": [
-                        'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json'
-                    ],
-                    "last_modified": "2014-11-12 15:52:35",
-                    "releases": [
-                        {
-                            "version": "1.0.1",
-                            "date": "2014-11-12 15:52:35",
-                            "url": "https://codeload.github.com/packagecontrol-test"
-                                   "/package_control-tester/zip/1.0.1",
-                            "sublime_text": "<3000",
-                            "platforms": ["windows"]
-                        },
-                        {
-                            "version": "1.0.1-beta",
-                            "date": "2014-11-12 15:52:35",
-                            "url": "https://codeload.github.com/packagecontrol-test"
-                                   "/package_control-tester/zip/1.0.1-beta",
-                            "sublime_text": "<3000",
-                            "platforms": ["windows"]
-                        },
-                        {
-                            "version": "1.0.0",
-                            "date": "2014-11-12 15:52:35",
-                            "url": "https://codeload.github.com/packagecontrol-test"
-                                   "/package_control-tester/zip/1.0.0",
-                            "sublime_text": "<3000",
-                            "platforms": ["*"]
-                        }
-                    ]
-                }
-            )],
-            list(provider.get_packages())
-        )
+        self.assertEqual([], list(provider.get_packages()))
 
     def test_get_libraries_12(self):
         provider = RepositoryProvider(
@@ -1686,24 +1590,14 @@ class ChannelProviderTests(unittest.TestCase):
             }
         }
 
-    def test_get_name_map_12(self):
-        provider = ChannelProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
-            self.settings()
-        )
-        self.assertEqual(
-            {},
-            provider.get_name_map()
-        )
-
     def test_get_renamed_packages_12(self):
         provider = ChannelProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
             self.settings()
         )
-        self.assertEqual(
-            {},
-            provider.get_renamed_packages()
+        self.assertRaises(
+            InvalidChannelFileException,
+            provider.get_renamed_packages
         )
 
     def test_get_repositories_12(self):
@@ -1711,12 +1605,9 @@ class ChannelProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
             self.settings()
         )
-        self.assertEqual(
-            [
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json"
-            ],
-            provider.get_repositories()
+        self.assertRaises(
+            InvalidChannelFileException,
+            provider.get_repositories
         )
 
     def test_get_sources_12(self):
@@ -1724,12 +1615,9 @@ class ChannelProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
             self.settings()
         )
-        self.assertEqual(
-            [
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json"
-            ],
-            provider.get_sources()
+        self.assertRaises(
+            InvalidChannelFileException,
+            provider.get_sources
         )
 
     def test_get_packages_12(self):
@@ -1737,115 +1625,12 @@ class ChannelProviderTests(unittest.TestCase):
             'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
             self.settings()
         )
-        self.assertEqual(
-            [
-                (
-                    "package_control-tester-1.0",
-                    {
-                        "name": "package_control-tester-1.0",
-                        "author": "packagecontrol",
-                        "description": "A test of Package Control upgrade messages with "
-                                       "explicit versions, but date-based releases.",
-                        "homepage": "https://github.com/packagecontrol-test/package_control-tester",
-                        "issues": None,
-                        "donate": None,
-                        "buy": None,
-                        "readme": None,
-                        "previous_names": [],
-                        "labels": [],
-                        "last_modified": "2011-08-01 00:00:00",
-                        "releases": [
-                            {
-                                "version": "1.0.1",
-                                "date": "2011-08-01 00:00:00",
-                                "url": "https://codeload.github.com/packagecontrol-test"
-                                       "/package_control-tester/zip/1.0.1",
-                                "sublime_text": "<3000",
-                                "platforms": ["windows"]
-                            },
-                            {
-                                "version": "1.0.1-beta",
-                                "date": "2011-08-01 00:00:00",
-                                "url": "https://codeload.github.com/packagecontrol-test"
-                                       "/package_control-tester/zip/1.0.1-beta",
-                                "sublime_text": "<3000",
-                                "platforms": ["windows"]
-                            },
-                            {
-                                "version": "1.0.0",
-                                "date": "2011-08-01 00:00:00",
-                                "url": "https://codeload.github.com/packagecontrol-test"
-                                       "/package_control-tester/zip/1.0.0",
-                                "sublime_text": "<3000",
-                                "platforms": ["*"]
-                            }
-                        ]
-                    }
-                )
-            ],
-            list(provider.get_packages(
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json"
-            ))
-        )
-        self.assertEqual(
-            [
-                (
-                    "package_control-tester-1.2",
-                     {
-                        "name": "package_control-tester-1.2",
-                        "author": "packagecontrol",
-                        "description": "A test of Package Control upgrade messages with "
-                                       "explicit versions, but date-based releases.",
-                        "homepage": "https://github.com/packagecontrol-test/package_control-tester",
-                        "issues": None,
-                        "donate": None,
-                        "buy": None,
-                        "readme": None,
-                        "previous_names": [],
-                        "labels": [],
-                        "last_modified": "2014-11-12 15:52:35",
-                        "releases": [
-                            {
-                                "version": "1.0.1",
-                                "date": "2014-11-12 15:52:35",
-                                "url": "https://codeload.github.com/packagecontrol-test"
-                                       "/package_control-tester/zip/1.0.1",
-                                "sublime_text": "<3000",
-                                "platforms": ["windows"]
-                            },
-                            {
-                                "version": "1.0.1-beta",
-                                "date": "2014-11-12 15:52:35",
-                                "url": "https://codeload.github.com/packagecontrol-test"
-                                       "/package_control-tester/zip/1.0.1-beta",
-                                "sublime_text": "<3000",
-                                "platforms": ["windows"]
-                            },
-                            {
-                                "version": "1.0.0",
-                                "date": "2014-11-12 15:52:35",
-                                "url": "https://codeload.github.com/packagecontrol-test"
-                                       "/package_control-tester/zip/1.0.0",
-                                "sublime_text": "<3000",
-                                "platforms": ["*"]
-                            }
-                        ]
-                    }
-                )
-            ],
-            list(provider.get_packages(
+        self.assertRaises(
+            InvalidChannelFileException,
+            list,
+            provider.get_packages(
                 "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json"
-            ))
-        )
-
-    def test_get_name_map_20(self):
-        provider = ChannelProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
-            self.settings()
-        )
-        self.assertEqual(
-            {},
-            provider.get_name_map()
+            )
         )
 
     def test_get_renamed_packages_20(self):
@@ -2178,16 +1963,6 @@ class ChannelProviderTests(unittest.TestCase):
                 "https://raw.githubusercontent.com/wbond/package_control-json"
                 "/master/repository-2.0-bitbucket_details.json"
             ))
-        )
-
-    def test_get_name_map_300(self):
-        provider = ChannelProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
-            self.settings()
-        )
-        self.assertEqual(
-            {},
-            provider.get_name_map()
         )
 
     def test_get_renamed_packages_300(self):
