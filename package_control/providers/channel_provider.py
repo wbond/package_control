@@ -15,7 +15,7 @@ class InvalidChannelFileException(ProviderException):
     def __init__(self, channel, reason_message):
         super().__init__(
             'Channel %s does not appear to be a valid channel file because'
-            ' %s' % (channel.url, reason_message))
+            ' %s' % (channel.channel_url, reason_message))
 
 
 class ChannelProvider:
