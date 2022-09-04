@@ -242,7 +242,8 @@ class ChannelProvider:
         self.fetch()
 
         for package in self.channel_info.get('packages_cache', {}).get(repo_url, []):
-            yield (package['name'], package)
+            if package['releases']:
+                yield (package['name'], package)
 
     def get_libraries(self, repo_url):
         """
@@ -282,7 +283,44 @@ class ChannelProvider:
         self.fetch()
 
         for library in self.channel_info.get('libraries_cache', {}).get(repo_url, []):
-            yield (library['name'], library)
+            if library['releases']:
+                yield (library['name'], library)
+
+    def get_broken_packages(self):
+        """
+        Provide package names without releases.
+
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A generator of 'package names'
+        """
+
+        self.fetch()
+
+        for package in chain(*self.channel_info.get('packages_cache', {}).values()):
+            if not package['releases']:
+                yield package['name']
+
+    def get_broken_libraries(self):
+        """
+        Provide library names without releases.
+
+        :raises:
+            ProviderException: when an error occurs with the channel contents
+            DownloaderException: when an error occurs trying to open a URL
+
+        :return:
+            A generator of 'library names'
+        """
+
+        self.fetch()
+
+        for library in chain(*self.channel_info.get('libraries_cache', {}).values()):
+            if not library['releases']:
+                yield library['name']
 
     def _migrate_channel_info(self, channel_info, schema_version):
         """
