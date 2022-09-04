@@ -2,10 +2,9 @@ import json
 import os
 import re
 from itertools import chain
-from urllib.parse import urljoin
 
 from ..console_write import console_write
-from ..download_manager import http_get, update_url
+from ..download_manager import http_get, resolve_urls, update_url
 from ..versions import version_sort
 from .provider_exception import ProviderException
 from .schema_compat import platforms_to_releases
@@ -345,35 +344,10 @@ class ChannelProvider:
 
         debug = self.settings.get('debug')
 
-        # Determine a relative root so repositories can be defined
-        # relative to the location of the channel file.
-        scheme_match = re.match(r'(https?:)//', self.channel_url, re.I)
-        if scheme_match is None:
-            relative_base = os.path.dirname(self.channel_url)
-            is_http = False
-        else:
-            relative_base = ''
-            is_http = True
-
-        output = []
-        for repository in channel_info['repositories']:
-            if repository.startswith('//'):
-                if scheme_match is not None:
-                    repository = scheme_match.group(1) + repository
-                else:
-                    repository = 'https:' + repository
-            elif repository.startswith('/'):
-                # We don't allow absolute repositories
-                continue
-            elif repository.startswith('./') or repository.startswith('../'):
-                if is_http:
-                    repository = urljoin(self.channel_url, repository)
-                else:
-                    repository = os.path.join(relative_base, repository)
-                    repository = os.path.normpath(repository)
-            output.append(update_url(repository, debug))
-
-        return output
+        return [
+            update_url(url, debug)
+            for url in resolve_urls(self.channel_url, channel_info['repositories'])
+        ]
 
     def _migrate_packages_cache(self, channel_info, schema_version):
         """

@@ -1,8 +1,9 @@
+import os
 import re
 import socket
 import sys
 from threading import Lock, Timer
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from . import __version__
 from . import text
@@ -145,6 +146,43 @@ def close_all_connections():
             for manager in managers:
                 manager.close()
         _managers = {}
+
+
+def resolve_urls(root_url, uris):
+    """
+    Convert a list of relative uri's to absolute urls/paths.
+
+    :param root_url:
+        The root url string
+
+    :param uris:
+        An iteratable of relative uri's to resolve.
+
+    :returns:
+        A generator of resolved URLs
+    """
+
+    scheme_match = re.match(r'(https?:)//', root_url, re.I)
+    if scheme_match is None:
+        root_dir = os.path.dirname(root_url)
+    else:
+        root_dir = ''
+
+    for url in uris:
+        if url.startswith('//'):
+            if scheme_match is not None:
+                url = scheme_match.group(1) + url
+            else:
+                url = 'https:' + url
+        elif url.startswith('/'):
+            # We don't allow absolute repositories
+            continue
+        elif url.startswith('./') or url.startswith('../'):
+            if root_dir:
+                url = os.path.normpath(os.path.join(root_dir, url))
+            else:
+                url = urljoin(root_url, url)
+        yield url
 
 
 def update_url(url, debug):

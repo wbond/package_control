@@ -2,7 +2,7 @@ import json
 import re
 import os
 from itertools import chain
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 from .. import text
 from ..clients.bitbucket_client import BitBucketClient
@@ -10,7 +10,7 @@ from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.gitlab_client import GitLabClient
 from ..console_write import console_write
-from ..download_manager import http_get, update_url
+from ..download_manager import http_get, resolve_urls, update_url
 from ..downloaders.downloader_exception import DownloaderException
 from ..versions import version_sort
 from .base_repository_provider import BaseRepositoryProvider
@@ -104,29 +104,7 @@ class RepositoryProvider(BaseRepositoryProvider):
             return
 
         # Allow repositories to include other repositories
-        scheme_match = re.match(r'(https?:)//', self.repo_url, re.I)
-        if scheme_match is None:
-            relative_base = os.path.dirname(self.repo_url)
-            is_http = False
-        else:
-            is_http = True
-
-        for include in self.repo_info.pop('includes', []):
-            if include.startswith('//'):
-                if scheme_match is not None:
-                    include = scheme_match.group(1) + include
-                else:
-                    include = 'https:' + include
-            elif include.startswith('/'):
-                # We don't allow absolute includes
-                continue
-            elif include.startswith('./') or include.startswith('../'):
-                if is_http:
-                    include = urljoin(self.repo_url, include)
-                else:
-                    include = os.path.join(relative_base, include)
-                    include = os.path.normpath(include)
-
+        for include in resolve_urls(self.repo_url, self.repo_info.pop('includes', [])):
             include_info = self.fetch_json(include)
             include_version = include_info['schema_version']
             if include_version != self.schema_version:
