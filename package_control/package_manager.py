@@ -1029,7 +1029,7 @@ class PackageManager:
     def install_library(self, library_name, python_version):
         libraries = self.list_available_libraries(python_version)
 
-        if not library_name in libraries:
+        if library_name not in libraries:
             if library_name in self.settings.get('unavailable_libraries', []):
                 console_write(
                     '''
@@ -1047,8 +1047,6 @@ class PackageManager:
         release = libraries[library_name]['releases'][0]
 
         url = release['url']
-        suffix = '.whl' if url.endswith('.whl') else '.zip'
-        library_filename = library_name + suffix
 
         tmp_dir = tempfile.mkdtemp('')
         tmp_library_dir = os.path.join(tmp_dir, library_name)
