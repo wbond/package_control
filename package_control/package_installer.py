@@ -1,7 +1,5 @@
 import html
 import re
-import threading
-import time
 
 import sublime
 
@@ -154,46 +152,3 @@ class PackageInstaller(PackageDisabler):
 
             package_list.append(package_entry)
         return package_list
-
-
-class PackageInstallerThread(threading.Thread):
-
-    """
-    A thread to run package install/upgrade operations in so that the main
-    Sublime Text thread does not get blocked and freeze the UI
-    """
-
-    def __init__(self, manager, package, on_complete, pause=False):
-        """
-        :param manager:
-            An instance of :class:`PackageManager`
-
-        :param package:
-            The string package name to install/upgrade
-
-        :param on_complete:
-            A callback to run after installing/upgrading the package
-
-        :param pause:
-            If we should pause before upgrading to allow a package to be
-            fully disabled.
-        """
-
-        self.package = package
-        self.manager = manager
-        self.on_complete = on_complete
-        self.pause = pause
-        threading.Thread.__init__(self)
-
-    def run(self):
-        if self.pause:
-            time.sleep(0.7)
-        try:
-            self.result = self.manager.install_package(self.package)
-        except (Exception):
-            self.result = False
-            raise
-        finally:
-            # Do not reenable if deferred until next restart
-            if self.on_complete and self.result is not None:
-                sublime.set_timeout(self.on_complete, 700)

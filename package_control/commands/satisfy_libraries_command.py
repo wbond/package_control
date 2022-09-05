@@ -2,10 +2,10 @@ import threading
 
 import sublime_plugin
 
+from ..activity_indicator import ActivityIndicator
 from ..console_write import console_write
 from ..package_manager import PackageManager
 from ..show_error import show_error
-from ..thread_progress import ThreadProgress
 
 
 class SatisfyLibrariesCommand(sublime_plugin.ApplicationCommand):
@@ -16,10 +16,7 @@ class SatisfyLibrariesCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self):
-        manager = PackageManager()
-        thread = SatisfyLibrariesThread(manager)
-        thread.start()
-        ThreadProgress(thread, 'Satisfying libraries', '')
+        SatisfyLibrariesThread(PackageManager()).start()
 
 
 class SatisfyLibrariesThread(threading.Thread):
@@ -34,29 +31,32 @@ class SatisfyLibrariesThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        error = False
+        with ActivityIndicator('Satisfying libraries') as progress:
+            error = False
 
-        required_libraries = self.manager.find_required_libraries()
+            required_libraries = self.manager.find_required_libraries()
 
-        if not self.manager.install_libraries(libraries=required_libraries, fail_early=False):
-            show_error(
-                '''
-                One or more libraries could not be installed or updated.
+            if not self.manager.install_libraries(libraries=required_libraries, fail_early=False):
+                show_error(
+                    '''
+                    One or more libraries could not be installed or updated.
 
-                Please check the console for details.
-                '''
-            )
-            error = True
+                    Please check the console for details.
+                    '''
+                )
+                error = True
 
-        if not self.manager.cleanup_libraries(required_libraries=required_libraries):
-            show_error(
-                '''
-                One or more orphaned libraries could not be removed.
+            if not self.manager.cleanup_libraries(required_libraries=required_libraries):
+                show_error(
+                    '''
+                    One or more orphaned libraries could not be removed.
 
-                Please check the console for details.
-                '''
-            )
-            error = True
+                    Please check the console for details.
+                    '''
+                )
+                error = True
 
-        if not error:
-            console_write('All libraries have been satisfied')
+            if not error:
+                message = 'All libraries have been satisfied!'
+                console_write(message)
+                progress.finish(message)

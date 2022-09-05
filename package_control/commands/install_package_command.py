@@ -1,12 +1,12 @@
 import threading
+import time
 
 import sublime
 import sublime_plugin
 
+from ..activity_indicator import ActivityIndicator
 from ..package_installer import PackageInstaller
-from ..package_installer import PackageInstallerThread
 from ..show_error import show_message
-from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
@@ -19,9 +19,7 @@ class InstallPackageCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self):
-        thread = InstallPackageThread(sublime.active_window())
-        thread.start()
-        ThreadProgress(thread, 'Loading repositories', '')
+        InstallPackageThread().start()
 
 
 class InstallPackageThread(threading.Thread, PackageInstaller):
@@ -31,64 +29,67 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
     default PackageInstaller.on_done quick panel handler.
     """
 
-    def __init__(self, window):
+    def __init__(self):
         """
         Constructs a new instance.
-
-        :param window:
-            An instance of :class:`sublime.Window` that represents the Sublime
-            Text window to show the available package list in.
         """
 
-        self.window = window
         threading.Thread.__init__(self)
         PackageInstaller.__init__(self)
 
     def run(self):
-        self.package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
-        if not self.package_list:
-            show_message(
-                '''
-                There are no packages available for installation
+        """
+        Load and display a list of packages available for install
+        """
 
-                Please see https://packagecontrol.io/docs/troubleshooting for help
-                '''
-            )
-            return
+        with ActivityIndicator('Loading repository...'):
+            package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
+            if not package_list:
+                show_message(
+                    '''
+                    There are no packages available for installation
 
-        self.window.show_quick_panel(
-            self.package_list,
-            self.on_done,
+                    Please see https://packagecontrol.io/docs/troubleshooting for help
+                    '''
+                )
+                return
+
+        def on_done(picked):
+            if picked == -1:
+                return
+
+            if USE_QUICK_PANEL_ITEM:
+                package_name = package_list[picked].trigger
+            else:
+                package_name = package_list[picked][0]
+
+            threading.Thread(target=self.install, args=[package_name]).start()
+
+        sublime.active_window().show_quick_panel(
+            package_list,
+            on_done,
             sublime.KEEP_OPEN_ON_FOCUS_LOST
         )
 
-    def on_done(self, picked):
+    def install(self, package_name):
         """
-        Quick panel user selection handler - disables a package, installs or
-        upgrades it, then re-enables the package
+        Install selected package
 
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
+        :param package_name:
+            The name of the package to install
         """
 
-        if picked == -1:
-            return
-        if USE_QUICK_PANEL_ITEM:
-            name = self.package_list[picked].trigger
-        else:
-            name = self.package_list[picked][0]
+        result = False
 
-        if name in self.disable_packages(name, 'install'):
-            def on_complete():
-                self.reenable_packages(name, 'install')
-        else:
-            on_complete = None
+        with ActivityIndicator('Installing package %s' % package_name) as progress:
+            self.disable_packages(package_name, 'install')
+            time.sleep(0.7)
 
-        thread = PackageInstallerThread(self.manager, name, on_complete)
-        thread.start()
-        ThreadProgress(
-            thread,
-            'Installing package %s' % name,
-            'Package %s successfully installed' % name
-        )
+            try:
+                result = self.manager.install_package(package_name)
+            finally:
+                # Do not reenable if deferred until next restart
+                if result is not None:
+                    time.sleep(0.7)
+                    self.reenable_packages(package_name, 'install')
+                    progress.finish('Package %s successfully installed' % package_name)

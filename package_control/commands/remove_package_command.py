@@ -1,9 +1,5 @@
-import threading
-import time
-
-from ..package_disabler import PackageDisabler
-from ..thread_progress import ThreadProgress
 from .existing_packages_command import ExistingPackagesCommand
+from .remove_packages_command import RemovePackagesThread
 
 
 class RemovePackageCommand(ExistingPackagesCommand):
@@ -51,37 +47,4 @@ class RemovePackageCommand(ExistingPackagesCommand):
             A package name to perform action for
         """
 
-        thread = RemovePackageThread(manager, package_name)
-        thread.start()
-        ThreadProgress(
-            thread,
-            'Removing package %s' % package_name,
-            'Package %s successfully removed' % package_name
-        )
-
-
-class RemovePackageThread(threading.Thread, PackageDisabler):
-
-    """
-    A thread to run the remove package operation in so that the Sublime Text
-    UI does not become frozen
-    """
-
-    def __init__(self, manager, package):
-        self.manager = manager
-        self.package = package
-        self.result = None
-        threading.Thread.__init__(self)
-
-    def run(self):
-        self.disable_packages(self.package, 'remove')
-
-        try:
-            # Let the package disabling take place
-            time.sleep(0.7)
-            self.result = self.manager.remove_package(self.package)
-        finally:
-            # Do not reenable if removing deferred until next restart
-            if self.result is not None:
-                time.sleep(0.7)
-                self.reenable_packages(self.package, 'remove')
+        RemovePackagesThread(manager, package_name).start()

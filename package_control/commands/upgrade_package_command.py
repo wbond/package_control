@@ -1,13 +1,13 @@
 import threading
+import time
 
 import sublime
 import sublime_plugin
 
+from ..activity_indicator import ActivityIndicator
 from ..package_installer import PackageInstaller
-from ..package_installer import PackageInstallerThread
 from ..package_renamer import PackageRenamer
 from ..show_error import show_message
-from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
@@ -19,9 +19,7 @@ class UpgradePackageCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self):
-        thread = UpgradePackageThread(sublime.active_window())
-        thread.start()
-        ThreadProgress(thread, 'Loading repositories', '')
+        UpgradePackageThread().start()
 
 
 class UpgradePackageThread(threading.Thread, PackageInstaller):
@@ -30,61 +28,63 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
     A thread to run the action of retrieving upgradable packages in.
     """
 
-    def __init__(self, window):
+    def __init__(self):
         """
         Constructs a new instance.
-
-        :param window:
-            An instance of :class:`sublime.Window` that represents the Sublime
-            Text window to show the list of upgradable packages in.
         """
 
-        self.window = window
         threading.Thread.__init__(self)
         PackageInstaller.__init__(self)
 
     def run(self):
-        PackageRenamer().rename_packages(self.manager)
+        """
+        Load and display a list of packages available for upgrade
+        """
 
-        self.package_list = self.make_package_list(['install', 'reinstall', 'none'])
-        if not self.package_list:
-            show_message('There are no packages ready for upgrade')
-            return
+        with ActivityIndicator('Loading repository...'):
+            PackageRenamer().rename_packages(self.manager)
 
-        self.window.show_quick_panel(
-            self.package_list,
-            self.on_done,
+            package_list = self.make_package_list(['install', 'reinstall', 'none'])
+            if not package_list:
+                show_message('There are no packages ready for upgrade')
+                return
+
+        def on_done(picked):
+            if picked == -1:
+                return
+
+            if USE_QUICK_PANEL_ITEM:
+                package_name = package_list[picked].trigger
+            else:
+                package_name = package_list[picked][0]
+
+            threading.Thread(target=self.upgrade, args=[package_name]).start()
+
+        sublime.active_window().show_quick_panel(
+            package_list,
+            on_done,
             sublime.KEEP_OPEN_ON_FOCUS_LOST
         )
 
-    def on_done(self, picked):
+    def upgrade(self, package_name):
         """
-        Quick panel user selection handler - disables a package, upgrades it,
-        then re-enables the package
+        Upgrade selected package
 
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
+        :param package_name:
+            The name of the package to upgrade
         """
 
-        if picked == -1:
-            return
+        result = False
 
-        if USE_QUICK_PANEL_ITEM:
-            package_name = self.package_list[picked].trigger
-        else:
-            package_name = self.package_list[picked][0]
+        with ActivityIndicator('Upgrading package %s' % package_name) as progress:
+            self.disable_packages(package_name, 'upgrade')
+            time.sleep(0.7)
 
-        if package_name in self.disable_packages(package_name, 'upgrade'):
-            def on_complete():
-                self.reenable_packages(package_name, 'upgrade')
-        else:
-            on_complete = None
-
-        thread = PackageInstallerThread(self.manager, package_name, on_complete, pause=True)
-        thread.start()
-        ThreadProgress(
-            thread,
-            'Upgrading package %s' % package_name,
-            'Package %s successfully upgraded' % package_name
-        )
+            try:
+                result = self.manager.install_package(package_name)
+            finally:
+                # Do not reenable if deferred until next restart
+                if result is not None:
+                    time.sleep(0.7)
+                    self.reenable_packages(package_name, 'upgrade')
+                    progress.finish('Package %s successfully upgraded' % package_name)

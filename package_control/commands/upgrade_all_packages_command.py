@@ -1,6 +1,5 @@
 import sublime_plugin
 
-from ..thread_progress import ThreadProgress
 from .upgrade_packages_command import UpgradePackagesThread
 
 
@@ -16,6 +15,4 @@ class UpgradeAllPackagesCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self, unattended=False):
-        thread = UpgradePackagesThread(None, unattended)
-        thread.start()
-        ThreadProgress(thread, 'Upgrading packages...', '')
+        UpgradePackagesThread(None, unattended).start()

@@ -4,11 +4,11 @@ import time
 import sublime
 import sublime_plugin
 
+from ..activity_indicator import ActivityIndicator
 from ..console_write import console_write
 from ..package_installer import PackageInstaller
 from ..package_renamer import PackageRenamer
 from ..show_error import show_error, show_message
-from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
@@ -34,12 +34,7 @@ class UpgradePackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None, unattended=False):
         if isinstance(packages, list):
-            thread = UpgradePackagesThread(packages, unattended)
-            thread.start()
-            message = 'Upgrading package'
-            if len(packages) > 1:
-                message += 's'
-            ThreadProgress(thread, message, '')
+            UpgradePackagesThread(packages, unattended).start()
             return
 
         def on_done(input_text):
@@ -90,45 +85,55 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
         PackageInstaller.__init__(self)
 
     def run(self):
-        console_write('Loading repository...')
-        PackageRenamer().rename_packages(self.manager)
-        package_list = self.make_package_list(['install', 'reinstall', 'none'])
+        message = 'Loading repository...'
+        with ActivityIndicator(message) as progress:
+            console_write(message)
 
-        if USE_QUICK_PANEL_ITEM:
-            package_names = {
-                info.trigger for info in package_list
-                if self.packages is not None and info.trigger in self.packages
-            }
-        else:
-            package_names = {
-                info[0] for info in package_list
-                if self.packages is not None and info[0] in self.packages
-            }
+            PackageRenamer().rename_packages(self.manager)
+            package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
-        if not package_names:
-            console_write('All packages up-to-date!')
-            if not self.unattended:
-                show_message('All packages up-to-date!')
-            return
+            if USE_QUICK_PANEL_ITEM:
+                package_names = {
+                    info.trigger for info in package_list
+                    if self.packages is not None and info.trigger in self.packages
+                }
+            else:
+                package_names = {
+                    info[0] for info in package_list
+                    if self.packages is not None and info[0] in self.packages
+                }
 
-        # If Package Control is being upgraded, just do that
-        if 'Package Control' in package_names:
-            package_names = {'Package Control'}
+            if not package_names:
+                message = 'All specified packages up-to-date!'
+                console_write(message)
+                progress.finish(message)
+                if not self.unattended:
+                    show_message(message)
+                return
 
-        console_write(
-            'Upgrading %d package%s...',
-            (len(package_names), 's' if len(package_names) != 1 else '')
-        )
+            # If Package Control is being upgraded, just do that
+            if 'Package Control' in package_names:
+                package_names = {'Package Control'}
 
-        disabled_packages = self.disable_packages(package_names, 'upgrade')
-        time.sleep(0.7)
+            console_write(
+                'Upgrading %d package%s...',
+                (len(package_names), 's' if len(package_names) != 1 else '')
+            )
 
-        try:
-            for package in sorted(package_names, key=lambda s: s.lower()):
-                result = self.manager.install_package(package)
-                # do not re-enable package if operation is dereffered to next start
-                if result is None and package in disabled_packages:
-                    disabled_packages.remove(package)
-        finally:
+            disabled_packages = self.disable_packages(package_names, 'upgrade')
             time.sleep(0.7)
-            self.reenable_packages(disabled_packages, 'upgrade')
+
+            try:
+                for package in sorted(package_names, key=lambda s: s.lower()):
+                    progress.set_label('Upgrading %s' % package)
+                    result = self.manager.install_package(package)
+                    # do not re-enable package if operation is dereffered to next start
+                    if result is None and package in disabled_packages:
+                        disabled_packages.remove(package)
+            finally:
+                time.sleep(0.7)
+                self.reenable_packages(disabled_packages, 'upgrade')
+
+                message = 'All packages updated!'
+                console_write(message)
+                progress.finish(message)

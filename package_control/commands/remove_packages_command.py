@@ -4,10 +4,11 @@ import time
 import sublime
 import sublime_plugin
 
+from ..activity_indicator import ActivityIndicator
+from ..console_write import console_write
 from ..package_disabler import PackageDisabler
 from ..package_manager import PackageManager
 from ..show_error import show_error
-from ..thread_progress import ThreadProgress
 
 
 class RemovePackagesCommand(sublime_plugin.ApplicationCommand):
@@ -25,12 +26,7 @@ class RemovePackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None):
         if isinstance(packages, list):
-            thread = RemovePackagesThread(packages)
-            thread.start()
-            message = 'Removing package'
-            if len(packages) > 1:
-                message += 's'
-            ThreadProgress(thread, message, '')
+            RemovePackagesThread(PackageManager(), packages).start()
             return
 
         def on_done(input_text):
@@ -62,7 +58,7 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
     A thread to run the installation of one or more packages in
     """
 
-    def __init__(self, packages):
+    def __init__(self, manager, packages):
         """
         :param packages:
             The string package name, or an array of strings
@@ -74,21 +70,46 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
             raise TypeError("Parameter 'packages' must be string or list!")
         self.packages = set(packages)
 
-        self.manager = PackageManager()
+        self.manager = manager
         threading.Thread.__init__(self)
 
     def run(self):
-        self.disable_packages(self.packages, 'remove')
-        time.sleep(0.7)
+        num_packages = len(self.packages)
+        if num_packages == 1:
+            message = 'Removing package %s' % list(self.packages)[0]
+        else:
+            message = 'Removing %d packages...' % num_packages
 
-        deffered = set()
+        with ActivityIndicator(message) as progress:
+            console_write(message)
 
-        try:
-            for package in self.packages:
-                result = self.manager.remove_package(package)
-                # do not re-enable package if operation is dereffered to next start
-                if result is None:
-                    deffered.add(package)
-        finally:
+            self.disable_packages(self.packages, 'remove')
             time.sleep(0.7)
-            self.reenable_packages(self.packages - deffered, 'remove')
+
+            deffered = set()
+            num_removed = 0
+
+            try:
+                for package in sorted(self.packages, key=lambda s: s.lower()):
+                    progress.set_label('Removing package %s' % package)
+                    result = self.manager.remove_package(package)
+                    # do not re-enable package if operation is dereffered to next start
+                    if result is None:
+                        deffered.add(package)
+                    elif result is True:
+                        num_removed += 1
+            finally:
+                time.sleep(0.7)
+                self.reenable_packages(self.packages - deffered, 'remove')
+
+                num_packages = len(self.packages)
+                if num_packages == 1:
+                    message = 'Package %s successfully removed' % list(self.packages)[0]
+                elif num_packages == num_removed:
+                    message = 'All packages successfully rmoved'
+                    console_write(message)
+                else:
+                    message = '%d of %d packages successfully rmoved' % (num_removed, num_packages)
+                    console_write(message)
+
+                progress.finish(message)
