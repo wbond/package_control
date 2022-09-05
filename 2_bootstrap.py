@@ -10,7 +10,6 @@ import sublime
 from .package_control import sys_path, library
 from .package_control.console_write import console_write
 from .package_control.package_disabler import PackageDisabler
-from .package_control.package_manager import PackageManager
 from .package_control.settings import (
     load_list_setting,
     pc_settings_filename,
@@ -27,9 +26,6 @@ LOADER_PACKAGE_PATH = os.path.join(
 
 
 def plugin_loaded():
-    manager = PackageManager()
-    settings = manager.settings.copy()
-
     if os.path.exists(LOADER_PACKAGE_PATH):
         prefs = sublime.load_settings(preferences_filename())
         ignored = load_list_setting(prefs, 'ignored_packages')
@@ -38,13 +34,13 @@ def plugin_loaded():
         save_list_setting(prefs, preferences_filename(), 'ignored_packages', ignored)
 
         def start_bootstrap():
-            threading.Thread(target=_migrate_loaders, args=(settings,)).start()
+            threading.Thread(target=_migrate_loaders).start()
 
         # Give ST a second to disable 0_package_control_loader
         sublime.set_timeout(start_bootstrap, 1000)
 
     else:
-        threading.Thread(target=_install_injectors, args=(settings,)).start()
+        threading.Thread(target=_install_injectors).start()
 
 
 def _mark_bootstrapped():
@@ -59,13 +55,10 @@ def _mark_bootstrapped():
         sublime.save_settings(pc_settings_filename())
 
 
-def _migrate_loaders(settings):
+def _migrate_loaders():
     """
     Moves old Package Control 3-style dependencies to the new 4-style
     libraries, which use the Lib folder
-
-    :param settings:
-        A dict of settings
     """
 
     # All old dependencies that are being migrated are treated as for 3.3
@@ -124,15 +117,12 @@ def _migrate_loaders(settings):
         console_write('Error trying to migrate dependencies - %s' % e)
         raise
 
-    _install_injectors(settings)
+    _install_injectors()
 
 
-def _install_injectors(settings):
+def _install_injectors():
     """
     Makes sure the module injectors are in place
-
-    :param settings:
-        A dict of settings
     """
 
     injector_code = """
