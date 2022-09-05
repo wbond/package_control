@@ -63,6 +63,13 @@ class PackageManager:
     """
 
     def __init__(self):
+        """
+        Constructs a new instance.
+        """
+
+        self._available_packages = None
+        self._available_libraries = None
+
         # Here we manually copy the settings since sublime doesn't like
         # code accessing settings from threads
         self.settings = {}
@@ -484,26 +491,18 @@ class PackageManager:
 
         return [repo.strip() for repo in repositories]
 
-    def _list_available(self):
+    def fetch_available(self):
         """
-        Returns a master list of every available package and library from all sources
+        Fetch available packages and libraries from available sources.
+
+        use results from:
+
+        1. in-memory cache (if not out-dated)
+        2. http cache (if remote returns 304)
+        3. download info from remote and store in caches
 
         :return:
-            A 2-element tuple, in the format:
-            (
-                {
-                    'Package Name': {
-                        # Package details - see example-repository.json for format
-                    },
-                    ...
-                },
-                {
-                    'Library Name': {
-                        # Library details - see example-repository.json for format
-                    },
-                    ...
-                }
-            )
+            Nothing
         """
 
         if self.settings.get('debug'):
@@ -575,11 +574,8 @@ class PackageManager:
             if not provider:
                 continue
 
-            unavailable_packages = []
-            unavailable_libraries = []
-
-            # Allow name mapping of packages for schema version < 2.0
             repository_packages = {}
+            unavailable_packages = []
             for name, info in provider.get_packages():
                 name = name_map.get(name, name)
                 info['name'] = name
@@ -590,6 +586,7 @@ class PackageManager:
                     unavailable_packages.append(name)
 
             repository_libraries = {}
+            unavailable_libraries = []
             for name, info in provider.get_libraries():
                 info['releases'] = self.select_releases(name, info['releases'])
                 if info['releases']:
@@ -600,9 +597,9 @@ class PackageManager:
             # Display errors we encountered while fetching package info
             for _, exception in provider.get_failed_sources():
                 console_write(exception)
-            for name, exception in provider.get_broken_packages():
+            for _, exception in provider.get_broken_packages():
                 console_write(exception)
-            for name, exception in provider.get_broken_libraries():
+            for _, exception in provider.get_broken_libraries():
                 console_write(exception)
 
             cache_key = repo + '.packages'
@@ -633,7 +630,8 @@ class PackageManager:
                 list_=True
             )
 
-        return (packages, libraries)
+        self._available_packages = packages
+        self._available_libraries = libraries
 
     def list_available_libraries(self, python_version):
         """
@@ -653,16 +651,17 @@ class PackageManager:
             }
         """
 
-        libraries = self._list_available()[1]
+        if self._available_libraries is None:
+            self.fetch_available()
 
         filtered_libraries = {}
-        for library_name, lib_info in libraries.items():
+        for name, info in self._available_libraries.items():
             filtered_releases = [
-                release for release in lib_info["releases"]
+                release for release in info["releases"]
                 if python_version in release["python_versions"]
             ]
             if filtered_releases:
-                filtered_libraries[library_name] = lib_info
+                filtered_libraries[name] = info
 
         return filtered_libraries
 
@@ -680,7 +679,10 @@ class PackageManager:
             }
         """
 
-        return self._list_available()[0]
+        if self._available_packages is None:
+            self.fetch_available()
+
+        return self._available_packages
 
     def list_libraries(self):
         """
