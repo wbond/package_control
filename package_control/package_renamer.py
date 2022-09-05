@@ -1,6 +1,5 @@
 import os
 import time
-from functools import partial
 
 import sublime
 
@@ -16,33 +15,28 @@ class PackageRenamer(PackageDisabler):
     gathered from channels and repositories.
     """
 
-    def load_settings(self):
-        """
-        Loads the list of installed packages
-        """
-
-        settings = sublime.load_settings(pc_settings_filename())
-        self.original_installed_packages = load_list_setting(settings, 'installed_packages')
-
-    def rename_packages(self, installer):
+    def rename_packages(self, manager):
         """
         Renames any installed packages that the user has installed.
 
-        :param installer:
-            An instance of :class:`PackageInstaller`
+        :param manager:
+            An instance of :class: `PackageManager`
         """
 
         # Fetch the packages since that will pull in the renamed packages list
-        installer.manager.list_available_packages()
-        renamed_packages = installer.manager.settings.get('renamed_packages', {})
-
+        manager.list_available_packages()
+        renamed_packages = manager.settings.get('renamed_packages', {})
         if not renamed_packages:
-            renamed_packages = {}
+            return
+
+        settings_filename = pc_settings_filename()
+        settings = sublime.load_settings(settings_filename)
+        original_installed_packages = load_list_setting(settings, 'installed_packages')
 
         # These are packages that have been tracked as installed
-        installed_packages = list(self.original_installed_packages)
+        installed_packages = list(original_installed_packages)
         # There are the packages actually present on the filesystem
-        present_packages = installer.manager.list_packages()
+        present_packages = manager.list_packages()
 
         case_insensitive_fs = sublime.platform() in ['windows', 'osx']
 
@@ -75,74 +69,71 @@ class PackageRenamer(PackageDisabler):
             else:
                 continue
 
-            # We use a functools.partial to generate the on-complete callback in
-            # order to bind the current value of the parameters, unlike lambdas.
-            # This is needed for a total of 4 times here.
-            sublime.set_timeout(partial(self.disable_packages, package_name, 'remove'), 10)
-
-            remove_result = True
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
-                sublime.set_timeout(partial(self.disable_packages, new_package_name, 'install'), 10)
-                time.sleep(0.7)
 
-                # Windows will not allow you to rename to the same name with
-                # a different case, so we work around that with a temporary name
-                if os.name == 'nt' and changing_case:
-                    temp_package_name = '__' + new_package_name
-                    temp_package_path = os.path.join(
-                        os.path.dirname(sublime.packages_path()), temp_package_name
+                self.disable_packages(package_name, 'remove')
+                self.disable_packages(new_package_name, 'install')
+
+                try:
+                    time.sleep(0.7)
+
+                    # Windows will not allow you to rename to the same name with
+                    # a different case, so we work around that with a temporary name
+                    if os.name == 'nt' and changing_case:
+                        temp_package_name = '__' + new_package_name
+                        temp_package_path = os.path.join(
+                            os.path.dirname(sublime.packages_path()), temp_package_name
+                        )
+                        os.rename(package_path, temp_package_path)
+                        package_path = temp_package_path
+
+                    os.rename(package_path, new_package_path)
+
+                    if package_name in installed_packages:
+                        installed_packages.remove(package_name)
+                    installed_packages.append(new_package_name)
+
+                    console_write(
+                        '''
+                        Renamed %s to %s
+                        ''',
+                        (package_name, new_package_name)
                     )
-                    os.rename(package_path, temp_package_path)
-                    package_path = temp_package_path
 
-                os.rename(package_path, new_package_path)
-                installed_packages.append(new_package_name)
-
-                console_write(
-                    '''
-                    Renamed %s to %s
-                    ''',
-                    (package_name, new_package_name)
-                )
-                sublime.set_timeout(partial(self.reenable_packages, new_package_name, 'install'), 700)
+                finally:
+                    time.sleep(0.7)
+                    self.reenable_packages(package_name, 'remove')
+                    self.reenable_packages(new_package_name, 'install')
 
             else:
-                time.sleep(0.7)
-                remove_result = installer.manager.remove_package(package_name)
+                remove_result = True
 
-                console_write(
-                    '''
-                    Removed %s since package with new name (%s) already exists
-                    ''',
-                    (package_name, new_package_name)
-                )
+                self.disable_packages(package_name, 'remove')
 
-            # Do not reenable if removal has been delayed until next restart
-            if remove_result is not None:
-                sublime.set_timeout(partial(self.reenable_packages, package_name, 'remove'), 700)
+                try:
+                    time.sleep(0.7)
+                    remove_result = manager.remove_package(package_name)
 
-            try:
-                installed_packages.remove(package_name)
-            except (ValueError):
-                pass
+                    if package_name in installed_packages:
+                        installed_packages.remove(package_name)
 
-        sublime.set_timeout(lambda: self.save_packages(installed_packages), 10)
+                    console_write(
+                        '''
+                        Removed %s since package with new name (%s) already exists
+                        ''',
+                        (package_name, new_package_name)
+                    )
 
-    def save_packages(self, installed_packages):
-        """
-        Saves the list of installed packages (after having been appropriately
-        renamed)
+                finally:
+                    # Do not reenable if removal has been delayed until next restart
+                    if remove_result is not None:
+                        time.sleep(0.7)
+                        self.reenable_packages(package_name, 'remove')
 
-        :param installed_packages:
-            The new list of installed packages
-        """
-
-        filename = pc_settings_filename()
-        settings = sublime.load_settings(filename)
         save_list_setting(
             settings,
-            filename,
+            settings_filename,
             'installed_packages',
             installed_packages,
-            self.original_installed_packages
+            original_installed_packages
         )

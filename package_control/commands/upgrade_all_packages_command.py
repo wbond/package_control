@@ -20,10 +20,7 @@ class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        package_renamer = PackageRenamer()
-        package_renamer.load_settings()
-
-        thread = UpgradeAllPackagesThread(self.window, package_renamer)
+        thread = UpgradeAllPackagesThread(self.window)
         thread.start()
         ThreadProgress(thread, 'Loading repositories', '')
 
@@ -34,15 +31,23 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
     A thread to run the action of retrieving upgradable packages in.
     """
 
-    def __init__(self, window, package_renamer):
+    def __init__(self, window):
+        """
+        Constructs a new instance.
+
+        :param window:
+            An instance of :class:`sublime.Window` that represents the Sublime
+            Text window to show the list of upgradable packages in.
+        """
+
         self.window = window
-        self.package_renamer = package_renamer
+        self.package_renamer = PackageRenamer()
         self.completion_type = 'upgraded'
         threading.Thread.__init__(self)
         PackageInstaller.__init__(self)
 
     def run(self):
-        self.package_renamer.rename_packages(self)
+        self.package_renamer.rename_packages(self.manager)
         package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
         disabled_packages = []

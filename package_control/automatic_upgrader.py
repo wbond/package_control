@@ -43,7 +43,6 @@ class AutomaticUpgrader(threading.Thread):
         self.load_settings()
 
         self.package_renamer = PackageRenamer()
-        self.package_renamer.load_settings()
 
         self.auto_upgrade = self.settings.get('auto_upgrade')
         self.auto_upgrade_ignore = self.settings.get('auto_upgrade_ignore')
@@ -257,7 +256,7 @@ class AutomaticUpgrader(threading.Thread):
         if not self.auto_upgrade:
             return
 
-        self.package_renamer.rename_packages(self.installer)
+        self.package_renamer.rename_packages(self.installer.manager)
 
         package_list = self.installer.make_package_list(
             [
