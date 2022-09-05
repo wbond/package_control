@@ -2,9 +2,8 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
-from ..settings import preferences_filename, load_list_setting
 from ..package_disabler import PackageDisabler
+from ..show_quick_panel import show_quick_panel
 
 
 class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
@@ -14,8 +13,7 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
     """
 
     def run(self):
-        self.settings = sublime.load_settings(preferences_filename())
-        self.disabled_packages = load_list_setting(self.settings, 'ignored_packages')
+        self.disabled_packages = self.get_ignored_packages()
         if not self.disabled_packages:
             sublime.message_dialog(text.format(
                 '''

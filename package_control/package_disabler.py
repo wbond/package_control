@@ -29,6 +29,20 @@ class PackageDisabler:
     old_syntaxes = None
     old_color_schemes = None
 
+    lock = threading.Lock()
+
+    @staticmethod
+    def get_ignored_packages():
+        with PackageDisabler.lock:
+            settings = sublime.load_settings(preferences_filename())
+            return load_list_setting(settings, 'ignored_packages')
+
+    @staticmethod
+    def set_ignored_packages(ignored):
+        with PackageDisabler.lock:
+            settings = sublime.load_settings(preferences_filename())
+            save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
+
     @staticmethod
     def get_version(package):
         """
@@ -77,84 +91,82 @@ class PackageDisabler:
             A list of package names that were disabled
         """
 
-        if not isinstance(threading.current_thread(), threading._MainThread):
-            raise RuntimeError('disable_packages called on a background thread')
-
         global events
 
         if events is None:
             from package_control import events
 
-        if not isinstance(packages, list):
-            packages = [packages]
+        with PackageDisabler.lock:
+            if not isinstance(packages, list):
+                packages = [packages]
 
-        disabled = []
+            disabled = []
 
-        settings = sublime.load_settings(preferences_filename())
-        ignored = load_list_setting(settings, 'ignored_packages')
+            settings = sublime.load_settings(preferences_filename())
+            ignored = load_list_setting(settings, 'ignored_packages')
 
-        pc_settings = sublime.load_settings(pc_settings_filename())
-        in_process = load_list_setting(pc_settings, 'in_process_packages')
+            pc_settings = sublime.load_settings(pc_settings_filename())
+            in_process = load_list_setting(pc_settings, 'in_process_packages')
 
-        PackageDisabler.old_color_scheme_package = None
-        PackageDisabler.old_color_scheme = None
+            PackageDisabler.old_color_scheme_package = None
+            PackageDisabler.old_color_scheme = None
 
-        PackageDisabler.old_theme_package = None
-        PackageDisabler.old_theme = None
+            PackageDisabler.old_theme_package = None
+            PackageDisabler.old_theme = None
 
-        PackageDisabler.old_syntaxes = {}
-        PackageDisabler.old_color_schemes = {}
+            PackageDisabler.old_syntaxes = {}
+            PackageDisabler.old_color_schemes = {}
 
-        for package in packages:
-            if package not in ignored:
-                in_process.append(package)
-                ignored.append(package)
-                disabled.append(package)
+            for package in packages:
+                if package not in ignored:
+                    in_process.append(package)
+                    ignored.append(package)
+                    disabled.append(package)
 
-            if operation in ['upgrade', 'remove']:
-                version = PackageDisabler.get_version(package)
-                tracker_type = 'pre_upgrade' if operation == 'upgrade' else operation
-                events.add(tracker_type, package, version)
+                if operation in ['upgrade', 'remove']:
+                    version = PackageDisabler.get_version(package)
+                    tracker_type = 'pre_upgrade' if operation == 'upgrade' else operation
+                    events.add(tracker_type, package, version)
 
-            global_color_scheme = settings.get('color_scheme')
-            if global_color_scheme is not None and global_color_scheme.find('Packages/' + package + '/') != -1:
-                PackageDisabler.old_color_scheme_package = package
-                PackageDisabler.old_color_scheme = global_color_scheme
-                settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
+                global_color_scheme = settings.get('color_scheme')
+                if global_color_scheme is not None and global_color_scheme.find('Packages/' + package + '/') != -1:
+                    PackageDisabler.old_color_scheme_package = package
+                    PackageDisabler.old_color_scheme = global_color_scheme
+                    settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
-            for window in sublime.windows():
-                for view in window.views():
-                    view_settings = view.settings()
-                    syntax = view_settings.get('syntax')
-                    if syntax is not None and syntax.find('Packages/' + package + '/') != -1:
-                        if package not in PackageDisabler.old_syntaxes:
-                            PackageDisabler.old_syntaxes[package] = []
-                        PackageDisabler.old_syntaxes[package].append([view, syntax])
-                        view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
-                    # Handle view-specific color_scheme settings not already taken care
-                    # of by resetting the global color_scheme above
-                    scheme = view_settings.get('color_scheme')
-                    if scheme is not None and scheme != global_color_scheme \
-                            and scheme.find('Packages/' + package + '/') != -1:
-                        if package not in PackageDisabler.old_color_schemes:
-                            PackageDisabler.old_color_schemes[package] = []
-                        PackageDisabler.old_color_schemes[package].append([view, scheme])
-                        view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
+                for window in sublime.windows():
+                    for view in window.views():
+                        view_settings = view.settings()
+                        syntax = view_settings.get('syntax')
+                        if syntax is not None and syntax.find('Packages/' + package + '/') != -1:
+                            if package not in PackageDisabler.old_syntaxes:
+                                PackageDisabler.old_syntaxes[package] = []
+                            PackageDisabler.old_syntaxes[package].append([view, syntax])
+                            view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
+                        # Handle view-specific color_scheme settings not already taken care
+                        # of by resetting the global color_scheme above
+                        scheme = view_settings.get('color_scheme')
+                        if scheme is not None and scheme != global_color_scheme \
+                                and scheme.find('Packages/' + package + '/') != -1:
+                            if package not in PackageDisabler.old_color_schemes:
+                                PackageDisabler.old_color_schemes[package] = []
+                            PackageDisabler.old_color_schemes[package].append([view, scheme])
+                            view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
-            # Change the theme before disabling the package containing it
-            if package_file_exists(package, settings.get('theme')):
-                PackageDisabler.old_theme_package = package
-                PackageDisabler.old_theme = settings.get('theme')
-                settings.set('theme', 'Default.sublime-theme')
+                # Change the theme before disabling the package containing it
+                if package_file_exists(package, settings.get('theme')):
+                    PackageDisabler.old_theme_package = package
+                    PackageDisabler.old_theme = settings.get('theme')
+                    settings.set('theme', 'Default.sublime-theme')
 
-        # We don't mark a package as in-process when disabling it, otherwise
-        # it automatically gets re-enabled the next time Sublime Text starts
-        if operation != 'disable':
-            save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
+            # We don't mark a package as in-process when disabling it, otherwise
+            # it automatically gets re-enabled the next time Sublime Text starts
+            if operation != 'disable':
+                save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
-        save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
+            save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
-        return disabled
+            return disabled
 
     @staticmethod
     def reenable_package(package, operation='upgrade'):
@@ -173,121 +185,119 @@ class PackageDisabler:
              - "loader" - deprecated
         """
 
-        if not isinstance(threading.current_thread(), threading._MainThread):
-            raise RuntimeError('reenable_package called on a background thread')
-
         global events
 
         if events is None:
             from package_control import events
 
-        settings = sublime.load_settings(preferences_filename())
-        ignored = load_list_setting(settings, 'ignored_packages')
+        with PackageDisabler.lock:
+            settings = sublime.load_settings(preferences_filename())
+            ignored = load_list_setting(settings, 'ignored_packages')
 
-        if package in ignored:
+            if package in ignored:
 
-            if operation in ['install', 'upgrade']:
-                version = PackageDisabler.get_version(package)
-                tracker_type = 'post_upgrade' if operation == 'upgrade' else operation
-                events.add(tracker_type, package, version)
-                events.clear(tracker_type, package, future=True)
-                if operation == 'upgrade':
-                    events.clear('pre_upgrade', package)
+                if operation in ['install', 'upgrade']:
+                    version = PackageDisabler.get_version(package)
+                    tracker_type = 'post_upgrade' if operation == 'upgrade' else operation
+                    events.add(tracker_type, package, version)
+                    events.clear(tracker_type, package, future=True)
+                    if operation == 'upgrade':
+                        events.clear('pre_upgrade', package)
 
-            elif operation == 'remove':
-                events.clear('remove', package)
+                elif operation == 'remove':
+                    events.clear('remove', package)
 
-            ignored = list(set(ignored) - set([package]))
-            save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
+                ignored = list(set(ignored) - set([package]))
+                save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
-            if operation == 'remove' and PackageDisabler.old_theme_package == package:
-                sublime.message_dialog(text.format(
-                    '''
-                    Package Control
+                if operation == 'remove' and PackageDisabler.old_theme_package == package:
+                    sublime.message_dialog(text.format(
+                        '''
+                        Package Control
 
-                    The package containing your active theme was just removed
-                    and the Default theme was enabled in its place.
-                    '''
-                ))
+                        The package containing your active theme was just removed
+                        and the Default theme was enabled in its place.
+                        '''
+                    ))
 
-            # By delaying the restore, we give Sublime Text some time to
-            # re-enable the package, making errors less likely
-            def delayed_settings_restore():
-                syntax_errors = set()
-                color_scheme_errors = set()
+                # By delaying the restore, we give Sublime Text some time to
+                # re-enable the package, making errors less likely
+                def delayed_settings_restore():
+                    syntax_errors = set()
+                    color_scheme_errors = set()
 
-                if PackageDisabler.old_syntaxes is None:
-                    PackageDisabler.old_syntaxes = {}
-                if PackageDisabler.old_color_schemes is None:
-                    PackageDisabler.old_color_schemes = {}
+                    if PackageDisabler.old_syntaxes is None:
+                        PackageDisabler.old_syntaxes = {}
+                    if PackageDisabler.old_color_schemes is None:
+                        PackageDisabler.old_color_schemes = {}
 
-                if operation == 'upgrade' and package in PackageDisabler.old_syntaxes:
-                    for view_syntax in PackageDisabler.old_syntaxes[package]:
-                        view, syntax = view_syntax
-                        if resource_exists(syntax):
-                            view.settings().set('syntax', syntax)
-                        elif syntax not in syntax_errors:
-                            console_write('The syntax "%s" no longer exists' % syntax)
-                            syntax_errors.add(syntax)
+                    if operation == 'upgrade' and package in PackageDisabler.old_syntaxes:
+                        for view_syntax in PackageDisabler.old_syntaxes[package]:
+                            view, syntax = view_syntax
+                            if resource_exists(syntax):
+                                view.settings().set('syntax', syntax)
+                            elif syntax not in syntax_errors:
+                                console_write('The syntax "%s" no longer exists' % syntax)
+                                syntax_errors.add(syntax)
 
-                if operation == 'upgrade' and PackageDisabler.old_color_scheme_package == package:
-                    if resource_exists(PackageDisabler.old_color_scheme):
-                        settings.set('color_scheme', PackageDisabler.old_color_scheme)
-                    else:
-                        color_scheme_errors.add(PackageDisabler.old_color_scheme)
-                        sublime.error_message(text.format(
-                            '''
-                            Package Control
+                    if operation == 'upgrade' and PackageDisabler.old_color_scheme_package == package:
+                        if resource_exists(PackageDisabler.old_color_scheme):
+                            settings.set('color_scheme', PackageDisabler.old_color_scheme)
+                        else:
+                            color_scheme_errors.add(PackageDisabler.old_color_scheme)
+                            sublime.error_message(text.format(
+                                '''
+                                Package Control
 
-                            The package containing your active color scheme was
-                            just upgraded, however the .tmTheme file no longer
-                            exists. Sublime Text has been configured use the
-                            default color scheme instead.
-                            '''
-                        ))
+                                The package containing your active color scheme was
+                                just upgraded, however the .tmTheme file no longer
+                                exists. Sublime Text has been configured use the
+                                default color scheme instead.
+                                '''
+                            ))
 
-                if operation == 'upgrade' and package in PackageDisabler.old_color_schemes:
-                    for view_scheme in PackageDisabler.old_color_schemes[package]:
-                        view, scheme = view_scheme
-                        if resource_exists(scheme):
-                            view.settings().set('color_scheme', scheme)
-                        elif scheme not in color_scheme_errors:
-                            console_write('The color scheme "%s" no longer exists' % scheme)
-                            color_scheme_errors.add(scheme)
+                    if operation == 'upgrade' and package in PackageDisabler.old_color_schemes:
+                        for view_scheme in PackageDisabler.old_color_schemes[package]:
+                            view, scheme = view_scheme
+                            if resource_exists(scheme):
+                                view.settings().set('color_scheme', scheme)
+                            elif scheme not in color_scheme_errors:
+                                console_write('The color scheme "%s" no longer exists' % scheme)
+                                color_scheme_errors.add(scheme)
 
-                if operation == 'upgrade' and PackageDisabler.old_theme_package == package:
-                    if package_file_exists(package, PackageDisabler.old_theme):
-                        settings.set('theme', PackageDisabler.old_theme)
-                        sublime.message_dialog(text.format(
-                            '''
-                            Package Control
+                    if operation == 'upgrade' and PackageDisabler.old_theme_package == package:
+                        if package_file_exists(package, PackageDisabler.old_theme):
+                            settings.set('theme', PackageDisabler.old_theme)
+                            sublime.message_dialog(text.format(
+                                '''
+                                Package Control
 
-                            The package containing your active theme was just
-                            upgraded.
-                            '''
-                        ))
-                    else:
-                        sublime.error_message(text.format(
-                            '''
-                            Package Control
+                                The package containing your active theme was just
+                                upgraded.
+                                '''
+                            ))
+                        else:
+                            sublime.error_message(text.format(
+                                '''
+                                Package Control
 
-                            The package containing your active theme was just
-                            upgraded, however the .sublime-theme file no longer
-                            exists. Sublime Text has been configured use the
-                            default theme instead.
-                            '''
-                        ))
+                                The package containing your active theme was just
+                                upgraded, however the .sublime-theme file no longer
+                                exists. Sublime Text has been configured use the
+                                default theme instead.
+                                '''
+                            ))
 
-                sublime.save_settings(preferences_filename())
+                    sublime.save_settings(preferences_filename())
 
-            sublime.set_timeout(delayed_settings_restore, 1000)
+                sublime.set_timeout(delayed_settings_restore, 1000)
 
-        pc_settings = sublime.load_settings(pc_settings_filename())
-        in_process = load_list_setting(pc_settings, 'in_process_packages')
+            pc_settings = sublime.load_settings(pc_settings_filename())
+            in_process = load_list_setting(pc_settings, 'in_process_packages')
 
-        if package in in_process:
-            in_process.remove(package)
-            save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
+            if package in in_process:
+                in_process.remove(package)
+                save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
 
 def resource_exists(path):

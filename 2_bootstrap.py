@@ -100,18 +100,13 @@ def _migrate_loaders():
                     console_write('Error trying to migrate dependency %s - %s' % (name, e))
 
         disabler = PackageDisabler()
-
-        def _disable_packages():
-            disabler.disable_packages([LOADER_PACKAGE_NAME], 'loader')
-        sublime.set_timeout(_disable_packages, 10)
+        disabler.disable_packages([LOADER_PACKAGE_NAME], 'loader')
 
         def _remove_loader():
-            os.unlink(LOADER_PACKAGE_PATH)
-        sublime.set_timeout(_remove_loader, 510)
-
-        def _reenable_package():
+            os.remove(LOADER_PACKAGE_PATH)
             disabler.reenable_package(LOADER_PACKAGE_NAME, 'loader')
-        sublime.set_timeout(_reenable_package, 1010)
+
+        sublime.set_timeout(_remove_loader, 510)
 
     except (OSError) as e:
         console_write('Error trying to migrate dependencies - %s' % e)
