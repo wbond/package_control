@@ -70,8 +70,6 @@ class PackageManager:
         self._available_packages = None
         self._available_libraries = None
 
-        # Here we manually copy the settings since sublime doesn't like
-        # code accessing settings from threads
         self.settings = {}
         settings = sublime.load_settings(pc_settings_filename())
         setting_names = [
@@ -109,9 +107,9 @@ class PackageManager:
             'user_agent'
         ]
         for setting in setting_names:
-            if settings.get(setting) is None:
-                continue
-            self.settings[setting] = settings.get(setting)
+            value = settings.get(setting)
+            if value is not None:
+                self.settings[setting] = value
 
         # https_proxy will inherit from http_proxy unless it is set to a
         # string value or false
