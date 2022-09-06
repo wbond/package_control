@@ -170,7 +170,7 @@ class PackageInstaller(PackageDisabler):
 
         if name in self.disable_packages(name, 'install'):
             def on_complete():
-                self.reenable_package(name, 'install')
+                self.reenable_packages(name, 'install')
         else:
             on_complete = None
 

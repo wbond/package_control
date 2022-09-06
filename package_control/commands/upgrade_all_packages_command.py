@@ -60,7 +60,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
                 if package_name in disabled_packages:
                     # We use a functools.partial to generate the on-complete callback in
                     # order to bind the current value of the parameters, unlike lambdas.
-                    on_complete = functools.partial(self.reenable_package, package_name)
+                    on_complete = functools.partial(self.reenable_packages, package_name)
                 else:
                     on_complete = None
                 thread = PackageInstallerThread(self.manager, package_name, on_complete)

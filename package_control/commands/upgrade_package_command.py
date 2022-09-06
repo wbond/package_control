@@ -86,7 +86,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
         if package_name in self.disable_packages(package_name, 'upgrade'):
             def on_complete():
-                self.reenable_package(package_name)
+                self.reenable_packages(package_name)
         else:
             on_complete = None
 

@@ -104,7 +104,7 @@ def _migrate_loaders():
 
         def _remove_loader():
             os.remove(LOADER_PACKAGE_PATH)
-            disabler.reenable_package(LOADER_PACKAGE_NAME, 'loader')
+            disabler.reenable_packages(LOADER_PACKAGE_NAME, 'loader')
 
         sublime.set_timeout(_remove_loader, 510)
 

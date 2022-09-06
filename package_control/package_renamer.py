@@ -104,7 +104,7 @@ class PackageRenamer(PackageDisabler):
                     ''',
                     (package_name, new_package_name)
                 )
-                sublime.set_timeout(partial(self.reenable_package, new_package_name, 'install'), 700)
+                sublime.set_timeout(partial(self.reenable_packages, new_package_name, 'install'), 700)
 
             else:
                 time.sleep(0.7)
@@ -119,7 +119,7 @@ class PackageRenamer(PackageDisabler):
 
             # Do not reenable if removal has been delayed until next restart
             if remove_result is not None:
-                sublime.set_timeout(partial(self.reenable_package, package_name, 'remove'), 700)
+                sublime.set_timeout(partial(self.reenable_packages, package_name, 'remove'), 700)
 
             try:
                 installed_packages.remove(package_name)

@@ -38,7 +38,7 @@ class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
             return
         package = self.disabled_packages[picked]
 
-        self.reenable_package(package, 'enable')
+        self.reenable_packages(package, 'enable')
 
         sublime.status_message(text.format(
             '''

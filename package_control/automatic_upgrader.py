@@ -226,7 +226,7 @@ class AutomaticUpgrader(threading.Thread):
                 if package in disabled_packages:
                     # We use a functools.partial to generate the on-complete callback in
                     # order to bind the current value of the parameters, unlike lambdas.
-                    on_complete = functools.partial(self.installer.reenable_package, package, 'install')
+                    on_complete = functools.partial(self.installer.reenable_packages, package, 'install')
                     sublime.set_timeout(on_complete, 700)
 
                 console_write(
@@ -323,7 +323,7 @@ class AutomaticUpgrader(threading.Thread):
                 if package_name in disabled_packages:
                     # We use a functools.partial to generate the on-complete callback in
                     # order to bind the current value of the parameters, unlike lambdas.
-                    on_complete = functools.partial(self.installer.reenable_package, package_name, 'upgrade')
+                    on_complete = functools.partial(self.installer.reenable_packages, package_name, 'upgrade')
                     sublime.set_timeout(on_complete, 700)
 
                 version = self.installer.manager.get_version(package_name)

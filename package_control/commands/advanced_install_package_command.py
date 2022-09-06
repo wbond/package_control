@@ -101,7 +101,7 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
 
         def do_reenable_package(package_name):
             operation_type = 'install' if package_name not in self.installed else 'upgrade'
-            self.reenable_package(package_name, operation_type)
+            self.reenable_packages(package_name, operation_type)
 
         for package in self.packages:
             result = self.manager.install_package(package)
