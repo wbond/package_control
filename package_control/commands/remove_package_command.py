@@ -5,16 +5,15 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
-from .existing_packages_command import ExistingPackagesCommand
-from ..thread_progress import ThreadProgress
 from ..package_disabler import PackageDisabler
-from ..package_manager import PackageManager
+from ..show_quick_panel import show_quick_panel
+from ..thread_progress import ThreadProgress
+from .existing_packages_command import ExistingPackagesCommand
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand, PackageDisabler):
+class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand):
 
     """
     A command that presents a list of installed packages, allowing the user to
@@ -23,13 +22,15 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
 
     def __init__(self, window):
         """
+        Constructs a new instance.
+
         :param window:
             An instance of :class:`sublime.Window` that represents the Sublime
             Text window to show the list of installed packages in.
         """
 
-        self.window = window
-        self.manager = PackageManager()
+        sublime_plugin.WindowCommand.__init__(self, window)
+        ExistingPackagesCommand.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list('remove')
@@ -61,8 +62,6 @@ class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand
         else:
             package_name = self.package_list[picked][0]
 
-        self.disable_packages(package_name, 'remove')
-
         thread = RemovePackageThread(self.manager, package_name)
         thread.start()
         ThreadProgress(
@@ -80,18 +79,20 @@ class RemovePackageThread(threading.Thread, PackageDisabler):
     """
 
     def __init__(self, manager, package):
+        self.result = None
         self.manager = manager
         self.package = package
         threading.Thread.__init__(self)
 
     def run(self):
-        # Let the package disabling take place
-        time.sleep(0.7)
-        self.result = self.manager.remove_package(self.package)
+        self.disable_packages(self.package, 'remove')
 
-        # Do not reenable if removing deferred until next restart
-        if self.result is not None:
-            def unignore_package():
+        try:
+            # Let the package disabling take place
+            time.sleep(0.7)
+            self.result = self.manager.remove_package(self.package)
+        finally:
+            # Do not reenable if removing deferred until next restart
+            if self.result is not None:
+                time.sleep(0.7)
                 self.reenable_packages(self.package, 'remove')
-
-            sublime.set_timeout(unignore_package, 200)
