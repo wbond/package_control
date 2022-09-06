@@ -29,7 +29,8 @@ class PackageDisabler:
     old_syntaxes = None
     old_color_schemes = None
 
-    def get_version(self, package):
+    @staticmethod
+    def get_version(package):
         """
         Gets the current version of a package
 
@@ -54,7 +55,8 @@ class PackageDisabler:
 
         return 'unknown version'
 
-    def disable_packages(self, packages, operation='upgrade'):
+    @staticmethod
+    def disable_packages(packages, operation='upgrade'):
         """
         Disables one or more packages before installing or upgrading to prevent
         errors where Sublime Text tries to read files that no longer exist, or
@@ -110,7 +112,7 @@ class PackageDisabler:
                 disabled.append(package)
 
             if operation in ['upgrade', 'remove']:
-                version = self.get_version(package)
+                version = PackageDisabler.get_version(package)
                 tracker_type = 'pre_upgrade' if operation == 'upgrade' else operation
                 events.add(tracker_type, package, version)
 
@@ -154,7 +156,8 @@ class PackageDisabler:
 
         return disabled
 
-    def reenable_package(self, package, operation='upgrade'):
+    @staticmethod
+    def reenable_package(package, operation='upgrade'):
         """
         Re-enables a package after it has been installed or upgraded
 
@@ -184,7 +187,7 @@ class PackageDisabler:
         if package in ignored:
 
             if operation in ['install', 'upgrade']:
-                version = self.get_version(package)
+                version = PackageDisabler.get_version(package)
                 tracker_type = 'post_upgrade' if operation == 'upgrade' else operation
                 events.add(tracker_type, package, version)
                 events.clear(tracker_type, package, future=True)

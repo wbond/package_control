@@ -20,12 +20,6 @@ class PackageInstaller(PackageDisabler):
 
     def __init__(self):
         self.manager = PackageManager()
-        # Track what the color scheme was before upgrade so we can restore it
-        self.old_color_scheme_package = None
-        self.old_color_scheme = None
-        # Track what the theme was before upgrade so we can restore it
-        self.old_theme_package = None
-        self.old_theme = None
 
     def make_package_list(self, ignore_actions=[], override_action=None, ignore_packages=[]):
         """
