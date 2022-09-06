@@ -3,8 +3,8 @@ import re
 import sublime
 import sublime_plugin
 
-from ..show_error import show_error
 from ..settings import pc_settings_filename
+from ..show_error import show_error
 
 
 class AddChannelCommand(sublime_plugin.WindowCommand):
@@ -16,23 +16,23 @@ class AddChannelCommand(sublime_plugin.WindowCommand):
     def run(self):
         self.window.show_input_panel('Channel JSON URL', '', self.on_done, self.on_change, self.on_cancel)
 
-    def on_done(self, input):
+    def on_done(self, input_text):
         """
         Input panel handler - adds the provided URL as a channel
 
-        :param input:
+        :param input_text:
             A string of the URL to the new channel
         """
 
-        input = input.strip()
+        input_text = input_text.strip()
 
-        if re.match('https?://', input, re.I) is None:
+        if re.match(r'https?://', input_text, re.I) is None:
             show_error(
                 '''
                 Unable to add the channel "%s" since it does not appear to be
                 served via HTTP (http:// or https://).
                 ''',
-                input
+                input_text
             )
             return
 
@@ -40,12 +40,12 @@ class AddChannelCommand(sublime_plugin.WindowCommand):
         channels = settings.get('channels', [])
         if not channels:
             channels = []
-        channels.append(input)
+        channels.append(input_text)
         settings.set('channels', channels)
         sublime.save_settings(pc_settings_filename())
-        sublime.status_message(('Channel %s successfully added') % input)
+        sublime.status_message(('Channel %s successfully added') % input_text)
 
-    def on_change(self, input):
+    def on_change(self, input_text):
         pass
 
     def on_cancel(self):

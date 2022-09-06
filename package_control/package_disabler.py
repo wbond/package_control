@@ -54,7 +54,7 @@ class PackageDisabler:
 
         return 'unknown version'
 
-    def disable_packages(self, packages, type='upgrade'):
+    def disable_packages(self, packages, operation='upgrade'):
         """
         Disables one or more packages before installing or upgrading to prevent
         errors where Sublime Text tries to read files that no longer exist, or
@@ -63,7 +63,7 @@ class PackageDisabler:
         :param packages:
             The string package name, or an array of strings
 
-        :param type:
+        :param operation:
             The type of operation that caused the package to be disabled:
              - "upgrade"
              - "remove"
@@ -109,9 +109,9 @@ class PackageDisabler:
                 ignored.append(package)
                 disabled.append(package)
 
-            if type in ['upgrade', 'remove']:
+            if operation in ['upgrade', 'remove']:
                 version = self.get_version(package)
-                tracker_type = 'pre_upgrade' if type == 'upgrade' else type
+                tracker_type = 'pre_upgrade' if operation == 'upgrade' else operation
                 events.add(tracker_type, package, version)
 
             global_color_scheme = settings.get('color_scheme')
@@ -147,21 +147,21 @@ class PackageDisabler:
 
         # We don't mark a package as in-process when disabling it, otherwise
         # it automatically gets re-enabled the next time Sublime Text starts
-        if type != 'disable':
+        if operation != 'disable':
             save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
         save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
         return disabled
 
-    def reenable_package(self, package, type='upgrade'):
+    def reenable_package(self, package, operation='upgrade'):
         """
         Re-enables a package after it has been installed or upgraded
 
         :param package:
             The string package name
 
-        :param type:
+        :param operation:
             The type of operation that caused the package to be re-enabled:
              - "upgrade"
              - "remove"
@@ -183,21 +183,21 @@ class PackageDisabler:
 
         if package in ignored:
 
-            if type in ['install', 'upgrade']:
+            if operation in ['install', 'upgrade']:
                 version = self.get_version(package)
-                tracker_type = 'post_upgrade' if type == 'upgrade' else type
+                tracker_type = 'post_upgrade' if operation == 'upgrade' else operation
                 events.add(tracker_type, package, version)
                 events.clear(tracker_type, package, future=True)
-                if type == 'upgrade':
+                if operation == 'upgrade':
                     events.clear('pre_upgrade', package)
 
-            elif type == 'remove':
+            elif operation == 'remove':
                 events.clear('remove', package)
 
             ignored = list(set(ignored) - set([package]))
             save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
-            if type == 'remove' and PackageDisabler.old_theme_package == package:
+            if operation == 'remove' and PackageDisabler.old_theme_package == package:
                 sublime.message_dialog(text.format(
                     '''
                     Package Control
@@ -218,7 +218,7 @@ class PackageDisabler:
                 if PackageDisabler.old_color_schemes is None:
                     PackageDisabler.old_color_schemes = {}
 
-                if type == 'upgrade' and package in PackageDisabler.old_syntaxes:
+                if operation == 'upgrade' and package in PackageDisabler.old_syntaxes:
                     for view_syntax in PackageDisabler.old_syntaxes[package]:
                         view, syntax = view_syntax
                         if resource_exists(syntax):
@@ -227,7 +227,7 @@ class PackageDisabler:
                             console_write('The syntax "%s" no longer exists' % syntax)
                             syntax_errors.add(syntax)
 
-                if type == 'upgrade' and PackageDisabler.old_color_scheme_package == package:
+                if operation == 'upgrade' and PackageDisabler.old_color_scheme_package == package:
                     if resource_exists(PackageDisabler.old_color_scheme):
                         settings.set('color_scheme', PackageDisabler.old_color_scheme)
                     else:
@@ -243,7 +243,7 @@ class PackageDisabler:
                             '''
                         ))
 
-                if type == 'upgrade' and package in PackageDisabler.old_color_schemes:
+                if operation == 'upgrade' and package in PackageDisabler.old_color_schemes:
                     for view_scheme in PackageDisabler.old_color_schemes[package]:
                         view, scheme = view_scheme
                         if resource_exists(scheme):
@@ -252,7 +252,7 @@ class PackageDisabler:
                             console_write('The color scheme "%s" no longer exists' % scheme)
                             color_scheme_errors.add(scheme)
 
-                if type == 'upgrade' and PackageDisabler.old_theme_package == package:
+                if operation == 'upgrade' and PackageDisabler.old_theme_package == package:
                     if package_file_exists(package, PackageDisabler.old_theme):
                         settings.set('theme', PackageDisabler.old_theme)
                         sublime.message_dialog(text.format(
