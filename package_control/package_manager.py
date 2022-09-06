@@ -1324,6 +1324,12 @@ class PackageManager:
                 library_names = self.select_libraries(lib_info)
 
             if library_names and not self.install_libraries_by_name(library_names, python_version):
+                console_write(
+                    '''
+                    Skipping package %s since not all required libraries are available.
+                    ''',
+                    package_name
+                )
                 return False
 
             metadata_filename = 'package-metadata.json'
