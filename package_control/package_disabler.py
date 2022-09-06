@@ -40,13 +40,17 @@ class PackageDisabler:
             The string version
         """
 
-        if package_file_exists(package, 'package-metadata.json'):
-            metadata_json = read_package_file(package, 'package-metadata.json')
-            if metadata_json:
-                try:
-                    return json.loads(metadata_json).get('version', 'unknown version')
-                except (ValueError):
-                    pass
+        metadata_json = read_package_file(package, 'package-metadata.json')
+        if metadata_json:
+            try:
+                return json.loads(metadata_json).get('version', 'unknown version')
+            except (ValueError):
+                console_write(
+                    '''
+                    An error occurred while trying to parse package metadata for %s.
+                    ''',
+                    package
+                )
 
         return 'unknown version'
 

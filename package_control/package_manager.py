@@ -182,16 +182,14 @@ class PackageManager:
             or an empty dict on error
         """
 
-        metadata_filename = 'package-metadata.json'
-        metadata_json = read_package_file(package_name, metadata_filename)
+        metadata_json = read_package_file(package_name, 'package-metadata.json')
         if metadata_json:
             try:
                 return json.loads(metadata_json)
             except (ValueError):
                 console_write(
                     '''
-                    An error occurred while trying to parse the package
-                    metadata for %s.
+                    An error occurred while trying to parse package metadata for %s.
                     ''',
                     package_name
                 )
