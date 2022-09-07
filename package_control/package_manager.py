@@ -706,6 +706,18 @@ class PackageManager:
         packages -= {'User', 'Default'}
         return sorted(packages, key=lambda s: s.lower())
 
+    def list_default_packages(self):
+        """
+        Lists all builtin packages shipped with ST
+
+        :return:
+            A list of default package names
+        """
+
+        packages = set(list_sublime_package_files(sys_path.default_packages_path))
+        packages -= {'User', 'Default'}
+        return sorted(packages, key=lambda s: s.lower())
+
     def list_all_packages(self):
         """
         Lists all packages on the machine
@@ -739,19 +751,6 @@ class PackageManager:
                 continue
             output |= self.get_libraries(package)
         return sorted(output)
-
-    def get_package_dir(self, package_name):
-        """
-        Return the absolute path of the package.
-
-        :param package:
-            The package name to return path for.
-
-        :return:
-            The full filesystem path to the package directory
-        """
-
-        return get_package_dir(package_name)
 
     def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""

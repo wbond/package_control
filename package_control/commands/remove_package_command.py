@@ -1,68 +1,57 @@
 import threading
 import time
 
-import sublime
-import sublime_plugin
-
-from .. import text
 from ..package_disabler import PackageDisabler
-from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
 from .existing_packages_command import ExistingPackagesCommand
 
-USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
-
-class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand):
+class RemovePackageCommand(ExistingPackagesCommand):
 
     """
     A command that presents a list of installed packages, allowing the user to
     select one to remove
     """
 
-    def __init__(self, window):
+    def action(self):
         """
-        Constructs a new instance.
-
-        :param window:
-            An instance of :class:`sublime.Window` that represents the Sublime
-            Text window to show the list of installed packages in.
+        Build a strng to describe the action taken on selected package.
         """
 
-        sublime_plugin.WindowCommand.__init__(self, window)
-        ExistingPackagesCommand.__init__(self)
+        return "remove"
 
-    def run(self):
-        self.package_list = self.make_package_list('remove')
-        if not self.package_list:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
-
-                There are no packages that can be removed
-                '''
-            ))
-            return
-        show_quick_panel(self.window, self.package_list, self.on_done)
-
-    def on_done(self, picked):
+    def no_packages_error(self):
         """
-        Quick panel user selection handler - deletes the selected package
-
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
+        Return the error message to display if no packages are availablw.
         """
 
-        if picked == -1:
-            return
+        return "There are no packages that can be removed"
 
-        if USE_QUICK_PANEL_ITEM:
-            package_name = self.package_list[picked].trigger
-        else:
-            package_name = self.package_list[picked][0]
+    def list_packages(self, manager):
+        """
+        Build a list of packages to display.
 
-        thread = RemovePackageThread(self.manager, package_name)
+        :param manager:
+            The package manager instance to use.
+
+        :returns:
+            A list of package names to add to the quick panel
+        """
+
+        return manager.list_packages()
+
+    def on_done(self, manager, package_name):
+        """
+        Callback function to perform action on selected package.
+
+        :param manager:
+            The package manager instance to use.
+
+        :param package_name:
+            A package name to perform action for
+        """
+
+        thread = RemovePackageThread(manager, package_name)
         thread.start()
         ThreadProgress(
             thread,
@@ -79,9 +68,9 @@ class RemovePackageThread(threading.Thread, PackageDisabler):
     """
 
     def __init__(self, manager, package):
-        self.result = None
         self.manager = manager
         self.package = package
+        self.result = None
         threading.Thread.__init__(self)
 
     def run(self):

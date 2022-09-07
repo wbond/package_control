@@ -2,61 +2,60 @@ import os
 import re
 
 import sublime
+import sublime_plugin
 
+from .. import package_io
+from .. import text
 from ..package_manager import PackageManager
+from ..show_quick_panel import show_quick_panel
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class ExistingPackagesCommand:
+class ExistingPackagesCommand(sublime_plugin.WindowCommand):
 
     """
     Allows listing installed packages and their current version
     """
 
-    def __init__(self):
-        self.manager = PackageManager()
+    def run(self):
+        manager = PackageManager()
 
-    def make_package_list(self, action=''):
-        """
-        Returns a list of installed packages suitable for displaying in the
-        quick panel.
-
-        :param action:
-            An action to display at the beginning of the third element of the
-            list returned for each package
-
-        :return:
-            A list of lists, each containing three strings:
-              0 - package name
-              1 - package description
-              2 - [action] installed version; package url
-        """
-
-        packages = self.manager.list_packages()
-
+        action = self.action()
         if action:
             action += ' '
 
+        default_packages = manager.list_default_packages()
+        default_version = 'built-in v' + sublime.version()
+
+        url_pattern = re.compile(r'^https?://')
+
         package_list = []
-        for package in sorted(packages, key=lambda s: s.lower()):
-            metadata = self.manager.get_metadata(package)
-            package_dir = os.path.join(sublime.packages_path(), package)
+        for package in self.list_packages(manager):
+            if package in default_packages:
+                description = 'Bundled Sublime Text Package'
+                installed_version = default_version
+                url = ''
+                url_display = ''
 
-            description = metadata.get('description')
-            if not description:
-                description = 'No description provided'
-
-            version = metadata.get('version')
-            if not version and os.path.exists(os.path.join(package_dir, '.git')):
-                installed_version = 'git repository'
-            elif not version and os.path.exists(os.path.join(package_dir, '.hg')):
-                installed_version = 'hg repository'
             else:
-                installed_version = 'v' + version if version else 'unknown version'
+                metadata = manager.get_metadata(package)
+                package_dir = package_io.get_package_dir(package)
 
-            url = metadata.get('url', '')
-            url_display = re.sub('^https?://', '', url)
+                description = metadata.get('description')
+                if not description:
+                    description = 'No description provided'
+
+                version = metadata.get('version')
+                if not version and os.path.exists(os.path.join(package_dir, '.git')):
+                    installed_version = 'git repository'
+                elif not version and os.path.exists(os.path.join(package_dir, '.hg')):
+                    installed_version = 'hg repository'
+                else:
+                    installed_version = 'v' + version if version else 'unknown version'
+
+                url = metadata.get('url', '')
+                url_display = url_pattern.sub('', url)
 
             if USE_QUICK_PANEL_ITEM:
                 description = '<em>%s</em>' % sublime.html_format_command(description)
@@ -72,4 +71,66 @@ class ExistingPackagesCommand:
 
             package_list.append(package_entry)
 
-        return package_list
+        if not package_list:
+            sublime.message_dialog(text.format(
+                '''
+                Package Control
+
+                %s
+                ''',
+                self.no_packages_error()
+            ))
+            return
+
+        def on_done(picked):
+            if picked == -1:
+                return
+
+            if USE_QUICK_PANEL_ITEM:
+                package_name = package_list[picked].trigger
+            else:
+                package_name = package_list[picked][0]
+
+            self.on_done(manager, package_name)
+
+        show_quick_panel(self.window, package_list, on_done)
+
+    def action(self):
+        """
+        Build a strng to describe the action taken on selected package.
+        """
+
+        return ""
+
+    def list_packages(self, manager):
+        """
+        Build a list of packages to display.
+
+        :param manager:
+            The package manager instance to use.
+
+        :returns:
+            A list of package names to add to the quick panel
+        """
+
+        raise NotImplementedError()
+
+    def no_packages_error(self):
+        """
+        Return the error message to display if no packages are availablw.
+        """
+
+        raise NotImplementedError()
+
+    def on_done(self, manager, package_name):
+        """
+        Callback function to perform action on selected package.
+
+        :param manager:
+            The package manager instance to use.
+
+        :param package_name:
+            A package name to perform action for
+        """
+
+        raise NotImplementedError()

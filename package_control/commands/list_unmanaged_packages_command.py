@@ -1,12 +1,10 @@
 import sublime
-import sublime_plugin
 
-from .list_packages_command import ListPackagesThread
-
-USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+from ..settings import pc_settings_filename, load_list_setting
+from .list_packages_command import ListPackagesCommand
 
 
-class ListUnmanagedPackagesCommand(sublime_plugin.WindowCommand):
+class ListUnmanagedPackagesCommand(ListPackagesCommand):
 
     """
     A command that shows a list of all packages that are not managed by
@@ -14,15 +12,19 @@ class ListUnmanagedPackagesCommand(sublime_plugin.WindowCommand):
     `installed_packages`.
     """
 
-    def run(self):
-        settings = sublime.load_settings('Package Control.sublime-settings')
+    def list_packages(self, manager):
+        """
+        Build a list of packages to display.
 
-        ignored_packages = settings.get('unmanaged_packages_ignore', [])
-        ignored_packages.extend(settings.get('installed_packages', []))
+        :param manager:
+            The package manager instance to use.
 
-        def filter_packages(package):
-            if USE_QUICK_PANEL_ITEM:
-                return package.trigger not in ignored_packages
-            return package[0] not in ignored_packages
+        :returns:
+            A list of package names to add to the quick panel
+        """
 
-        ListPackagesThread(self.window, filter_packages).start()
+        settings = sublime.load_settings(pc_settings_filename())
+        ignored_packages = set(load_list_setting(settings, 'unmanaged_packages_ignore'))
+        ignored_packages |= set(load_list_setting(settings, 'installed_packages'))
+
+        return sorted(set(manager.list_packages()) - ignored_packages, key=lambda s: s.lower())
