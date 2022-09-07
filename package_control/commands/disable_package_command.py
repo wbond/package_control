@@ -1,53 +1,62 @@
 import sublime
-import sublime_plugin
 
 from .. import text
 from ..package_disabler import PackageDisabler
-from ..package_manager import PackageManager
-from ..show_quick_panel import show_quick_panel
+from .existing_packages_command import ExistingPackagesCommand
 
 
-class DisablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
+class DisablePackageCommand(ExistingPackagesCommand):
 
     """
     A command that adds a package to Sublime Text's ignored packages list
     """
 
-    def run(self):
-        manager = PackageManager()
+    def action(self):
+        """
+        Build a strng to describe the action taken on selected package.
+        """
+
+        return "disable"
+
+    def no_packages_error(self):
+        """
+        Return the error message to display if no packages are availablw.
+        """
+
+        return "There are no enabled packages to disable"
+
+    def list_packages(self, manager):
+        """
+        Build a list of packages to display.
+
+        :param manager:
+            The package manager instance to use.
+
+        :returns:
+            A list of package names to add to the quick panel
+        """
+
         packages = manager.list_all_packages()
-        ignored = self.get_ignored_packages()
-        self.package_list = sorted(set(packages) - set(ignored), key=lambda s: s.lower())
-        if not self.package_list:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
+        ignored = PackageDisabler.get_ignored_packages()
+        return sorted(set(packages) - set(ignored), key=lambda s: s.lower())
 
-                There are no enabled packages to disable
-                '''
-            ))
-            return
-        show_quick_panel(self.window, self.package_list, self.on_done)
-
-    def on_done(self, picked):
+    def on_done(self, manager, package_name):
         """
         Quick panel user selection handler - disables the selected package
 
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
+        :param manager:
+            The package manager instance to use.
+
+        :param package_name:
+            A package name to perform action for
         """
 
-        if picked == -1:
-            return
-        package = self.package_list[picked]
-
-        self.disable_packages(package, 'disable')
+        PackageDisabler.disable_packages(package_name, 'disable')
 
         sublime.status_message(text.format(
             '''
             Package %s successfully added to list of disabled packages -
             restarting Sublime Text may be required
             ''',
-            package
+            package_name
         ))

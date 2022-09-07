@@ -1,49 +1,60 @@
 import sublime
-import sublime_plugin
 
 from .. import text
 from ..package_disabler import PackageDisabler
-from ..show_quick_panel import show_quick_panel
+from .existing_packages_command import ExistingPackagesCommand
 
 
-class EnablePackageCommand(sublime_plugin.WindowCommand, PackageDisabler):
+class EnablePackageCommand(ExistingPackagesCommand):
 
     """
     A command that removes a package from Sublime Text's ignored packages list
     """
 
-    def run(self):
-        self.disabled_packages = self.get_ignored_packages()
-        if not self.disabled_packages:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
+    def action(self):
+        """
+        Build a strng to describe the action taken on selected package.
+        """
 
-                There are no disabled packages to enable
-                '''
-            ))
-            return
-        show_quick_panel(self.window, self.disabled_packages, self.on_done)
+        return "enable"
 
-    def on_done(self, picked):
+    def no_packages_error(self):
+        """
+        Return the error message to display if no packages are availablw.
+        """
+
+        return "There are no disabled packages to enable"
+
+    def list_packages(self, manager):
+        """
+        Build a list of packages to display.
+
+        :param manager:
+            The package manager instance to use.
+
+        :returns:
+            A list of package names to add to the quick panel
+        """
+
+        return PackageDisabler.get_ignored_packages()
+
+    def on_done(self, manager, package_name):
         """
         Quick panel user selection handler - enables the selected package
 
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
+        :param manager:
+            The package manager instance to use.
+
+        :param package_name:
+            A package name to perform action for
         """
 
-        if picked == -1:
-            return
-        package = self.disabled_packages[picked]
-
-        self.reenable_packages(package, 'enable')
+        PackageDisabler.reenable_packages(package_name, 'enable')
 
         sublime.status_message(text.format(
             '''
             Package %s successfully removed from list of disabled packages -
             restarting Sublime Text may be required
             ''',
-            package
+            package_name
         ))
