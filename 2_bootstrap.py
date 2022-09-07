@@ -7,15 +7,10 @@ from textwrap import dedent
 
 import sublime
 
-from .package_control import sys_path, library
+from .package_control import library, sys_path, text
 from .package_control.console_write import console_write
 from .package_control.package_disabler import PackageDisabler
-from .package_control.settings import (
-    load_list_setting,
-    pc_settings_filename,
-    preferences_filename,
-    save_list_setting
-)
+from .package_control.settings import pc_settings_filename
 
 
 LOADER_PACKAGE_NAME = '0_package_control_loader'
@@ -27,20 +22,15 @@ LOADER_PACKAGE_PATH = os.path.join(
 
 def plugin_loaded():
     if os.path.exists(LOADER_PACKAGE_PATH):
-        prefs = sublime.load_settings(preferences_filename())
-        ignored = load_list_setting(prefs, 'ignored_packages')
-        if LOADER_PACKAGE_NAME not in ignored:
-            ignored.append(LOADER_PACKAGE_NAME)
-        save_list_setting(prefs, preferences_filename(), 'ignored_packages', ignored)
+        PackageDisabler.disable_packages([LOADER_PACKAGE_NAME], 'loader')
 
         def start_bootstrap():
             threading.Thread(target=_migrate_loaders).start()
 
         # Give ST a second to disable 0_package_control_loader
         sublime.set_timeout(start_bootstrap, 1000)
-
     else:
-        threading.Thread(target=_install_injectors).start()
+        _install_injectors()
 
 
 def _mark_bootstrapped():
@@ -74,7 +64,7 @@ def _migrate_loaders():
 
                 name = path[3:-3]
                 try:
-                    dep_path = os.path.join(sublime.packages_path(), name)
+                    dep_path = os.path.join(sys_path.packages_path, name)
                     json_path = os.path.join(dep_path, 'dependency-metadata.json')
 
                     try:
@@ -85,7 +75,7 @@ def _migrate_loaders():
                         continue
 
                     did = library.convert_dependency(
-                        os.path.join(sys_path.packages_path, name),
+                        dep_path,
                         "3.3",
                         name,
                         metadata['version'],
@@ -99,14 +89,21 @@ def _migrate_loaders():
                 except (Exception) as e:
                     console_write('Error trying to migrate dependency %s - %s' % (name, e))
 
-        disabler = PackageDisabler()
-        disabler.disable_packages([LOADER_PACKAGE_NAME], 'loader')
+        os.remove(LOADER_PACKAGE_PATH)
 
-        def _remove_loader():
-            os.remove(LOADER_PACKAGE_PATH)
-            disabler.reenable_packages(LOADER_PACKAGE_NAME, 'loader')
+        def _reenable_loader():
+            PackageDisabler.reenable_packages([LOADER_PACKAGE_NAME], 'loader')
+            sublime.message_dialog(text.format(
+                '''
+                Package Control
 
-        sublime.set_timeout(_remove_loader, 510)
+                Dependencies have just been migrated to python libraries.
+
+                You may need to restart Sublime Text.
+                '''
+            ))
+
+        sublime.set_timeout(_reenable_loader, 500)
 
     except (OSError) as e:
         console_write('Error trying to migrate dependencies - %s' % e)

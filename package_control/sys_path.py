@@ -75,6 +75,18 @@ if installed_packages_path and data_dir is None:
     data_dir = dirname(installed_packages_path)
 
 
+def add_dependency(name, first=False):
+    """
+    A backward compatibility dummy
+
+    1. Satisfies 01_package_control_loader until migration is complete.
+       Reduces amount of tracebacks printed to console.
+
+    2. Some plugins such as AutomaticPackageReloader make use of it, too.
+    """
+    pass
+
+
 def lib_paths():
     """
     Returns a dict of version-specific lib folders
