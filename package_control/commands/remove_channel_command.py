@@ -1,9 +1,9 @@
 import sublime
 import sublime_plugin
 
-from ..show_quick_panel import show_quick_panel
-from ..settings import pc_settings_filename
 from .. import text
+from ..settings import pc_settings_filename
+from ..show_quick_panel import show_quick_panel
 
 
 class RemoveChannelCommand(sublime_plugin.WindowCommand):

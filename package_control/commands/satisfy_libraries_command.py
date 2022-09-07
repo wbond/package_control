@@ -1,13 +1,12 @@
+import functools
 import threading
 
 import sublime
 import sublime_plugin
 
-import functools
-
-from ..show_error import show_error
 from ..console_write import console_write
 from ..package_manager import PackageManager
+from ..show_error import show_error
 from ..thread_progress import ThreadProgress
 
 

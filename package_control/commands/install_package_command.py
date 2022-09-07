@@ -4,8 +4,8 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
 from ..package_installer import PackageInstaller
+from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
 
 
@@ -31,6 +31,8 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
 
     def __init__(self, window):
         """
+        Constructs a new instance.
+
         :param window:
             An instance of :class:`sublime.Window` that represents the Sublime
             Text window to show the available package list in.

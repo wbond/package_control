@@ -4,10 +4,10 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
-from ..thread_progress import ThreadProgress
 from ..package_installer import PackageInstaller, PackageInstallerThread
 from ..package_renamer import PackageRenamer
+from ..show_quick_panel import show_quick_panel
+from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 

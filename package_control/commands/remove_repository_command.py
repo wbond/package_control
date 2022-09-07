@@ -2,8 +2,8 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..show_quick_panel import show_quick_panel
 from ..settings import pc_settings_filename
+from ..show_quick_panel import show_quick_panel
 
 
 class RemoveRepositoryCommand(sublime_plugin.WindowCommand):

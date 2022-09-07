@@ -1,13 +1,13 @@
+import functools
 import time
 import threading
-import functools
 
 import sublime
 import sublime_plugin
 
-from ..thread_progress import ThreadProgress
 from ..package_installer import PackageInstaller, PackageInstallerThread
 from ..package_renamer import PackageRenamer
+from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
