@@ -1,14 +1,11 @@
 import threading
-import re
 import time
-import functools
 
-import sublime
 import sublime_plugin
 
-from ..show_error import show_error
-from ..package_manager import PackageManager
 from ..package_disabler import PackageDisabler
+from ..package_manager import PackageManager
+from ..show_error import show_error
 from ..thread_progress import ThreadProgress
 
 
@@ -20,14 +17,18 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self, packages=None):
-        is_str = isinstance(packages, str)
-        is_bytes = isinstance(packages, bytes)
+        if packages:
+            if isinstance(packages, str):
+                packages = self.split(packages)
 
-        if packages and (is_str or is_bytes):
-            packages = self.split(packages)
-
-        if packages and isinstance(packages, list):
-            return self.start(packages)
+            if isinstance(packages, list):
+                thread = AdvancedInstallPackageThread(packages)
+                thread.start()
+                message = 'Installing package'
+                if len(packages) > 1:
+                    message += 's'
+                ThreadProgress(thread, message, '')
+                return
 
         self.window.show_input_panel(
             'Packages to Install (Comma-separated)',
@@ -37,22 +38,16 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
             None
         )
 
-    def split(self, packages):
-        if isinstance(packages, bytes):
-            packages = packages.decode('utf-8')
-        return re.split(r'\s*,\s*', packages)
-
-    def on_done(self, input):
+    def on_done(self, input_text):
         """
         Input panel handler - adds the provided URL as a repository
 
-        :param input:
+        :param input_text:
             A string of the URL to the new repository
         """
 
-        input = input.strip()
-
-        if not input:
+        packages = self.split(input_text.strip())
+        if not packages:
             show_error(
                 '''
                 No package names were entered
@@ -60,15 +55,11 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
             )
             return
 
-        self.start(self.split(input))
+        self.run(packages)
 
-    def start(self, packages):
-        thread = AdvancedInstallPackageThread(packages)
-        thread.start()
-        message = 'Installing package'
-        if len(packages) > 1:
-            message += 's'
-        ThreadProgress(thread, message, '')
+    @staticmethod
+    def split(packages):
+        return [package.strip() for package in packages.split(',') if package]
 
 
 class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
@@ -79,35 +70,50 @@ class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
 
     def __init__(self, packages):
         """
-        :param window:
-            An instance of :class:`sublime.Window` that represents the Sublime
-            Text window to show the available package list in.
+        :param packages:
+            The string package name, or an array of strings
         """
 
-        self.manager = PackageManager()
+        if isinstance(packages, str):
+            packages = [packages]
+        if not isinstance(packages, list):
+            raise TypeError("Parameter 'packages' must be string or list!")
         self.packages = packages
 
-        self.installed = self.manager.list_packages()
-        self.disabled = []
-        for package_name in packages:
-            operation_type = 'install' if package_name not in self.installed else 'upgrade'
-            self.disabled.extend(self.disable_packages(package_name, operation_type))
-
+        self.manager = PackageManager()
         threading.Thread.__init__(self)
 
     def run(self):
-        # Allow packages to properly disable
-        time.sleep(0.7)
+        installed = self.manager.list_packages()
 
-        def do_reenable_package(package_name):
-            operation_type = 'install' if package_name not in self.installed else 'upgrade'
-            self.reenable_packages(package_name, operation_type)
+        operations = {
+            'install': [
+                package for package in self.packages
+                if package not in installed
+            ],
+            'upgrade': [
+                package for package in self.packages
+                if package in installed
+            ]
+        }
 
-        for package in self.packages:
-            result = self.manager.install_package(package)
+        disabled = {
+            operation: self.disable_packages(packages, operation)
+            for operation, packages in operations.items()
+        }
 
-            # Do not reenable if installation deferred until next restart
-            if result is not None and package in self.disabled:
-                # We use a functools.partial to generate the on-complete callback in
-                # order to bind the current value of the parameters, unlike lambdas.
-                sublime.set_timeout(functools.partial(do_reenable_package, package), 700)
+        try:
+            # Allow packages to properly disable
+            time.sleep(0.7)
+
+            for operation, packages in operations.items():
+                for package in packages:
+                    result = self.manager.install_package(package)
+                    # do not re-enable package if operation is dereffered to next start
+                    if result is None and package in disabled[operation]:
+                        disabled[operation].remove(package)
+
+        finally:
+            time.sleep(0.7)
+            for operation, packages in disabled.items():
+                self.reenable_packages(packages, operation)
