@@ -1,6 +1,7 @@
 import sublime
 import sublime_plugin
 
+from ..settings import pc_settings_filename
 from ..tests import TestRunner, TEST_CLASSES
 
 
@@ -13,5 +14,4 @@ class PackageControlTestsCommand(sublime_plugin.WindowCommand):
         TestRunner(args=(self.window, TEST_CLASSES)).start()
 
     def is_visible(self):
-        settings = sublime.load_settings('Package Control.sublime-settings')
-        return settings.get('enable_tests', False)
+        return sublime.load_settings(pc_settings_filename()).get('enable_tests', False)
