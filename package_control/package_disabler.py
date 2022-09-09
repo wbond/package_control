@@ -23,6 +23,7 @@ class PackageDisabler:
     old_color_schemes = []
 
     lock = threading.Lock()
+    restore_id = 0
 
     @staticmethod
     def get_ignored_packages():
@@ -205,94 +206,103 @@ class PackageDisabler:
             in_process = list(set(in_process) - set(packages))
             save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
-        if operation != 'upgrade':
+            if operation == 'upgrade':
+                # By delaying the restore, we give Sublime Text some time to
+                # re-enable packages, making errors less likely
+                PackageDisabler.restore_id += 1
+                sublime.set_timeout(functools.partial(
+                    PackageDisabler.delayed_settings_restore, PackageDisabler.restore_id), 1000)
+
+    @staticmethod
+    def delayed_settings_restore(restore_id):
+
+        if restore_id != PackageDisabler.restore_id:
             return
 
-        # By delaying the restore, we give Sublime Text some time to
-        # re-enable packages, making errors less likely
-        def delayed_settings_restore():
+        with PackageDisabler.lock:
             color_scheme_errors = set()
             syntax_errors = set()
 
             settings = sublime.load_settings(preferences_filename())
             save_settings = False
 
-            # restore global theme
-            if PackageDisabler.old_theme:
-                theme_packages = find_theme_packages(PackageDisabler.old_theme)
-                missing_theme_packages = PackageDisabler.old_theme_packages - theme_packages
-                if missing_theme_packages:
-                    show_error(
-                        '''
-                        The following packages no longer participate in your active theme after upgrade.
+            try:
+                # restore global theme
+                if PackageDisabler.old_theme:
+                    theme_packages = find_theme_packages(PackageDisabler.old_theme)
+                    missing_theme_packages = PackageDisabler.old_theme_packages - theme_packages
+                    if missing_theme_packages:
+                        show_error(
+                            '''
+                            The following packages no longer participate in your active theme after upgrade.
 
-                           - %s
+                               - %s
 
-                        As one of tem may contain the primary theme package,
-                        Sublime Text is configured to use the default theme.
-                        ''',
-                        '\n   - '.join(sorted(missing_theme_packages, key=lambda s: s.lower()))
-                    )
-                else:
-                    save_settings = True
-                    settings.set('theme', PackageDisabler.old_theme)
+                            As one of tem may contain the primary theme package,
+                            Sublime Text is configured to use the default theme.
+                            ''',
+                            '\n   - '.join(sorted(missing_theme_packages, key=lambda s: s.lower()))
+                        )
+                    else:
+                        save_settings = True
+                        settings.set('theme', PackageDisabler.old_theme)
 
-                PackageDisabler.old_theme_packages.clear()
-                PackageDisabler.old_theme = None
+                # restore global color scheme
+                if PackageDisabler.old_color_scheme:
+                    color_scheme_packages = find_color_scheme_packages(PackageDisabler.old_color_scheme)
+                    missing_color_scheme_packages = PackageDisabler.old_color_scheme_packages - color_scheme_packages
+                    if missing_color_scheme_packages:
+                        show_error(
+                            '''
+                            The following packages no longer participate in your active color scheme after upgrade.
 
-            # restore global color scheme
-            if PackageDisabler.old_color_scheme:
-                color_scheme_packages = find_color_scheme_packages(PackageDisabler.old_color_scheme)
-                missing_color_scheme_packages = PackageDisabler.old_color_scheme_packages - color_scheme_packages
-                if missing_color_scheme_packages:
-                    show_error(
-                        '''
-                        The following packages no longer participate in your active color scheme after upgrade.
+                               - %s
 
-                           - %s
+                            As one of them may contain the primary color scheme,
+                            Sublime Text is configured to use the default color scheme.
+                            ''',
+                            '\n   - '.join(sorted(missing_color_scheme_packages, key=lambda s: s.lower()))
+                        )
+                    else:
+                        save_settings = True
+                        settings.set('color_scheme', PackageDisabler.old_color_scheme)
 
-                        As one of them may contain the primary color scheme,
-                        Sublime Text is configured to use the default color scheme.
-                        ''',
-                        '\n   - '.join(sorted(missing_color_scheme_packages, key=lambda s: s.lower()))
-                    )
-                else:
-                    save_settings = True
-                    settings.set('color_scheme', PackageDisabler.old_color_scheme)
+                # restore viewa-specific color scheme assignments
+                for view, color_scheme, old_color_scheme_packages in PackageDisabler.old_color_schemes:
+                    if not view.is_valid() or color_scheme in color_scheme_errors:
+                        continue
+                    color_scheme_packages = find_color_scheme_packages(color_scheme)
+                    missing_color_scheme_packages = old_color_scheme_packages - color_scheme_packages
+                    if missing_color_scheme_packages:
+                        console_write('The color scheme "%s" no longer exists' % color_scheme)
+                        color_scheme_errors.add(color_scheme)
+                        continue
+                    view.settings().set('color_scheme', color_scheme)
+
+                # restore syntax assignments
+                for view, syntax in PackageDisabler.old_syntaxes:
+                    if not view.is_valid() or syntax in syntax_errors:
+                        continue
+                    if not resource_exists(syntax):
+                        console_write('The syntax "%s" no longer exists' % syntax)
+                        syntax_errors.add(syntax)
+                        continue
+                    view.settings().set('syntax', syntax)
+
+            finally:
+                if save_settings:
+                    sublime.save_settings(preferences_filename())
 
                 PackageDisabler.old_color_scheme_packages.clear()
                 PackageDisabler.old_color_scheme = None
 
-            # restore viewa-specific color scheme assignments
-            for view, color_scheme, old_color_scheme_packages in PackageDisabler.old_color_schemes:
-                if not view.is_valid() or color_scheme in color_scheme_errors:
-                    continue
-                color_scheme_packages = find_color_scheme_packages(color_scheme)
-                missing_color_scheme_packages = old_color_scheme_packages - color_scheme_packages
-                if missing_color_scheme_packages:
-                    console_write('The color scheme "%s" no longer exists' % color_scheme)
-                    color_scheme_errors.add(color_scheme)
-                    continue
-                view.settings().set('color_scheme', color_scheme)
+                PackageDisabler.old_color_schemes.clear()
+                PackageDisabler.old_syntaxes.clear()
 
-            PackageDisabler.old_color_schemes.clear()
+                PackageDisabler.old_theme_packages.clear()
+                PackageDisabler.old_theme = None
 
-            # restore syntax assignments
-            for view, syntax in PackageDisabler.old_syntaxes:
-                if not view.is_valid() or syntax in syntax_errors:
-                    continue
-                if not resource_exists(syntax):
-                    console_write('The syntax "%s" no longer exists' % syntax)
-                    syntax_errors.add(syntax)
-                    continue
-                view.settings().set('syntax', syntax)
-
-            PackageDisabler.old_syntaxes.clear()
-
-            if save_settings:
-                sublime.save_settings(preferences_filename())
-
-        sublime.set_timeout(delayed_settings_restore, 1000)
+                PackageDisabler.restore_id = 0
 
 
 def resource_exists(path):
