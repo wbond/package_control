@@ -19,8 +19,8 @@ class PackageDisabler:
     old_theme_packages = set()
     old_theme = None
 
-    old_syntaxes = None
-    old_color_schemes = None
+    old_syntaxes = []
+    old_color_schemes = []
 
     lock = threading.Lock()
 
@@ -117,6 +117,26 @@ class PackageDisabler:
                 # Set default color scheme via tmTheme for compat with ST3143
                 settings.set('theme', 'Default.sublime-theme')
 
+            for window in sublime.windows():
+                for view in window.views():
+                    view_settings = view.settings()
+
+                    # Backup and reset view-specific color_scheme settings not already taken care
+                    # of by resetting the global color_scheme above
+                    color_scheme = view_settings.get('color_scheme')
+                    if color_scheme is not None and color_scheme != global_color_scheme:
+                        color_scheme_packages = find_color_scheme_packages(color_scheme)
+                        if color_scheme_packages & packages:
+                            PackageDisabler.old_color_schemes.append([view, color_scheme, color_scheme_packages])
+                            # Set default color scheme via tmTheme for compat with ST3143
+                            view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
+
+                    # Backup and reset assigned syntaxes
+                    syntax = view_settings.get('syntax')
+                    if syntax is not None and any(syntax.startswith('Packages/' + package + '/') for package in packages):
+                        PackageDisabler.old_syntaxes.append([view, syntax])
+                        view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
+
             for package in packages:
                 if package not in ignored:
                     in_process.append(package)
@@ -127,25 +147,6 @@ class PackageDisabler:
                     version = PackageDisabler.get_version(package)
                     tracker_type = 'pre_upgrade' if operation == 'upgrade' else operation
                     events.add(tracker_type, package, version)
-
-                for window in sublime.windows():
-                    for view in window.views():
-                        view_settings = view.settings()
-                        syntax = view_settings.get('syntax')
-                        if syntax is not None and syntax.find('Packages/' + package + '/') != -1:
-                            if package not in PackageDisabler.old_syntaxes:
-                                PackageDisabler.old_syntaxes[package] = []
-                            PackageDisabler.old_syntaxes[package].append([view, syntax])
-                            view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
-                        # Handle view-specific color_scheme settings not already taken care
-                        # of by resetting the global color_scheme above
-                        scheme = view_settings.get('color_scheme')
-                        if scheme is not None and scheme != global_color_scheme \
-                                and scheme.find('Packages/' + package + '/') != -1:
-                            if package not in PackageDisabler.old_color_schemes:
-                                PackageDisabler.old_color_schemes[package] = []
-                            PackageDisabler.old_color_schemes[package].append([view, scheme])
-                            view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
             # We don't mark a package as in-process when disabling it, otherwise
             # it automatically gets re-enabled the next time Sublime Text starts
@@ -209,14 +210,9 @@ class PackageDisabler:
 
         # By delaying the restore, we give Sublime Text some time to
         # re-enable packages, making errors less likely
-        def delayed_settings_restore(packages):
+        def delayed_settings_restore():
             color_scheme_errors = set()
             syntax_errors = set()
-
-            if PackageDisabler.old_syntaxes is None:
-                PackageDisabler.old_syntaxes = {}
-            if PackageDisabler.old_color_schemes is None:
-                PackageDisabler.old_color_schemes = {}
 
             settings = sublime.load_settings(preferences_filename())
             save_settings = False
@@ -267,29 +263,36 @@ class PackageDisabler:
                 PackageDisabler.old_color_scheme_packages.clear()
                 PackageDisabler.old_color_scheme = None
 
-            for package in packages:
-                if package in PackageDisabler.old_syntaxes:
-                    for view_syntax in PackageDisabler.old_syntaxes[package]:
-                        view, syntax = view_syntax
-                        if resource_exists(syntax):
-                            view.settings().set('syntax', syntax)
-                        elif syntax not in syntax_errors:
-                            console_write('The syntax "%s" no longer exists' % syntax)
-                            syntax_errors.add(syntax)
+            # restore viewa-specific color scheme assignments
+            for view, color_scheme, old_color_scheme_packages in PackageDisabler.old_color_schemes:
+                if not view.is_valid() or color_scheme in color_scheme_errors:
+                    continue
+                color_scheme_packages = find_color_scheme_packages(color_scheme)
+                missing_color_scheme_packages = old_color_scheme_packages - color_scheme_packages
+                if missing_color_scheme_packages:
+                    console_write('The color scheme "%s" no longer exists' % color_scheme)
+                    color_scheme_errors.add(color_scheme)
+                    continue
+                view.settings().set('color_scheme', color_scheme)
 
-                if package in PackageDisabler.old_color_schemes:
-                    for view_scheme in PackageDisabler.old_color_schemes[package]:
-                        view, scheme = view_scheme
-                        if resource_exists(scheme):
-                            view.settings().set('color_scheme', scheme)
-                        elif scheme not in color_scheme_errors:
-                            console_write('The color scheme "%s" no longer exists' % scheme)
-                            color_scheme_errors.add(scheme)
+            PackageDisabler.old_color_schemes.clear()
+
+            # restore syntax assignments
+            for view, syntax in PackageDisabler.old_syntaxes:
+                if not view.is_valid() or syntax in syntax_errors:
+                    continue
+                if not resource_exists(syntax):
+                    console_write('The syntax "%s" no longer exists' % syntax)
+                    syntax_errors.add(syntax)
+                    continue
+                view.settings().set('syntax', syntax)
+
+            PackageDisabler.old_syntaxes.clear()
 
             if save_settings:
                 sublime.save_settings(preferences_filename())
 
-        sublime.set_timeout(functools.partial(delayed_settings_restore, packages), 1000)
+        sublime.set_timeout(delayed_settings_restore, 1000)
 
 
 def resource_exists(path):
