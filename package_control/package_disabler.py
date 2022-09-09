@@ -6,7 +6,6 @@ import threading
 import sublime
 
 from . import events
-from . import text
 from .console_write import console_write
 from .package_io import package_file_exists, read_package_file
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
@@ -17,7 +16,7 @@ class PackageDisabler:
     old_color_scheme_packages = set()
     old_color_scheme = None
 
-    old_theme_package = None
+    old_theme_packages = set()
     old_theme = None
 
     old_syntaxes = None
@@ -110,6 +109,14 @@ class PackageDisabler:
                 # Set default color scheme via tmTheme for compat with ST3143
                 settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
 
+            global_theme = settings.get('theme', '')
+            global_theme_packages = find_theme_packages(global_theme)
+            if global_theme_packages & packages:
+                PackageDisabler.old_theme_packages |= global_theme_packages
+                PackageDisabler.old_theme = global_theme
+                # Set default color scheme via tmTheme for compat with ST3143
+                settings.set('theme', 'Default.sublime-theme')
+
             for package in packages:
                 if package not in ignored:
                     in_process.append(package)
@@ -139,12 +146,6 @@ class PackageDisabler:
                                 PackageDisabler.old_color_schemes[package] = []
                             PackageDisabler.old_color_schemes[package].append([view, scheme])
                             view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
-
-                # Change the theme before disabling the package containing it
-                if package_file_exists(package, settings.get('theme')):
-                    PackageDisabler.old_theme_package = package
-                    PackageDisabler.old_theme = settings.get('theme')
-                    settings.set('theme', 'Default.sublime-theme')
 
             # We don't mark a package as in-process when disabling it, otherwise
             # it automatically gets re-enabled the next time Sublime Text starts
@@ -203,16 +204,6 @@ class PackageDisabler:
             in_process = list(set(in_process) - set(packages))
             save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
-            if operation == 'remove' and PackageDisabler.old_theme_package in packages:
-                sublime.message_dialog(text.format(
-                    '''
-                    Package Control
-
-                    The package containing your active theme was just removed
-                    and the Default theme was enabled in its place.
-                    '''
-                ))
-
         if operation != 'upgrade':
             return
 
@@ -230,6 +221,30 @@ class PackageDisabler:
             settings = sublime.load_settings(preferences_filename())
             save_settings = False
 
+            # restore global theme
+            if PackageDisabler.old_theme:
+                theme_packages = find_theme_packages(PackageDisabler.old_theme)
+                missing_theme_packages = PackageDisabler.old_theme_packages - theme_packages
+                if missing_theme_packages:
+                    show_error(
+                        '''
+                        The following packages no longer participate in your active theme after upgrade.
+
+                           - %s
+
+                        As one of tem may contain the primary theme package,
+                        Sublime Text is configured to use the default theme.
+                        ''',
+                        '\n   - '.join(sorted(missing_theme_packages, key=lambda s: s.lower()))
+                    )
+                else:
+                    save_settings = True
+                    settings.set('theme', PackageDisabler.old_theme)
+
+                PackageDisabler.old_theme_packages.clear()
+                PackageDisabler.old_theme = None
+
+            # restore global color scheme
             if PackageDisabler.old_color_scheme:
                 color_scheme_packages = find_color_scheme_packages(PackageDisabler.old_color_scheme)
                 missing_color_scheme_packages = PackageDisabler.old_color_scheme_packages - color_scheme_packages
@@ -270,30 +285,6 @@ class PackageDisabler:
                         elif scheme not in color_scheme_errors:
                             console_write('The color scheme "%s" no longer exists' % scheme)
                             color_scheme_errors.add(scheme)
-
-                if package == PackageDisabler.old_theme_package:
-                    if package_file_exists(package, PackageDisabler.old_theme):
-                        settings.set('theme', PackageDisabler.old_theme)
-                        save_settings = True
-                        sublime.message_dialog(text.format(
-                            '''
-                            Package Control
-
-                            The package containing your active theme was just
-                            upgraded.
-                            '''
-                        ))
-                    else:
-                        sublime.error_message(text.format(
-                            '''
-                            Package Control
-
-                            The package containing your active theme was just
-                            upgraded, however the .sublime-theme file no longer
-                            exists. Sublime Text has been configured use the
-                            default theme instead.
-                            '''
-                        ))
 
             if save_settings:
                 sublime.save_settings(preferences_filename())
@@ -342,5 +333,26 @@ def find_color_scheme_packages(color_scheme):
             parts = path[9:].split('/', 1)
             if len(parts) == 2:
                 packages.add(parts[0])
+
+    return packages
+
+
+def find_theme_packages(theme):
+    """
+    Build a set of packages, containing the theme.
+
+    :param theme:
+        The color scheme name
+
+    :returns:
+        A set of package names
+    """
+
+    packages = set()
+
+    for path in sublime.find_resources(os.path.basename(theme)):
+        parts = path[9:].split('/', 1)
+        if len(parts) == 2:
+            packages.add(parts[0])
 
     return packages
