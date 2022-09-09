@@ -703,7 +703,7 @@ class PackageManager:
         if unpacked_only is False:
             packages |= set(list_sublime_package_files(sys_path.installed_packages_path))
         packages -= set(list_sublime_package_files(sys_path.default_packages_path))
-        packages -= {'User', 'Default'}
+        packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
     def list_default_packages(self):
@@ -715,7 +715,7 @@ class PackageManager:
         """
 
         packages = set(list_sublime_package_files(sys_path.default_packages_path))
-        packages -= {'User', 'Default'}
+        packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
     def list_all_packages(self):
@@ -729,7 +729,7 @@ class PackageManager:
         packages = set(list_sublime_package_dirs(sys_path.packages_path))
         packages |= set(list_sublime_package_files(sys_path.installed_packages_path))
         packages |= set(list_sublime_package_files(sys_path.default_packages_path))
-        packages -= {'User', 'Default'}
+        packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
     def find_required_libraries(self, ignore_package=None):
