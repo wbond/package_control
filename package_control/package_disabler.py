@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 import threading
 
 import sublime
@@ -9,10 +10,11 @@ from . import text
 from .console_write import console_write
 from .package_io import package_file_exists, read_package_file
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
+from .show_error import show_error
 
 
 class PackageDisabler:
-    old_color_scheme_package = None
+    old_color_scheme_packages = set()
     old_color_scheme = None
 
     old_theme_package = None
@@ -84,8 +86,9 @@ class PackageDisabler:
         """
 
         with PackageDisabler.lock:
-            if not isinstance(packages, list):
+            if not isinstance(packages, (list, set, tuple)):
                 packages = [packages]
+            packages = set(packages)
 
             disabled = []
 
@@ -95,14 +98,17 @@ class PackageDisabler:
             pc_settings = sublime.load_settings(pc_settings_filename())
             in_process = load_list_setting(pc_settings, 'in_process_packages')
 
-            PackageDisabler.old_color_scheme_package = None
-            PackageDisabler.old_color_scheme = None
-
-            PackageDisabler.old_theme_package = None
-            PackageDisabler.old_theme = None
-
-            PackageDisabler.old_syntaxes = {}
-            PackageDisabler.old_color_schemes = {}
+            # Modern *.sublime-color-schme files may exist in several packages.
+            # If one of them gets inaccessible, the merged color scheme breaks.
+            # So any related package needs to be monitored. Special treatment is needed
+            # for *.tmTheme files, too as they can be overridden by *.sublime-color-schemes.
+            global_color_scheme = settings.get('color_scheme', '')
+            global_color_scheme_packages = find_color_scheme_packages(global_color_scheme)
+            if global_color_scheme_packages & packages:
+                PackageDisabler.old_color_scheme_packages |= global_color_scheme_packages
+                PackageDisabler.old_color_scheme = global_color_scheme
+                # Set default color scheme via tmTheme for compat with ST3143
+                settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
 
             for package in packages:
                 if package not in ignored:
@@ -114,12 +120,6 @@ class PackageDisabler:
                     version = PackageDisabler.get_version(package)
                     tracker_type = 'pre_upgrade' if operation == 'upgrade' else operation
                     events.add(tracker_type, package, version)
-
-                global_color_scheme = settings.get('color_scheme')
-                if global_color_scheme is not None and global_color_scheme.find('Packages/' + package + '/') != -1:
-                    PackageDisabler.old_color_scheme_package = package
-                    PackageDisabler.old_color_scheme = global_color_scheme
-                    settings.set('color_scheme', 'Packages/Color Scheme - Default/Monokai.tmTheme')
 
                 for window in sublime.windows():
                     for view in window.views():
@@ -179,7 +179,7 @@ class PackageDisabler:
             pc_settings = sublime.load_settings(pc_settings_filename())
             in_process = load_list_setting(pc_settings, 'in_process_packages')
 
-            if not isinstance(packages, list):
+            if not isinstance(packages, (list, set, tuple)):
                 packages = [packages]
 
             for package in packages:
@@ -219,8 +219,8 @@ class PackageDisabler:
         # By delaying the restore, we give Sublime Text some time to
         # re-enable packages, making errors less likely
         def delayed_settings_restore(packages):
-            syntax_errors = set()
             color_scheme_errors = set()
+            syntax_errors = set()
 
             if PackageDisabler.old_syntaxes is None:
                 PackageDisabler.old_syntaxes = {}
@@ -229,6 +229,28 @@ class PackageDisabler:
 
             settings = sublime.load_settings(preferences_filename())
             save_settings = False
+
+            if PackageDisabler.old_color_scheme:
+                color_scheme_packages = find_color_scheme_packages(PackageDisabler.old_color_scheme)
+                missing_color_scheme_packages = PackageDisabler.old_color_scheme_packages - color_scheme_packages
+                if missing_color_scheme_packages:
+                    show_error(
+                        '''
+                        The following packages no longer participate in your active color scheme after upgrade.
+
+                           - %s
+
+                        As one of them may contain the primary color scheme,
+                        Sublime Text is configured to use the default color scheme.
+                        ''',
+                        '\n   - '.join(sorted(missing_color_scheme_packages, key=lambda s: s.lower()))
+                    )
+                else:
+                    save_settings = True
+                    settings.set('color_scheme', PackageDisabler.old_color_scheme)
+
+                PackageDisabler.old_color_scheme_packages.clear()
+                PackageDisabler.old_color_scheme = None
 
             for package in packages:
                 if package in PackageDisabler.old_syntaxes:
@@ -248,23 +270,6 @@ class PackageDisabler:
                         elif scheme not in color_scheme_errors:
                             console_write('The color scheme "%s" no longer exists' % scheme)
                             color_scheme_errors.add(scheme)
-
-                if package == PackageDisabler.old_color_scheme_package:
-                    if resource_exists(PackageDisabler.old_color_scheme):
-                        settings.set('color_scheme', PackageDisabler.old_color_scheme)
-                        save_settings = True
-                    else:
-                        color_scheme_errors.add(PackageDisabler.old_color_scheme)
-                        sublime.error_message(text.format(
-                            '''
-                            Package Control
-
-                            The package containing your active color scheme was
-                            just upgraded, however the .tmTheme file no longer
-                            exists. Sublime Text has been configured use the
-                            default color scheme instead.
-                            '''
-                        ))
 
                 if package == PackageDisabler.old_theme_package:
                     if package_file_exists(package, PackageDisabler.old_theme):
@@ -316,3 +321,26 @@ def resource_exists(path):
 
     package_name, relative_path = parts
     return package_file_exists(package_name, relative_path)
+
+
+def find_color_scheme_packages(color_scheme):
+    """
+    Build a set of packages, containing the color_scheme.
+
+    :param color_scheme:
+        The color scheme name
+
+    :returns:
+        A set of package names
+    """
+
+    packages = set()
+    name = os.path.basename(os.path.splitext(color_scheme)[0])
+
+    for ext in ('.sublime-color-scheme', '.tmTheme'):
+        for path in sublime.find_resources(name + ext):
+            parts = path[9:].split('/', 1)
+            if len(parts) == 2:
+                packages.add(parts[0])
+
+    return packages
