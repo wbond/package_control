@@ -8,7 +8,13 @@ import sublime
 from . import events
 from .console_write import console_write
 from .package_io import package_file_exists, read_package_file
-from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
+from .settings import (
+    preferences_filename,
+    pc_settings_filename,
+    load_list_setting,
+    load_list_setting_as_set,
+    save_list_setting
+)
 from .show_error import show_error
 
 
@@ -82,21 +88,23 @@ class PackageDisabler:
              - "loader" - deprecated
 
         :return:
-            A list of package names that were disabled
+            A set of package names that were disabled
         """
 
         with PackageDisabler.lock:
+            settings = sublime.load_settings(preferences_filename())
+            ignored = load_list_setting_as_set(settings, 'ignored_packages')
+
+            pc_settings = sublime.load_settings(pc_settings_filename())
+            in_process = load_list_setting_as_set(pc_settings, 'in_process_packages')
+
             if not isinstance(packages, (list, set, tuple)):
                 packages = [packages]
             packages = set(packages)
 
-            disabled = []
-
-            settings = sublime.load_settings(preferences_filename())
-            ignored = load_list_setting(settings, 'ignored_packages')
-
-            pc_settings = sublime.load_settings(pc_settings_filename())
-            in_process = load_list_setting(pc_settings, 'in_process_packages')
+            disabled = packages - ignored
+            ignored |= disabled
+            in_process |= disabled
 
             # Modern *.sublime-color-schme files may exist in several packages.
             # If one of them gets inaccessible, the merged color scheme breaks.
@@ -104,7 +112,7 @@ class PackageDisabler:
             # for *.tmTheme files, too as they can be overridden by *.sublime-color-schemes.
             global_color_scheme = settings.get('color_scheme', '')
             global_color_scheme_packages = find_color_scheme_packages(global_color_scheme)
-            if global_color_scheme_packages & packages:
+            if global_color_scheme_packages & disabled:
                 PackageDisabler.old_color_scheme_packages |= global_color_scheme_packages
                 PackageDisabler.old_color_scheme = global_color_scheme
                 # Set default color scheme via tmTheme for compat with ST3143
@@ -112,7 +120,7 @@ class PackageDisabler:
 
             global_theme = settings.get('theme', '')
             global_theme_packages = find_theme_packages(global_theme)
-            if global_theme_packages & packages:
+            if global_theme_packages & disabled:
                 PackageDisabler.old_theme_packages |= global_theme_packages
                 PackageDisabler.old_theme = global_theme
                 # Set default color scheme via tmTheme for compat with ST3143
@@ -127,27 +135,28 @@ class PackageDisabler:
                     color_scheme = view_settings.get('color_scheme')
                     if color_scheme is not None and color_scheme != global_color_scheme:
                         color_scheme_packages = find_color_scheme_packages(color_scheme)
-                        if color_scheme_packages & packages:
+                        if color_scheme_packages & disabled:
                             PackageDisabler.old_color_schemes.append([view, color_scheme, color_scheme_packages])
                             # Set default color scheme via tmTheme for compat with ST3143
                             view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
 
                     # Backup and reset assigned syntaxes
                     syntax = view_settings.get('syntax')
-                    if syntax is not None and any(syntax.startswith('Packages/' + package + '/') for package in packages):
+                    if syntax is not None and any(
+                        syntax.startswith('Packages/' + package + '/') for package in disabled
+                    ):
                         PackageDisabler.old_syntaxes.append([view, syntax])
                         view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
 
-            for package in packages:
-                if package not in ignored:
-                    in_process.append(package)
-                    ignored.append(package)
-                    disabled.append(package)
-
-                if operation in ['upgrade', 'remove']:
+            if operation == 'upgrade':
+                for package in disabled:
                     version = PackageDisabler.get_version(package)
-                    tracker_type = 'pre_upgrade' if operation == 'upgrade' else operation
-                    events.add(tracker_type, package, version)
+                    events.add('pre_upgrade', package, version)
+
+            elif operation == 'remove':
+                for package in disabled:
+                    version = PackageDisabler.get_version(package)
+                    events.add(operation, package, version)
 
             # We don't mark a package as in-process when disabling it, otherwise
             # it automatically gets re-enabled the next time Sublime Text starts
@@ -177,33 +186,36 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored = load_list_setting(settings, 'ignored_packages')
+            ignored = load_list_setting_as_set(settings, 'ignored_packages')
 
             pc_settings = sublime.load_settings(pc_settings_filename())
-            in_process = load_list_setting(pc_settings, 'in_process_packages')
+            in_process = load_list_setting_as_set(pc_settings, 'in_process_packages')
 
             if not isinstance(packages, (list, set, tuple)):
                 packages = [packages]
+            packages = set(packages) & ignored
 
-            for package in packages:
-                if package not in ignored:
-                    continue
-
-                if operation in ['install', 'upgrade']:
+            if operation == 'install':
+                for package in packages:
                     version = PackageDisabler.get_version(package)
-                    tracker_type = 'post_upgrade' if operation == 'upgrade' else operation
-                    events.add(tracker_type, package, version)
-                    events.clear(tracker_type, package, future=True)
-                    if operation == 'upgrade':
-                        events.clear('pre_upgrade', package)
+                    events.add(operation, package, version)
+                    events.clear(operation, package, future=True)
 
-                elif operation == 'remove':
+            elif operation == 'upgrade':
+                for package in packages:
+                    version = PackageDisabler.get_version(package)
+                    events.add('post_upgrade', package, version)
+                    events.clear('post_upgrade', package, future=True)
+                    events.clear('pre_upgrade', package)
+
+            elif operation == 'remove':
+                for package in packages:
                     events.clear('remove', package)
 
-            ignored = list(set(ignored) - set(packages))
+            ignored -= packages
             save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
 
-            in_process = list(set(in_process) - set(packages))
+            in_process -= packages
             save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
             if operation == 'upgrade':

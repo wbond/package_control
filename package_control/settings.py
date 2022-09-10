@@ -32,16 +32,33 @@ def load_list_setting(settings, name):
         The current value of the setting, always a list
     """
 
+    return sorted(load_list_setting_as_set(settings, name), key=lambda s: s.lower())
+
+
+def load_list_setting_as_set(settings, name):
+    """
+    Sometimes users accidentally change settings that should be lists to
+    just individual strings. This helps fix that.
+
+    :param settings:
+        A sublime.Settings object
+
+    :param name:
+        The name of the setting
+
+    :return:
+        The current value of the setting, always a set
+    """
+
     value = settings.get(name)
     if not value:
-        return []
+        return set()
     if isinstance(value, str):
         value = [value]
     if not isinstance(value, list):
-        return []
+        return set()
 
-    filtered_value = {v for v in value if isinstance(v, str)}
-    return sorted(filtered_value, key=lambda s: s.lower())
+    return set(filter(lambda v: isinstance(v, str), value))
 
 
 def save_list_setting(settings, filename, name, new_value, old_value=None):
@@ -66,9 +83,14 @@ def save_list_setting(settings, filename, name, new_value, old_value=None):
     """
 
     # Clean up the list to only include unique values, sorted
-    new_value = sorted(set(new_value), key=lambda s: s.lower())
+    new_value = sorted(
+        new_value if isinstance(new_value, set) else set(new_value),
+        key=lambda s: s.lower()
+    )
 
     if old_value is not None:
+        if not isinstance(old_value, set):
+            old_value = set(old_value)
         if old_value == new_value:
             return
 
