@@ -4,7 +4,6 @@ import time
 
 import sublime
 
-from .thread_progress import ThreadProgress
 from .package_manager import PackageManager
 from .package_disabler import PackageDisabler
 from .versions import PackageVersion
@@ -150,37 +149,6 @@ class PackageInstaller(PackageDisabler):
 
             package_list.append(package_entry)
         return package_list
-
-    def on_done(self, picked):
-        """
-        Quick panel user selection handler - disables a package, installs or
-        upgrades it, then re-enables the package
-
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
-        """
-
-        if picked == -1:
-            return
-        if USE_QUICK_PANEL_ITEM:
-            name = self.package_list[picked].trigger
-        else:
-            name = self.package_list[picked][0]
-
-        if name in self.disable_packages(name, 'install'):
-            def on_complete():
-                self.reenable_packages(name, 'install')
-        else:
-            on_complete = None
-
-        thread = PackageInstallerThread(self.manager, name, on_complete)
-        thread.start()
-        ThreadProgress(
-            thread,
-            'Installing package %s' % name,
-            'Package %s successfully %s' % (name, self.completion_type)
-        )
 
 
 class PackageInstallerThread(threading.Thread):

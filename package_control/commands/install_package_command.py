@@ -5,8 +5,11 @@ import sublime_plugin
 
 from .. import text
 from ..package_installer import PackageInstaller
+from ..package_installer import PackageInstallerThread
 from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
+
+USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
 class InstallPackageCommand(sublime_plugin.WindowCommand):
@@ -39,26 +42,51 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
         """
 
         self.window = window
-        self.completion_type = 'installed'
         threading.Thread.__init__(self)
         PackageInstaller.__init__(self)
 
     def run(self):
         self.package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
+        if not self.package_list:
+            sublime.message_dialog(text.format(
+                '''
+                Package Control
 
-        def show_panel():
-            if not self.package_list:
-                sublime.message_dialog(text.format(
-                    '''
-                    Package Control
+                There are no packages available for installation
 
-                    There are no packages available for installation
+                Please see https://packagecontrol.io/docs/troubleshooting for help
+                '''
+            ))
+            return
+        show_quick_panel(self.window, self.package_list, self.on_done)
 
-                    Please see https://packagecontrol.io/docs/troubleshooting
-                    for help
-                    '''
-                ))
-                return
-            show_quick_panel(self.window, self.package_list, self.on_done)
+    def on_done(self, picked):
+        """
+        Quick panel user selection handler - disables a package, installs or
+        upgrades it, then re-enables the package
 
-        sublime.set_timeout(show_panel, 10)
+        :param picked:
+            An integer of the 0-based package name index from the presented
+            list. -1 means the user cancelled.
+        """
+
+        if picked == -1:
+            return
+        if USE_QUICK_PANEL_ITEM:
+            name = self.package_list[picked].trigger
+        else:
+            name = self.package_list[picked][0]
+
+        if name in self.disable_packages(name, 'install'):
+            def on_complete():
+                self.reenable_packages(name, 'install')
+        else:
+            on_complete = None
+
+        thread = PackageInstallerThread(self.manager, name, on_complete)
+        thread.start()
+        ThreadProgress(
+            thread,
+            'Installing package %s' % name,
+            'Package %s successfully installed' % name
+        )

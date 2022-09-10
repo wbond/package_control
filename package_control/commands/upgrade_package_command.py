@@ -4,7 +4,8 @@ import sublime
 import sublime_plugin
 
 from .. import text
-from ..package_installer import PackageInstaller, PackageInstallerThread
+from ..package_installer import PackageInstaller
+from ..package_installer import PackageInstallerThread
 from ..package_renamer import PackageRenamer
 from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
@@ -40,28 +41,23 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         """
 
         self.window = window
-        self.package_renamer = PackageRenamer()
-        self.completion_type = 'upgraded'
         threading.Thread.__init__(self)
         PackageInstaller.__init__(self)
 
     def run(self):
-        self.package_renamer.rename_packages(self.manager)
+        PackageRenamer().rename_packages(self.manager)
 
         self.package_list = self.make_package_list(['install', 'reinstall', 'none'])
+        if not self.package_list:
+            sublime.message_dialog(text.format(
+                '''
+                Package Control
 
-        def show_panel():
-            if not self.package_list:
-                sublime.message_dialog(text.format(
-                    '''
-                    Package Control
-
-                    There are no packages ready for upgrade
-                    '''
-                ))
-                return
-            show_quick_panel(self.window, self.package_list, self.on_done)
-        sublime.set_timeout(show_panel, 10)
+                There are no packages ready for upgrade
+                '''
+            ))
+            return
+        show_quick_panel(self.window, self.package_list, self.on_done)
 
     def on_done(self, picked):
         """
@@ -83,7 +79,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
         if package_name in self.disable_packages(package_name, 'upgrade'):
             def on_complete():
-                self.reenable_packages(package_name)
+                self.reenable_packages(package_name, 'upgrade')
         else:
             on_complete = None
 
@@ -92,5 +88,5 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         ThreadProgress(
             thread,
             'Upgrading package %s' % package_name,
-            'Package %s successfully %s' % (package_name, self.completion_type)
+            'Package %s successfully upgraded' % package_name
         )
