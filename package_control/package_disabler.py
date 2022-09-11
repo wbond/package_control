@@ -218,7 +218,8 @@ class PackageDisabler:
             in_process -= packages
             save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
 
-            if operation == 'upgrade':
+            # restore settings after installing missing packages or upgrades
+            if operation in ('install', 'upgrade'):
                 # By delaying the restore, we give Sublime Text some time to
                 # re-enable packages, making errors less likely
                 PackageDisabler.restore_id += 1
