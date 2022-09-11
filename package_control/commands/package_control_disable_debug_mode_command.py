@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 
 from ..settings import pc_settings_filename
+from ..show_error import show_message
 
 
 class PackageControlDisableDebugModeCommand(sublime_plugin.WindowCommand):
@@ -11,10 +12,7 @@ class PackageControlDisableDebugModeCommand(sublime_plugin.WindowCommand):
         settings.set('debug', False)
         sublime.save_settings(settings_file)
 
-        sublime.message_dialog(
-            'Package Control\n\n'
-            'Debug mode has been disabled'
-        )
+        show_message('Debug mode has been disabled')
 
     def is_visible(self):
         return sublime.load_settings(pc_settings_filename()).get('debug', False)

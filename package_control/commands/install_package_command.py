@@ -3,9 +3,9 @@ import threading
 import sublime
 import sublime_plugin
 
-from .. import text
 from ..package_installer import PackageInstaller
 from ..package_installer import PackageInstallerThread
+from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
 
@@ -48,15 +48,13 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
     def run(self):
         self.package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
         if not self.package_list:
-            sublime.message_dialog(text.format(
+            show_message(
                 '''
-                Package Control
-
                 There are no packages available for installation
 
                 Please see https://packagecontrol.io/docs/troubleshooting for help
                 '''
-            ))
+            )
             return
         show_quick_panel(self.window, self.package_list, self.on_done)
 

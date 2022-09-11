@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 
 from ..settings import pc_settings_filename
+from ..show_error import show_message
 
 
 class PackageControlEnableDebugModeCommand(sublime_plugin.WindowCommand):
@@ -11,8 +12,7 @@ class PackageControlEnableDebugModeCommand(sublime_plugin.WindowCommand):
         settings.set('debug', True)
         sublime.save_settings(settings_file)
 
-        sublime.message_dialog(
-            'Package Control\n\n'
+        show_message(
             'Debug mode has been enabled, a log of commands will be written '
             'to the Sublime Text console'
         )

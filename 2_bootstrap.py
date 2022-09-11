@@ -11,6 +11,7 @@ from .package_control import library, sys_path, text
 from .package_control.console_write import console_write
 from .package_control.package_disabler import PackageDisabler
 from .package_control.settings import pc_settings_filename
+from .package_control.show_error import show_message
 
 
 LOADER_PACKAGE_NAME = '0_package_control_loader'
@@ -93,15 +94,13 @@ def _migrate_loaders():
 
         def _reenable_loader():
             PackageDisabler.reenable_packages([LOADER_PACKAGE_NAME], 'loader')
-            sublime.message_dialog(text.format(
+            show_message(
                 '''
-                Package Control
-
                 Dependencies have just been migrated to python libraries.
 
                 You may need to restart Sublime Text.
                 '''
-            ))
+            )
 
         sublime.set_timeout(_reenable_loader, 500)
 

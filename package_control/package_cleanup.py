@@ -176,18 +176,14 @@ class PackageCleanup(threading.Thread):
                     if not os.path.exists(reinstall):
                         open(reinstall, 'wb').close()
 
-                    def show_still_locked(package_name):
-                        show_error(
-                            '''
-                            An error occurred while trying to finish the upgrade of
-                            %s. You will most likely need to restart your computer
-                            to complete the upgrade.
-                            ''',
-                            package_name
-                        )
-                    # We use a functools.partial to generate the on-complete callback in
-                    # order to bind the current value of the parameters, unlike lambdas.
-                    sublime.set_timeout(functools.partial(show_still_locked, package_name), 10)
+                    show_error(
+                        '''
+                        An error occurred while trying to finish the upgrade of
+                        %s. You will most likely need to restart your computer
+                        to complete the upgrade.
+                        ''',
+                        package_name
+                    )
                 else:
                     self.manager.install_package(package_name)
 

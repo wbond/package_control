@@ -5,8 +5,8 @@ import sublime
 import sublime_plugin
 
 from .. import package_io
-from .. import text
 from ..package_manager import PackageManager
+from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
@@ -72,14 +72,7 @@ class ExistingPackagesCommand(sublime_plugin.WindowCommand):
             package_list.append(package_entry)
 
         if not package_list:
-            sublime.message_dialog(text.format(
-                '''
-                Package Control
-
-                %s
-                ''',
-                self.no_packages_error()
-            ))
+            show_message(self.no_packages_error())
             return
 
         def on_done(picked):
