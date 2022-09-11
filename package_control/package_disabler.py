@@ -102,7 +102,7 @@ class PackageDisabler:
                 packages = [packages]
             packages = set(packages)
 
-            disabled = packages - ignored
+            disabled = packages - (ignored - in_process)
             ignored |= disabled
             in_process |= disabled
 
