@@ -144,8 +144,9 @@ class PackageDisabler:
                         if color_scheme_packages & disabled:
                             if backup:
                                 PackageDisabler.old_color_schemes.append([view, color_scheme, color_scheme_packages])
-                            # Set default color scheme via tmTheme for compat with ST3143
-                            view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
+                            # drop view specific color scheme to fallback to global one
+                            # and keep it active in case this one can't be restored
+                            view_settings.erase('color_scheme')
 
                     # Backup and reset assigned syntaxes
                     syntax = view_settings.get('syntax')
