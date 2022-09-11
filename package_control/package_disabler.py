@@ -106,6 +106,10 @@ class PackageDisabler:
             ignored |= disabled
             in_process |= disabled
 
+            # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
+            # If False, reset to defaults only.
+            backup = operation in ('install', 'upgrade')
+
             # Modern *.sublime-color-schme files may exist in several packages.
             # If one of them gets inaccessible, the merged color scheme breaks.
             # So any related package needs to be monitored. Special treatment is needed
@@ -113,16 +117,18 @@ class PackageDisabler:
             global_color_scheme = settings.get('color_scheme', '')
             global_color_scheme_packages = find_color_scheme_packages(global_color_scheme)
             if global_color_scheme_packages & disabled:
-                PackageDisabler.old_color_scheme_packages |= global_color_scheme_packages
-                PackageDisabler.old_color_scheme = global_color_scheme
+                if backup:
+                    PackageDisabler.old_color_scheme_packages |= global_color_scheme_packages
+                    PackageDisabler.old_color_scheme = global_color_scheme
                 # Set default color scheme via tmTheme for compat with ST3143
                 settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
 
             global_theme = settings.get('theme', '')
             global_theme_packages = find_theme_packages(global_theme)
             if global_theme_packages & disabled:
-                PackageDisabler.old_theme_packages |= global_theme_packages
-                PackageDisabler.old_theme = global_theme
+                if backup:
+                    PackageDisabler.old_theme_packages |= global_theme_packages
+                    PackageDisabler.old_theme = global_theme
                 # Set default color scheme via tmTheme for compat with ST3143
                 settings.set('theme', 'Default.sublime-theme')
 
@@ -136,7 +142,8 @@ class PackageDisabler:
                     if color_scheme is not None and color_scheme != global_color_scheme:
                         color_scheme_packages = find_color_scheme_packages(color_scheme)
                         if color_scheme_packages & disabled:
-                            PackageDisabler.old_color_schemes.append([view, color_scheme, color_scheme_packages])
+                            if backup:
+                                PackageDisabler.old_color_schemes.append([view, color_scheme, color_scheme_packages])
                             # Set default color scheme via tmTheme for compat with ST3143
                             view_settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
 
@@ -145,7 +152,8 @@ class PackageDisabler:
                     if syntax is not None and any(
                         syntax.startswith('Packages/' + package + '/') for package in disabled
                     ):
-                        PackageDisabler.old_syntaxes.append([view, syntax])
+                        if backup:
+                            PackageDisabler.old_syntaxes.append([view, syntax])
                         view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
 
             if operation == 'upgrade':
