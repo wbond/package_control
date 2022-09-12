@@ -7,7 +7,7 @@ from textwrap import dedent
 
 import sublime
 
-from .package_control import library, sys_path, text
+from .package_control import library, sys_path
 from .package_control.console_write import console_write
 from .package_control.package_disabler import PackageDisabler
 from .package_control.settings import pc_settings_filename
