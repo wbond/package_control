@@ -9,7 +9,7 @@ from .console_write import console_write
 from .clear_directory import clear_directory, unlink_or_delete_directory, clean_old_files
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
-from .package_io import package_file_exists
+from .package_io import get_installed_package_path, package_file_exists
 from .selectors import is_compatible_platform, is_compatible_version
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 from . import library, sys_path, text, __version__
@@ -56,23 +56,21 @@ class PackageCleanup(threading.Thread):
         found_packages = []
         installed_packages = list(installed_packages_at_start)
 
-        installed_libraries = self.manager.list_libraries()
+        for file in os.listdir(sys_path.installed_packages_path):
+            package_name, file_extension = os.path.splitext(file)
+            file_extension = file_extension.lower()
 
-        installed_path = sublime.installed_packages_path()
-
-        for file in os.listdir(installed_path):
             # If there is a package file ending in .sublime-package-new, it
             # means that the .sublime-package file was locked when we tried
             # to upgrade, so the package was left in ignored_packages and
             # the user was prompted to restart Sublime Text. Now that the
             # package is not loaded, we can replace the old version with the
             # new one.
-            if file[-20:] == '.sublime-package-new':
-                package_name = file.replace('.sublime-package-new', '')
-                package_file = os.path.join(installed_path, package_name + '.sublime-package')
+            if file_extension == '.sublime-package-new':
+                package_file = get_installed_package_path(package_name)
                 if os.path.exists(package_file):
                     os.remove(package_file)
-                os.rename(os.path.join(installed_path, file), package_file)
+                os.rename(os.path.join(sys_path.installed_packages_path, file), package_file)
                 console_write(
                     '''
                     Finished replacing %s.sublime-package
@@ -81,10 +79,8 @@ class PackageCleanup(threading.Thread):
                 )
                 continue
 
-            if file[-16:] != '.sublime-package':
+            if file_extension != '.sublime-package':
                 continue
-
-            package_name = file.replace('.sublime-package', '')
 
             # Cleanup packages that were installed via Package Control, but
             # we removed from the "installed_packages" list - usually by
@@ -92,18 +88,13 @@ class PackageCleanup(threading.Thread):
             # being synced.
             if self.remove_orphaned and package_name not in installed_packages_at_start \
                     and package_file_exists(package_name, 'package-metadata.json'):
-                # Since Windows locks the .sublime-package files, we must
-                # do a dance where we disable the package first, which has
-                # to be done in the main Sublime Text thread.
-                package_filename = os.path.join(installed_path, file)
 
-                # We use a functools.partial to generate the on-complete callback in
-                # order to bind the current value of the parameters, unlike lambdas.
-                sublime.set_timeout(functools.partial(self.remove_package_file, package_name, package_filename), 10)
+                self.remove_package_file(package_name)
 
             else:
                 found_packages.append(package_name)
 
+        installed_libraries = self.manager.list_libraries()
         required_libraries = self.manager.find_required_libraries()
         unmanaged_libraries = library.list_unmanaged()
         extra_libraries = sorted(set(installed_libraries) - set(required_libraries) - set(unmanaged_libraries))
@@ -134,10 +125,10 @@ class PackageCleanup(threading.Thread):
 
         found_libraries = sorted(found_libraries)
 
-        for package_name in os.listdir(sublime.packages_path()):
+        for package_name in os.listdir(sys_path.packages_path):
             found = True
 
-            package_dir = os.path.join(sublime.packages_path(), package_name)
+            package_dir = os.path.join(sys_path.packages_path, package_name)
             if not os.path.isdir(package_dir):
                 continue
 
@@ -226,14 +217,14 @@ class PackageCleanup(threading.Thread):
                             package_name
                         )
 
-            if package_name[-20:] == '.package-control-old':
+            if package_name.endswith('.package-control-old'):
+                unlink_or_delete_directory(package_dir)
                 console_write(
                     '''
                     Removed old directory %s
                     ''',
                     package_name
                 )
-                unlink_or_delete_directory(package_dir)
 
             if found:
                 found_packages.append(package_name)
@@ -282,21 +273,18 @@ class PackageCleanup(threading.Thread):
 
         sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_libraries), 10)
 
-    def remove_package_file(self, name, filename):
+    def remove_package_file(self, name):
         """
         On Windows, .sublime-package files are locked when imported, so we must
         disable the package, delete it and then re-enable the package.
 
         :param name:
             The name of the package
-
-        :param filename:
-            The filename of the package
         """
 
         def do_remove():
             try:
-                os.remove(filename)
+                os.remove(get_installed_package_path(name))
                 console_write(
                     '''
                     Removed orphaned package %s

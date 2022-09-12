@@ -8,7 +8,7 @@ import time
 
 import sublime
 
-from .sys_path import pc_cache_dir
+from . import sys_path
 from .show_error import show_error
 from .console_write import console_write
 from .package_installer import PackageInstaller
@@ -70,7 +70,7 @@ class AutomaticUpgrader(threading.Thread):
         Loads the last run time from disk into memory
         """
 
-        legacy_last_run_file = os.path.join(sublime.packages_path(), 'User', 'Package Control.last-run')
+        legacy_last_run_file = os.path.join(sys_path.packages_path, 'User', 'Package Control.last-run')
         if os.path.exists(legacy_last_run_file):
             try:
                 with open(legacy_last_run_file) as fobj:
@@ -80,7 +80,7 @@ class AutomaticUpgrader(threading.Thread):
                 pass
 
         try:
-            with open(os.path.join(pc_cache_dir(), 'last_run.json')) as fobj:
+            with open(os.path.join(sys_path.pc_cache_dir(), 'last_run.json')) as fobj:
                 last_run_data = json.load(fobj)
             self.last_run = int(last_run_data['timestamp'])
             self.last_version = int(last_run_data['st_version'])
@@ -100,7 +100,7 @@ class AutomaticUpgrader(threading.Thread):
             The unix timestamp of when to record the last run as
         """
 
-        with open(os.path.join(pc_cache_dir(), 'last_run.json'), 'w') as fobj:
+        with open(os.path.join(sys_path.pc_cache_dir(), 'last_run.json'), 'w') as fobj:
             json.dump({
                 'timestamp': last_run,
                 'st_version': self.current_version
