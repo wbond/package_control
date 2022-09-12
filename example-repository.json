@@ -258,8 +258,16 @@
 		},
 
 		// If your package is only compatible with specific builds of
-		// Sublime Text, this will cause the package to be hidden from
-		// users with incompatible versions.
+		// Sublime Text, "sublime_text" key can be used to hide the package
+		// from users with incompatible versions.
+		//
+		// Valid selecotrs are
+		//
+		// "<{build}"
+		// "<={build}"
+		// ">{build}"
+		// ">={build}"
+		// "{min_build} - {max_build}"
 		//
 		// The "tags" key can be true for all valid semantic version tags, or
 		// can be a prefix string. Only tags in the form
@@ -269,10 +277,15 @@
 		// "st2-1.0.0"
 		// "st2-1.1.0"
 		//
-		// The release with "sublime_text": ">=3000" will match tags like:
+		// The release with "sublime_text": "3000 - 3999" will match tags like:
 		//
 		// "st3-1.0.0"
 		// "st3-1.1.0"
+		//
+		// The release with "sublime_text": ">=4000" will match tags like:
+		//
+		// "st4-1.0.0"
+		// "st4-1.1.0"
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
 			"releases": [
@@ -281,8 +294,12 @@
 					"tags": "st2-"
 				},
 				{
-					"sublime_text": ">=3000",
+					"sublime_text": "3000 - 3999",
 					"tags": "st3-"
+				},
+				{
+					"sublime_text": ">=4000",
+					"tags": "st4-"
 				}
 			]
 		},
