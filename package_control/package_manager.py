@@ -1924,38 +1924,50 @@ class PackageManager:
         :param package_name:
             The package to delete
 
-        :return: bool if the package was successfully deleted or None
-                 if the package needs to be cleaned up on the next restart
-                 and should not be reenabled
+        :return:
+            ``True`` if the package was successfully deleted
+            ``False`` if the package doesn't exist or can not be deleted
+            ``None`` if the package needs to be cleaned up on the next restart
+            and should not be reenabled
         """
 
-        installed_packages = self.list_packages()
-
-        if package_name not in installed_packages:
+        # User package needs to be checked as it exists in Data/Packages/
+        if package_name.lower() == 'user':
             show_error(
                 '''
-                The package specified, %s, is not installed
+                The package '%s' can not be removed
                 ''',
-                (package_name,)
+                package_name
+            )
+            return False
+
+        installed_package_path = get_installed_package_path(package_name)
+        package_dir = get_package_dir(package_name)
+
+        can_delete_file = os.path.exists(installed_package_path)
+        can_delete_dir = os.path.exists(package_dir)
+
+        if not can_delete_file and not can_delete_dir:
+            show_error(
+                '''
+                The package '%s' is not installed
+                ''',
+                package_name
             )
             return False
 
         os.chdir(sys_path.packages_path)
-
-        installed_package_path = get_installed_package_path(package_name)
-        package_dir = get_package_dir(package_name)
 
         version = self.get_metadata(package_name).get('version')
 
         cleanup_complete = True
 
         try:
-            if os.path.exists(installed_package_path):
+            if can_delete_file:
                 os.remove(installed_package_path)
         except (OSError, IOError):
             cleanup_complete = False
 
-        can_delete_dir = os.path.exists(package_dir)
         if can_delete_dir:
             # We don't delete the actual package dir immediately due to a bug
             # in sublime_plugin.py
