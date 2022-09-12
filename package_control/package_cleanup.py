@@ -1,18 +1,16 @@
-import functools
 import os
 import threading
 import time
 
 import sublime
 
-from . import library, sys_path, text, __version__
+from . import library, sys_path, __version__
 from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
 from .console_write import console_write
 from .package_disabler import PackageDisabler
 from .package_io import create_empty_file, get_installed_package_path, get_package_dir, package_file_exists
 from .package_manager import PackageManager
-from .selectors import is_compatible_platform, is_compatible_version
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 from .show_error import show_error
 
@@ -196,46 +194,91 @@ class PackageCleanup(threading.Thread):
         removed_packages = self.remove_orphaned_packages(found_packages - installed_packages_at_start)
         found_packages -= removed_packages
 
-        invalid_packages = []
-
         # Check metadata to verify packages were not improperly installed
-        for package in found_packages:
-            metadata = self.manager.get_metadata(package)
-            if metadata and not self.is_compatible(metadata):
-                invalid_packages.append(package)
-
-        if invalid_packages:
-            def show_sync_error():
-                message = ''
-                if invalid_packages:
-                    package_s = 's were' if len(invalid_packages) != 1 else ' was'
-                    message += text.format(
-                        '''
-                        The following incompatible package%s found installed:
-
-                        %s
-
-                        ''',
-                        (package_s, '\n'.join(invalid_packages))
-                    )
-                message += text.format(
-                    '''
-                    This is usually due to syncing packages across different
-                    machines in a way that does not check package metadata for
-                    compatibility.
-
-                    Please visit https://packagecontrol.io/docs/syncing for
-                    information about how to properly sync configuration and
-                    packages across machines.
-
-                    To restore package functionality, please remove each listed
-                    package and reinstall it.
-                    '''
-                )
-                show_error(message)
-            sublime.set_timeout(show_sync_error, 100)
+        self.migrate_incompatible_packages(found_packages)
 
         sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_libraries), 10)
+
+    def migrate_incompatible_packages(self, found_packages):
+        """
+        Determine and reinstall all incompatible packages
+
+        :param found_packages:
+            A set of found packages to verify compatibility for.
+
+        :returns:
+            A set of invalid packages which are not available for current ST or OS.
+        """
+
+        incompatible_packages = set(filter(lambda p: not self.manager.is_compatible(p), found_packages))
+        if not incompatible_packages:
+            return set()
+
+        available_packages = self.manager.list_available_packages()
+        migrate_packages = set(filter(lambda p: p in available_packages, incompatible_packages))
+        incompatible_packages = set()
+
+        console_write(
+            'Migrating %s incompatible package%s...',
+            (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
+        )
+
+        reenable = PackageDisabler.disable_packages(migrate_packages, 'upgrade')
+        time.sleep(0.7)
+
+        try:
+            for package_name in migrate_packages:
+                result = self.manager.install_package(package_name)
+                if result is None:
+                    reenable.remove(package_name)
+                    console_write(
+                        '''
+                        Unable to finalize migration of incompatible package %s -
+                        deferring until next start
+                        ''',
+                        package_name
+                    )
+                elif result is False:
+                    incompatible_packages.add(package_name)
+                    console_write(
+                        '''
+                        Unable to migrate incompatible package %s
+                        ''',
+                        package_name
+                    )
+                else:
+                    console_write(
+                        '''
+                        Migrated incompatible package %s
+                        ''',
+                        package_name
+                    )
+
+        finally:
+            if reenable:
+                time.sleep(0.7)
+                PackageDisabler.reenable_packages(reenable, 'upgrade')
+
+        if incompatible_packages:
+            package_s = 's were' if len(incompatible_packages) != 1 else ' was'
+            show_error(
+                '''
+                The following incompatible package%s found installed:
+
+                %s
+
+                This is usually due to syncing packages across different
+                machines in a way that does not check package metadata for
+                compatibility.
+
+                Please visit https://packagecontrol.io/docs/syncing for
+                information about how to properly sync configuration and
+                packages across machines.
+                ''',
+                (package_s, '\n'.join(incompatible_packages))
+            )
+
+        return incompatible_packages
 
     def remove_orphaned_packages(self, orphaned_packages):
         """
@@ -336,26 +379,6 @@ class PackageCleanup(threading.Thread):
                 PackageDisabler.reenable_packages(reenable, 'remove')
 
         return orphaned_packages
-
-    def is_compatible(self, metadata):
-        """
-        Detects if a package is compatible with the current Sublime Text install
-
-        :param metadata:
-            A dict from a metadata file
-
-        :return:
-            If the package is compatible
-        """
-
-        sublime_text = metadata.get('sublime_text')
-        platforms = metadata.get('platforms', [])
-
-        # This indicates the metadata is old, so we assume a match
-        if not sublime_text and not platforms:
-            return True
-
-        return is_compatible_platform(platforms) and is_compatible_version(sublime_text)
 
     def finish(self, installed_packages, found_packages, found_libraries):
         """
