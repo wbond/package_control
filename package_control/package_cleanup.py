@@ -6,7 +6,7 @@ import sublime
 
 from .show_error import show_error
 from .console_write import console_write
-from .clear_directory import clear_directory, unlink_or_delete_directory, clean_old_files
+from .clear_directory import clear_directory, delete_directory
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
 from .package_io import get_installed_package_path, package_file_exists
@@ -132,12 +132,10 @@ class PackageCleanup(threading.Thread):
             if not os.path.isdir(package_dir):
                 continue
 
-            clean_old_files(package_dir)
-
             # Cleanup packages that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
-                if unlink_or_delete_directory(package_dir):
+                if delete_directory(package_dir):
                     console_write(
                         '''
                         Removed old directory %s
@@ -198,7 +196,7 @@ class PackageCleanup(threading.Thread):
                 # being synced.
                 elif self.remove_orphaned and package_name not in installed_packages_at_start:
                     self.manager.backup_package_dir(package_name)
-                    if unlink_or_delete_directory(package_dir):
+                    if delete_directory(package_dir):
                         console_write(
                             '''
                             Removed directory for orphaned package %s
@@ -218,7 +216,7 @@ class PackageCleanup(threading.Thread):
                         )
 
             if package_name.endswith('.package-control-old'):
-                unlink_or_delete_directory(package_dir)
+                delete_directory(package_dir)
                 console_write(
                     '''
                     Removed old directory %s

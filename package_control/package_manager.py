@@ -18,7 +18,7 @@ import sublime
 from . import __version__
 from . import distinfo, library, sys_path, text
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
-from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
+from .clear_directory import clear_directory, delete_directory
 from .clients.client_exception import ClientException
 from .console_write import console_write
 from .download_manager import http_get
@@ -1181,7 +1181,7 @@ class PackageManager:
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
+            sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
 
     def install_package(self, package_name):
         """
@@ -1341,18 +1341,11 @@ class PackageManager:
             unpacked_metadata_file = os.path.join(unpacked_package_dir, metadata_filename)
             if os.path.exists(unpacked_metadata_file) and not unpack:
                 self.backup_package_dir(package_name)
-                if is_directory_symlink(unpacked_package_dir):
-                    unlink_or_delete_directory(unpacked_package_dir)
-                elif not clear_directory(unpacked_package_dir):
+                if not delete_directory(unpacked_package_dir):
                     # If deleting failed, queue the package to upgrade upon next start
-                    # where it will be disabled
+                    # when it will be disabled
                     reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
                     open(reinstall_file, 'wb').close()
-
-                    # Don't delete the metadata file, that way we have it
-                    # when the reinstall happens, and the appropriate
-                    # usage info can be sent back to the server
-                    clear_directory(unpacked_package_dir, {reinstall_file, unpacked_metadata_file})
 
                     show_error(
                         '''
@@ -1362,8 +1355,6 @@ class PackageManager:
                         package_name
                     )
                     return None
-                else:
-                    unlink_or_delete_directory(unpacked_package_dir)
 
             # If we determined it should be unpacked, we extract directly
             # into the Packages/{package_name}/ folder
@@ -1518,7 +1509,7 @@ class PackageManager:
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            sublime.set_timeout(lambda: unlink_or_delete_directory(tmp_dir), 1000)
+            sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
 
     def install_libraries(self, libraries, fail_early=True):
         """
@@ -1701,7 +1692,6 @@ class PackageManager:
         package_backup_dir = os.path.join(backup_dir, package_name)
 
         try:
-            os.makedirs(backup_dir, exist_ok=True)
             if os.path.exists(package_backup_dir):
                 console_write(
                     '''
@@ -1709,10 +1699,15 @@ class PackageManager:
                     ''',
                     package_backup_dir
                 )
+            else:
+                os.makedirs(backup_dir, exist_ok=True)
             shutil.copytree(package_dir, package_backup_dir)
             return True
 
         except (OSError, IOError) as e:
+            if os.path.exists(package_backup_dir):
+                delete_directory(package_backup_dir)
+
             show_error(
                 '''
                 An error occurred while trying to backup the package directory
@@ -1722,11 +1717,6 @@ class PackageManager:
                 ''',
                 (package_name, str(e))
             )
-            try:
-                if os.path.exists(package_backup_dir):
-                    unlink_or_delete_directory(package_backup_dir)
-            except (UnboundLocalError):
-                pass  # Exeption occurred before package_backup_dir defined
             return False
 
     def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version):
@@ -1969,18 +1959,9 @@ class PackageManager:
             cleanup_complete = False
 
         if can_delete_dir:
-            # We don't delete the actual package dir immediately due to a bug
-            # in sublime_plugin.py
-            if is_directory_symlink(package_dir):
-                # Assuming that deleting symlink won't fail in later step so
-                # not having any cleanup handling here
-                pass
-            elif not clear_directory(package_dir):
-                # If there is an error deleting now, we will mark it for
-                # cleanup the next time Sublime Text starts
+            if not delete_directory(package_dir):
                 open(os.path.join(package_dir, 'package-control.cleanup'), 'wb').close()
                 cleanup_complete = False
-                can_delete_dir = False
 
         params = {
             'package': package_name,
@@ -1994,9 +1975,6 @@ class PackageManager:
         if package_name in names:
             names.remove(package_name)
             save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
-
-        if os.path.exists(package_dir) and can_delete_dir:
-            unlink_or_delete_directory(package_dir)
 
         message = 'The package %s has been removed' % package_name
         if not cleanup_complete:
