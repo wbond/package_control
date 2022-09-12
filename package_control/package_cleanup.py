@@ -9,7 +9,7 @@ from .console_write import console_write
 from .clear_directory import clear_directory, delete_directory
 from .automatic_upgrader import AutomaticUpgrader
 from .package_manager import PackageManager
-from .package_io import get_installed_package_path, package_file_exists
+from .package_io import create_empty_file, get_installed_package_path, package_file_exists
 from .selectors import is_compatible_platform, is_compatible_version
 from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
 from . import library, sys_path, text, __version__
@@ -41,7 +41,7 @@ class PackageCleanup(threading.Thread):
     def run(self):
         # This song and dance is necessary so Package Control doesn't try to clean
         # itself up, but also get properly marked as installed in the settings
-        installed_packages_at_start = list(self.original_installed_packages)
+        installed_packages_at_start = set(self.original_installed_packages)
 
         # Ensure we record the installation of Package Control itself
         if 'Package Control' not in installed_packages_at_start:
@@ -51,10 +51,10 @@ class PackageCleanup(threading.Thread):
                 'version': __version__
             }
             self.manager.record_usage(params)
-            installed_packages_at_start.append('Package Control')
+            installed_packages_at_start.add('Package Control')
 
-        found_packages = []
-        installed_packages = list(installed_packages_at_start)
+        found_packages = set()
+        installed_packages = set(installed_packages_at_start)
 
         for file in os.listdir(sys_path.installed_packages_path):
             package_name, file_extension = os.path.splitext(file)
@@ -67,32 +67,46 @@ class PackageCleanup(threading.Thread):
             # package is not loaded, we can replace the old version with the
             # new one.
             if file_extension == '.sublime-package-new':
+                new_file = os.path.join(sys_path.installed_packages_path, file)
                 package_file = get_installed_package_path(package_name)
-                if os.path.exists(package_file):
-                    os.remove(package_file)
-                os.rename(os.path.join(sys_path.installed_packages_path, file), package_file)
-                console_write(
-                    '''
-                    Finished replacing %s.sublime-package
-                    ''',
-                    package_name
-                )
+                try:
+                    try:
+                        os.remove(package_file)
+                    except FileNotFoundError:
+                        pass
+
+                    os.rename(new_file, package_file)
+                    console_write(
+                        '''
+                        Finished replacing %s.sublime-package
+                        ''',
+                        package_name
+                    )
+
+                except OSError as e:
+                    console_write(
+                        '''
+                        Failed to replace %s.sublime-package with new package. %s
+                        ''',
+                        (package_name, e)
+                    )
+
+                found_packages.add(package_name)
                 continue
 
             if file_extension != '.sublime-package':
                 continue
 
-            # Cleanup packages that were installed via Package Control, but
-            # we removed from the "installed_packages" list - usually by
-            # removing them from another computer and the settings file
-            # being synced.
+            # Cleanup packages that were installed via Package Control, but we removed
+            # from the "installed_packages" list - usually by removing them from another
+            # computer and the settings file being synced.
             if self.remove_orphaned and package_name not in installed_packages_at_start \
                     and package_file_exists(package_name, 'package-metadata.json'):
 
                 self.remove_package_file(package_name)
+                continue
 
-            else:
-                found_packages.append(package_name)
+            found_packages.add(package_name)
 
         installed_libraries = self.manager.list_libraries()
         required_libraries = self.manager.find_required_libraries()
@@ -117,8 +131,8 @@ class PackageCleanup(threading.Thread):
             except OSError:
                 console_write(
                     '''
-                    Unable to remove directory for unneeded library %s for
-                    Python %s - deferring until next start
+                    Unable to remove unneeded library %s for Python %s -
+                    deferring until next start
                     ''',
                     (lib.name, lib.python_version)
                 )
@@ -126,8 +140,16 @@ class PackageCleanup(threading.Thread):
         found_libraries = sorted(found_libraries)
 
         for package_name in os.listdir(sys_path.packages_path):
-            found = True
 
+            # Ignore `.`, `..` or hidden dot-directories
+            if package_name[0] == '.':
+                continue
+
+            # Make sure not to clear user settings under all circumstances
+            if package_name.lower() == 'user':
+                continue
+
+            # Ignore files
             package_dir = os.path.join(sys_path.packages_path, package_name)
             if not os.path.isdir(package_dir):
                 continue
@@ -138,102 +160,79 @@ class PackageCleanup(threading.Thread):
                 if delete_directory(package_dir):
                     console_write(
                         '''
-                        Removed old directory %s
+                        Removed old package directory %s
                         ''',
                         package_name
                     )
-                    found = False
+
                 else:
-                    if not os.path.exists(cleanup_file):
-                        open(cleanup_file, 'wb').close()
+                    create_empty_file(cleanup_file)
                     console_write(
                         '''
-                        Unable to remove old directory %s - deferring until next
-                        start
+                        Unable to remove old package directory %s -
+                        deferring until next start
                         ''',
                         package_name
                     )
 
-            # Finish reinstalling packages that could not be upgraded due to
-            # in-use files
+                continue
+
+            # Finish reinstalling packages that could not be upgraded due to in-use files
             reinstall = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall):
-                metadata_path = os.path.join(package_dir, 'package-metadata.json')
-                # No need to handle symlinks here as that was already handled in earlier step
-                # that has attempted to re-install the package initially.
-                if not clear_directory(package_dir, {metadata_path}):
-                    if not os.path.exists(reinstall):
-                        open(reinstall, 'wb').close()
-
-                    show_error(
+                if clear_directory(package_dir) and self.manager.install_package(package_name):
+                    console_write(
                         '''
-                        An error occurred while trying to finish the upgrade of
-                        %s. You will most likely need to restart your computer
-                        to complete the upgrade.
+                        Re-installed package %s
                         ''',
                         package_name
                     )
+
                 else:
-                    self.manager.install_package(package_name)
+                    create_empty_file(reinstall)
+                    console_write(
+                        '''
+                        Unable to re-install package %s -
+                        deferring until next start
+                        ''',
+                        package_name
+                    )
 
-            if package_file_exists(package_name, 'package-metadata.json'):
-                # This adds previously installed packages from old versions of
-                # PC. As of PC 3.0, this should basically never actually be used
-                # since installed_packages was added in late 2011.
-                if not installed_packages_at_start:
-                    installed_packages.append(package_name)
-                    params = {
-                        'package': package_name,
-                        'operation': 'install',
-                        'version':
-                            self.manager.get_metadata(package_name).get('version')
-                    }
-                    self.manager.record_usage(params)
+                found_packages.add(package_name)
+                continue
 
-                # Cleanup packages that were installed via Package Control, but
-                # we removed from the "installed_packages" list - usually by
-                # removing them from another computer and the settings file
-                # being synced.
-                elif self.remove_orphaned and package_name not in installed_packages_at_start:
-                    self.manager.backup_package_dir(package_name)
-                    if delete_directory(package_dir):
-                        console_write(
-                            '''
-                            Removed directory for orphaned package %s
-                            ''',
-                            package_name
-                        )
-                        found = False
-                    else:
-                        if not os.path.exists(cleanup_file):
-                            open(cleanup_file, 'wb').close()
-                        console_write(
-                            '''
-                            Unable to remove directory for orphaned package %s -
-                            deferring until next start
-                            ''',
-                            package_name
-                        )
+            # Cleanup packages that were installed via Package Control, but we removed
+            # from the "installed_packages" list - usually by removing them from another
+            # computer and the settings file being synced.
+            if self.remove_orphaned and package_name not in installed_packages_at_start \
+                    and package_file_exists(package_name, 'package-metadata.json'):
 
-            if package_name.endswith('.package-control-old'):
-                delete_directory(package_dir)
+                self.manager.backup_package_dir(package_name)
+                if delete_directory(package_dir):
+                    console_write(
+                        '''
+                        Removed directory for orphaned package %s
+                        ''',
+                        package_name
+                    )
+                    continue
+
+                if not os.path.exists(cleanup_file):
+                    open(cleanup_file, 'wb').close()
                 console_write(
                     '''
-                    Removed old directory %s
+                    Unable to remove directory for orphaned package %s -
+                    deferring until next start
                     ''',
                     package_name
                 )
 
-            if found:
-                found_packages.append(package_name)
+            found_packages.add(package_name)
 
         invalid_packages = []
 
         # Check metadata to verify packages were not improperly installed
         for package in found_packages:
-            if package == 'User':
-                continue
-
             metadata = self.manager.get_metadata(package)
             if metadata and not self.is_compatible(metadata):
                 invalid_packages.append(package)

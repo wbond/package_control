@@ -5,6 +5,31 @@ from . import sys_path
 from .console_write import console_write
 
 
+def create_empty_file(filename):
+    """
+    Creates an empty file if it does not exist.
+
+    The main use case is to create empty cookie files, such as
+    ``package-control.cleanup`` without throwing exceptions.
+
+    :param filename:
+        The absolute path of the file to create.
+
+    :returns:
+        True, if file exists or is successfully created
+        False, if file couldn't be created
+    """
+
+    try:
+        open(filename, 'xb').close()
+    except FileExistsError:
+        pass
+    except (OSError, IOError) as e:
+        console_write('Unable to create %s: %s', (filename, e))
+        return False
+    return True
+
+
 def list_sublime_package_dirs(path):
     """
     Return a set of directories in the folder specified that are not
