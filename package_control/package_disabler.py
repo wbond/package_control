@@ -115,8 +115,8 @@ class PackageDisabler:
             # So any related package needs to be monitored. Special treatment is needed
             # for *.tmTheme files, too as they can be overridden by *.sublime-color-schemes.
             global_color_scheme = settings.get('color_scheme', '')
-            global_color_scheme_packages = find_color_scheme_packages(global_color_scheme)
-            if global_color_scheme_packages & disabled:
+            global_color_scheme_packages = find_color_scheme_packages(global_color_scheme) & disabled
+            if global_color_scheme_packages:
                 if backup:
                     PackageDisabler.old_color_scheme_packages |= global_color_scheme_packages
                     PackageDisabler.old_color_scheme = global_color_scheme
@@ -124,8 +124,8 @@ class PackageDisabler:
                 settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
 
             global_theme = settings.get('theme', '')
-            global_theme_packages = find_theme_packages(global_theme)
-            if global_theme_packages & disabled:
+            global_theme_packages = find_theme_packages(global_theme) & disabled
+            if global_theme_packages:
                 if backup:
                     PackageDisabler.old_theme_packages |= global_theme_packages
                     PackageDisabler.old_theme = global_theme
@@ -140,8 +140,8 @@ class PackageDisabler:
                     # of by resetting the global color_scheme above
                     color_scheme = view_settings.get('color_scheme')
                     if color_scheme is not None and color_scheme != global_color_scheme:
-                        color_scheme_packages = find_color_scheme_packages(color_scheme)
-                        if color_scheme_packages & disabled:
+                        color_scheme_packages = find_color_scheme_packages(color_scheme) & disabled
+                        if color_scheme_packages:
                             if backup:
                                 PackageDisabler.old_color_schemes.append([view, color_scheme, color_scheme_packages])
                             # drop view specific color scheme to fallback to global one
