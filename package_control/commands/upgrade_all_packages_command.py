@@ -6,6 +6,7 @@ import sublime_plugin
 
 from ..package_installer import PackageInstaller, PackageInstallerThread
 from ..package_renamer import PackageRenamer
+from ..show_error import show_message
 from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
@@ -46,6 +47,9 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
     def run(self):
         PackageRenamer().rename_packages(self.manager)
         package_list = self.make_package_list(['install', 'reinstall', 'none'])
+        if not package_list:
+            show_message('There are no packages ready for upgrade')
+            return
 
         if USE_QUICK_PANEL_ITEM:
             package_names = [info.trigger for info in package_list]
