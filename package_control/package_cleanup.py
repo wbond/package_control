@@ -11,7 +11,7 @@ from .console_write import console_write
 from .package_disabler import PackageDisabler
 from .package_io import create_empty_file, get_installed_package_path, get_package_dir, package_file_exists
 from .package_manager import PackageManager
-from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
+from .settings import load_list_setting_as_set, pc_settings_filename, save_list_setting
 from .show_error import show_error
 
 
@@ -23,38 +23,27 @@ class PackageCleanup(threading.Thread):
     """
 
     def __init__(self):
+        threading.Thread.__init__(self)
         self.manager = PackageManager()
 
-        settings = sublime.load_settings(pc_settings_filename())
-
-        # We no longer use the installed_dependencies setting because it is not
-        # necessary and created issues with settings shared across operating systems
-        if settings.get('installed_dependencies'):
-            settings.erase('installed_dependencies')
-            sublime.save_settings(pc_settings_filename())
-
-        self.original_installed_packages = load_list_setting(settings, 'installed_packages')
-        self.remove_orphaned = settings.get('remove_orphaned', True)
-
-        threading.Thread.__init__(self)
-
     def run(self):
+        pc_filename = pc_settings_filename()
+        pc_settings = sublime.load_settings(pc_filename)
+
         # This song and dance is necessary so Package Control doesn't try to clean
         # itself up, but also get properly marked as installed in the settings
-        installed_packages_at_start = set(self.original_installed_packages)
-
         # Ensure we record the installation of Package Control itself
-        if 'Package Control' not in installed_packages_at_start:
-            params = {
+        installed_packages = load_list_setting_as_set(pc_settings, 'installed_packages')
+        if 'Package Control' not in installed_packages:
+            self.manager.record_usage({
                 'package': 'Package Control',
                 'operation': 'install',
                 'version': __version__
-            }
-            self.manager.record_usage(params)
-            installed_packages_at_start.add('Package Control')
+            })
+            installed_packages.add('Package Control')
+            save_list_setting(pc_settings, pc_filename, 'installed_packages', installed_packages)
 
         found_packages = set()
-        installed_packages = set(installed_packages_at_start)
 
         for file in os.listdir(sys_path.installed_packages_path):
             package_name, file_extension = os.path.splitext(file)
@@ -191,13 +180,27 @@ class PackageCleanup(threading.Thread):
         # Cleanup packages that were installed via Package Control, but we removed
         # from the "installed_packages" list - usually by removing them from another
         # computer and the settings file being synced.
-        removed_packages = self.remove_orphaned_packages(found_packages - installed_packages_at_start)
-        found_packages -= removed_packages
+        if pc_settings.get('remove_orphaned', True):
+            removed_packages = self.remove_orphaned_packages(found_packages - installed_packages)
+            found_packages -= removed_packages
+        else:
+            removed_packages = set()
+
+        # Make sure we didn't accidentally ignore packages because something was
+        # interrupted before it completed. Keep orphan packages disabled which
+        # are deferred to next start.
+        in_process = load_list_setting_as_set(pc_settings, 'in_process_packages') - removed_packages
+        if in_process:
+            console_write(
+                "Re-enabling %d package%s after a Package Control operation was interrupted...",
+                (len(in_process), 's' if len(in_process) != 1 else '')
+            )
+            PackageDisabler.reenable_packages(in_process, 'enable')
 
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
 
-        sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_libraries), 10)
+        AutomaticUpgrader(found_packages, found_libraries).start()
 
     def migrate_incompatible_packages(self, found_packages):
         """
@@ -301,9 +304,6 @@ class PackageCleanup(threading.Thread):
             A set of orphaned packages, which have successfully been removed.
         """
 
-        if not self.remove_orphaned:
-            return set()
-
         # find all managed orphaned packages
         orphaned_packages = set(filter(
             lambda p: package_file_exists(p, 'package-metadata.json'),
@@ -379,57 +379,3 @@ class PackageCleanup(threading.Thread):
                 PackageDisabler.reenable_packages(reenable, 'remove')
 
         return orphaned_packages
-
-    def finish(self, installed_packages, found_packages, found_libraries):
-        """
-        A callback that can be run the main UI thread to perform saving of the
-        Package Control.sublime-settings file. Also fires off the
-        :class:`AutomaticUpgrader`.
-
-        :param installed_packages:
-            A list of the string package names of all "installed" packages,
-            even ones that do not appear to be in the filesystem.
-
-        :param found_packages:
-            A list of the string package names of all packages that are
-            currently installed on the filesystem.
-
-        :param found_libraries:
-            A list of library.Library() objects of all libraries that are
-            currently installed on the filesystem.
-        """
-
-        # Make sure we didn't accidentally ignore packages because something
-        # was interrupted before it completed.
-        pc_filename = pc_settings_filename()
-        pc_settings = sublime.load_settings(pc_filename)
-
-        in_process = load_list_setting(pc_settings, 'in_process_packages')
-        if in_process:
-            filename = preferences_filename()
-            settings = sublime.load_settings(filename)
-
-            ignored = load_list_setting(settings, 'ignored_packages')
-            new_ignored = list(ignored)
-            for package in in_process:
-                if package in new_ignored:
-                    console_write(
-                        '''
-                        The package %s is being re-enabled after a Package
-                        Control operation was interrupted
-                        ''',
-                        package
-                    )
-                    new_ignored.remove(package)
-
-            save_list_setting(settings, filename, 'ignored_packages', new_ignored, ignored)
-            save_list_setting(pc_settings, pc_filename, 'in_process_packages', [])
-
-        save_list_setting(
-            pc_settings,
-            pc_filename,
-            'installed_packages',
-            installed_packages,
-            self.original_installed_packages
-        )
-        AutomaticUpgrader(found_packages, found_libraries).start()
