@@ -25,6 +25,7 @@ from .download_manager import http_get
 from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.downloader_exception import DownloaderException
 from .package_io import (
+    create_empty_file,
     get_installed_package_path,
     get_package_dir,
     list_sublime_package_dirs,
@@ -1960,7 +1961,7 @@ class PackageManager:
 
         if can_delete_dir:
             if not delete_directory(package_dir):
-                open(os.path.join(package_dir, 'package-control.cleanup'), 'wb').close()
+                create_empty_file(os.path.join(package_dir, 'package-control.cleanup'))
                 cleanup_complete = False
 
         params = {
