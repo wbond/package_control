@@ -4,7 +4,7 @@ import time
 
 import sublime
 
-from . import library, sys_path, __version__
+from . import sys_path, __version__
 from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
 from .console_write import console_write
@@ -84,37 +84,6 @@ class PackageCleanup(threading.Thread):
 
             elif file_extension == '.sublime-package':
                 found_packages.add(package_name)
-
-        installed_libraries = self.manager.list_libraries()
-        required_libraries = self.manager.find_required_libraries()
-        unmanaged_libraries = library.list_unmanaged()
-        extra_libraries = sorted(set(installed_libraries) - set(required_libraries) - set(unmanaged_libraries))
-
-        found_libraries = set(installed_libraries)
-
-        # Clean up unneeded libraries so that found_libraries will only
-        # end up having required libraries added to it
-        for lib in extra_libraries:
-            try:
-                library.remove(sys_path.lib_paths()[lib.python_version], lib.name)
-                console_write(
-                    '''
-                    Removed unneeded library %s for Python %s
-                    ''',
-                    (lib.name, lib.python_version)
-                )
-                found_libraries.remove(lib)
-
-            except OSError:
-                console_write(
-                    '''
-                    Unable to remove unneeded library %s for Python %s -
-                    deferring until next start
-                    ''',
-                    (lib.name, lib.python_version)
-                )
-
-        found_libraries = sorted(found_libraries)
 
         for package_name in os.listdir(sys_path.packages_path):
 
@@ -200,7 +169,7 @@ class PackageCleanup(threading.Thread):
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
 
-        AutomaticUpgrader(found_packages, found_libraries).start()
+        AutomaticUpgrader(found_packages).start()
 
     def migrate_incompatible_packages(self, found_packages):
         """

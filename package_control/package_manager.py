@@ -779,6 +779,23 @@ class PackageManager:
             output |= self.get_libraries(package)
         return sorted(output)
 
+    def find_orphaned_libraries(self, ignore_package=None, required_libraries=None):
+        """
+        Finds orphaned libraries.
+
+        :param ignore_package:
+            The package to ignore when enumerating libraries
+
+        :return:
+            A list of library.Library() objects for no longer needed libraries
+        """
+
+        installed_libraries = self.list_libraries()
+        if required_libraries is None:
+            required_libraries = self.find_required_libraries(ignore_package)
+        unmanaged_libraries = library.list_unmanaged()
+        return sorted(set(installed_libraries) - set(required_libraries) - set(unmanaged_libraries))
+
     def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""
 
@@ -1677,12 +1694,7 @@ class PackageManager:
             Boolean indicating the success of the removals.
         """
 
-        installed_libraries = self.list_libraries()
-        if not required_libraries:
-            required_libraries = self.find_required_libraries(ignore_package)
-
-        unmanaged_libraries = library.list_unmanaged()
-        orphaned_libraries = sorted(set(installed_libraries) - set(required_libraries) - set(unmanaged_libraries))
+        orphaned_libraries = self.find_orphaned_libraries(ignore_package, required_libraries)
 
         error = False
         for lib in orphaned_libraries:

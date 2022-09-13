@@ -26,7 +26,7 @@ class AutomaticUpgrader(threading.Thread):
     settings.
     """
 
-    def __init__(self, found_packages, found_libraries):
+    def __init__(self, found_packages):
         """
         :param found_packages:
             A list of package names for the packages that were found to be
@@ -58,7 +58,7 @@ class AutomaticUpgrader(threading.Thread):
 
         # Detect if a package is missing that should be installed
         self.missing_packages = list(set(self.installed_packages) - set(found_packages))
-        self.missing_libraries = sorted(set(self.manager.find_required_libraries()) - set(found_libraries))
+        self.missing_libraries = sorted(set(self.manager.find_required_libraries()) - set(self.manager.list_libraries()))
 
         if self.auto_upgrade and self.next_run <= now:
             self.save_last_run(now)
@@ -117,6 +117,8 @@ class AutomaticUpgrader(threading.Thread):
 
     def run(self):
         self.install_missing()
+
+        self.manager.cleanup_libraries()
 
         if self.next_run > int(time.time()) and \
                 self.last_version == self.current_version:
