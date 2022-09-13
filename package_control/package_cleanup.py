@@ -169,7 +169,12 @@ class PackageCleanup(threading.Thread):
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
 
-        AutomaticUpgrader(found_packages).start()
+        self.install_missing_packages(found_packages)
+        self.install_missing_libraries()
+
+        self.manager.cleanup_libraries()
+
+        AutomaticUpgrader().start()
 
     def migrate_incompatible_packages(self, found_packages):
         """
@@ -251,6 +256,117 @@ class PackageCleanup(threading.Thread):
             )
 
         return incompatible_packages
+
+    def install_missing_libraries(self):
+        missing_libraries = set(self.manager.find_required_libraries()) - set(self.manager.list_libraries())
+        if not missing_libraries:
+            return
+
+        console_write(
+            'Installing %s missing librar%s...',
+            (len(missing_libraries), 'ies' if len(missing_libraries) != 1 else 'y')
+        )
+
+        libraries_installed = 0
+
+        for lib in missing_libraries:
+            if self.manager.install_library(lib.name, lib.python_version):
+                console_write('Installed missing library %s for Python %s', (lib.name, lib.python_version))
+                libraries_installed += 1
+
+        if libraries_installed:
+            def notify_restart():
+                library_was = 'ies were' if libraries_installed != 1 else 'y was'
+                show_error(
+                    '''
+                    %s missing librar%s just installed. Sublime Text
+                    should be restarted, otherwise one or more of the
+                    installed packages may not function properly.
+                    ''',
+                    (libraries_installed, library_was)
+                )
+            sublime.set_timeout(notify_restart, 1000)
+
+    def install_missing_packages(self, found_packages):
+        """
+        Install missing packages.
+
+        Installs all packages that are listed in `installed_packages` setting
+        of Package Control.sublime-settings but were not found on the filesystem
+        and passed as `found_packages`.
+
+        :param found_packages:
+            A set of packages found on filesystem.
+        """
+
+        pc_filename = pc_settings_filename()
+        pc_settings = sublime.load_settings(pc_filename)
+
+        if not pc_settings.get('install_missing', True):
+            return
+
+        installed_packages = load_list_setting_as_set(pc_settings, 'installed_packages')
+        missing_packages = installed_packages - found_packages
+        if not missing_packages:
+            return
+
+        # Detect renamed packages and prepare batched install with new names.
+        # Update `installed_packages` setting to remove old names without loosing something
+        # in case installation fails.
+        renamed_packages = self.manager.settings.get('renamed_packages', {})
+        renamed_packages = {renamed_packages.get(p, p) for p in missing_packages}
+        if renamed_packages != missing_packages:
+            save_list_setting(
+                pc_settings,
+                pc_filename,
+                'installed_packages',
+                installed_packages - missing_packages + renamed_packages
+            )
+
+        # Make sure not to overwrite existing packages after renaming is applied.
+        missing_packages = renamed_packages - found_packages
+        if not missing_packages:
+            return
+
+        console_write(
+            'Installing %s missing package%s...',
+            (len(missing_packages), 's' if len(missing_packages) != 1 else '')
+        )
+
+        reenabled = PackageDisabler.disable_packages(missing_packages, 'install')
+        time.sleep(0.7)
+
+        try:
+            for package_name in missing_packages:
+                result = self.manager.install_package(package_name)
+                if result is None:
+                    reenabled.remove(package_name)
+                    console_write(
+                        '''
+                        Unable to finalize install of missing package %s -
+                        deferring until next start
+                        ''',
+                        package_name
+                    )
+                elif result is False:
+                    console_write(
+                        '''
+                        Unable to install missing package %s
+                        ''',
+                        package_name
+                    )
+                else:
+                    console_write(
+                        '''
+                        Installed missing package %s
+                        ''',
+                        package_name
+                    )
+
+        finally:
+            if reenabled:
+                time.sleep(0.7)
+                PackageDisabler.reenable_packages(reenabled, 'install')
 
     def remove_orphaned_packages(self, orphaned_packages):
         """
