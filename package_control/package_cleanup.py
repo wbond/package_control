@@ -18,8 +18,23 @@ from .show_error import show_error
 class PackageCleanup(threading.Thread, PackageDisabler):
 
     """
-    Cleans up folders for packages that were removed, but that still have files
-    in use.
+    Perform initial package maintenance tasks after start of ST.
+
+    It's main purpose is to remove old folders and bring packages and libraries
+    to a fully working state as specified by `installed_packages` no matter
+    what is found in filesystem.
+
+    It's enough to place a Package Control.sublime-settings with desired list of
+    `installed_packages` into User package. This task does the rest.
+
+    The following tasks are performed one after another:
+
+    1. Complete pending operations, which had been deferred due to locked files.
+    2. Remove packages, which exist in filesystem but not in `installed_packages`.
+    3. Migrate or upgrade incompatible packages immediately.
+    4. Install packages, which don't exist in filesystem but in `installed_packages`.
+    5. Install required libraries, which have not yet been installed by step 3. or 4.
+    6. Removes libraries, which are no longer required by finally present packages.
     """
 
     def __init__(self):
