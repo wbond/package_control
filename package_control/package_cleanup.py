@@ -9,7 +9,14 @@ from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
 from .console_write import console_write
 from .package_disabler import PackageDisabler
-from .package_io import create_empty_file, get_installed_package_path, get_package_dir, package_file_exists
+from .package_io import (
+    create_empty_file,
+    get_installed_package_path,
+    get_package_dir,
+    get_package_cache_dir,
+    get_package_module_cache_dir,
+    package_file_exists
+)
 from .package_manager import PackageManager
 from .settings import load_list_setting_as_set, pc_settings_filename, save_list_setting
 from .show_error import show_error
@@ -490,6 +497,10 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                             package_name
                         )
                         cleanup_complete = False
+
+                # remove optionally present cache if exists
+                delete_directory(get_package_cache_dir(package_name))
+                delete_directory(get_package_module_cache_dir(package_name))
 
                 if not cleanup_complete:
                     reenable.remove(package_name)

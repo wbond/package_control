@@ -28,6 +28,8 @@ from .package_io import (
     create_empty_file,
     get_installed_package_path,
     get_package_dir,
+    get_package_cache_dir,
+    get_package_module_cache_dir,
     list_sublime_package_dirs,
     list_sublime_package_files,
     read_package_file
@@ -2001,6 +2003,10 @@ class PackageManager:
             if not delete_directory(package_dir):
                 create_empty_file(os.path.join(package_dir, 'package-control.cleanup'))
                 cleanup_complete = False
+
+        # remove optionally present cache if exists
+        delete_directory(get_package_cache_dir(package_name))
+        delete_directory(get_package_module_cache_dir(package_name))
 
         params = {
             'package': package_name,

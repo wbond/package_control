@@ -7,6 +7,9 @@ import sublime
 
 
 data_dir = None
+cache_path = sublime.cache_path()
+libs_module_cache_path = os.path.join(cache_path, '__pycache__', 'install', 'Data', 'Libs')
+package_module_cache_path = os.path.join(cache_path, '__pycache__', 'install', 'Data', 'Packages')
 default_packages_path = os.path.join(os.path.dirname(sublime.executable_path()), 'Packages')
 packages_path = None
 installed_packages_path = None
@@ -117,7 +120,7 @@ def pc_cache_dir():
     try:
         return pc_cache_dir.cache
     except AttributeError:
-        pc_cache_dir.cache = os.path.join(sublime.cache_path(), 'Package Control')
+        pc_cache_dir.cache = os.path.join(cache_path, 'Package Control')
         return pc_cache_dir.cache
 
 
@@ -132,5 +135,5 @@ def user_config_dir():
     try:
         return user_config_dir.cache
     except AttributeError:
-        user_config_dir.cache = os.path.join(sublime.packages_path(), 'User')
+        user_config_dir.cache = os.path.join(packages_path, 'User')
         return user_config_dir.cache

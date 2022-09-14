@@ -139,6 +139,36 @@ def package_file_exists(package, relative_path):
     return _zip_file_exists(package, relative_path)
 
 
+def get_package_cache_dir(package):
+    """
+    Return the absolute path of the package's cache directory.
+
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the package's cache directory
+    """
+
+    return os.path.join(sys_path.cache_path, package)
+
+
+def get_package_module_cache_dir(package):
+    """
+    Return the absolute path of the package's python modules cache directory.
+
+    Relevant for python 3.8 plugins only.
+
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the package's python module cache directory
+    """
+
+    return os.path.join(sys_path.package_module_cache_path, package)
+
+
 def get_package_dir(package):
     """
     Return the absolute path of the package.
