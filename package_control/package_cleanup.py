@@ -43,6 +43,56 @@ class PackageCleanup(threading.Thread):
             installed_packages.add('Package Control')
             save_list_setting(pc_settings, pc_filename, 'installed_packages', installed_packages)
 
+        # Scan through packages and complete pending operations
+        found_packages = self.cleanup_pending_packages()
+
+        # Cleanup packages that were installed via Package Control, but we removed
+        # from the "installed_packages" list - usually by removing them from another
+        # computer and the settings file being synced.
+        if pc_settings.get('remove_orphaned', True):
+            removed_packages = self.remove_orphaned_packages(found_packages - installed_packages)
+            found_packages -= removed_packages
+        else:
+            removed_packages = set()
+
+        # Make sure we didn't accidentally ignore packages because something was
+        # interrupted before it completed. Keep orphan packages disabled which
+        # are deferred to next start.
+        in_process = load_list_setting_as_set(pc_settings, 'in_process_packages') - removed_packages
+        if in_process:
+            console_write(
+                'Re-enabling %d package%s after a Package Control operation was interrupted...',
+                (len(in_process), 's' if len(in_process) != 1 else '')
+            )
+            PackageDisabler.reenable_packages(in_process, 'enable')
+
+        # Check metadata to verify packages were not improperly installed
+        self.migrate_incompatible_packages(found_packages)
+
+        self.install_missing_packages(found_packages)
+        self.install_missing_libraries()
+
+        self.manager.cleanup_libraries()
+
+        AutomaticUpgrader().start()
+
+    def cleanup_pending_packages(self):
+        """
+        Scan through packages and complete pending operations
+
+        The method ...
+        1. replaces *.sublime-package files with *.sublime-package-new
+        2. deletes package directories with a package-control.cleanup file
+        3. clears package directories with a package-control.reinstall file
+           and re-installs it.
+
+        All found packages are considered ignored as related operation was
+        interrupted or deferred before ST was restarted.
+
+        :returns:
+            A set of found packages.
+        """
+
         found_packages = set()
 
         for file in os.listdir(sys_path.installed_packages_path):
@@ -146,35 +196,7 @@ class PackageCleanup(threading.Thread):
 
             found_packages.add(package_name)
 
-        # Cleanup packages that were installed via Package Control, but we removed
-        # from the "installed_packages" list - usually by removing them from another
-        # computer and the settings file being synced.
-        if pc_settings.get('remove_orphaned', True):
-            removed_packages = self.remove_orphaned_packages(found_packages - installed_packages)
-            found_packages -= removed_packages
-        else:
-            removed_packages = set()
-
-        # Make sure we didn't accidentally ignore packages because something was
-        # interrupted before it completed. Keep orphan packages disabled which
-        # are deferred to next start.
-        in_process = load_list_setting_as_set(pc_settings, 'in_process_packages') - removed_packages
-        if in_process:
-            console_write(
-                "Re-enabling %d package%s after a Package Control operation was interrupted...",
-                (len(in_process), 's' if len(in_process) != 1 else '')
-            )
-            PackageDisabler.reenable_packages(in_process, 'enable')
-
-        # Check metadata to verify packages were not improperly installed
-        self.migrate_incompatible_packages(found_packages)
-
-        self.install_missing_packages(found_packages)
-        self.install_missing_libraries()
-
-        self.manager.cleanup_libraries()
-
-        AutomaticUpgrader().start()
+        return found_packages
 
     def migrate_incompatible_packages(self, found_packages):
         """
