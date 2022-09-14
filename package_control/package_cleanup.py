@@ -15,7 +15,7 @@ from .settings import load_list_setting_as_set, pc_settings_filename, save_list_
 from .show_error import show_error
 
 
-class PackageCleanup(threading.Thread):
+class PackageCleanup(threading.Thread, PackageDisabler):
 
     """
     Cleans up folders for packages that were removed, but that still have files
@@ -24,6 +24,7 @@ class PackageCleanup(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
+        PackageDisabler.__init__(self)
         self.manager = PackageManager()
         self.pc_filename = pc_settings_filename()
         self.pc_settings = sublime.load_settings(self.pc_filename)
@@ -60,7 +61,7 @@ class PackageCleanup(threading.Thread):
                 'Re-enabling %d package%s after a Package Control operation was interrupted...',
                 (len(in_process), 's' if len(in_process) != 1 else '')
             )
-            PackageDisabler.reenable_packages(in_process, 'enable')
+            self.reenable_packages(in_process, 'enable')
 
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
@@ -220,7 +221,7 @@ class PackageCleanup(threading.Thread):
                 (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
             )
 
-            reenable = PackageDisabler.disable_packages(migrate_packages, 'upgrade')
+            reenable = self.disable_packages(migrate_packages, 'upgrade')
             time.sleep(0.7)
 
             try:
@@ -254,7 +255,7 @@ class PackageCleanup(threading.Thread):
             finally:
                 if reenable:
                     time.sleep(0.7)
-                    PackageDisabler.reenable_packages(reenable, 'upgrade')
+                    self.reenable_packages(reenable, 'upgrade')
 
         if incompatible_packages:
             package_s = 's were' if len(incompatible_packages) != 1 else ' was'
@@ -350,7 +351,7 @@ class PackageCleanup(threading.Thread):
             (len(missing_packages), 's' if len(missing_packages) != 1 else '')
         )
 
-        reenabled = PackageDisabler.disable_packages(missing_packages, 'install')
+        reenabled = self.disable_packages(missing_packages, 'install')
         time.sleep(0.7)
 
         try:
@@ -383,7 +384,7 @@ class PackageCleanup(threading.Thread):
         finally:
             if reenabled:
                 time.sleep(0.7)
-                PackageDisabler.reenable_packages(reenabled, 'install')
+                self.reenable_packages(reenabled, 'install')
 
     def remove_orphaned_packages(self, found_packages):
         """
@@ -424,7 +425,7 @@ class PackageCleanup(threading.Thread):
         )
 
         # disable orphaned packages and reset theme, color scheme or syntaxes if needed
-        reenable = PackageDisabler.disable_packages(orphaned_packages, 'remove')
+        reenable = self.disable_packages(orphaned_packages, 'remove')
         time.sleep(0.7)
 
         try:
@@ -481,6 +482,6 @@ class PackageCleanup(threading.Thread):
         finally:
             if reenable:
                 time.sleep(0.7)
-                PackageDisabler.reenable_packages(reenable, 'remove')
+                self.reenable_packages(reenable, 'remove')
 
         return orphaned_packages
