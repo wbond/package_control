@@ -25,15 +25,14 @@ class PackageCleanup(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.manager = PackageManager()
+        self.pc_filename = pc_settings_filename()
+        self.pc_settings = sublime.load_settings(self.pc_filename)
 
     def run(self):
-        pc_filename = pc_settings_filename()
-        pc_settings = sublime.load_settings(pc_filename)
-
         # This song and dance is necessary so Package Control doesn't try to clean
         # itself up, but also get properly marked as installed in the settings
         # Ensure we record the installation of Package Control itself
-        installed_packages = load_list_setting_as_set(pc_settings, 'installed_packages')
+        installed_packages = load_list_setting_as_set(self.pc_settings, 'installed_packages')
         if 'Package Control' not in installed_packages:
             self.manager.record_usage({
                 'package': 'Package Control',
@@ -41,7 +40,7 @@ class PackageCleanup(threading.Thread):
                 'version': __version__
             })
             installed_packages.add('Package Control')
-            save_list_setting(pc_settings, pc_filename, 'installed_packages', installed_packages)
+            save_list_setting(self.pc_settings, self.pc_filename, 'installed_packages', installed_packages)
 
         # Scan through packages and complete pending operations
         found_packages = self.cleanup_pending_packages()
@@ -49,16 +48,13 @@ class PackageCleanup(threading.Thread):
         # Cleanup packages that were installed via Package Control, but we removed
         # from the "installed_packages" list - usually by removing them from another
         # computer and the settings file being synced.
-        if pc_settings.get('remove_orphaned', True):
-            removed_packages = self.remove_orphaned_packages(found_packages - installed_packages)
-            found_packages -= removed_packages
-        else:
-            removed_packages = set()
+        removed_packages = self.remove_orphaned_packages(found_packages - installed_packages)
+        found_packages -= removed_packages
 
         # Make sure we didn't accidentally ignore packages because something was
         # interrupted before it completed. Keep orphan packages disabled which
         # are deferred to next start.
-        in_process = load_list_setting_as_set(pc_settings, 'in_process_packages') - removed_packages
+        in_process = load_list_setting_as_set(self.pc_settings, 'in_process_packages') - removed_packages
         if in_process:
             console_write(
                 'Re-enabling %d package%s after a Package Control operation was interrupted...',
@@ -86,8 +82,9 @@ class PackageCleanup(threading.Thread):
         3. clears package directories with a package-control.reinstall file
            and re-installs it.
 
-        All found packages are considered ignored as related operation was
-        interrupted or deferred before ST was restarted.
+        All found packages are considered `ignored_packages` and present/absent
+        in `installed_packages` as related operation was interrupted or deferred
+        before ST was restarted.
 
         :returns:
             A set of found packages.
@@ -321,13 +318,10 @@ class PackageCleanup(threading.Thread):
             A set of packages found on filesystem.
         """
 
-        pc_filename = pc_settings_filename()
-        pc_settings = sublime.load_settings(pc_filename)
-
-        if not pc_settings.get('install_missing', True):
+        if not self.pc_settings.get('install_missing', True):
             return
 
-        installed_packages = load_list_setting_as_set(pc_settings, 'installed_packages')
+        installed_packages = load_list_setting_as_set(self.pc_settings, 'installed_packages')
         missing_packages = installed_packages - found_packages
         if not missing_packages:
             return
@@ -339,8 +333,8 @@ class PackageCleanup(threading.Thread):
         renamed_packages = {renamed_packages.get(p, p) for p in missing_packages}
         if renamed_packages != missing_packages:
             save_list_setting(
-                pc_settings,
-                pc_filename,
+                self.pc_settings,
+                self.pc_filename,
                 'installed_packages',
                 installed_packages - missing_packages + renamed_packages
             )
@@ -410,6 +404,9 @@ class PackageCleanup(threading.Thread):
         :returns:
             A set of orphaned packages, which have successfully been removed.
         """
+
+        if not self.pc_settings.get('remove_orphaned', True):
+            return set()
 
         # find all managed orphaned packages
         orphaned_packages = set(filter(
