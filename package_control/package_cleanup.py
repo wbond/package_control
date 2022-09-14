@@ -45,10 +45,10 @@ class PackageCleanup(threading.Thread):
         # Scan through packages and complete pending operations
         found_packages = self.cleanup_pending_packages()
 
-        # Cleanup packages that were installed via Package Control, but we removed
-        # from the "installed_packages" list - usually by removing them from another
-        # computer and the settings file being synced.
-        removed_packages = self.remove_orphaned_packages(found_packages - installed_packages)
+        # Cleanup packages that were installed via Package Control, but have been
+        # removed from the "installed_packages" list - usually by removing them
+        # from another computer and the settings file being synced.
+        removed_packages = self.remove_orphaned_packages(found_packages)
         found_packages -= removed_packages
 
         # Make sure we didn't accidentally ignore packages because something was
@@ -384,7 +384,7 @@ class PackageCleanup(threading.Thread):
                 time.sleep(0.7)
                 PackageDisabler.reenable_packages(reenabled, 'install')
 
-    def remove_orphaned_packages(self, orphaned_packages):
+    def remove_orphaned_packages(self, found_packages):
         """
         Removes orphaned packages.
 
@@ -398,8 +398,8 @@ class PackageCleanup(threading.Thread):
         - remove orphaned libraries (will be done later)
         - send usage stats
 
-        :param orphaned_packages:
-            A set of orphened package names
+        :param found_packages:
+            A set of packages found on filesystem.
 
         :returns:
             A set of orphaned packages, which have successfully been removed.
@@ -411,7 +411,7 @@ class PackageCleanup(threading.Thread):
         # find all managed orphaned packages
         orphaned_packages = set(filter(
             lambda p: package_file_exists(p, 'package-metadata.json'),
-            orphaned_packages
+            found_packages - load_list_setting_as_set(self.pc_settings, 'installed_packages')
         ))
 
         if not orphaned_packages:
