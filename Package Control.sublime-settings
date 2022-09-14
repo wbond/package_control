@@ -34,9 +34,6 @@
 	// The URL to post install, upgrade and removal notices to
 	"submit_url": "https://packagecontrol.io/submit",
 
-	// If packages should be automatically upgraded when ST starts
-	"auto_upgrade": true,
-
 	// If missing packages should be automatically installed when ST starts
 	"install_missing": true,
 
@@ -45,6 +42,14 @@
 	// based upon the assumption that it was removed on another machine and
 	// the Package Control.sublime-settings file was synced to this machine.
 	"remove_orphaned": true,
+
+	// If incompatible packages should be automatically upgraded when ST starts.
+	// If ST is upgraded or moved to other computers, installed packages may
+	// become incompatible with either ST, OS or CPU architecture.
+	"auto_migrate": true,
+
+	// If packages should be automatically upgraded when ST starts
+	"auto_upgrade": true,
 
 	// The minimum frequency in hours in which to check for automatic upgrades,
 	// setting this to 0 will always check for automatic upgrades

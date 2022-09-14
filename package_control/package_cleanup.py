@@ -210,50 +210,51 @@ class PackageCleanup(threading.Thread):
         if not incompatible_packages:
             return set()
 
-        available_packages = self.manager.list_available_packages()
-        migrate_packages = set(filter(lambda p: p in available_packages, incompatible_packages))
-        incompatible_packages = set()
+        if self.pc_settings.get('auto_migrate', True):
+            available_packages = self.manager.list_available_packages()
+            migrate_packages = set(filter(lambda p: p in available_packages, incompatible_packages))
+            incompatible_packages = set()
 
-        console_write(
-            'Migrating %s incompatible package%s...',
-            (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
-        )
+            console_write(
+                'Migrating %s incompatible package%s...',
+                (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
+            )
 
-        reenable = PackageDisabler.disable_packages(migrate_packages, 'upgrade')
-        time.sleep(0.7)
+            reenable = PackageDisabler.disable_packages(migrate_packages, 'upgrade')
+            time.sleep(0.7)
 
-        try:
-            for package_name in migrate_packages:
-                result = self.manager.install_package(package_name)
-                if result is None:
-                    reenable.remove(package_name)
-                    console_write(
-                        '''
-                        Unable to finalize migration of incompatible package %s -
-                        deferring until next start
-                        ''',
-                        package_name
-                    )
-                elif result is False:
-                    incompatible_packages.add(package_name)
-                    console_write(
-                        '''
-                        Unable to migrate incompatible package %s
-                        ''',
-                        package_name
-                    )
-                else:
-                    console_write(
-                        '''
-                        Migrated incompatible package %s
-                        ''',
-                        package_name
-                    )
+            try:
+                for package_name in migrate_packages:
+                    result = self.manager.install_package(package_name)
+                    if result is None:
+                        reenable.remove(package_name)
+                        console_write(
+                            '''
+                            Unable to finalize migration of incompatible package %s -
+                            deferring until next start
+                            ''',
+                            package_name
+                        )
+                    elif result is False:
+                        incompatible_packages.add(package_name)
+                        console_write(
+                            '''
+                            Unable to migrate incompatible package %s
+                            ''',
+                            package_name
+                        )
+                    else:
+                        console_write(
+                            '''
+                            Migrated incompatible package %s
+                            ''',
+                            package_name
+                        )
 
-        finally:
-            if reenable:
-                time.sleep(0.7)
-                PackageDisabler.reenable_packages(reenable, 'upgrade')
+            finally:
+                if reenable:
+                    time.sleep(0.7)
+                    PackageDisabler.reenable_packages(reenable, 'upgrade')
 
         if incompatible_packages:
             package_s = 's were' if len(incompatible_packages) != 1 else ' was'
