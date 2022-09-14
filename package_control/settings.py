@@ -29,24 +29,6 @@ def load_list_setting(settings, name):
         The name of the setting
 
     :return:
-        The current value of the setting, always a list
-    """
-
-    return sorted(load_list_setting_as_set(settings, name), key=lambda s: s.lower())
-
-
-def load_list_setting_as_set(settings, name):
-    """
-    Sometimes users accidentally change settings that should be lists to
-    just individual strings. This helps fix that.
-
-    :param settings:
-        A sublime.Settings object
-
-    :param name:
-        The name of the setting
-
-    :return:
         The current value of the setting, always a set
     """
 

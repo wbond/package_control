@@ -38,7 +38,7 @@ class DisablePackageCommand(ExistingPackagesCommand):
 
         packages = manager.list_all_packages()
         ignored = PackageDisabler.get_ignored_packages()
-        return sorted(set(packages) - set(ignored), key=lambda s: s.lower())
+        return sorted(set(packages) - ignored, key=lambda s: s.lower())
 
     def on_done(self, manager, package_name):
         """

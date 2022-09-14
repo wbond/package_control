@@ -18,7 +18,7 @@ from .package_io import (
     package_file_exists
 )
 from .package_manager import PackageManager
-from .settings import load_list_setting_as_set, pc_settings_filename, save_list_setting
+from .settings import load_list_setting, pc_settings_filename, save_list_setting
 from .show_error import show_error
 
 
@@ -55,7 +55,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         # This song and dance is necessary so Package Control doesn't try to clean
         # itself up, but also get properly marked as installed in the settings
         # Ensure we record the installation of Package Control itself
-        installed_packages = load_list_setting_as_set(self.pc_settings, 'installed_packages')
+        installed_packages = load_list_setting(self.pc_settings, 'installed_packages')
         if 'Package Control' not in installed_packages:
             self.manager.record_usage({
                 'package': 'Package Control',
@@ -77,7 +77,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         # Make sure we didn't accidentally ignore packages because something was
         # interrupted before it completed. Keep orphan packages disabled which
         # are deferred to next start.
-        in_process = load_list_setting_as_set(self.pc_settings, 'in_process_packages') - removed_packages
+        in_process = load_list_setting(self.pc_settings, 'in_process_packages') - removed_packages
         if in_process:
             console_write(
                 'Re-enabling %d package%s after a Package Control operation was interrupted...',
@@ -345,7 +345,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         if not self.pc_settings.get('install_missing', True):
             return
 
-        installed_packages = load_list_setting_as_set(self.pc_settings, 'installed_packages')
+        installed_packages = load_list_setting(self.pc_settings, 'installed_packages')
         missing_packages = installed_packages - found_packages
         if not missing_packages:
             return
@@ -435,7 +435,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         # find all managed orphaned packages
         orphaned_packages = set(filter(
             lambda p: package_file_exists(p, 'package-metadata.json'),
-            found_packages - load_list_setting_as_set(self.pc_settings, 'installed_packages')
+            found_packages - load_list_setting(self.pc_settings, 'installed_packages')
         ))
 
         if not orphaned_packages:

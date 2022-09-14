@@ -5,7 +5,7 @@ import sublime
 
 from .console_write import console_write
 from .package_disabler import PackageDisabler
-from .settings import pc_settings_filename, load_list_setting, save_list_setting
+from .settings import load_list_setting, pc_settings_filename, save_list_setting
 
 
 class PackageRenamer(PackageDisabler):

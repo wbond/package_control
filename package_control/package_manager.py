@@ -37,7 +37,7 @@ from .package_io import (
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
-from .settings import pc_settings_filename, load_list_setting, save_list_setting
+from .settings import load_list_setting, pc_settings_filename, save_list_setting
 from .show_error import show_error
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
@@ -1502,7 +1502,7 @@ class PackageManager:
             settings = sublime.load_settings(pc_settings_filename())
             names = load_list_setting(settings, 'installed_packages')
             if package_name not in names:
-                names.append(package_name)
+                names.add(package_name)
                 save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
 
             # If we didn't extract directly into the Packages/{package_name}/

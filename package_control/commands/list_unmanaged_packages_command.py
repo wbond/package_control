@@ -1,6 +1,6 @@
 import sublime
 
-from ..settings import pc_settings_filename, load_list_setting
+from ..settings import load_list_setting, pc_settings_filename
 from .list_packages_command import ListPackagesCommand
 
 
@@ -24,7 +24,7 @@ class ListUnmanagedPackagesCommand(ListPackagesCommand):
         """
 
         settings = sublime.load_settings(pc_settings_filename())
-        ignored_packages = set(load_list_setting(settings, 'unmanaged_packages_ignore'))
-        ignored_packages |= set(load_list_setting(settings, 'installed_packages'))
+        ignored_packages = load_list_setting(settings, 'unmanaged_packages_ignore')
+        ignored_packages |= load_list_setting(settings, 'installed_packages')
 
         return sorted(set(manager.list_packages()) - ignored_packages, key=lambda s: s.lower())

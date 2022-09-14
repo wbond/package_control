@@ -12,7 +12,6 @@ from .settings import (
     preferences_filename,
     pc_settings_filename,
     load_list_setting,
-    load_list_setting_as_set,
     save_list_setting
 )
 from .show_error import show_error
@@ -93,10 +92,10 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored = load_list_setting_as_set(settings, 'ignored_packages')
+            ignored = load_list_setting(settings, 'ignored_packages')
 
             pc_settings = sublime.load_settings(pc_settings_filename())
-            in_process = load_list_setting_as_set(pc_settings, 'in_process_packages')
+            in_process = load_list_setting(pc_settings, 'in_process_packages')
 
             if not isinstance(packages, (list, set, tuple)):
                 packages = [packages]
@@ -195,10 +194,10 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored = load_list_setting_as_set(settings, 'ignored_packages')
+            ignored = load_list_setting(settings, 'ignored_packages')
 
             pc_settings = sublime.load_settings(pc_settings_filename())
-            in_process = load_list_setting_as_set(pc_settings, 'in_process_packages')
+            in_process = load_list_setting(pc_settings, 'in_process_packages')
 
             if not isinstance(packages, (list, set, tuple)):
                 packages = [packages]
