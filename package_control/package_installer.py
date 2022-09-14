@@ -1,3 +1,4 @@
+import html
 import re
 import threading
 import time
@@ -52,6 +53,8 @@ class PackageInstaller(PackageDisabler):
 
         packages = self.manager.list_available_packages()
         installed_packages = self.manager.list_packages()
+
+        url_pattern = re.compile(r'^https?://')
 
         package_list = []
         for package in sorted(iter(packages.keys()), key=lambda s: s.lower()):
@@ -127,12 +130,11 @@ class PackageInstaller(PackageDisabler):
             if not description:
                 description = 'No description provided'
 
-            homepage = info['homepage']
-            homepage_display = re.sub('^https?://', '', homepage)
-
             if USE_QUICK_PANEL_ITEM:
-                description = '<em>%s</em>' % sublime.html_format_command(description)
+                description = '<em>%s</em>' % html.escape(description)
                 final_line = '<em>' + action + extra + '</em>'
+                homepage = html.escape(info['homepage'])
+                homepage_display = url_pattern.sub('', homepage)
                 if homepage_display:
                     if action or extra:
                         final_line += ' '
@@ -142,6 +144,7 @@ class PackageInstaller(PackageDisabler):
                 package_entry = [package]
                 package_entry.append(description)
                 final_line = action + extra
+                homepage_display = url_pattern.sub('', info['homepage'])
                 if final_line and homepage_display:
                     final_line += ' '
                 final_line += homepage_display

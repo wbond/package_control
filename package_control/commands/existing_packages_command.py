@@ -1,3 +1,4 @@
+import html
 import os
 import re
 
@@ -36,7 +37,6 @@ class ExistingPackagesCommand(sublime_plugin.WindowCommand):
                 description = 'Bundled Sublime Text Package'
                 installed_version = default_version
                 url = ''
-                url_display = ''
 
             else:
                 metadata = manager.get_metadata(package)
@@ -55,16 +55,18 @@ class ExistingPackagesCommand(sublime_plugin.WindowCommand):
                     installed_version = 'v' + version if version else 'unknown version'
 
                 url = metadata.get('url', '')
-                url_display = url_pattern.sub('', url)
 
             if USE_QUICK_PANEL_ITEM:
-                description = '<em>%s</em>' % sublime.html_format_command(description)
+                description = '<em>%s</em>' % html.escape(description)
                 final_line = '<em>' + action + installed_version + '</em>'
+                url = html.escape(url)
+                url_display = url_pattern.sub('', url)
                 if url_display:
                     final_line += '; <a href="%s">%s</a>' % (url, url_display)
                 package_entry = sublime.QuickPanelItem(package, [description, final_line])
             else:
                 final_line = action + installed_version
+                url_display = url_pattern.sub('', url)
                 if url_display:
                     final_line += '; ' + url_display
                 package_entry = [package, description, final_line]
