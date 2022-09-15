@@ -187,8 +187,8 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 continue
 
             # Finish reinstalling packages that could not be upgraded due to in-use files
-            reinstall = os.path.join(package_dir, 'package-control.reinstall')
-            if os.path.exists(reinstall):
+            reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
+            if os.path.exists(reinstall_file):
                 if clear_directory(package_dir) and self.manager.install_package(package_name):
                     console_write(
                         '''
@@ -198,7 +198,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     )
 
                 else:
-                    create_empty_file(reinstall)
+                    create_empty_file(reinstall_file)
                     console_write(
                         '''
                         Unable to re-install package %s -
