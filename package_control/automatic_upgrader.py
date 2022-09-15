@@ -184,18 +184,9 @@ class AutomaticUpgrader(threading.Thread):
             for package_name in package_list:
                 result = self.installer.manager.install_package(package_name)
 
-                # upgrade not dereffered to next start
+                # re-enable if upgrade is not deferred to next start
                 if result is not None and package_name in disabled_packages:
                     upgraded_packages.append(package_name)
-
-                if result is not False:
-                    version = self.installer.manager.get_version(package_name)
-                    console_write(
-                        '''
-                        Upgraded %s to %s
-                        ''',
-                        (package_name, version)
-                    )
 
         finally:
             if upgraded_packages:

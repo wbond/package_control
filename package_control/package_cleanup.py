@@ -185,8 +185,8 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     create_empty_file(cleanup_file)
                     console_write(
                         '''
-                        Unable to remove old package directory %s -
-                        deferring until next start
+                        Unable to remove old package directory "%s".
+                        A restart of your computer may be required to unlock files.
                         ''',
                         package_name
                     )
@@ -196,23 +196,18 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             # Finish reinstalling packages that could not be upgraded due to in-use files
             reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall_file):
-                if clear_directory(package_dir) and self.manager.install_package(package_name):
+                if not clear_directory(package_dir):
+                    create_empty_file(reinstall_file)
                     console_write(
                         '''
-                        Re-installed package %s
+                        Unable to clear package directory "%s" for re-install.
+                        A restart of your computer may be required to unlock files.
                         ''',
                         package_name
                     )
 
-                else:
+                elif not self.manager.install_package(package_name):
                     create_empty_file(reinstall_file)
-                    console_write(
-                        '''
-                        Unable to re-install package %s -
-                        deferring until next start
-                        ''',
-                        package_name
-                    )
 
             found_packages.add(package_name)
 
@@ -249,32 +244,14 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 try:
                     for package_name in migrate_packages:
                         result = self.manager.install_package(package_name)
-                        if result is None:
+
+                        # re-enable if upgrade is not deferred to next start
+                        if result is None and package_name in reenable_packages:
                             reenable_packages.remove(package_name)
+
+                        # handle as compatible if update didn't explicitly fail
+                        if result is not False:
                             incompatible_packages.remove(package_name)
-                            console_write(
-                                '''
-                                Unable to finalize migration of incompatible package %s -
-                                deferring until next start
-                                ''',
-                                package_name
-                            )
-                        elif result is False:
-                            reenable_packages.remove(package_name)
-                            console_write(
-                                '''
-                                Unable to migrate incompatible package %s
-                                ''',
-                                package_name
-                            )
-                        else:
-                            incompatible_packages.remove(package_name)
-                            console_write(
-                                '''
-                                Migrated incompatible package %s
-                                ''',
-                                package_name
-                            )
 
                 finally:
                     if reenable_packages:
@@ -330,7 +307,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         for lib in missing_libraries:
             if self.manager.install_library(lib.name, lib.python_version):
-                console_write('Installed missing library %s for Python %s', (lib.name, lib.python_version))
+                console_write('Installed library %s for Python %s', (lib.name, lib.python_version))
                 libraries_installed += 1
 
         if libraries_installed:
@@ -402,29 +379,10 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         try:
             for package_name in missing_packages:
                 result = self.manager.install_package(package_name)
-                if result is None:
+
+                # re-enable if upgrade is not deferred to next start
+                if result is None and package_name in reenable_packages:
                     reenable_packages.remove(package_name)
-                    console_write(
-                        '''
-                        Unable to finalize install of missing package %s -
-                        deferring until next start
-                        ''',
-                        package_name
-                    )
-                elif result is False:
-                    console_write(
-                        '''
-                        Unable to install missing package %s
-                        ''',
-                        package_name
-                    )
-                else:
-                    console_write(
-                        '''
-                        Installed missing package %s
-                        ''',
-                        package_name
-                    )
 
         finally:
             if reenable_packages:
@@ -485,7 +443,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     os.remove(installed_package_path)
                     console_write(
                         '''
-                        Removed orphaned package %s
+                        Removed package %s
                         ''',
                         package_name
                     )
@@ -494,7 +452,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 except (OSError, IOError) as e:
                     console_write(
                         '''
-                        Unable to remove orphaned package %s -
+                        Unable to remove package "%s" -
                         deferring until next start: %s
                         ''',
                         (package_name, e)
@@ -508,7 +466,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     if delete_directory(package_dir):
                         console_write(
                             '''
-                            Removed directory for orphaned package %s
+                            Removed directory for package %s
                             ''',
                             package_name
                         )
@@ -517,7 +475,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                         create_empty_file(os.path.join(package_dir, 'package-control.cleanup'))
                         console_write(
                             '''
-                            Unable to remove directory for orphaned package %s -
+                            Unable to remove directory for package "%s" -
                             deferring until next start
                             ''',
                             package_name

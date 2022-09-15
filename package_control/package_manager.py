@@ -218,7 +218,7 @@ class PackageManager:
             except (ValueError):
                 console_write(
                     '''
-                    An error occurred while trying to parse package metadata for %s.
+                    Failed to parse package metadata for "%s"
                     ''',
                     package_name
                 )
@@ -248,8 +248,7 @@ class PackageManager:
             except (ValueError):
                 console_write(
                     '''
-                    An error occurred while trying to parse the
-                    dependencies.json for %s.
+                    Failed to parse the dependencies.json for "%s"
                     ''',
                     package_name
                 )
@@ -879,29 +878,28 @@ class PackageManager:
 
                 %s
                 ''',
-                (package_filename, package_destination, str(e))
+                (package_filename, package_destination, e)
             )
             return False
         return True
 
     def _download_zip_file(self, name, url):
         try:
-            return zipfile.ZipFile(BytesIO(http_get(url, self.settings, 'Error downloading zip file.')))
+            return zipfile.ZipFile(BytesIO(http_get(url, self.settings, '')))
 
         except DownloaderException as e:
-            console_write(e)
-            show_error(
+            console_write(
                 '''
-                Unable to download %s. Please view the console for more details.
+                Unable to download "%s": %s
                 ''',
-                name
+                (name, e)
             )
             return False
 
         except zipfile.BadZipfile:
-            show_error(
+            console_write(
                 '''
-                An error occurred while trying to unzip the file for %s.
+                Failed to unzip the file for "%s"
                 ''',
                 name
             )
@@ -932,7 +930,7 @@ class PackageManager:
             except (UnicodeDecodeError):
                 console_write(
                     '''
-                    One or more of the zip file entries in %s is not
+                    One or more of the zip file entries in "%s" is not
                     encoded using UTF-8, aborting
                     ''',
                     name
@@ -945,10 +943,10 @@ class PackageManager:
                 root_level_paths.append(path)
             # Make sure there are no paths that look like security vulnerabilities
             if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
-                show_error(
+                console_write(
                     '''
-                    The zip file for %s contains files that traverse outside
-                    of the root and cannot be safely installed.
+                    The zip file for "%s" contains files that traverse outside
+                    of the root and cannot be safely installed
                     ''',
                     name
                 )
@@ -1005,7 +1003,7 @@ class PackageManager:
             except (UnicodeDecodeError):
                 console_write(
                     '''
-                    One or more of the zip file entries in %s is not
+                    One or more of the zip file entries in "%s" is not
                     encoded using UTF-8, aborting
                     ''',
                     name
@@ -1017,7 +1015,7 @@ class PackageManager:
                 if re.search(regex, dest) is not None:
                     console_write(
                         '''
-                        Skipping file from package named %s due to an
+                        Skipping file from package named "%s" due to an
                         invalid filename
                         ''',
                         name
@@ -1047,13 +1045,12 @@ class PackageManager:
                     with open(dest, 'wb') as fobj:
                         fobj.write(zf.read(path))
                 except (IOError) as e:
-                    message = str(e)
-                    if re.search('[Ee]rrno 13', message):
+                    if re.search('[Ee]rrno 13', str(e)):
                         should_retry = True
                         break
                     console_write(
                         '''
-                        Skipping file from package named %s due to an
+                        Skipping file from package named "%s" due to an
                         invalid filename
                         ''',
                         name
@@ -1062,7 +1059,7 @@ class PackageManager:
                 except (UnicodeDecodeError):
                     console_write(
                         '''
-                        Skipping file from package named %s due to an
+                        Skipping file from package named "%s" due to an
                         invalid filename
                         ''',
                         name
@@ -1084,7 +1081,10 @@ class PackageManager:
                 # If a library is not available on this machine, that means it is not needed
                 return True
 
-            console_write("The library '%s' is not available for Python %s", (library_name, python_version))
+            console_write(
+                'The library "%s" is not available for Python %s',
+                (library_name, python_version)
+            )
             return False
 
         release = libraries[library_name]['releases'][0]
@@ -1116,11 +1116,8 @@ class PackageManager:
 
             if len(modified_paths):
                 console_write(
-                    "Unable to upgrade the library '%s' because files on disk have been modified: '%s'",
-                    (
-                        library_name,
-                        "', '".join(sorted(list(modified_paths)))
-                    )
+                    'Unable to upgrade library "%s" because files on disk have been modified: "%s"',
+                    (library_name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
                 )
                 return False
 
@@ -1144,8 +1141,10 @@ class PackageManager:
                 extracted_files,
                 common_folder
             )
+
             if should_retry:
                 return False
+
             extracted_paths = extracted_files | extracted_dirs
 
             library_zip.close()
@@ -1168,11 +1167,11 @@ class PackageManager:
                         lib.get('homepage')
                     )
                 except ValueError as e:
-                    show_error(
+                    console_write(
                         '''
-                        An error occurred while trying to install the library %s: %s
+                        Failed to install the library "%s": %s
                         ''',
-                        (library_name, str(e))
+                        (library_name, e)
                     )
                     return False
 
@@ -1190,26 +1189,22 @@ class PackageManager:
             for mri in modified_ris:
                 modified_paths.add(mri.absolute_path)
 
-            if len(modified_paths):
+            if modified_paths:
                 console_write(
-                    "Unable to upgrade the library '%s' because files in the archive have been modified: '%s'",
-                    (
-                        library_name,
-                        "', '".join(sorted(list(modified_paths)))
-                    )
+                    'Unable to upgrade library "%s" because files in the archive have been modified: "%s"',
+                    (library_name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
                 )
                 return False
 
             if is_upgrade:
                 try:
                     library.remove(existing_did.install_root, library_name)
-                except OSError:
-                    show_error(
+                except OSError as e:
+                    console_write(
                         '''
-                        An error occurred while trying to upgrade the library %s. Please restart
-                        Sublime Text to finish the upgrade.
+                        Failed to upgrade the library "%s": %s
                         ''',
-                        library_name
+                        (library_name, e)
                     )
                     return False
 
@@ -1264,9 +1259,9 @@ class PackageManager:
                     ''',
                     package_name
                 )
-                return False
+            else:
+                console_write('The package "%s" is not available', package_name)
 
-            show_error("The package '%s' is not available", (package_name,))
             return False
 
         release = packages[package_name]['releases'][0]
@@ -1291,9 +1286,9 @@ class PackageManager:
                 # with packages installed via VCS
                 to_ignore = self.settings.get('ignore_vcs_packages')
                 if to_ignore is True:
-                    show_error(
+                    console_write(
                         '''
-                        Skipping %s package %s since the setting
+                        Skipping %s package "%s" since the setting
                         "ignore_vcs_packages" is set to true
                         ''',
                         (upgrader.cli_name, package_name)
@@ -1301,9 +1296,9 @@ class PackageManager:
                     return False
 
                 if isinstance(to_ignore, list) and package_name in to_ignore:
-                    show_error(
+                    console_write(
                         '''
-                        Skipping %s package %s since it is listed in the
+                        Skipping %s package "%s" since it is listed in the
                         "ignore_vcs_packages" setting
                         ''',
                         (upgrader.cli_name, package_name)
@@ -1311,6 +1306,8 @@ class PackageManager:
                     return False
 
                 result = upgrader.run()
+
+                console_write('Upgraded %s', package_name)
 
                 return result
 
@@ -1357,8 +1354,7 @@ class PackageManager:
                 except (ValueError):
                     console_write(
                         '''
-                        An error occurred while trying to parse the
-                        dependencies.json for %s.
+                        Failed to parse the dependencies.json for "%s"
                         ''',
                         package_name
                     )
@@ -1369,7 +1365,7 @@ class PackageManager:
             if library_names and not self.install_libraries_by_name(library_names, python_version):
                 console_write(
                     '''
-                    Skipping package %s since not all required libraries are available.
+                    Skipping package "%s" since not all required libraries are available.
                     ''',
                     package_name
                 )
@@ -1391,12 +1387,11 @@ class PackageManager:
                     # If deleting failed, queue the package to upgrade upon next start
                     # when it will be disabled
                     reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
-                    open(reinstall_file, 'wb').close()
-
-                    show_error(
+                    create_empty_file(reinstall_file)
+                    console_write(
                         '''
-                        An error occurred while trying to upgrade %s. Please
-                        restart Sublime Text to finish the upgrade.
+                        Failed to upgrade %s -
+                        deferring until next start
                         ''',
                         package_name
                     )
@@ -1440,7 +1435,7 @@ class PackageManager:
             # If upgrading failed, queue the package to upgrade upon next start
             if should_retry:
                 reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
-                open(reinstall_file, 'wb').close()
+                create_empty_file(reinstall_file)
 
                 # Don't delete the metadata file, that way we have it
                 # when the reinstall happens, and the appropriate
@@ -1449,10 +1444,10 @@ class PackageManager:
                 # and we are not working with symlink here anymore.
                 clear_directory(package_dir, {reinstall_file, package_metadata_file})
 
-                show_error(
+                console_write(
                     '''
-                    An error occurred while trying to upgrade %s. Please restart
-                    Sublime Text to finish the upgrade.
+                    Failed to upgrade %s -
+                    deferring until next start
                     ''',
                     package_name
                 )
@@ -1517,13 +1512,11 @@ class PackageManager:
                                 fobj.write(full_path, relative_path)
 
                 except (OSError, IOError) as e:
-                    show_error(
+                    console_write(
                         '''
-                        An error occurred creating the package file %s in %s.
-
-                        %s
+                        Failed to create the package file "%s" in %s: %s
                         ''',
-                        (package_filename, tmp_dir, str(e))
+                        (package_filename, tmp_dir, e)
                     )
                     return False
 
@@ -1531,17 +1524,27 @@ class PackageManager:
                     if os.path.exists(package_path):
                         os.remove(package_path)
                     shutil.move(tmp_package_path, package_path)
+
                 except (OSError):
-                    new_package_path = package_path.replace('.sublime-package', '.sublime-package-new')
-                    shutil.move(tmp_package_path, new_package_path)
-                    show_error(
+                    try:
+                        shutil.move(tmp_package_path, package_path + '-new')
+                    except (OSError):
+                        pass
+
+                    console_write(
                         '''
-                        An error occurred while trying to upgrade %s. Please restart
-                        Sublime Text to finish the upgrade.
+                        Failed to upgrade %s -
+                        deferring until next start
                         ''',
                         package_name
                     )
                     return None
+
+            version = metadata.get("version")
+            if is_upgrade:
+                console_write('Upgraded %s to %s', (package_name, version))
+            else:
+                console_write('Installed %s %s', (package_name, version))
 
             os.chdir(sys_path.packages_path())
             return True
@@ -1555,7 +1558,7 @@ class PackageManager:
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
+            sublime.set_timeout_async(lambda: delete_directory(tmp_dir), 1000)
 
     def install_libraries(self, libraries, fail_early=True):
         """
@@ -1751,7 +1754,7 @@ class PackageManager:
                 '''
                 Failed to backup the package directory for "%s": %s
                 ''',
-                (package_name, str(e))
+                (package_name, e)
             )
             return False
 
@@ -1916,7 +1919,7 @@ class PackageManager:
         except distinfo.DistInfoNotFoundError:
             console_write(
                 '''
-                The library specified, %s for Python %s, is not installed
+                The library specified, "%s" for Python %s, is not installed
                 ''',
                 (lib.name, lib.python_version)
             )
@@ -1929,8 +1932,8 @@ class PackageManager:
             # it again in the future.
             console_write(
                 '''
-                An error occurred while trying to remove the library %s for
-                Python %s. It will be removed during next start of Sublime Text.
+                Failed to remove the library %s for Python %s -
+                deferring until next start
                 ''',
                 (lib.name, lib.python_version)
             )
@@ -1959,9 +1962,9 @@ class PackageManager:
 
         # User package needs to be checked as it exists in Data/Packages/
         if package_name.lower() == 'user':
-            show_error(
+            console_write(
                 '''
-                The package '%s' can not be removed
+                The package "%s" can not be removed
                 ''',
                 package_name
             )
@@ -1974,9 +1977,9 @@ class PackageManager:
         can_delete_dir = os.path.exists(package_dir)
 
         if not can_delete_file and not can_delete_dir:
-            show_error(
+            console_write(
                 '''
-                The package '%s' is not installed
+                The package "%s" is not installed
                 ''',
                 package_name
             )
