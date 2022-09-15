@@ -707,7 +707,7 @@ class PackageManager:
         if self._available_packages is None:
             self.fetch_available()
 
-        return self._available_packages
+        return self._available_packages or {}
 
     def list_libraries(self):
         """

@@ -234,58 +234,74 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             return set()
 
         if self.pc_settings.get('auto_migrate', True):
-            available_packages = self.manager.list_available_packages()
-            migrate_packages = set(filter(lambda p: p in available_packages, incompatible_packages))
-            incompatible_packages = set()
 
-            console_write(
-                'Migrating %s incompatible package%s...',
-                (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
-            )
+            available_packages = set(self.manager.list_available_packages())
+            migrate_packages = incompatible_packages & available_packages
+            if migrate_packages:
+                console_write(
+                    'Migrating %s incompatible package%s...',
+                    (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
+                )
 
-            reenable_packages = self.disable_packages(migrate_packages, 'upgrade')
-            time.sleep(0.7)
+                reenable_packages = self.disable_packages(migrate_packages, 'upgrade')
+                time.sleep(0.7)
 
-            try:
-                for package_name in migrate_packages:
-                    result = self.manager.install_package(package_name)
-                    if result is None:
-                        reenable_packages.remove(package_name)
-                        console_write(
-                            '''
-                            Unable to finalize migration of incompatible package %s -
-                            deferring until next start
-                            ''',
-                            package_name
-                        )
-                    elif result is False:
-                        incompatible_packages.add(package_name)
-                        console_write(
-                            '''
-                            Unable to migrate incompatible package %s
-                            ''',
-                            package_name
-                        )
-                    else:
-                        console_write(
-                            '''
-                            Migrated incompatible package %s
-                            ''',
-                            package_name
-                        )
+                try:
+                    for package_name in migrate_packages:
+                        result = self.manager.install_package(package_name)
+                        if result is None:
+                            reenable_packages.remove(package_name)
+                            incompatible_packages.remove(package_name)
+                            console_write(
+                                '''
+                                Unable to finalize migration of incompatible package %s -
+                                deferring until next start
+                                ''',
+                                package_name
+                            )
+                        elif result is False:
+                            reenable_packages.remove(package_name)
+                            console_write(
+                                '''
+                                Unable to migrate incompatible package %s
+                                ''',
+                                package_name
+                            )
+                        else:
+                            incompatible_packages.remove(package_name)
+                            console_write(
+                                '''
+                                Migrated incompatible package %s
+                                ''',
+                                package_name
+                            )
 
-            finally:
-                if reenable_packages:
-                    time.sleep(0.7)
-                    self.reenable_packages(reenable_packages, 'upgrade')
+                finally:
+                    if reenable_packages:
+                        time.sleep(0.7)
+                        self.reenable_packages(reenable_packages, 'upgrade')
 
         if incompatible_packages:
-            package_s = 's were' if len(incompatible_packages) != 1 else ' was'
-            show_error(
-                '''
-                The following incompatible package%s found installed:
+            self.disable_packages(incompatible_packages, 'disable')
 
-                %s
+            if len(incompatible_packages) == 1:
+                message = '''
+                    The following incompatible package was found installed:
+
+                    - %s
+
+                    It has been disabled as automatic migration was not possible!
+                    '''
+            else:
+                message = '''
+                    The following incompatible packages were found installed:
+
+                    - %s
+
+                    They have been disabled as automatic migration was not possible!
+                    '''
+
+            message += '''
 
                 This is usually due to syncing packages across different
                 machines in a way that does not check package metadata for
@@ -294,9 +310,9 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 Please visit https://packagecontrol.io/docs/syncing for
                 information about how to properly sync configuration and
                 packages across machines.
-                ''',
-                (package_s, '\n'.join(incompatible_packages))
-            )
+                '''
+
+            show_error(message, '\n- '.join(incompatible_packages))
 
         return incompatible_packages
 
@@ -348,6 +364,13 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         installed_packages = load_list_setting(self.pc_settings, 'installed_packages')
         missing_packages = installed_packages - found_packages
         if not missing_packages:
+            return
+
+        # Fetch a list of available (and renamed) packages and abort
+        # if there are none available for installation.
+        # An empty list indicates connection or configuration problems.
+        available_packages = set(self.manager.list_available_packages())
+        if not available_packages:
             return
 
         # Detect renamed packages and prepare batched install with new names.

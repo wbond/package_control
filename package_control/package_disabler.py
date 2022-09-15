@@ -95,15 +95,21 @@ class PackageDisabler:
             ignored = load_list_setting(settings, 'ignored_packages')
 
             pc_settings = sublime.load_settings(pc_settings_filename())
-            in_process = load_list_setting(pc_settings, 'in_process_packages')
+            in_process_at_start = load_list_setting(pc_settings, 'in_process_packages')
 
             if not isinstance(packages, (list, set, tuple)):
                 packages = [packages]
             packages = set(packages)
 
-            disabled = packages - (ignored - in_process)
+            disabled = packages - (ignored - in_process_at_start)
             ignored |= disabled
-            in_process |= disabled
+
+            # Clear packages from in-progress when disabling them, otherwise
+            # they automatically get re-enabled the next time Sublime Text starts
+            if operation == 'disable':
+                in_process = in_process_at_start - packages
+            else:
+                in_process = in_process_at_start | disabled
 
             # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
             # If False, reset to defaults only.
@@ -166,12 +172,20 @@ class PackageDisabler:
                     version = PackageDisabler.get_version(package)
                     events.add(operation, package, version)
 
-            # We don't mark a package as in-process when disabling it, otherwise
-            # it automatically gets re-enabled the next time Sublime Text starts
-            if operation != 'disable':
-                save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
+            save_list_setting(
+                pc_settings,
+                pc_settings_filename(),
+                'in_process_packages',
+                in_process,
+                in_process_at_start
+            )
 
-            save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
+            save_list_setting(
+                settings,
+                preferences_filename(),
+                'ignored_packages',
+                ignored
+            )
 
             return disabled
 
