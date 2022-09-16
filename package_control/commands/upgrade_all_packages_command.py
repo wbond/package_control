@@ -48,7 +48,7 @@ class UpgradeAllPackagesThread(threading.Thread, PackageInstaller):
         PackageRenamer().rename_packages(self.manager)
         package_list = self.make_package_list(['install', 'reinstall', 'none'])
         if not package_list:
-            show_message('There are no packages ready for upgrade')
+            show_message('All packages up-to-date!')
             return
 
         if USE_QUICK_PANEL_ITEM:

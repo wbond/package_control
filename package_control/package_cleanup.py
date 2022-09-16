@@ -90,10 +90,10 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         self.install_missing_packages(found_packages)
         self.install_missing_libraries()
-
         self.manager.cleanup_libraries()
 
-        AutomaticUpgrader().start()
+        if self.pc_settings.get('auto_upgrade'):
+            AutomaticUpgrader().run()
 
     def cleanup_pending_packages(self):
         """
