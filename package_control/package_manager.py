@@ -1045,7 +1045,7 @@ class PackageManager:
                     with open(dest, 'wb') as fobj:
                         fobj.write(zf.read(path))
                 except (IOError) as e:
-                    if re.search('[Ee]rrno 13', str(e)):
+                    if e.errno == 13:  # permission denied
                         should_retry = True
                         break
                     console_write(
