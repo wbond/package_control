@@ -1723,13 +1723,13 @@ class PackageManager:
             If the backup succeeded
         """
 
-        package_dir = os.path.join(sys_path.packages_path, package_name)
+        package_dir = get_package_dir(package_name)
         if not os.path.exists(package_dir):
             return True
 
-        backup_dir = os.path.join(os.path.dirname(
-            sys_path.packages_path), 'Backup',
-            datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+        backup_dir = os.path.join(
+            sys_path.data_dir, 'Backup', datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        )
         package_backup_dir = os.path.join(backup_dir, package_name)
 
         try:
@@ -1746,15 +1746,10 @@ class PackageManager:
             return True
 
         except (OSError, IOError) as e:
-            if os.path.exists(package_backup_dir):
-                delete_directory(package_backup_dir)
-
-            show_error(
+            delete_directory(package_backup_dir)
+            console_write(
                 '''
-                An error occurred while trying to backup the package directory
-                for %s.
-
-                %s
+                Failed to backup the package directory for "%s": %s
                 ''',
                 (package_name, str(e))
             )
