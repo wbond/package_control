@@ -243,14 +243,14 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
             )
 
-            reenable = self.disable_packages(migrate_packages, 'upgrade')
+            reenable_packages = self.disable_packages(migrate_packages, 'upgrade')
             time.sleep(0.7)
 
             try:
                 for package_name in migrate_packages:
                     result = self.manager.install_package(package_name)
                     if result is None:
-                        reenable.remove(package_name)
+                        reenable_packages.remove(package_name)
                         console_write(
                             '''
                             Unable to finalize migration of incompatible package %s -
@@ -275,9 +275,9 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                         )
 
             finally:
-                if reenable:
+                if reenable_packages:
                     time.sleep(0.7)
-                    self.reenable_packages(reenable, 'upgrade')
+                    self.reenable_packages(reenable_packages, 'upgrade')
 
         if incompatible_packages:
             package_s = 's were' if len(incompatible_packages) != 1 else ' was'
@@ -373,14 +373,14 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             (len(missing_packages), 's' if len(missing_packages) != 1 else '')
         )
 
-        reenabled = self.disable_packages(missing_packages, 'install')
+        reenable_packages = self.disable_packages(missing_packages, 'install')
         time.sleep(0.7)
 
         try:
             for package_name in missing_packages:
                 result = self.manager.install_package(package_name)
                 if result is None:
-                    reenabled.remove(package_name)
+                    reenable_packages.remove(package_name)
                     console_write(
                         '''
                         Unable to finalize install of missing package %s -
@@ -404,9 +404,9 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     )
 
         finally:
-            if reenabled:
+            if reenable_packages:
                 time.sleep(0.7)
-                self.reenable_packages(reenabled, 'install')
+                self.reenable_packages(reenable_packages, 'install')
 
     def remove_orphaned_packages(self, found_packages):
         """
@@ -447,8 +447,11 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         )
 
         # disable orphaned packages and reset theme, color scheme or syntaxes if needed
-        reenable = self.disable_packages(orphaned_packages, 'remove')
+        self.disable_packages(orphaned_packages, 'remove')
         time.sleep(0.7)
+
+        # re-enable all removed packages, even if they were disabled before
+        reenable_packages = set()
 
         try:
             for package_name in orphaned_packages:
@@ -502,12 +505,12 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 delete_directory(get_package_cache_dir(package_name))
                 delete_directory(get_package_module_cache_dir(package_name))
 
-                if not cleanup_complete:
-                    reenable.remove(package_name)
+                if cleanup_complete:
+                    reenable_packages.add(package_name)
 
         finally:
-            if reenable:
+            if reenable_packages:
                 time.sleep(0.7)
-                self.reenable_packages(reenable, 'remove')
+                self.reenable_packages(reenable_packages, 'remove')
 
         return orphaned_packages
