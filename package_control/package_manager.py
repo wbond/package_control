@@ -1078,13 +1078,11 @@ class PackageManager:
                     ''',
                     (library_name, python_version)
                 )
-                # If a library is not available on this machine, that means it is not needed
-                return True
-
-            console_write(
-                'The library "%s" is not available for Python %s',
-                (library_name, python_version)
-            )
+            else:
+                console_write(
+                    'The library "%s" is not available for Python %s',
+                    (library_name, python_version)
+                )
             return False
 
         release = libraries[library_name]['releases'][0]
