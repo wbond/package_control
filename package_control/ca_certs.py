@@ -2,8 +2,8 @@ import os
 import time
 import sys
 
+from . import sys_path
 from .console_write import console_write
-from .sys_path import pc_cache_dir, user_config_dir
 
 from .deps.oscrypto import use_ctypes
 use_ctypes()
@@ -219,9 +219,9 @@ def ensure_ca_bundle_dir():
     global user_ca_bundle_dir
 
     if not ca_bundle_dir:
-        ca_bundle_dir = pc_cache_dir()
+        ca_bundle_dir = sys_path.pc_cache_dir()
     if not user_ca_bundle_dir:
-        user_ca_bundle_dir = user_config_dir()
+        user_ca_bundle_dir = sys_path.user_config_dir()
     if not os.path.exists(ca_bundle_dir):
         try:
             os.mkdir(ca_bundle_dir)

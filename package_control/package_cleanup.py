@@ -115,7 +115,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         found_packages = set()
 
-        for file in os.listdir(sys_path.installed_packages_path):
+        for file in os.listdir(sys_path.installed_packages_path()):
             package_name, file_extension = os.path.splitext(file)
             file_extension = file_extension.lower()
 
@@ -126,7 +126,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             # package is not loaded, we can replace the old version with the
             # new one.
             if file_extension == '.sublime-package-new':
-                new_file = os.path.join(sys_path.installed_packages_path, file)
+                new_file = os.path.join(sys_path.installed_packages_path(), file)
                 package_file = get_installed_package_path(package_name)
                 try:
                     try:
@@ -155,7 +155,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             elif file_extension == '.sublime-package':
                 found_packages.add(package_name)
 
-        for package_name in os.listdir(sys_path.packages_path):
+        for package_name in os.listdir(sys_path.packages_path()):
 
             # Ignore `.`, `..` or hidden dot-directories
             if package_name[0] == '.':
@@ -166,7 +166,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 continue
 
             # Ignore files
-            package_dir = os.path.join(sys_path.packages_path, package_name)
+            package_dir = os.path.join(sys_path.packages_path(), package_name)
             if not os.path.isdir(package_dir):
                 continue
 

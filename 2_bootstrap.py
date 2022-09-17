@@ -16,7 +16,7 @@ from .package_control.show_error import show_message
 
 LOADER_PACKAGE_NAME = '0_package_control_loader'
 LOADER_PACKAGE_PATH = os.path.join(
-    sys_path.installed_packages_path,
+    sys_path.installed_packages_path(),
     '%s.sublime-package' % LOADER_PACKAGE_NAME
 )
 
@@ -65,7 +65,7 @@ def _migrate_loaders():
 
                 name = path[3:-3]
                 try:
-                    dep_path = os.path.join(sys_path.packages_path, name)
+                    dep_path = os.path.join(sys_path.packages_path(), name)
                     json_path = os.path.join(dep_path, 'dependency-metadata.json')
 
                     try:

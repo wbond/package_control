@@ -55,7 +55,7 @@ class AutomaticUpgrader(threading.Thread):
         Loads the last run time from disk into memory
         """
 
-        legacy_last_run_file = os.path.join(sys_path.packages_path, 'User', 'Package Control.last-run')
+        legacy_last_run_file = os.path.join(sys_path.user_config_dir(), 'Package Control.last-run')
         if os.path.exists(legacy_last_run_file):
             try:
                 with open(legacy_last_run_file) as fobj:

@@ -3,6 +3,8 @@ import time
 
 import sublime
 
+from . import package_io
+from . import sys_path
 from .console_write import console_write
 from .package_disabler import PackageDisabler
 from .settings import load_list_setting, pc_settings_filename, save_list_setting
@@ -53,18 +55,15 @@ class PackageRenamer(PackageDisabler):
                 continue
 
             # For handling .sublime-package files
-            package_file = os.path.join(sublime.installed_packages_path(), package_name + '.sublime-package')
+            package_file = package_io.get_installed_package_path(package_name)
             # For handling unpacked packages
-            package_dir = os.path.join(sublime.packages_path(), package_name)
+            package_dir = package_io.get_package_dir(package_name)
 
             if os.path.exists(package_file):
-                new_package_path = os.path.join(
-                    sublime.installed_packages_path(),
-                    new_package_name + '.sublime-package'
-                )
+                new_package_path = package_io.get_installed_package_path(new_package_name)
                 package_path = package_file
             elif os.path.exists(os.path.join(package_dir, 'package-metadata.json')):
-                new_package_path = os.path.join(sublime.packages_path(), new_package_name)
+                new_package_path = package_io.get_package_dir(new_package_name)
                 package_path = package_dir
             else:
                 continue
@@ -81,9 +80,7 @@ class PackageRenamer(PackageDisabler):
                     # a different case, so we work around that with a temporary name
                     if os.name == 'nt' and changing_case:
                         temp_package_name = '__' + new_package_name
-                        temp_package_path = os.path.join(
-                            os.path.dirname(sublime.packages_path()), temp_package_name
-                        )
+                        temp_package_path = os.path.join(sys_path.data_path(), temp_package_name)
                         os.rename(package_path, temp_package_path)
                         package_path = temp_package_path
 

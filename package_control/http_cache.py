@@ -1,7 +1,7 @@
 import os
 import time
 
-from .sys_path import pc_cache_dir
+from . import sys_path
 
 
 class HttpCache(object):
@@ -11,7 +11,7 @@ class HttpCache(object):
     """
 
     def __init__(self, ttl):
-        self.base_path = os.path.join(pc_cache_dir(), 'http_cache')
+        self.base_path = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         os.makedirs(self.base_path, exist_ok=True)
         self.clear(int(ttl))
 

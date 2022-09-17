@@ -1,81 +1,77 @@
-import sys
 import os
-from os.path import dirname
+import sys
 from zipimport import zipimporter
 
 import sublime
 
+# Dermine default packages path
+try:
+    import Default.sort as default_module
 
-data_dir = None
-cache_path = sublime.cache_path()
-libs_module_cache_path = os.path.join(cache_path, '__pycache__', 'install', 'Data', 'Libs')
-package_module_cache_path = os.path.join(cache_path, '__pycache__', 'install', 'Data', 'Packages')
-default_packages_path = os.path.join(os.path.dirname(sublime.executable_path()), 'Packages')
-packages_path = None
-installed_packages_path = None
-pc_package_path = None
+    __default_packages_path = os.path.dirname(os.path.dirname(sublime.__file__))
 
+    # When loaded as unpacked package, __file__ ends up being
+    # {data_dir}/Packages/Package Control/package_control/sys_path.py
+    if not isinstance(__loader__, zipimporter):
+        __packages_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        # For a non-development build, the Installed Packages are next to the Packages dir
+        __installed_packages_path = os.path.join(os.path.dirname(__packages_path), 'Installed Packages')
+        if not os.path.exists(__installed_packages_path):
+            __installed_packages_path = None
 
-def decode(path):
-    return path
-
-
-def encode(path):
-    return path
-
-
-# Unpacked install of Sublime Text
-if not isinstance(__loader__, zipimporter):
-    pc_package_path = dirname(dirname(__file__))
-    packages_path = dirname(pc_package_path)
-    # For a non-development build, the Installed Packages are next
-    # to the Packages dir
-    _possible_installed_packages_path = os.path.join(dirname(packages_path), 'Installed Packages')
-    if os.path.exists(_possible_installed_packages_path):
-        installed_packages_path = _possible_installed_packages_path
-
-# When loaded as a .sublime-package file, the filename ends up being
-# Package Control.sublime-package/Package Control.package_control.sys_path
-else:
-    pc_package_path = dirname(dirname(__file__))
-    installed_packages_path = dirname(pc_package_path)
-    # For a non-development build, the Packages are next
-    # to the Installed Packages dir
-    _possible_packages_path = os.path.join(dirname(installed_packages_path), 'Packages')
-    if os.path.exists(_possible_packages_path):
-        packages_path = _possible_packages_path
-
-if packages_path is None:
-    import Default.sort
-
-    if not isinstance(Default.sort.__loader__, zipimporter):
-        packages_path = dirname(dirname(Default.sort.__file__))
-
-if installed_packages_path is None:
-    _data_base = None
-    if sys.platform == 'darwin':
-        _data_base = os.path.expanduser('~/Library/Application Support')
-    elif sys.platform == 'win32':
-        _data_base = os.environ.get('APPDATA')
+    # When loaded as a .sublime-package file, __file__ ends up being
+    # {data_dir}/Installed Packages/Package Control.sublime-package/package_control/sys_path.py
     else:
-        _data_base = os.environ.get('XDG_CONFIG_HOME')
-        if _data_base is None:
-            _data_base = os.path.expanduser('~/.config')
+        __installed_packages_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        # For a non-development build, the Packages are next to the Installed Packages dir
+        __packages_path = os.path.join(os.path.dirname(__installed_packages_path), 'Packages')
+        if not os.path.exists(__packages_path):
+            __packages_path = None
 
-    if _data_base is not None:
-        for _leaf in ['Sublime Text Development', 'Sublime Text 3 Development']:
-            if sys.platform not in set(['win32', 'darwin']):
-                _leaf = _leaf.lower().replace(' ', '-')
-            _possible_data_dir = os.path.join(_data_base, _leaf)
-            if os.path.exists(_possible_data_dir):
-                data_dir = _possible_data_dir
-                _possible_installed_packages_path = os.path.join(data_dir, 'Installed Packages')
-                if os.path.exists(_possible_installed_packages_path):
-                    installed_packages_path = _possible_installed_packages_path
-                break
+    if __packages_path is None:
+        # default package must not be zipped in dev environment
+        if isinstance(default_module.__loader__, zipimporter):
+            raise FileNotFoundError('Packages')
+        __packages_path = __default_packages_path
 
-if installed_packages_path and data_dir is None:
-    data_dir = dirname(installed_packages_path)
+    if __installed_packages_path is None:
+        if sys.platform == 'darwin':
+            __data_base = os.path.expanduser('~/Library/Application Support')
+        elif sys.platform == 'win32':
+            __data_base = os.environ.get('APPDATA')
+        else:
+            __data_base = os.environ.get('XDG_CONFIG_HOME')
+            if __data_base is None:
+                __data_base = os.path.expanduser('~/.config')
+
+        if __data_base:
+            for __leaf in ('Sublime Text Development', 'Sublime Text 3 Development'):
+                if sys.platform not in set(('win32', 'darwin')):
+                    __leaf = __leaf.lower().replace(' ', '-')
+                __data_path = os.path.join(__data_base, __leaf)
+                __installed_packages_path = os.path.join(__data_path, 'Installed Packages')
+                if not os.path.exists(__installed_packages_path):
+                    __installed_packages_path = None
+
+        if __installed_packages_path is None:
+            raise FileNotFoundError('Installed Packages')
+
+except ImportError:
+    # All this song and dance, just to satisfy CI test runner!
+    # Import error of Default.sort indicates CI test environment
+    # Unfortunatelly we can't use this simple lines in production
+    # as API can be called at import time only with ST4088+.
+    __default_packages_path = os.path.join(os.path.dirname(sublime.executable_path()))
+    __installed_packages_path = sublime.installed_packages_path()
+    __packages_path = sublime.packages_path()
+
+__data_path = os.path.dirname(__installed_packages_path)
+__cache_path = os.path.join(__data_path, 'Cache')
+__package_control_cache_path = os.path.join(__cache_path, 'Package Control')
+__python_libs_cache_path = os.path.join(__cache_path, '__pycache__', 'install', 'Data', 'Libs', 'Libs')
+__python_packages_cache_path = os.path.join(__cache_path, '__pycache__', 'install', 'Data', 'Libs', 'Packages')
+
+__user_config_path = os.path.join(__packages_path, 'User')
 
 
 def add_dependency(name, first=False):
@@ -90,6 +86,28 @@ def add_dependency(name, first=False):
     pass
 
 
+def cache_path():
+    """
+    Returns the ST cache directory
+
+    :return:
+        A string of ST's cache directory
+    """
+
+    return str(__cache_path)
+
+
+def data_path():
+    """
+    Returns the ST data directory
+
+    :return:
+        A string of ST's data directory
+    """
+
+    return str(__data_path)
+
+
 def lib_paths():
     """
     Returns a dict of version-specific lib folders
@@ -101,12 +119,67 @@ def lib_paths():
         return lib_paths.cache
     except AttributeError:
         lib_paths.cache = {
-            "3.3": os.path.join(data_dir, "Lib", "python33"),
-            "3.8": os.path.join(data_dir, "Lib", "python38")
+            "3.3": os.path.join(__data_path, "Lib", "python33"),
+            "3.8": os.path.join(__data_path, "Lib", "python38")
         } if int(sublime.version()) >= 4000 else {
-            "3.3": os.path.join(data_dir, "Lib", "python3.3")
+            "3.3": os.path.join(__data_path, "Lib", "python3.3")
         }
         return lib_paths.cache
+
+
+def default_packages_path():
+    """
+    Returns the ST default/bundled packages directory
+
+    :return:
+        A string of ST's default packages directory
+    """
+
+    return str(__default_packages_path)
+
+
+def installed_packages_path():
+    """
+    Returns the ST installed packages directory
+
+    :return:
+        A string of ST's installed packages directory
+    """
+
+    return str(__installed_packages_path)
+
+
+def packages_path():
+    """
+    Returns the ST packages directory
+
+    :return:
+        A string of ST's packages directory
+    """
+
+    return str(__packages_path)
+
+
+def python_libs_cache_path():
+    """
+    Returns the libraries' module cache directory
+
+    :return:
+        A string of ST's python cache directory of installed libraries
+    """
+
+    return str(__python_libs_cache_path)
+
+
+def python_packages_cache_path():
+    """
+    Returns the packages' module cache directory
+
+    :return:
+        A string of ST's python cache directory of installed packages
+    """
+
+    return str(__python_packages_cache_path)
 
 
 def pc_cache_dir():
@@ -114,14 +187,10 @@ def pc_cache_dir():
     Returns the cache directory for Package Control files
 
     :return:
-        A unicode string of the Package Control cache dir
+        A string of the Package Control cache directory
     """
 
-    try:
-        return pc_cache_dir.cache
-    except AttributeError:
-        pc_cache_dir.cache = os.path.join(cache_path, 'Package Control')
-        return pc_cache_dir.cache
+    return str(__package_control_cache_path)
 
 
 def user_config_dir():
@@ -129,11 +198,7 @@ def user_config_dir():
     Returns the directory for the user's config
 
     :return:
-        A unicode string of the user's config dir
+        A string of the User configuration directory
     """
 
-    try:
-        return user_config_dir.cache
-    except AttributeError:
-        user_config_dir.cache = os.path.join(packages_path, 'User')
-        return user_config_dir.cache
+    return str(__user_config_path)

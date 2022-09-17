@@ -7,8 +7,8 @@ from .package_control import text, sys_path
 
 installed_dir, _ = __name__.split('.')
 
-package_path = os.path.join(sys_path.installed_packages_path, 'Package Control.sublime-package')
-pc_python_path = os.path.join(sys_path.packages_path, 'Package Control', 'Package Control.py')
+package_path = os.path.join(sys_path.installed_packages_path(), 'Package Control.sublime-package')
+pc_python_path = os.path.join(sys_path.packages_path(), 'Package Control', 'Package Control.py')
 has_packed = os.path.exists(package_path)
 has_unpacked = os.path.exists(pc_python_path)
 
@@ -33,7 +33,7 @@ if installed_dir != 'Package Control':
     )
 
     # If installed unpacked
-    if os.path.exists(os.path.join(sys_path.packages_path, installed_dir)):
+    if os.path.exists(os.path.join(sys_path.packages_path(), installed_dir)):
         message += text.format(
             '''
             3. Rename the folder "%s" to "Package Control"
@@ -87,7 +87,7 @@ else:
         # Sublime Text is not written to work that way, and although packages
         # could be installed, they could not be loaded properly.
         try:
-            os.path.exists(os.path.join(sublime.packages_path(), "fran\u2013ais"))
+            os.path.exists(os.path.join(sys_path.packages_path(), "fran\u2013ais"))
         except (UnicodeEncodeError):
             message = text.format(
                 '''
@@ -113,7 +113,7 @@ else:
             os.mkdir(sys_path.pc_cache_dir())
 
         # Clean up the old HTTP cache dir
-        legacy_http_cache = os.path.join(sublime.packages_path(), 'User', 'Package Control.cache')
+        legacy_http_cache = os.path.join(sys_path.user_config_dir(), 'Package Control.cache')
         http_cache = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         if os.path.exists(legacy_http_cache):
             if not os.path.exists(http_cache):
@@ -138,7 +138,7 @@ else:
             'oscrypto-ca-bundle.crt'
         ]
         for legacy_ca_filename in legacy_ca_filenames:
-            legacy_ca_path = os.path.join(sublime.packages_path(), 'User', legacy_ca_filename)
+            legacy_ca_path = os.path.join(sys_path.user_config_dir(), legacy_ca_filename)
             if os.path.exists(legacy_ca_path):
                 os.unlink(legacy_ca_path)
 

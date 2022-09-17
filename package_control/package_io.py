@@ -150,7 +150,7 @@ def get_package_cache_dir(package):
         The full filesystem path to the package's cache directory
     """
 
-    return os.path.join(sys_path.cache_path, package)
+    return os.path.join(sys_path.cache_path(), package)
 
 
 def get_package_module_cache_dir(package):
@@ -166,7 +166,7 @@ def get_package_module_cache_dir(package):
         The full filesystem path to the package's python module cache directory
     """
 
-    return os.path.join(sys_path.package_module_cache_path, package)
+    return os.path.join(sys_path.python_packages_cache_path(), package)
 
 
 def get_package_dir(package):
@@ -180,7 +180,7 @@ def get_package_dir(package):
         The full filesystem path to the package directory
     """
 
-    return os.path.join(sys_path.packages_path, package)
+    return os.path.join(sys_path.packages_path(), package)
 
 
 def get_installed_package_path(package):
@@ -194,7 +194,7 @@ def get_installed_package_path(package):
         The full filesystem path to the sublime-package file
     """
 
-    return os.path.join(sys_path.installed_packages_path, package + '.sublime-package')
+    return os.path.join(sys_path.installed_packages_path(), package + '.sublime-package')
 
 
 def _read_regular_file(package, relative_path, binary=False):

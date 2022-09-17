@@ -728,10 +728,10 @@ class PackageManager:
             A list of all installed, non-default, non-library, package names
         """
 
-        packages = set(list_sublime_package_dirs(sys_path.packages_path))
+        packages = set(list_sublime_package_dirs(sys_path.packages_path()))
         if unpacked_only is False:
-            packages |= set(list_sublime_package_files(sys_path.installed_packages_path))
-        packages -= set(list_sublime_package_files(sys_path.default_packages_path))
+            packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
+        packages -= set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
@@ -743,7 +743,7 @@ class PackageManager:
             A list of default package names
         """
 
-        packages = set(list_sublime_package_files(sys_path.default_packages_path))
+        packages = set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
@@ -755,9 +755,9 @@ class PackageManager:
             A list of all package names, including default packages
         """
 
-        packages = set(list_sublime_package_dirs(sys_path.packages_path))
-        packages |= set(list_sublime_package_files(sys_path.installed_packages_path))
-        packages |= set(list_sublime_package_files(sys_path.default_packages_path))
+        packages = set(list_sublime_package_dirs(sys_path.packages_path()))
+        packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
+        packages |= set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
@@ -831,7 +831,7 @@ class PackageManager:
                 The folder for the package name specified, %s,
                 does not exists in %s
                 ''',
-                (package_name, sys_path.packages_path)
+                (package_name, sys_path.packages_path())
             )
             return False
 
@@ -1215,7 +1215,7 @@ class PackageManager:
 
             library.install(temp_did, lib_path)
 
-            os.chdir(sys_path.packages_path)
+            os.chdir(sys_path.packages_path())
             return True
 
         finally:
@@ -1543,7 +1543,7 @@ class PackageManager:
                     )
                     return None
 
-            os.chdir(sys_path.packages_path)
+            os.chdir(sys_path.packages_path())
             return True
 
         finally:
@@ -1728,7 +1728,7 @@ class PackageManager:
             return True
 
         backup_dir = os.path.join(
-            sys_path.data_dir, 'Backup', datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+            sys_path.data_path(), 'Backup', datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         )
         package_backup_dir = os.path.join(backup_dir, package_name)
 
@@ -1982,7 +1982,7 @@ class PackageManager:
             )
             return False
 
-        os.chdir(sys_path.packages_path)
+        os.chdir(sys_path.packages_path())
 
         version = self.get_metadata(package_name).get('version')
 
