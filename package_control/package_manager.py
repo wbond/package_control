@@ -2044,8 +2044,8 @@ class PackageManager:
 
         if not self.settings.get('submit_usage'):
             return
-        params['package_control_version'] = \
-            self.get_metadata('Package Control').get('version')
+
+        params['package_control_version'] = self.get_metadata('Package Control').get('version')
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
 
