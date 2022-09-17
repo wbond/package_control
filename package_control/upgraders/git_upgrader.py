@@ -118,6 +118,9 @@ class GitUpgrader(VcsUpgrader):
         args = [binary, 'log']
         args.append('..%s/%s' % (info['remote'], info['remote_branch']))
         output = self.execute(args, self.working_copy, meaningful_output=True)
+        if output is False:
+            return False
+
         incoming = len(output) > 0
 
         set_cache(cache_key, incoming, self.cache_length)
