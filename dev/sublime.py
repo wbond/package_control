@@ -1,42 +1,56 @@
 import atexit
 import os
 import shutil
+import sys
 import tempfile
 
 
 _TEMP_DIR = None
 
 
-def _verify_temp_dir():
+def _temp_dir():
     global _TEMP_DIR
 
     if _TEMP_DIR is None:
         _TEMP_DIR = tempfile.mkdtemp('')
-        os.mkdir(os.path.join(_TEMP_DIR, 'Cache'))
+        os.mkdir(os.path.join(_TEMP_DIR, 'Data'))
+        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Cache'))
+        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Installed Packages'))
+        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Packages'))
+        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Packages', 'User'))
         os.mkdir(os.path.join(_TEMP_DIR, 'Packages'))
-        os.mkdir(os.path.join(_TEMP_DIR, 'Packages', 'User'))
+
+    return _TEMP_DIR
 
 
 def cache_path():
-    _verify_temp_dir()
-    return os.path.join(_TEMP_DIR, 'Cache')
+    return os.path.join(_temp_dir(), 'Data', 'Cache')
+
+
+def installed_packages_path():
+    return os.path.join(_temp_dir(), 'Data', 'Installed Packages')
 
 
 def packages_path():
-    _verify_temp_dir()
-    return os.path.join(_TEMP_DIR, 'Packages')
+    return os.path.join(_temp_dir(), 'Data', 'Packages')
 
 
 def executable_path():
-    return "/opt/sublime_text/sublime_text"
+    if sys.platform == 'win32':
+        return os.path.join(_temp_dir(), 'sublime_text.exe')
+    return os.path.join(_temp_dir(), 'sublime_text')
 
 
 def arch():
-    return "x64"
+    return 'x64'
 
 
 def platform():
-    return "linux"
+    if sys.platform == 'darwin':
+        return 'osx'
+    if sys.platform == 'win32':
+        return 'windows'
+    return 'linux'
 
 
 def version():
