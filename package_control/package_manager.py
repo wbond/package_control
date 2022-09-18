@@ -1026,7 +1026,7 @@ class PackageManager:
 
             # If there was only a single directory in the package, we remove
             # that folder name from the paths as we extract entries
-            dest = os.path.normpath(os.path.join(dest_dir, dest[len(common_folder):]))
+            dest = sys_path.normpath(os.path.join(dest_dir, dest[len(common_folder):]))
 
             def add_extracted_dirs(dir_):
                 while dir_ not in extracted_dirs:
@@ -1091,7 +1091,7 @@ class PackageManager:
 
         url = release['url']
 
-        tmp_dir = tempfile.mkdtemp('')
+        tmp_dir = sys_path.normpath(tempfile.mkdtemp(''))
         tmp_library_dir = os.path.join(tmp_dir, library_name)
 
         # This is refers to the zipfile later on, so we define it here so we can
@@ -1277,7 +1277,7 @@ class PackageManager:
         package_path = get_installed_package_path(package_name)
         package_filename = os.path.basename(package_path)
 
-        tmp_dir = tempfile.mkdtemp('')
+        tmp_dir = sys_path.normpath(tempfile.mkdtemp(''))
         tmp_package_path = os.path.join(tmp_dir, package_filename)
 
         # This is refers to the zipfile later on, so we define it here so we can

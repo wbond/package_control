@@ -4,6 +4,8 @@ from zipimport import zipimporter
 
 import sublime
 
+PREFIX = '\\\\?\\' if sys.platform == 'win32' else ''
+
 # Dermine default packages path
 try:
     import Default.sort as default_module
@@ -59,11 +61,16 @@ try:
 except ImportError:
     # All this song and dance, just to satisfy CI test runner!
     # Import error of Default.sort indicates CI test environment
-    # Unfortunatelly we can't use this simple lines in production
+    # Unfortunately we can't use this simple lines in production
     # as API can be called at import time only with ST4088+.
     __default_packages_path = os.path.join(os.path.dirname(sublime.executable_path()))
     __installed_packages_path = sublime.installed_packages_path()
     __packages_path = sublime.packages_path()
+
+if PREFIX:
+    __default_packages_path = PREFIX + __default_packages_path
+    __installed_packages_path = PREFIX + __installed_packages_path
+    __packages_path = PREFIX + __packages_path
 
 __data_path = os.path.dirname(__installed_packages_path)
 __cache_path = os.path.join(__data_path, 'Cache')
@@ -202,3 +209,31 @@ def user_config_dir():
     """
 
     return str(__user_config_path)
+
+
+def normpath(path):
+    """
+    Normalize path, eliminating double slashes, etc.
+
+    This is a patched version of ntpath.normpath(), which
+
+    1. replaces `/` by `\\` on Windows, even if the absolute path specified is
+       already prefixed by \\\\?\\ or \\\\.\\ to make sure to avoid WinError 123
+       when calling functions like ntpath.realpath().
+    2. always prepends \\\\?\\ on Windows to enable long paths support.
+
+    This is to workaround some shortcomings of python stdlib.
+
+    :param path:
+        The path to normalize
+
+    :returns:
+        A normalized path string
+    """
+
+    if PREFIX:
+        special_prefixes = (PREFIX, '\\\\.\\')
+        if path.startswith(special_prefixes):
+            return os.path.normpath(path.replace('/', '\\'))
+        return PREFIX + os.path.normpath(path)
+    return os.path.normpath(path)
