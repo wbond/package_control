@@ -1795,7 +1795,7 @@ class PackageManager:
             return
 
         def read_message(message_path):
-            with open(message_path, 'r', encoding='utf-8', errors='replace') as fobj:
+            with open(sys_path.normpath(message_path), 'r', encoding='utf-8', errors='replace') as fobj:
                 return '\n  %s\n' % fobj.read().rstrip().replace('\n', '\n  ')
 
         output = ''
