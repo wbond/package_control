@@ -79,10 +79,10 @@ def list_all():
     List all dependencies installed
 
     :return:
-        A list of Library() object
+        A set of Library() object
     """
 
-    out = []
+    out = set()
     for python_version, install_root in sys_path.lib_paths().items():
         for fname in os.listdir(install_root):
             if not fname.endswith(".dist-info"):
@@ -93,11 +93,11 @@ def list_all():
             record_path = os.path.join(path, 'RECORD')
             if not os.path.isfile(record_path):
                 continue
-            out.append(Library(
+            out.add(Library(
                 _name_from_dist_info_dirname(fname),
                 python_version
             ))
-    return sorted(out)
+    return out
 
 
 def list_unmanaged():
@@ -105,10 +105,10 @@ def list_unmanaged():
     List all dependencies installed that Package Control didn't install
 
     :return:
-        A list of Library() objects
+        A set of Library() objects
     """
 
-    out = []
+    out = set()
     for python_version, install_root in sys_path.lib_paths().items():
         for fname in os.listdir(install_root):
             if not fname.endswith(".dist-info"):
@@ -125,7 +125,7 @@ def list_unmanaged():
                 if f.read().strip().startswith('Package Control'):
                     continue
 
-            out.append(Library(
+            out.add(Library(
                 _name_from_dist_info_dirname(fname),
                 python_version
             ))

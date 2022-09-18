@@ -294,7 +294,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         return incompatible_packages
 
     def install_missing_libraries(self):
-        missing_libraries = set(self.manager.find_required_libraries()) - set(self.manager.list_libraries())
+        missing_libraries = self.manager.find_missing_libraries()
         if not missing_libraries:
             return
 

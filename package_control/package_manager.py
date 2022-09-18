@@ -769,7 +769,7 @@ class PackageManager:
             The package to ignore when enumerating libraries
 
         :return:
-            A list of library.Library() objects for the libraries required by
+            A set of library.Library() objects for the libraries required by
             the installed packages
         """
 
@@ -778,24 +778,40 @@ class PackageManager:
             if package == ignore_package:
                 continue
             output |= self.get_libraries(package)
-        return sorted(output)
+        return output
 
-    def find_orphaned_libraries(self, ignore_package=None, required_libraries=None):
+    def find_missing_libraries(self, ignore_package=None, required_libraries=None):
         """
-        Finds orphaned libraries.
+        Find missing libraries.
 
         :param ignore_package:
             The package to ignore when enumerating libraries
 
         :return:
-            A list of library.Library() objects for no longer needed libraries
+            A set of library.Library() objects for missing libraries
+        """
+
+        installed_libraries = self.list_libraries()
+        if required_libraries is None:
+            required_libraries = self.find_required_libraries(ignore_package)
+        return required_libraries - installed_libraries
+
+    def find_orphaned_libraries(self, ignore_package=None, required_libraries=None):
+        """
+        Find orphaned libraries.
+
+        :param ignore_package:
+            The package to ignore when enumerating libraries
+
+        :return:
+            A set of library.Library() objects for no longer needed libraries
         """
 
         installed_libraries = self.list_libraries()
         if required_libraries is None:
             required_libraries = self.find_required_libraries(ignore_package)
         unmanaged_libraries = library.list_unmanaged()
-        return sorted(set(installed_libraries) - set(required_libraries) - set(unmanaged_libraries))
+        return installed_libraries - required_libraries - unmanaged_libraries
 
     def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""
