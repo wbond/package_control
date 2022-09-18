@@ -10,7 +10,7 @@ PREFIX = '\\\\?\\' if sys.platform == 'win32' else ''
 try:
     import Default.sort as default_module
 
-    __default_packages_path = os.path.dirname(os.path.dirname(sublime.__file__))
+    __default_packages_path = os.path.dirname(os.path.dirname(default_module.__file__))
 
     # When loaded as unpacked package, __file__ ends up being
     # {data_dir}/Packages/Package Control/package_control/sys_path.py
