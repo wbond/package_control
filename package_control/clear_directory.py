@@ -2,6 +2,8 @@ import os
 import stat
 import sys
 
+from . import sys_path
+
 IS_WIN = sys.platform == 'win32'
 if IS_WIN:
     import ctypes
@@ -21,7 +23,7 @@ def clear_directory(directory, ignored_files=None):
     Tries to delete all files and folders from a directory
 
     :param directory:
-        The string directory path
+        The normalized absolute path to the folder to be cleared
 
     :param ignored_files:
         An set of paths to ignore while deleting files
@@ -29,6 +31,10 @@ def clear_directory(directory, ignored_files=None):
     :return:
         If all of the files and folders were successfully deleted
     """
+
+    # make sure not to lock directory by current working directory
+    if sys_path.normpath(os.path.normcase(os.getcwd())).startswith(os.path.normcase(directory)):
+        os.chdir(os.path.dirname(directory))
 
     was_exception = False
     for root, dirs, files in os.walk(directory, topdown=False):
@@ -83,7 +89,7 @@ def delete_directory(directory):
         2. It is not expected to find symlinked sub-directories.
 
     :param directory:
-        The directory to the folder to be deleted or unlinked
+        The normalized absolute path to the folder to be deleted or unlinked
     """
 
     if os.path.isdir(directory):

@@ -989,8 +989,6 @@ class PackageManager:
             A bool indication if the install should be retried
         """
 
-        os.chdir(dest_dir)
-
         # Here we don't use .extractall() since it was having issues on OS X
         should_retry = False
         for info in zf.infolist():
@@ -1208,7 +1206,6 @@ class PackageManager:
 
             library.install(temp_did, lib_path)
 
-            os.chdir(sys_path.packages_path())
             return True
 
         finally:
@@ -1407,8 +1404,6 @@ class PackageManager:
             if not os.path.exists(package_dir):
                 os.mkdir(package_dir)
 
-            os.chdir(package_dir)
-
             extracted_files = set()
             extracted_dirs = set()
             should_retry = self._extract_zip(
@@ -1555,7 +1550,6 @@ class PackageManager:
             else:
                 console_write('Installed %s %s', (package_name, version))
 
-            os.chdir(sys_path.packages_path())
             return True
 
         finally:
@@ -1993,8 +1987,6 @@ class PackageManager:
                 package_name
             )
             return False
-
-        os.chdir(sys_path.packages_path())
 
         version = self.get_metadata(package_name).get('version')
 
