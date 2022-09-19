@@ -114,6 +114,9 @@ class PackageDisabler:
             # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
             # If False, reset to defaults only.
             backup = operation in ('install', 'upgrade')
+            if backup:
+                # cancel pending settings restore request
+                PackageDisabler.restore_id = 0
 
             # Modern *.sublime-color-schme files may exist in several packages.
             # If one of them gets inaccessible, the merged color scheme breaks.
