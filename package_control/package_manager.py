@@ -1492,9 +1492,24 @@ class PackageManager:
                 names.add(package_name)
                 save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
 
+            # If we extracted directly into the Packages/{package_name}/
+            # we probably need to remove an old Installed Packages/{package_name].sublime-package
+            if unpack:
+                try:
+                    os.remove(package_path)
+                except (FileNotFoundError):
+                    pass
+                except (OSError) as e:
+                    console_write(
+                        '''
+                        Unable to remove "%s" after upgrade to unpacked package: %s
+                        ''',
+                        (package_filename, e)
+                    )
+
             # If we didn't extract directly into the Packages/{package_name}/
             # folder, we need to create a .sublime-package file and install it
-            if not unpack:
+            else:
                 try:
                     with zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED) as fobj:
                         for root, _, files in os.walk(package_dir):
@@ -1513,8 +1528,10 @@ class PackageManager:
                     return False
 
                 try:
-                    if os.path.exists(package_path):
+                    try:
                         os.remove(package_path)
+                    except (FileNotFoundError):
+                        pass
                     shutil.move(tmp_package_path, package_path)
 
                 except (OSError):
