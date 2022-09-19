@@ -103,18 +103,20 @@ class PackageCreator:
         """
 
         destination = None
+
         if self.profile:
-            profiles = self.manager.settings.get('package_profiles', {})
-            if self.profile in profiles:
-                profile_settings = profiles[self.profile]
-                destination = profile_settings.get('package_destination')
+            profile_settings = self.manager.settings.get('package_profiles', {}).get(self.profile, {})
+            destination = profile_settings.get('package_destination')
 
         if not destination:
             destination = self.manager.settings.get('package_destination')
 
-        # We check destination via an if statement instead of using
-        # the dict.get() method since the key may be set, but to a blank value
-        if not destination:
-            destination = os.path.join(os.path.expanduser('~'), 'Desktop')
+            # We check destination via an if statement instead of using
+            # the dict.get() method since the key may be set, but to a blank value
+            if not destination:
+                destination = os.environ.get('XDG_DESKTOP_DIR', '')
 
-        return destination
+                if not destination:
+                    destination = os.path.join(os.path.expanduser('~'), 'Desktop')
+
+        return os.path.normpath(os.path.expandvars(destination))
