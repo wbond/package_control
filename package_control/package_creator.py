@@ -14,12 +14,22 @@ class PackageCreator:
     Abstract class for commands that create .sublime-package files
     """
 
+    def __init__(self, window):
+        """
+        Constructs a new instance.
+
+        :param window:
+            The ``sublime.Window`` object the task is invoked from.
+        """
+
+        self.window = window
+        self.manager = PackageManager()
+
     def show_panel(self):
         """
         Shows a list of packages that can be turned into a .sublime-package file
         """
 
-        self.manager = PackageManager()
         self.packages = self.manager.list_packages(unpacked_only=True)
         if not self.packages:
             show_error(
