@@ -4,7 +4,7 @@ import sublime
 
 from . import sys_path
 from .package_manager import PackageManager
-from .show_error import show_error
+from .show_error import show_message
 from .show_quick_panel import show_quick_panel
 
 
@@ -32,11 +32,7 @@ class PackageCreator:
 
         self.packages = self.manager.list_packages(unpacked_only=True)
         if not self.packages:
-            show_error(
-                '''
-                There are no packages available to be packaged
-                '''
-            )
+            show_message('There are no packages available to be packaged')
             return
         show_quick_panel(self.window, self.packages, self.on_done)
 
