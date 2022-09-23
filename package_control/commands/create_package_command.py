@@ -10,4 +10,4 @@ class CreatePackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        PackageCreator(self.window).show_panel()
+        PackageCreator(self.window).run()

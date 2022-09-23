@@ -25,7 +25,7 @@ class PackageCreator:
         self.window = window
         self.manager = PackageManager()
 
-    def show_panel(self):
+    def run(self):
         """
         Shows a list of packages that can be turned into a .sublime-package file
         """
@@ -34,9 +34,9 @@ class PackageCreator:
         if not self.packages:
             show_message('There are no packages available to be packaged')
             return
-        show_quick_panel(self.window, self.packages, self.on_done)
+        show_quick_panel(self.window, self.packages, self.on_done_packages)
 
-    def on_done(self, picked):
+    def on_done_packages(self, picked):
         """
         Quick panel user selection handler - processes the user package
         selection and prompts the user to pick a profile, or just creates the
