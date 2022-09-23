@@ -49,7 +49,7 @@ class PackageCreator:
 
         rules = self.manager.settings.get('package_profiles')
         if not rules:
-            self.do_create_package()
+            self.select_destination()
             return
 
         self.profiles = ['Default']
@@ -77,14 +77,28 @@ class PackageCreator:
         if picked > 0:
             self.profile = self.profiles[picked]
 
-        self.do_create_package()
+        self.select_destination()
 
-    def do_create_package(self):
+    def select_destination(self):
+        """
+        Display Select Folder Dialog to retrieve the destination for .sublime-package files
+        """
+
+        destination = self.get_package_destination()
+
+        if hasattr(sublime, 'select_folder_dialog'):
+            sublime.select_folder_dialog(self.do_create_package, directory=destination)
+        else:
+            self.do_create_package(destination)
+
+    def do_create_package(self, destination):
         """
         Calls into the PackageManager to actually create the package file
         """
 
-        destination = self.get_package_destination()
+        if destination is None:
+            return
+
         if self.manager.create_package(self.package_name, destination, profile=self.profile):
             self.window.run_command(
                 'open_dir',
