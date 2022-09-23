@@ -1,6 +1,7 @@
 import os
 
 from .. import package_io
+from .. import sys_path
 from .existing_packages_command import ExistingPackagesCommand
 
 
@@ -59,7 +60,7 @@ class ListPackagesCommand(ExistingPackagesCommand):
             else:
                 package_dir = os.path.dirname(package_path)
 
-        open_dir_file = {'dir': package_dir}
+        open_dir_file = {'dir': sys_path.shortpath(package_dir)}
         if package_file is not None:
             open_dir_file['file'] = package_file
 

@@ -2,9 +2,10 @@ import os
 
 import sublime
 
+from . import sys_path
+from .package_manager import PackageManager
 from .show_error import show_error
 from .show_quick_panel import show_quick_panel
-from .package_manager import PackageManager
 
 
 class PackageCreator:
@@ -88,7 +89,7 @@ class PackageCreator:
             self.window.run_command(
                 'open_dir',
                 {
-                    "dir": destination,
+                    "dir": sys_path.shortpath(destination),
                     "file": self.package_name + '.sublime-package'
                 }
             )

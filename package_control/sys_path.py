@@ -225,7 +225,7 @@ def normpath(path):
     This is to workaround some shortcomings of python stdlib.
 
     :param path:
-        The path to normalize
+        The absolute path to normalize
 
     :returns:
         A normalized path string
@@ -237,3 +237,16 @@ def normpath(path):
             return os.path.normpath(path.replace('/', '\\'))
         return PREFIX + os.path.normpath(path)
     return os.path.normpath(path)
+
+
+def shortpath(path):
+    """
+    Return unprefixed absolute path
+
+    :param path:
+        The absolute path to remove prefix from
+
+    :returns:
+        An unprefixed path string
+    """
+    return path[len(PREFIX):] if path.startswith(PREFIX) else path
