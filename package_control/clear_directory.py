@@ -33,7 +33,7 @@ def clear_directory(directory, ignored_files=None):
     """
 
     # make sure not to lock directory by current working directory
-    if sys_path.normpath(os.path.normcase(os.getcwd())).startswith(os.path.normcase(directory)):
+    if sys_path.longpath(os.path.normcase(os.getcwd())).startswith(os.path.normcase(directory)):
         os.chdir(os.path.dirname(directory))
 
     was_exception = False

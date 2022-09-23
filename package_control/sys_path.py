@@ -211,7 +211,7 @@ def user_config_dir():
     return str(__user_config_path)
 
 
-def normpath(path):
+def longpath(path):
     """
     Normalize path, eliminating double slashes, etc.
 

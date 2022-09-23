@@ -506,7 +506,7 @@ class DistInfoDir:
                     raise ValueError('Unabled to parse sha256 hash: %s' % line)
                 ri = RecordInfo(
                     elements[0],
-                    sys_path.normpath(os.path.join(self.install_root, elements[0])),
+                    sys_path.longpath(os.path.join(self.install_root, elements[0])),
                     int(elements[2]) if not is_record_path else None,
                     elements[1][7:] if not is_record_path else None
                 )
