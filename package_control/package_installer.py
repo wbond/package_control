@@ -56,6 +56,10 @@ class PackageInstaller(PackageDisabler):
 
         url_pattern = re.compile(r'^https?://')
 
+        ignore_vcs_packages = 'pull' in ignore_actions
+        if not ignore_vcs_packages:
+            ignore_vcs_packages = self.manager.settings.get('ignore_vcs_packages')
+
         package_list = []
         for package in sorted(iter(packages.keys()), key=lambda s: s.lower()):
             if ignore_packages and package in ignore_packages:
@@ -78,7 +82,6 @@ class PackageInstaller(PackageDisabler):
             new_version = 'v' + release['version']
 
             vcs = None
-            settings = self.manager.settings
 
             if override_action:
                 action = override_action
@@ -86,10 +89,9 @@ class PackageInstaller(PackageDisabler):
 
             else:
                 if self.manager.is_vcs_package(package):
-                    to_ignore = settings.get('ignore_vcs_packages')
-                    if to_ignore is True:
+                    if ignore_vcs_packages is True:
                         continue
-                    if isinstance(to_ignore, list) and package in to_ignore:
+                    if isinstance(ignore_vcs_packages, list) and package in ignore_vcs_packages:
                         continue
                     upgrader = self.manager.instantiate_upgrader(package)
                     vcs = upgrader.cli_name
