@@ -5,10 +5,18 @@ import sys
 from . import sys_path
 from .console_write import console_write
 
-from .deps.oscrypto import use_ctypes
-use_ctypes()
-from .deps.oscrypto import trust_list  # noqa
+try:
+    import certifi
+except ImportError:
+    certifi = None
 
+try:
+    from .deps.oscrypto import use_ctypes
+    use_ctypes()
+    from .deps.oscrypto import trust_list  # noqa
+except Exception as e:
+    trust_list = None
+    console_write('oscrypto trust lists unavailable - %s', e)
 
 ca_bundle_dir = None
 user_ca_bundle_dir = None
@@ -133,38 +141,47 @@ def get_system_ca_bundle_path(settings):
 
     hours_to_cache = 7 * 24
 
-    platform = sys.platform
     debug = settings.get('debug')
 
     ca_path = False
 
-    if platform == 'win32' or platform == 'darwin':
+    if sys.platform == 'win32' or sys.platform == 'darwin':
         ensure_ca_bundle_dir()
-        ca_path, _ = trust_list._ca_path(ca_bundle_dir)
 
-        exists = os.path.exists(ca_path)
-        is_empty = False
-        is_old = False
-        if exists:
-            stats = os.stat(ca_path)
-            is_empty = stats.st_size == 0
-            # The bundle is old if it is a week or more out of date
-            is_old = stats.st_mtime < time.time() - (hours_to_cache * 60 * 60)
+        if trust_list is not None:
+            ca_path, _ = trust_list._ca_path(ca_bundle_dir)
 
-        if not exists or is_empty or is_old:
-            cert_callback = None
-            if debug:
+            exists = os.path.exists(ca_path)
+            is_empty = False
+            is_old = False
+            if exists:
+                stats = os.stat(ca_path)
+                is_empty = stats.st_size == 0
+                # The bundle is old if it is a week or more out of date
+                is_old = stats.st_mtime < time.time() - (hours_to_cache * 60 * 60)
+
+            if not exists or is_empty or is_old:
+                cert_callback = None
+                if debug:
+                    console_write(
+                        '''
+                        Generating new CA bundle from system keychain
+                        '''
+                    )
+                    cert_callback = print_cert_subject
+                trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback=cert_callback)
+                if debug:
+                    console_write(
+                        '''
+                        Finished generating new CA bundle at %s (%d bytes)
+                        ''',
+                        (ca_path, os.stat(ca_path).st_size)
+                    )
+
+            elif debug:
                 console_write(
                     '''
-                    Generating new CA bundle from system keychain
-                    '''
-                )
-                cert_callback = print_cert_subject
-            trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback=cert_callback)
-            if debug:
-                console_write(
-                    '''
-                    Finished generating new CA bundle at %s (%d bytes)
+                    Found previously exported CA bundle at %s (%d bytes)
                     ''',
                     (ca_path, os.stat(ca_path).st_size)
                 )
@@ -172,9 +189,8 @@ def get_system_ca_bundle_path(settings):
         elif debug:
             console_write(
                 '''
-                Found previously exported CA bundle at %s (%d bytes)
+                Can't export system CA - oscrypto not available!
                 ''',
-                (ca_path, os.stat(ca_path).st_size)
             )
 
     # Linux
@@ -203,6 +219,25 @@ def get_system_ca_bundle_path(settings):
                 Found system CA bundle at %s (%d bytes)
                 ''',
                 (ca_path, os.stat(ca_path).st_size)
+            )
+
+    if not ca_path:
+        if certifi is not None:
+            ca_path = certifi.where()
+            if debug:
+                console_write(
+                    '''
+                    No system CA bundle found in one of the expected locations -
+                    using certifi %s instead.
+                    ''',
+                    certifi.__version__
+                )
+
+        else:
+            console_write(
+                '''
+                No system CA bundle found in one of the expected locations!
+                '''
             )
 
     return ca_path
