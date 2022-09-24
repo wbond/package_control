@@ -4,6 +4,7 @@ import sys
 
 from . import sys_path
 from .console_write import console_write
+from .downloaders.downloader_exception import DownloaderException
 
 try:
     import certifi
@@ -19,12 +20,32 @@ except Exception as e:
     console_write('oscrypto trust lists unavailable - %s', e)
 
 
+MIN_BUNDLE_SIZE = 100
+"""
+The least required file size a CA bundle must have to be valid.
+
+The size is calculated from public key boundaries
+and least amount of public key size.
+
+``MIN_BUNDLE_SIZE = begin (27) + end (25) + newlines (2) + key (?)``
+
+```
+-----BEGIN CERTIFICATE-----
+<public key content>
+-----END CERTIFICATE-----
+```
+"""
+
+
 def get_ca_bundle_path(settings):
     """
     Return the path to the merged system and user ca bundles
 
     :param settings:
         A dict to look in for the `debug` key
+
+    :raises:
+        OSError or IOError if CA bundle creation fails
 
     :return:
         The filesystem path to the merged ca bundle path
@@ -39,36 +60,66 @@ def get_ca_bundle_path(settings):
     system_ca_bundle_path = get_system_ca_bundle_path(settings, ca_bundle_dir)
     user_ca_bundle_path = get_user_ca_bundle_path(settings)
     merged_ca_bundle_path = os.path.join(ca_bundle_dir, 'merged-ca-bundle.crt')
+    merged_ca_bundle_size = 0
 
-    merged_missing = not os.path.exists(merged_ca_bundle_path)
-    merged_empty = (not merged_missing) and os.stat(merged_ca_bundle_path).st_size == 0
+    try:
+        # file exists and is not empty
+        system_ca_bundle_exists = system_ca_bundle_path \
+            and os.path.getsize(system_ca_bundle_path) > MIN_BUNDLE_SIZE
+    except FileNotFoundError:
+        system_ca_bundle_exists = False
 
-    regenerate = merged_missing or merged_empty
-    if system_ca_bundle_path and not merged_missing:
-        regenerate = regenerate or os.path.getmtime(system_ca_bundle_path) > os.path.getmtime(merged_ca_bundle_path)
-    if os.path.exists(user_ca_bundle_path) and not merged_missing:
-        regenerate = regenerate or os.path.getmtime(user_ca_bundle_path) > os.path.getmtime(merged_ca_bundle_path)
+    try:
+        # file exists and is not empty
+        user_ca_bundle_exists = user_ca_bundle_path \
+            and os.path.getsize(user_ca_bundle_path) > MIN_BUNDLE_SIZE
+    except FileNotFoundError:
+        user_ca_bundle_exists = False
+
+    regenerate = system_ca_bundle_exists or user_ca_bundle_exists
+    if regenerate:
+        try:
+            stats = os.stat(merged_ca_bundle_path)
+        except FileNotFoundError:
+            pass
+        else:
+            merged_ca_bundle_size = stats.st_size
+            # regenerate if merged file is empty
+            regenerate = merged_ca_bundle_size < MIN_BUNDLE_SIZE
+            # regenerate if system CA file is newer
+            if system_ca_bundle_exists and not regenerate:
+                regenerate = os.path.getmtime(system_ca_bundle_path) > stats.st_mtime
+            # regenerate if user CA file is newer
+            if user_ca_bundle_exists and not regenerate:
+                regenerate = os.path.getmtime(user_ca_bundle_path) > stats.st_mtime
 
     if regenerate:
         with open(merged_ca_bundle_path, 'w', encoding='utf-8') as merged:
-            if system_ca_bundle_path:
+            if system_ca_bundle_exists:
                 with open(system_ca_bundle_path, 'r', encoding='utf-8') as system:
                     system_certs = system.read().strip()
                     merged.write(system_certs)
                     if len(system_certs) > 0:
                         merged.write('\n')
-            if os.path.exists(user_ca_bundle_path):
+            if user_ca_bundle_exists:
                 with open(user_ca_bundle_path, 'r', encoding='utf-8') as user:
                     user_certs = user.read().strip()
                     merged.write(user_certs)
                     if len(user_certs) > 0:
                         merged.write('\n')
-        if settings.get('debug'):
+
+            merged_ca_bundle_size = merged.tell()
+
+        if merged_ca_bundle_size >= MIN_BUNDLE_SIZE and settings.get('debug'):
             console_write(
                 '''
-                Regenerated the merged CA bundle from the system and user CA bundles
-                '''
+                Regenerated the merged CA bundle from the system and user CA bundles (%d kB)
+                ''',
+                merged_ca_bundle_size / 1024
             )
+
+    if merged_ca_bundle_size < MIN_BUNDLE_SIZE:
+        raise DownloaderException("No CA bundle available for HTTPS!")
 
     return merged_ca_bundle_path
 
