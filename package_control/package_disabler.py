@@ -189,7 +189,7 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored = load_list_setting(settings, 'ignored_packages')
+            ignored_at_start = load_list_setting(settings, 'ignored_packages')
 
             pc_settings = sublime.load_settings(pc_settings_filename())
             in_process_at_start = load_list_setting(pc_settings, 'in_process_packages')
@@ -198,8 +198,8 @@ class PackageDisabler:
                 packages = [packages]
             packages = set(packages)
 
-            disabled = packages - (ignored - in_process_at_start)
-            ignored |= disabled
+            disabled = packages - (ignored_at_start - in_process_at_start)
+            ignored = ignored_at_start | disabled
 
             # Clear packages from in-progress when disabling them, otherwise
             # they automatically get re-enabled the next time Sublime Text starts
@@ -239,7 +239,8 @@ class PackageDisabler:
                 settings,
                 preferences_filename(),
                 'ignored_packages',
-                ignored
+                ignored,
+                ignored_at_start
             )
 
             return disabled
@@ -268,9 +269,11 @@ class PackageDisabler:
             pc_settings = sublime.load_settings(pc_settings_filename())
             in_process = load_list_setting(pc_settings, 'in_process_packages')
 
-            if not isinstance(packages, (list, set, tuple)):
-                packages = [packages]
-            packages = set(packages) & ignored
+            if not isinstance(packages, set):
+                if not isinstance(packages, (list, tuple)):
+                    packages = [packages]
+                packages = set(packages)
+            packages &= in_process
 
             if operation == 'install':
                 for package in packages:
@@ -289,11 +292,21 @@ class PackageDisabler:
                 for package in packages:
                     events.clear('remove', package)
 
-            ignored -= packages
-            save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
+            save_list_setting(
+                settings,
+                preferences_filename(),
+                'ignored_packages',
+                ignored - packages,
+                ignored
+            )
 
-            in_process -= packages
-            save_list_setting(pc_settings, pc_settings_filename(), 'in_process_packages', in_process)
+            save_list_setting(
+                pc_settings,
+                pc_settings_filename(),
+                'in_process_packages',
+                in_process - packages,
+                in_process
+            )
 
             # restore settings after installing missing packages or upgrades
             if operation in ('install', 'upgrade'):
