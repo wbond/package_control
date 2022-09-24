@@ -18,14 +18,111 @@ from .show_error import show_error
 
 
 class PackageDisabler:
-    old_color_scheme_packages = set()
-    old_color_scheme = None
+    color_scheme_packages = {}
+    """
+    A dictionary of packages, containing a color scheme.
 
-    old_theme_packages = set()
-    old_theme = None
+    Keys are color scheme names without file extension.
+    The values are sets of package names, owning the color scheme.
 
-    old_syntaxes = []
-    old_color_schemes = []
+    {
+        'Mariana': {'Color Scheme - Default', 'User'},
+    }
+    """
+
+    theme_packages = {}
+    """
+    A dictionary of packages, containing a theme.
+
+    Keys are theme names without file extension.
+    The values are sets of package names, owning the theme.
+
+    {
+        'Default': {'Theme - Default', 'User'},
+    }
+    """
+
+    default_themes = {}
+    """
+    A dictionary of default theme settings.
+
+    Sublime Text 3:
+
+    {
+        "theme": "Default.sublime-color-scheme"
+    }
+
+    Sublime Text 4
+
+    {
+        "theme": "auto"
+        "dark_theme": "Default Dark.sublime-color-scheme"
+        "light_theme": "Default.sublime-color-scheme"
+    }
+    """
+
+    global_themes = {}
+    """
+    A dictionary of stored theme settings.
+    """
+
+    default_color_schemes = {}
+    """
+    A dictionary of default color scheme settings.
+
+    Sublime Text 3:
+
+    {
+        "color_scheme": "Mariana.sublime-color-scheme"
+    }
+
+    Sublime Text 4
+
+    {
+        "color_scheme": "Mariana.sublime-color-scheme"
+        "dark_color_scheme": "Mariana.sublime-color-scheme"
+        "light_color_scheme": "Breakets.sublime-color-scheme"
+    }
+    """
+
+    global_color_schemes = {}
+    """
+    A dictionary of stored color scheme settings.
+    """
+
+    view_color_schemes = {}
+    """
+    A dictionary of view-specific color scheme settings.
+
+    Sublime Text 3:
+
+    {
+        <view_id>: {
+            "color_scheme": "Mariana.sublime-color-scheme"
+        },
+        ...
+    }
+
+    Sublime Text 4
+
+    {
+        <view_id>: {
+            "color_scheme": "Mariana.sublime-color-scheme"
+            "dark_color_scheme": "Mariana.sublime-color-scheme"
+            "light_color_scheme": "Breakets.sublime-color-scheme"
+        },
+        ...
+    }
+    """
+
+    view_syntaxes = {}
+    """
+    A dictionary of view-specifix syntax settings.
+
+    {
+        <view_id>: "Packages/Text/Plain Text.tmLanguage"
+    }
+    """
 
     lock = threading.Lock()
     restore_id = 0
@@ -118,52 +215,7 @@ class PackageDisabler:
                 # cancel pending settings restore request
                 PackageDisabler.restore_id = 0
 
-            # Modern *.sublime-color-schme files may exist in several packages.
-            # If one of them gets inaccessible, the merged color scheme breaks.
-            # So any related package needs to be monitored. Special treatment is needed
-            # for *.tmTheme files, too as they can be overridden by *.sublime-color-schemes.
-            global_color_scheme = settings.get('color_scheme', '')
-            global_color_scheme_packages = find_color_scheme_packages(global_color_scheme) & disabled
-            if global_color_scheme_packages:
-                if backup:
-                    PackageDisabler.old_color_scheme_packages |= global_color_scheme_packages
-                    PackageDisabler.old_color_scheme = global_color_scheme
-                # Set default color scheme via tmTheme for compat with ST3143
-                settings.set('color_scheme', 'Packages/Color Scheme - Default/Mariana.tmTheme')
-
-            global_theme = settings.get('theme', '')
-            global_theme_packages = find_theme_packages(global_theme) & disabled
-            if global_theme_packages:
-                if backup:
-                    PackageDisabler.old_theme_packages |= global_theme_packages
-                    PackageDisabler.old_theme = global_theme
-                # Set default color scheme via tmTheme for compat with ST3143
-                settings.set('theme', 'Default.sublime-theme')
-
-            for window in sublime.windows():
-                for view in window.views():
-                    view_settings = view.settings()
-
-                    # Backup and reset view-specific color_scheme settings not already taken care
-                    # of by resetting the global color_scheme above
-                    color_scheme = view_settings.get('color_scheme')
-                    if color_scheme is not None and color_scheme != global_color_scheme:
-                        color_scheme_packages = find_color_scheme_packages(color_scheme) & disabled
-                        if color_scheme_packages:
-                            if backup:
-                                PackageDisabler.old_color_schemes.append([view, color_scheme, color_scheme_packages])
-                            # drop view specific color scheme to fallback to global one
-                            # and keep it active in case this one can't be restored
-                            view_settings.erase('color_scheme')
-
-                    # Backup and reset assigned syntaxes
-                    syntax = view_settings.get('syntax')
-                    if syntax is not None and any(
-                        syntax.startswith('Packages/' + package + '/') for package in disabled
-                    ):
-                        if backup:
-                            PackageDisabler.old_syntaxes.append([view, syntax])
-                        view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
+            PackageDisabler.backup_and_reset_settings(disabled, backup)
 
             if operation == 'upgrade':
                 for package in disabled:
@@ -249,10 +301,125 @@ class PackageDisabler:
                 # re-enable packages, making errors less likely
                 PackageDisabler.restore_id += 1
                 sublime.set_timeout(functools.partial(
-                    PackageDisabler.delayed_settings_restore, PackageDisabler.restore_id), 1000)
+                    PackageDisabler.restore_settings, PackageDisabler.restore_id), 1000)
 
     @staticmethod
-    def delayed_settings_restore(restore_id):
+    def init_default_settings():
+        """
+        Initializes the default settings from ST's Default/Preferences.sublime-settings.
+
+        Make sure to have correct default values available based on ST version.
+        """
+
+        if PackageDisabler.default_themes:
+            return
+
+        resource_name = 'Packages/Default/Preferences.sublime-settings'
+        settings = sublime.decode_value(sublime.load_resource(resource_name))
+
+        for key in ('color_scheme', 'dark_color_scheme', 'light_color_scheme'):
+            value = settings.get(key)
+            if value:
+                PackageDisabler.default_color_schemes[key] = value
+
+        for key in ('theme', 'dark_theme', 'light_theme'):
+            value = settings.get(key)
+            if value:
+                PackageDisabler.default_themes[key] = value
+
+    @staticmethod
+    def backup_and_reset_settings(packages, backup):
+        """
+        Backup and reset color scheme, syntax or theme contained by specified packages
+
+        :param packages:
+            A set of package names which trigger backup and reset of settings.
+
+        :param backup:
+            If ``True`` old values are backed up for later restore.
+            If ``False`` reset values to defaults only.
+        """
+
+        PackageDisabler.init_default_settings()
+
+        settings = sublime.load_settings(preferences_filename())
+        cached_settings = {}
+
+        # Backup and reset global theme(s)
+        for key, default_file in PackageDisabler.default_themes.items():
+            theme_file = settings.get(key)
+            if theme_file in (None, '', 'auto', default_file):
+                continue
+            theme_name, theme_packages = find_theme_packages(theme_file)
+            theme_packages &= packages
+            if not theme_packages:
+                continue
+            if backup:
+                if theme_name not in PackageDisabler.theme_packages:
+                    PackageDisabler.theme_packages[theme_name] = theme_packages
+                else:
+                    PackageDisabler.theme_packages[theme_name] |= theme_packages
+                PackageDisabler.global_themes[key] = theme_file
+            settings.set(key, default_file)
+
+        # Backup and reset global color scheme(s)
+        #
+        # Modern *.sublime-color-schme files may exist in several packages.
+        # If one of them gets inaccessible, the merged color scheme breaks.
+        # So any related package needs to be monitored. Special treatment is needed
+        # for *.tmTheme files, too as they can be overridden by *.sublime-color-schemes.
+        for key, default_file in PackageDisabler.default_color_schemes.items():
+            scheme_file = settings.get(key)
+            cached_settings[key] = scheme_file
+            if scheme_file in (None, '', 'auto', default_file):
+                continue
+            scheme_name, scheme_packages = find_color_scheme_packages(scheme_file)
+            scheme_packages &= packages
+            if not scheme_packages:
+                continue
+            if backup:
+                if scheme_name not in PackageDisabler.color_scheme_packages:
+                    PackageDisabler.color_scheme_packages[scheme_name] = scheme_packages
+                else:
+                    PackageDisabler.color_scheme_packages[scheme_name] |= scheme_packages
+                PackageDisabler.global_color_schemes[key] = scheme_file
+            settings.set(key, default_file)
+
+        for window in sublime.windows():
+            for view in window.views():
+                view_settings = view.settings()
+
+                # Backup and reset view-specific color schemes not already taken care
+                # of by resetting the global color scheme above
+                for key, default_file in PackageDisabler.default_color_schemes.items():
+                    scheme_file = view_settings.get(key)
+                    if scheme_file in (None, '', 'auto', default_file, cached_settings[key]):
+                        continue
+                    scheme_name, scheme_packages = find_color_scheme_packages(scheme_file)
+                    scheme_packages &= packages
+                    if not scheme_packages:
+                        continue
+                    if backup:
+                        if scheme_name not in PackageDisabler.color_scheme_packages:
+                            PackageDisabler.color_scheme_packages[scheme_name] = scheme_packages
+                        else:
+                            PackageDisabler.color_scheme_packages[scheme_name] |= scheme_packages
+                        PackageDisabler.view_color_schemes.setdefault(view.id(), {})[key] = scheme_file
+                    # drop view specific color scheme to fallback to global one
+                    # and keep it active in case this one can't be restored
+                    view_settings.erase(key)
+
+                # Backup and reset assigned syntaxes
+                syntax = view_settings.get('syntax')
+                if syntax and isinstance(syntax, str) and any(
+                    syntax.startswith('Packages/' + package + '/') for package in packages
+                ):
+                    if backup:
+                        PackageDisabler.view_syntaxes[view.id()] = syntax
+                    view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
+
+    @staticmethod
+    def restore_settings(restore_id):
 
         if restore_id != PackageDisabler.restore_id:
             return
@@ -266,59 +433,74 @@ class PackageDisabler:
 
             try:
                 # restore global theme
-                if PackageDisabler.old_theme:
-                    theme_packages = find_theme_packages(PackageDisabler.old_theme)
-                    missing_theme_packages = PackageDisabler.old_theme_packages - theme_packages
+                all_missing_theme_packages = set()
+
+                for key, theme_file in PackageDisabler.global_themes.items():
+                    theme_name, theme_packages = find_theme_packages(theme_file)
+                    missing_theme_packages = PackageDisabler.theme_packages[theme_name] - theme_packages
                     if missing_theme_packages:
-                        show_error(
-                            '''
-                            The following packages no longer participate in your active theme after upgrade.
-
-                               - %s
-
-                            As one of tem may contain the primary theme package,
-                            Sublime Text is configured to use the default theme.
-                            ''',
-                            '\n   - '.join(sorted(missing_theme_packages, key=lambda s: s.lower()))
-                        )
+                        all_missing_theme_packages |= missing_theme_packages
                     else:
+                        settings.set(key, theme_file)
                         save_settings = True
-                        settings.set('theme', PackageDisabler.old_theme)
+
+                if all_missing_theme_packages:
+                    show_error(
+                        '''
+                        The following packages no longer participate in your active theme after upgrade.
+
+                           - %s
+
+                        As one of tem may contain the primary theme package,
+                        Sublime Text is configured to use the default theme.
+                        ''',
+                        '\n   - '.join(sorted(all_missing_theme_packages, key=lambda s: s.lower()))
+                    )
 
                 # restore global color scheme
-                if PackageDisabler.old_color_scheme:
-                    color_scheme_packages = find_color_scheme_packages(PackageDisabler.old_color_scheme)
-                    missing_color_scheme_packages = PackageDisabler.old_color_scheme_packages - color_scheme_packages
-                    if missing_color_scheme_packages:
-                        show_error(
-                            '''
-                            The following packages no longer participate in your active color scheme after upgrade.
+                all_missing_scheme_packages = set()
 
-                               - %s
-
-                            As one of them may contain the primary color scheme,
-                            Sublime Text is configured to use the default color scheme.
-                            ''',
-                            '\n   - '.join(sorted(missing_color_scheme_packages, key=lambda s: s.lower()))
-                        )
+                for key, scheme_file in PackageDisabler.global_color_schemes.items():
+                    scheme_name, scheme_packages = find_color_scheme_packages(scheme_file)
+                    missing_scheme_packages = PackageDisabler.color_scheme_packages[scheme_name] - scheme_packages
+                    if missing_scheme_packages:
+                        all_missing_scheme_packages |= missing_scheme_packages
                     else:
+                        settings.set(key, scheme_file)
                         save_settings = True
-                        settings.set('color_scheme', PackageDisabler.old_color_scheme)
+
+                if all_missing_scheme_packages:
+                    show_error(
+                        '''
+                        The following packages no longer participate in your active color scheme after upgrade.
+
+                           - %s
+
+                        As one of them may contain the primary color scheme,
+                        Sublime Text is configured to use the default color scheme.
+                        ''',
+                        '\n   - '.join(sorted(all_missing_scheme_packages, key=lambda s: s.lower()))
+                    )
 
                 # restore viewa-specific color scheme assignments
-                for view, color_scheme, old_color_scheme_packages in PackageDisabler.old_color_schemes:
-                    if not view.is_valid() or color_scheme in color_scheme_errors:
+                for view_id, view_schemes in PackageDisabler.view_color_schemes.items():
+                    view = sublime.View(view_id)
+                    if not view.is_valid():
                         continue
-                    color_scheme_packages = find_color_scheme_packages(color_scheme)
-                    missing_color_scheme_packages = old_color_scheme_packages - color_scheme_packages
-                    if missing_color_scheme_packages:
-                        console_write('The color scheme "%s" no longer exists' % color_scheme)
-                        color_scheme_errors.add(color_scheme)
-                        continue
-                    view.settings().set('color_scheme', color_scheme)
+                    for key, scheme_file in view_schemes.items():
+                        if scheme_file in color_scheme_errors:
+                            continue
+                        scheme_name, scheme_packages = find_color_scheme_packages(scheme_file)
+                        missing_scheme_packages = PackageDisabler.color_scheme_packages[scheme_name] - scheme_packages
+                        if missing_scheme_packages:
+                            console_write('The color scheme "%s" no longer exists' % scheme_file)
+                            color_scheme_errors.add(scheme_file)
+                            continue
+                        view.settings().set(key, scheme_file)
 
                 # restore syntax assignments
-                for view, syntax in PackageDisabler.old_syntaxes:
+                for view_id, syntax in PackageDisabler.view_syntaxes.items():
+                    view = sublime.View(view_id)
                     if not view.is_valid() or syntax in syntax_errors:
                         continue
                     if not resource_exists(syntax):
@@ -331,14 +513,14 @@ class PackageDisabler:
                 if save_settings:
                     sublime.save_settings(preferences_filename())
 
-                PackageDisabler.old_color_scheme_packages.clear()
-                PackageDisabler.old_color_scheme = None
+                PackageDisabler.color_scheme_packages = {}
+                PackageDisabler.theme_packages = {}
 
-                PackageDisabler.old_color_schemes.clear()
-                PackageDisabler.old_syntaxes.clear()
+                PackageDisabler.global_color_schemes = {}
+                PackageDisabler.global_themes = {}
 
-                PackageDisabler.old_theme_packages.clear()
-                PackageDisabler.old_theme = None
+                PackageDisabler.view_color_schemes = {}
+                PackageDisabler.view_syntaxes = {}
 
                 PackageDisabler.restore_id = 0
 
@@ -370,10 +552,12 @@ def find_color_scheme_packages(color_scheme):
     Build a set of packages, containing the color_scheme.
 
     :param color_scheme:
-        The color scheme name
+        The color scheme settings value
 
     :returns:
-        A set of package names
+        A tuple of color scheme name and a set of package names containing it
+
+        ( 'Mariana', { 'Color Scheme - Default', 'User' } )
     """
 
     packages = set()
@@ -385,7 +569,7 @@ def find_color_scheme_packages(color_scheme):
             if len(parts) == 2:
                 packages.add(parts[0])
 
-    return packages
+    return name, packages
 
 
 def find_theme_packages(theme):
@@ -393,17 +577,21 @@ def find_theme_packages(theme):
     Build a set of packages, containing the theme.
 
     :param theme:
-        The color scheme name
+        The theme settings value
 
     :returns:
-        A set of package names
+        A tuple of theme name and a set of package names containing it
+
+        ( 'Default', { 'Theme - Default', 'User' } )
     """
 
     packages = set()
+    file_name = os.path.basename(theme)
+    name = os.path.splitext(file_name)[0]
 
-    for path in sublime.find_resources(os.path.basename(theme)):
+    for path in sublime.find_resources(file_name):
         parts = path[9:].split('/', 1)
         if len(parts) == 2:
             packages.add(parts[0])
 
-    return packages
+    return name, packages
