@@ -35,6 +35,7 @@ from .package_io import (
     read_package_file
 )
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
+from .providers.channel_provider import UncachedChannelRepositoryError
 from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
 from .settings import load_list_setting, pc_settings_filename, save_list_setting
@@ -467,25 +468,36 @@ class PackageManager:
                     unavailable_libraries = []
 
                     for repo in channel_repositories:
-                        filtered_packages = {}
-                        for name, info in provider.get_packages(repo):
-                            info['releases'] = self.select_releases(name, info['releases'])
-                            if info['releases']:
-                                filtered_packages[name] = info
-                            else:
-                                unavailable_packages.append(name)
-                        packages_cache_key = repo + '.packages'
-                        set_cache(packages_cache_key, filtered_packages, cache_ttl)
 
-                        filtered_libraries = {}
-                        for name, info in provider.get_libraries(repo):
-                            info['releases'] = self.select_releases(name, info['releases'])
-                            if info['releases']:
-                                filtered_libraries[name] = info
-                            else:
-                                unavailable_libraries.append(name)
-                        libraries_cache_key = repo + '.libraries'
-                        set_cache(libraries_cache_key, filtered_libraries, cache_ttl)
+                        try:
+                            filtered_packages = {}
+                            for name, info in provider.get_packages(repo):
+                                info['releases'] = self.select_releases(name, info['releases'])
+                                if info['releases']:
+                                    filtered_packages[name] = info
+                                else:
+                                    unavailable_packages.append(name)
+
+                            packages_cache_key = repo + '.packages'
+                            set_cache(packages_cache_key, filtered_packages, cache_ttl)
+
+                        except UncachedChannelRepositoryError:
+                            pass
+
+                        try:
+                            filtered_libraries = {}
+                            for name, info in provider.get_libraries(repo):
+                                info['releases'] = self.select_releases(name, info['releases'])
+                                if info['releases']:
+                                    filtered_libraries[name] = info
+                                else:
+                                    unavailable_libraries.append(name)
+
+                            libraries_cache_key = repo + '.libraries'
+                            set_cache(libraries_cache_key, filtered_libraries, cache_ttl)
+
+                        except UncachedChannelRepositoryError:
+                            pass
 
                     renamed_packages = provider.get_renamed_packages()
                     set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)
