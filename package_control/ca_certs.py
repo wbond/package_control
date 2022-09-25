@@ -19,7 +19,6 @@ except Exception as e:
     console_write('oscrypto trust lists unavailable - %s', e)
 
 ca_bundle_dir = None
-user_ca_bundle_dir = None
 
 
 def get_ca_bundle_path(settings):
@@ -80,22 +79,22 @@ def get_user_ca_bundle_path(settings):
         A dict to look in for `debug`
 
     :return:
-        The filesystem path to the user ca bundle
+        The full filesystem path to the .user-ca-bundle file, or False on error
     """
 
-    ensure_ca_bundle_dir()
-
-    user_ca_bundle_path = os.path.join(user_ca_bundle_dir, 'Package Control.user-ca-bundle')
-    if not os.path.exists(user_ca_bundle_path):
+    user_ca_bundle = os.path.join(sys_path.user_config_dir(), 'Package Control.user-ca-bundle')
+    try:
+        open(user_ca_bundle, 'xb').close()
         if settings.get('debug'):
-            console_write(
-                '''
-                Created blank user CA bundle
-                '''
-            )
-        open(user_ca_bundle_path, 'a').close()
+            console_write('Created blank user CA bundle')
+    except FileExistsError:
+        pass
+    except OSError as e:
+        user_ca_bundle = False
+        if settings.get('debug'):
+            console_write('Unable to create blank user CA bundle - %s', e)
 
-    return user_ca_bundle_path
+    return user_ca_bundle
 
 
 def print_cert_subject(cert, reason):
@@ -251,12 +250,9 @@ def ensure_ca_bundle_dir():
     # If the sublime module is available, we bind this value at run time
     # since the sublime.packages_path() is not available at import time
     global ca_bundle_dir
-    global user_ca_bundle_dir
 
     if not ca_bundle_dir:
         ca_bundle_dir = sys_path.pc_cache_dir()
-    if not user_ca_bundle_dir:
-        user_ca_bundle_dir = sys_path.user_config_dir()
     if not os.path.exists(ca_bundle_dir):
         try:
             os.mkdir(ca_bundle_dir)
