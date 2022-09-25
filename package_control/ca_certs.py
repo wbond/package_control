@@ -18,8 +18,6 @@ except Exception as e:
     trust_list = None
     console_write('oscrypto trust lists unavailable - %s', e)
 
-ca_bundle_dir = None
-
 
 def get_ca_bundle_path(settings):
     """
@@ -32,9 +30,13 @@ def get_ca_bundle_path(settings):
         The filesystem path to the merged ca bundle path
     """
 
-    ensure_ca_bundle_dir()
+    ca_bundle_dir = sys_path.pc_cache_dir()
+    if not ca_bundle_dir:
+        raise ValueError("Unknown Package Control cache directory")
 
-    system_ca_bundle_path = get_system_ca_bundle_path(settings)
+    os.makedirs(ca_bundle_dir, exist_ok=True)
+
+    system_ca_bundle_path = get_system_ca_bundle_path(settings, ca_bundle_dir)
     user_ca_bundle_path = get_user_ca_bundle_path(settings)
     merged_ca_bundle_path = os.path.join(ca_bundle_dir, 'merged-ca-bundle.crt')
 
@@ -97,7 +99,7 @@ def print_cert_subject(cert, reason):
         )
 
 
-def get_system_ca_bundle_path(settings):
+def get_system_ca_bundle_path(settings, ca_bundle_dir):
     """
     Get the filesystem path to the system CA bundle. On Linux it looks in a
     number of predefined places, however on OS X it has to be programatically
@@ -107,6 +109,9 @@ def get_system_ca_bundle_path(settings):
 
     :param settings:
         A dict to look in for the `debug` key
+
+    :param ca_bundle_dir:
+        The filesystem path to the directory to store exported CA bundle in
 
     :return:
         The full filesystem path to the .ca-bundle file, or False on error
@@ -119,8 +124,6 @@ def get_system_ca_bundle_path(settings):
     ca_path = False
 
     if sys.platform == 'win32' or sys.platform == 'darwin':
-        ensure_ca_bundle_dir()
-
         if trust_list is not None:
             ca_path, _ = trust_list._ca_path(ca_bundle_dir)
 
@@ -240,23 +243,3 @@ def get_user_ca_bundle_path(settings):
             console_write('Unable to create blank user CA bundle - %s', e)
 
     return user_ca_bundle
-
-
-def ensure_ca_bundle_dir():
-    """
-    Make sure we have a placed to save the merged-ca-bundle and system-ca-bundle
-    """
-
-    # If the sublime module is available, we bind this value at run time
-    # since the sublime.packages_path() is not available at import time
-    global ca_bundle_dir
-
-    if not ca_bundle_dir:
-        ca_bundle_dir = sys_path.pc_cache_dir()
-    if not os.path.exists(ca_bundle_dir):
-        try:
-            os.mkdir(ca_bundle_dir)
-        except EnvironmentError:
-            ca_bundle_dir = '/var/tmp/package_control'
-            if not os.path.exists(ca_bundle_dir):
-                os.mkdir(ca_bundle_dir)
