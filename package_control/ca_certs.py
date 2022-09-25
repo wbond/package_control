@@ -1,5 +1,4 @@
 import os
-import time
 import sys
 
 from . import sys_path
@@ -15,6 +14,7 @@ try:
     from .deps.oscrypto import use_ctypes
     use_ctypes()
     from .deps.oscrypto import trust_list  # noqa
+    from .deps.oscrypto.errors import CACertsError
 except Exception as e:
     trust_list = None
     console_write('oscrypto trust lists unavailable - %s', e)
@@ -178,16 +178,7 @@ def get_system_ca_bundle_path(settings, ca_bundle_dir):
         if trust_list is not None:
             ca_path, _ = trust_list._ca_path(ca_bundle_dir)
 
-            exists = os.path.exists(ca_path)
-            is_empty = False
-            is_old = False
-            if exists:
-                stats = os.stat(ca_path)
-                is_empty = stats.st_size == 0
-                # The bundle is old if it is a week or more out of date
-                is_old = stats.st_mtime < time.time() - (hours_to_cache * 60 * 60)
-
-            if not exists or is_empty or is_old:
+            if trust_list._cached_path_needs_update(ca_path, hours_to_cache):
                 cert_callback = None
                 if debug:
                     console_write(
@@ -196,14 +187,26 @@ def get_system_ca_bundle_path(settings, ca_bundle_dir):
                         '''
                     )
                     cert_callback = print_cert_subject
-                trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback=cert_callback)
-                if debug:
-                    console_write(
-                        '''
-                        Finished generating new CA bundle at %s (%d bytes)
-                        ''',
-                        (ca_path, os.stat(ca_path).st_size)
-                    )
+
+                try:
+                    trust_list.get_path(ca_bundle_dir, hours_to_cache, cert_callback)
+                    if debug:
+                        console_write(
+                            '''
+                            Finished generating new CA bundle at %s (%d bytes)
+                            ''',
+                            (ca_path, os.stat(ca_path).st_size)
+                        )
+
+                except (CACertsError, OSError) as e:
+                    ca_path = False
+                    if debug:
+                        console_write(
+                            '''
+                            Failed to generate new CA bundle. %s
+                            ''',
+                            e
+                        )
 
             elif debug:
                 console_write(
@@ -216,7 +219,7 @@ def get_system_ca_bundle_path(settings, ca_bundle_dir):
         elif debug:
             console_write(
                 '''
-                Can't export system CA - oscrypto not available!
+                Unable to generate system CA bundle - oscrypto not available!
                 ''',
             )
 
@@ -232,39 +235,41 @@ def get_system_ca_bundle_path(settings, ca_bundle_dir):
             '/usr/local/share/certs/ca-root-nss.crt',
             '/etc/ssl/cert.pem'
         ]
-        # First try SSL_CERT_FILE
-        if 'SSL_CERT_FILE' in os.environ:
-            paths.insert(0, os.environ['SSL_CERT_FILE'])
+
+        # Prepend SSL_CERT_FILE only, if it doesn't match ST4's certifi CA bundle.
+        # Otherwise we'd never pick up any OS level CA bundle.
+        ssl_cert_file = os.environ.get('SSL_CERT_FILE')
+        if ssl_cert_file and not (certifi and os.path.samefile(ssl_cert_file, certifi.where())):
+            paths.insert(0, ssl_cert_file)
+
         for path in paths:
-            if os.path.exists(path) and os.path.getsize(path) > 0:
+            if os.path.isfile(path) and os.path.getsize(path) > MIN_BUNDLE_SIZE:
                 ca_path = path
                 break
 
-        if debug and ca_path:
-            console_write(
-                '''
-                Found system CA bundle at %s (%d bytes)
-                ''',
-                (ca_path, os.stat(ca_path).st_size)
-            )
-
-    if not ca_path:
-        if certifi is not None:
-            ca_path = certifi.where()
-            if debug:
+        if debug:
+            if ca_path:
                 console_write(
                     '''
-                    No system CA bundle found in one of the expected locations -
-                    using certifi %s instead.
+                    Found system CA bundle at %s (%d bytes)
                     ''',
-                    certifi.__version__
+                    (ca_path, os.stat(ca_path).st_size)
+                )
+            else:
+                console_write(
+                    '''
+                    Failed to find system CA bundle.
+                    '''
                 )
 
-        else:
+    if ca_path is False and certifi is not None:
+        ca_path = certifi.where()
+        if debug:
             console_write(
                 '''
-                No system CA bundle found in one of the expected locations!
-                '''
+                Using CA bundle from "certifi %s" instead.
+                ''',
+                certifi.__version__
             )
 
     return ca_path
