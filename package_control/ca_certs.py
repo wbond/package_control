@@ -71,32 +71,6 @@ def get_ca_bundle_path(settings):
     return merged_ca_bundle_path
 
 
-def get_user_ca_bundle_path(settings):
-    """
-    Return the path to the user CA bundle, ensuring the file exists
-
-    :param settings:
-        A dict to look in for `debug`
-
-    :return:
-        The full filesystem path to the .user-ca-bundle file, or False on error
-    """
-
-    user_ca_bundle = os.path.join(sys_path.user_config_dir(), 'Package Control.user-ca-bundle')
-    try:
-        open(user_ca_bundle, 'xb').close()
-        if settings.get('debug'):
-            console_write('Created blank user CA bundle')
-    except FileExistsError:
-        pass
-    except OSError as e:
-        user_ca_bundle = False
-        if settings.get('debug'):
-            console_write('Unable to create blank user CA bundle - %s', e)
-
-    return user_ca_bundle
-
-
 def print_cert_subject(cert, reason):
     """
     :param cert:
@@ -240,6 +214,32 @@ def get_system_ca_bundle_path(settings):
             )
 
     return ca_path
+
+
+def get_user_ca_bundle_path(settings):
+    """
+    Return the path to the user CA bundle, ensuring the file exists
+
+    :param settings:
+        A dict to look in for `debug`
+
+    :return:
+        The full filesystem path to the .user-ca-bundle file, or False on error
+    """
+
+    user_ca_bundle = os.path.join(sys_path.user_config_dir(), 'Package Control.user-ca-bundle')
+    try:
+        open(user_ca_bundle, 'xb').close()
+        if settings.get('debug'):
+            console_write('Created blank user CA bundle')
+    except FileExistsError:
+        pass
+    except OSError as e:
+        user_ca_bundle = False
+        if settings.get('debug'):
+            console_write('Unable to create blank user CA bundle - %s', e)
+
+    return user_ca_bundle
 
 
 def ensure_ca_bundle_dir():
