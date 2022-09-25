@@ -73,10 +73,10 @@ if PREFIX:
     __packages_path = PREFIX + __packages_path
 
 __data_path = os.path.dirname(__installed_packages_path)
-__cache_path = os.path.join(__data_path, 'Cache')
-__package_control_cache_path = os.path.join(__cache_path, 'Package Control')
-__python_libs_cache_path = os.path.join(__cache_path, '__pycache__', 'install', 'Data', 'Libs', 'Libs')
-__python_packages_cache_path = os.path.join(__cache_path, '__pycache__', 'install', 'Data', 'Libs', 'Packages')
+__cache_path = None
+__package_control_cache_path = None
+__python_libs_cache_path = None
+__python_packages_cache_path = None
 
 __user_config_path = os.path.join(__packages_path, 'User')
 
@@ -100,6 +100,13 @@ def cache_path():
     :return:
         A string of ST's cache directory
     """
+    global __cache_path
+
+    if not __cache_path:
+        cache_path = sublime.cache_path()
+        if not cache_path:
+            return None
+        __cache_path = PREFIX + sublime.cache_path()
 
     return str(__cache_path)
 
@@ -175,6 +182,15 @@ def python_libs_cache_path():
         A string of ST's python cache directory of installed libraries
     """
 
+    global __python_libs_cache_path
+
+    if not __python_libs_cache_path:
+        cache_root = cache_path()
+        if not cache_root:
+            return None
+        __python_libs_cache_path = os.path.join(
+            cache_root, '__pycache__', 'install', 'Data', 'Libs', 'Libs')
+
     return str(__python_libs_cache_path)
 
 
@@ -186,6 +202,15 @@ def python_packages_cache_path():
         A string of ST's python cache directory of installed packages
     """
 
+    global __python_packages_cache_path
+
+    if not __python_packages_cache_path:
+        cache_root = cache_path()
+        if not cache_root:
+            return None
+        __python_packages_cache_path = os.path.join(
+            cache_root, '__pycache__', 'install', 'Data', 'Libs', 'Packages')
+
     return str(__python_packages_cache_path)
 
 
@@ -196,6 +221,14 @@ def pc_cache_dir():
     :return:
         A string of the Package Control cache directory
     """
+
+    global __package_control_cache_path
+
+    if not __package_control_cache_path:
+        cache_root = cache_path()
+        if not cache_root:
+            return None
+        __package_control_cache_path = os.path.join(cache_root, 'Package Control')
 
     return str(__package_control_cache_path)
 
