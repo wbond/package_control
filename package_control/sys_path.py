@@ -105,7 +105,7 @@ def cache_path():
     if not __cache_path:
         cache_path = sublime.cache_path()
         if not cache_path:
-            return None
+            raise RuntimeError("ST API error: cache_path() returned None!")
         __cache_path = PREFIX + sublime.cache_path()
 
     return str(__cache_path)
@@ -185,11 +185,8 @@ def python_libs_cache_path():
     global __python_libs_cache_path
 
     if not __python_libs_cache_path:
-        cache_root = cache_path()
-        if not cache_root:
-            return None
         __python_libs_cache_path = os.path.join(
-            cache_root, '__pycache__', 'install', 'Data', 'Libs', 'Libs')
+            cache_path(), '__pycache__', 'install', 'Data', 'Libs', 'Libs')
 
     return str(__python_libs_cache_path)
 
@@ -205,11 +202,8 @@ def python_packages_cache_path():
     global __python_packages_cache_path
 
     if not __python_packages_cache_path:
-        cache_root = cache_path()
-        if not cache_root:
-            return None
         __python_packages_cache_path = os.path.join(
-            cache_root, '__pycache__', 'install', 'Data', 'Libs', 'Packages')
+            cache_path(), '__pycache__', 'install', 'Data', 'Libs', 'Packages')
 
     return str(__python_packages_cache_path)
 
@@ -225,10 +219,7 @@ def pc_cache_dir():
     global __package_control_cache_path
 
     if not __package_control_cache_path:
-        cache_root = cache_path()
-        if not cache_root:
-            return None
-        __package_control_cache_path = os.path.join(cache_root, 'Package Control')
+        __package_control_cache_path = os.path.join(cache_path(), 'Package Control')
 
     return str(__package_control_cache_path)
 
