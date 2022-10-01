@@ -19,7 +19,7 @@ from .package_io import (
 )
 from .package_manager import PackageManager
 from .settings import load_list_setting, pc_settings_filename, save_list_setting
-from .show_error import show_error
+from .show_error import show_error, show_message
 
 
 class PackageCleanup(threading.Thread, PackageDisabler):
@@ -50,6 +50,8 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         self.manager = PackageManager()
         self.pc_filename = pc_settings_filename()
         self.pc_settings = sublime.load_settings(self.pc_filename)
+        self.failed_cleanup = set()
+        self.updated_libraries = False
 
     def run(self):
         # This song and dance is necessary so Package Control doesn't try to clean
@@ -94,6 +96,34 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         if self.pc_settings.get('auto_upgrade'):
             AutomaticUpgrader().run()
+
+        if self.failed_cleanup:
+            show_error(
+                '''
+                Package cleanup could not be completed.
+                You may need to restoart your OS to unlock relevant files and directories.
+
+                The following packages are effected: "%s"
+                ''',
+                '", "'.join(sorted(self.failed_cleanup, key=lambda s: s.lower()))
+            )
+            return
+
+        message = ''
+
+        in_process = load_list_setting(self.pc_settings, 'in_process_packages')
+        if in_process:
+            message += 'to complete pending package operations on "%s"' \
+                % '", "'.join(sorted(in_process, key=lambda s: s.lower()))
+
+        if self.updated_libraries:
+            if message:
+                message += ' and '
+            message += 'for installed or updated libraries to take effect.'
+            message += ' Otherwise some packages may not work properly.'
+
+        if message:
+            show_message('Sublime Text needs to be restarted %s.' % message)
 
     def cleanup_pending_packages(self):
         """
@@ -143,6 +173,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     )
 
                 except OSError as e:
+                    self.failed_cleanup.add(package_name)
                     console_write(
                         '''
                         Failed to replace %s.sublime-package with new package. %s
@@ -182,6 +213,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     )
 
                 else:
+                    self.failed_cleanup.add(package_name)
                     create_empty_file(cleanup_file)
                     console_write(
                         '''
@@ -197,6 +229,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
             if os.path.exists(reinstall_file):
                 if not clear_directory(package_dir):
+                    self.failed_cleanup.add(package_name)
                     create_empty_file(reinstall_file)
                     console_write(
                         '''
@@ -289,7 +322,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 packages across machines.
                 '''
 
-            show_error(message, '\n- '.join(incompatible_packages))
+            show_error(message, '\n- '.join(sorted(incompatible_packages, key=lambda s: s.lower())))
 
         return incompatible_packages
 
@@ -303,25 +336,10 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             (len(missing_libraries), 'ies' if len(missing_libraries) != 1 else 'y')
         )
 
-        libraries_installed = 0
-
         for lib in missing_libraries:
             if self.manager.install_library(lib.name, lib.python_version):
                 console_write('Installed library %s for Python %s', (lib.name, lib.python_version))
-                libraries_installed += 1
-
-        if libraries_installed:
-            def notify_restart():
-                library_was = 'ies were' if libraries_installed != 1 else 'y was'
-                show_error(
-                    '''
-                    %s missing librar%s just installed. Sublime Text
-                    should be restarted, otherwise one or more of the
-                    installed packages may not function properly.
-                    ''',
-                    (libraries_installed, library_was)
-                )
-            sublime.set_timeout(notify_restart, 1000)
+                self.updated_libraries = True
 
     def install_missing_packages(self, found_packages):
         """
