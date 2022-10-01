@@ -273,15 +273,16 @@ class PackageDisabler:
                 if not isinstance(packages, (list, tuple)):
                     packages = [packages]
                 packages = set(packages)
-            packages &= in_process
 
             if operation == 'install':
+                packages &= in_process
                 for package in packages:
                     version = PackageDisabler.get_version(package)
                     events.add(operation, package, version)
                     events.clear(operation, package, future=True)
 
             elif operation == 'upgrade':
+                packages &= in_process
                 for package in packages:
                     version = PackageDisabler.get_version(package)
                     events.add('post_upgrade', package, version)
@@ -289,6 +290,7 @@ class PackageDisabler:
                     events.clear('pre_upgrade', package)
 
             elif operation == 'remove':
+                packages &= in_process
                 for package in packages:
                     events.clear('remove', package)
 
