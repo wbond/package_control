@@ -13,8 +13,10 @@ class PackageControlEnableDebugModeCommand(sublime_plugin.WindowCommand):
         sublime.save_settings(settings_file)
 
         show_message(
-            'Debug mode has been enabled, a log of commands will be written '
-            'to the Sublime Text console'
+            '''
+            Debug mode has been enabled, a log of commands will be written
+            to the Sublime Text console
+            '''
         )
 
     def is_visible(self):
