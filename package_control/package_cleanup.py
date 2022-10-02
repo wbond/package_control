@@ -92,7 +92,9 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         self.install_missing_packages(found_packages)
         self.install_missing_libraries()
-        self.manager.cleanup_libraries()
+
+        if self.pc_settings.get('remove_orphaned', True):
+            self.manager.cleanup_libraries()
 
         if self.pc_settings.get('auto_upgrade'):
             AutomaticUpgrader().run()
