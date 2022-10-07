@@ -32,7 +32,8 @@ from .package_io import (
     get_package_module_cache_dir,
     list_sublime_package_dirs,
     list_sublime_package_files,
-    read_package_file
+    read_package_file,
+    regular_file_exists
 )
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .providers.channel_provider import UncachedChannelRepositoryError
@@ -1347,17 +1348,6 @@ class PackageManager:
 
             python_version_path = common_folder + '.python-version'
             libraries_path = common_folder + 'dependencies.json'
-            no_package_file_zip_path = common_folder + '.no-sublime-package'
-
-            # By default, ST prefers .sublime-package files since this allows
-            # overriding files in the Packages/{package_name}/ folder.
-            # If the package maintainer doesn't want a .sublime-package
-            try:
-                package_zip.getinfo(no_package_file_zip_path)
-                unpack = True
-            except (KeyError):
-                unpack = False
-
             python_version = "3.3"
             try:
                 python_version_raw = package_zip.read(python_version_path).decode('utf-8').strip()
@@ -1388,46 +1378,71 @@ class PackageManager:
             if library_names:
                 self.install_libraries_by_name(library_names, python_version, fail_early=False)
 
-            metadata_filename = 'package-metadata.json'
-
-            # If we already have a package-metadata.json file in
-            # Packages/{package_name}/, but the package no longer contains
-            # a .no-sublime-package file, then we want to clear the unpacked
-            # dir and install as a .sublime-package file. Since we are only
-            # clearing if a package-metadata.json file exists, we should never
-            # accidentally delete a user's customizations. However, we still
-            # create a backup just in case.
-            unpacked_metadata_file = os.path.join(unpacked_package_dir, metadata_filename)
-            if os.path.exists(unpacked_metadata_file) and not unpack:
-                self.backup_package_dir(package_name)
-                if not delete_directory(unpacked_package_dir):
-                    # If deleting failed, queue the package to upgrade upon next start
-                    # when it will be disabled
-                    reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
-                    create_empty_file(reinstall_file)
-                    console_write(
-                        '''
-                        Failed to upgrade %s -
-                        deferring until next start
-                        ''',
-                        package_name
-                    )
-                    return None
+            # By default, ST prefers .sublime-package files since this allows
+            # overriding files in the Packages/{package_name}/ folder.
+            # If the package maintainer doesn't want a .sublime-package
+            try:
+                package_zip.getinfo(common_folder + '.no-sublime-package')
+                unpack = True
+            except (KeyError):
+                unpack = False
 
             # If we determined it should be unpacked, we extract directly
             # into the Packages/{package_name}/ folder
             if unpack:
+                # Make sure not to overwrite existing hidden packages or package overrides
+                #
+                # A hidden unpacked package is expected to have been created locally,
+                # either manually by user or dynamically by a plugin.
+                #
+                # It may serve as:
+                # a) override for a *.sublime-package file.
+                # b) invisible helper package, which can't be enabled/disabled/removed
+                #    by user via API/GUI (if no corresponding *.sublime-package file exists)
+                if regular_file_exists(package_name, '.hidden-sublime-package'):
+                    console_write(
+                        '''
+                        Failed to %s %s -
+                        Overwriting existing hidden package not allowed.
+                        ''',
+                        ('upgrade' if is_upgrade else 'install', package_name)
+                    )
+                    return False
+
                 self.backup_package_dir(package_name)
                 package_dir = unpacked_package_dir
 
             # Otherwise we go into a temp dir since we will be creating a
             # new .sublime-package file later
             else:
+                # If we already have a package-metadata.json file in
+                # Packages/{package_name}/, but the package no longer contains
+                # a .no-sublime-package file, then we want to clear the unpacked
+                # dir and install as a .sublime-package file. Since we are only
+                # clearing if a package-metadata.json file exists, we should never
+                # accidentally delete user's customizations. However, we still
+                # create a backup just in case.
+                if regular_file_exists(package_name, 'package-metadata.json'):
+                    self.backup_package_dir(package_name)
+                    if not delete_directory(unpacked_package_dir):
+                        # If deleting failed, queue the package to upgrade upon next start
+                        # when it will be disabled
+                        reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
+                        create_empty_file(reinstall_file)
+                        console_write(
+                            '''
+                            Failed to upgrade %s -
+                            deferring until next start
+                            ''',
+                            package_name
+                        )
+                        return None
+
                 tmp_working_dir = os.path.join(tmp_dir, 'working')
                 os.mkdir(tmp_working_dir)
                 package_dir = tmp_working_dir
 
-            package_metadata_file = os.path.join(package_dir, metadata_filename)
+            package_metadata_file = os.path.join(package_dir, 'package-metadata.json')
 
             if not os.path.exists(package_dir):
                 os.mkdir(package_dir)

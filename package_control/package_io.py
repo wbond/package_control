@@ -47,7 +47,11 @@ def list_sublime_package_dirs(path):
             if filename[0] == '.':
                 continue
             file_path = os.path.join(path, filename)
+            # Don't include files
             if not os.path.isdir(file_path):
+                continue
+            # Don't include hidden packages
+            if os.path.exists(os.path.join(file_path, '.hidden-sublime-package')):
                 continue
             # Don't include a dir if it is going to be cleaned up
             if os.path.exists(os.path.join(file_path, 'package-control.cleanup')):

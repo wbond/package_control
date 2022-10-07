@@ -203,6 +203,10 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             if not os.path.isdir(package_dir):
                 continue
 
+            # Ignore hidden packages
+            if os.path.exists(os.path.join(package_dir, '.hidden-sublime-package')):
+                continue
+
             # Cleanup packages that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
