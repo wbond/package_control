@@ -107,9 +107,7 @@ def read_package_file(package, relative_path, binary=False):
     if relative_path is None:
         return False
 
-    package_dir = get_package_dir(package)
-
-    if os.path.exists(package_dir) and _regular_file_exists(package, relative_path):
+    if regular_file_exists(package, relative_path):
         return _read_regular_file(package, relative_path, binary)
 
     return _read_zip_file(package, relative_path, binary)
@@ -133,14 +131,7 @@ def package_file_exists(package, relative_path):
     if relative_path is None:
         return False
 
-    package_dir = get_package_dir(package)
-
-    if os.path.exists(package_dir):
-        result = _regular_file_exists(package, relative_path)
-        if result:
-            return result
-
-    return _zip_file_exists(package, relative_path)
+    return regular_file_exists(package, relative_path) or zip_file_exists(package, relative_path)
 
 
 def get_package_cache_dir(package):
@@ -268,13 +259,13 @@ def _read_zip_file(package, relative_path, binary=False):
     return False
 
 
-def _regular_file_exists(package, relative_path):
+def regular_file_exists(package, relative_path):
     package_dir = get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
     return os.path.exists(file_path)
 
 
-def _zip_file_exists(package, relative_path):
+def zip_file_exists(package, relative_path):
     zip_path = get_installed_package_path(package)
 
     if not os.path.exists(zip_path):
