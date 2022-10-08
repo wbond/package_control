@@ -401,7 +401,13 @@ class PackageDisabler:
             settings.set(key, default_file)
 
         for window in sublime.windows():
-            for view in window.views():
+            # create a list of real and output panel views
+            views = window.views()
+            for panel_name in filter(lambda p: p.startswith('output.'), window.panels()):
+                panel = window.find_output_panel(panel_name[len('output.'):])
+                views.append(panel)
+
+            for view in views:
                 view_settings = view.settings()
 
                 # Backup and reset view-specific color schemes not already taken care
