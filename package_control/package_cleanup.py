@@ -486,7 +486,9 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 package_dir = get_package_dir(package_name)
                 can_delete_dir = os.path.exists(package_dir)
                 if can_delete_dir:
-                    self.manager.backup_package_dir(package_name)
+                    if not self.manager.backup_package_dir(package_name):
+                        continue
+
                     if delete_directory(package_dir):
                         console_write(
                             '''

@@ -1409,7 +1409,9 @@ class PackageManager:
                     )
                     return False
 
-                self.backup_package_dir(package_name)
+                if not self.backup_package_dir(package_name):
+                    return False
+
                 package_dir = unpacked_package_dir
 
             # Otherwise we go into a temp dir since we will be creating a
@@ -1423,7 +1425,9 @@ class PackageManager:
                 # accidentally delete user's customizations. However, we still
                 # create a backup just in case.
                 if regular_file_exists(package_name, 'package-metadata.json'):
-                    self.backup_package_dir(package_name)
+                    if not self.backup_package_dir(package_name):
+                        return False
+
                     if not delete_directory(unpacked_package_dir):
                         # If deleting failed, queue the package to upgrade upon next start
                         # when it will be disabled
