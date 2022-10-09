@@ -2046,7 +2046,10 @@ class PackageManager:
             cleanup_complete = False
 
         if can_delete_dir:
-            if not delete_directory(package_dir):
+            if can_delete_file and not self.backup_package_dir(package_name):
+                console_write('It is therefore not removed automatically.')
+
+            elif not delete_directory(package_dir):
                 create_empty_file(os.path.join(package_dir, 'package-control.cleanup'))
                 cleanup_complete = False
 
