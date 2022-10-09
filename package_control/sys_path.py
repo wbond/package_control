@@ -186,7 +186,7 @@ def python_libs_cache_path():
 
     if not __python_libs_cache_path:
         __python_libs_cache_path = os.path.join(
-            cache_path(), '__pycache__', 'install', 'Data', 'Libs', 'Libs')
+            cache_path(), '__pycache__', 'install', 'Data', 'Lib')
 
     return str(__python_libs_cache_path)
 
@@ -203,7 +203,7 @@ def python_packages_cache_path():
 
     if not __python_packages_cache_path:
         __python_packages_cache_path = os.path.join(
-            cache_path(), '__pycache__', 'install', 'Data', 'Libs', 'Packages')
+            cache_path(), '__pycache__', 'install', 'Data', 'Packages')
 
     return str(__python_packages_cache_path)
 
