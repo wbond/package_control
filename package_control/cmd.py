@@ -137,6 +137,8 @@ class Cli:
                 is_vcs = True
             elif re.search('hg', binary_name):
                 is_vcs = True
+            else:
+                is_vcs = False
 
             if sublime:
                 def kill_proc():
