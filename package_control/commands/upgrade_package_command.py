@@ -13,14 +13,14 @@ from ..thread_progress import ThreadProgress
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class UpgradePackageCommand(sublime_plugin.WindowCommand):
+class UpgradePackageCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command that presents the list of installed packages that can be upgraded
     """
 
     def run(self):
-        thread = UpgradePackageThread(self.window)
+        thread = UpgradePackageThread(sublime.active_window())
         thread.start()
         ThreadProgress(thread, 'Loading repositories', '')
 

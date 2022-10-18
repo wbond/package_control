@@ -8,7 +8,7 @@ from ..show_error import show_error
 from ..thread_progress import ThreadProgress
 
 
-class SatisfyLibrariesCommand(sublime_plugin.WindowCommand):
+class SatisfyLibrariesCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command that finds all libraries required by the installed packages

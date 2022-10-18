@@ -6,7 +6,7 @@ from ..show_error import show_message
 from ..show_quick_panel import show_quick_panel
 
 
-class RemoveRepositoryCommand(sublime_plugin.WindowCommand):
+class RemoveRepositoryCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command to remove a repository from the user's Package Control settings
@@ -19,7 +19,7 @@ class RemoveRepositoryCommand(sublime_plugin.WindowCommand):
             show_message('There are no repositories to remove')
             return
 
-        show_quick_panel(self.window, self.repositories, self.on_done)
+        show_quick_panel(sublime.active_window(), self.repositories, self.on_done)
 
     def on_done(self, index):
         """

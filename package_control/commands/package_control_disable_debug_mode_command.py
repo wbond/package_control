@@ -5,7 +5,7 @@ from ..settings import pc_settings_filename
 from ..show_error import show_message
 
 
-class PackageControlDisableDebugModeCommand(sublime_plugin.WindowCommand):
+class PackageControlDisableDebugModeCommand(sublime_plugin.ApplicationCommand):
     def run(self):
         settings_file = pc_settings_filename()
         settings = sublime.load_settings(settings_file)

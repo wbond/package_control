@@ -7,14 +7,14 @@ from ..settings import pc_settings_filename
 from ..show_error import show_error
 
 
-class AddRepositoryCommand(sublime_plugin.WindowCommand):
+class AddRepositoryCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command to add a new repository to the user's Package Control settings
     """
 
     def run(self):
-        self.window.show_input_panel(
+        sublime.active_window().show_input_panel(
             'GitHub, GitLab or BitBucket Web URL, or Custom JSON Repository URL',
             '',
             self.on_done,

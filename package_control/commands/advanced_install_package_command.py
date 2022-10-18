@@ -1,6 +1,7 @@
 import threading
 import time
 
+import sublime
 import sublime_plugin
 
 from ..package_disabler import PackageDisabler
@@ -9,7 +10,7 @@ from ..show_error import show_error
 from ..thread_progress import ThreadProgress
 
 
-class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
+class AdvancedInstallPackageCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command that accepts a comma-separated list of packages to install, or
@@ -30,7 +31,7 @@ class AdvancedInstallPackageCommand(sublime_plugin.WindowCommand):
                 ThreadProgress(thread, message, '')
                 return
 
-        self.window.show_input_panel(
+        sublime.active_window().show_input_panel(
             'Packages to Install (Comma-separated)',
             '',
             self.on_done,

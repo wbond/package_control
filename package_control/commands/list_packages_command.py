@@ -64,4 +64,4 @@ class ListPackagesCommand(ExistingPackagesCommand):
         if package_file is not None:
             open_dir_file['file'] = package_file
 
-        self.window.run_command('open_dir', open_dir_file)
+        sublime.active_window().run_command('open_dir', open_dir_file)

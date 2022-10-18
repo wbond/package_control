@@ -13,7 +13,7 @@ from ..show_quick_panel import show_quick_panel
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class ExistingPackagesCommand(sublime_plugin.WindowCommand):
+class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
 
     """
     Allows listing installed packages and their current version
@@ -88,7 +88,7 @@ class ExistingPackagesCommand(sublime_plugin.WindowCommand):
 
             self.on_done(manager, package_name)
 
-        show_quick_panel(self.window, package_list, on_done)
+        show_quick_panel(sublime.active_window(), package_list, on_done)
 
     def action(self):
         """

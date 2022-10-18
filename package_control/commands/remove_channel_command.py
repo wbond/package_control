@@ -6,7 +6,7 @@ from ..settings import pc_settings_filename
 from ..show_quick_panel import show_quick_panel
 
 
-class RemoveChannelCommand(sublime_plugin.WindowCommand):
+class RemoveChannelCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command to remove a channel from the user's Package Control settings
@@ -42,7 +42,7 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
             run = True
 
         if run:
-            show_quick_panel(self.window, self.channels, self.on_done)
+            show_quick_panel(sublime.active_window(), self.channels, self.on_done)
 
     def on_done(self, index):
         """

@@ -7,14 +7,14 @@ from ..settings import pc_settings_filename
 from ..show_error import show_error
 
 
-class AddChannelCommand(sublime_plugin.WindowCommand):
+class AddChannelCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command to add a new channel (list of repositories) to the user's machine
     """
 
     def run(self):
-        self.window.show_input_panel('Channel JSON URL', '', self.on_done, self.on_change, self.on_cancel)
+        sublime.active_window().show_input_panel('Channel JSON URL', '', self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input_text):
         """

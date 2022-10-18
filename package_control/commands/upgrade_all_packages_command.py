@@ -12,7 +12,7 @@ from ..thread_progress import ThreadProgress
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
+class UpgradeAllPackagesCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command to automatically upgrade all installed packages that are
@@ -20,7 +20,7 @@ class UpgradeAllPackagesCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        thread = UpgradeAllPackagesThread(self.window)
+        thread = UpgradeAllPackagesThread(sublime.active_window())
         thread.start()
         ThreadProgress(thread, 'Loading repositories', '')
 

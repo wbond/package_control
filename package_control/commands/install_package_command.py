@@ -12,7 +12,7 @@ from ..thread_progress import ThreadProgress
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class InstallPackageCommand(sublime_plugin.WindowCommand):
+class InstallPackageCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command that presents the list of available packages and allows the
@@ -20,7 +20,7 @@ class InstallPackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        thread = InstallPackageThread(self.window)
+        thread = InstallPackageThread(sublime.active_window())
         thread.start()
         ThreadProgress(thread, 'Loading repositories', '')
 
