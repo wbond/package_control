@@ -27,7 +27,7 @@ class GitHubClient(JSONApiClient):
                 (user name, None, None) or
                 (None, None, None) if no match.
         """
-        match = re.match(r'^https?://github\.com/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/tree/([^/#?]+)/?|/?)|/?)$', url)
+        match = re.match(r'^https?://github\.com/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/tree/([^#?]*[^/#?])/?|/?)|/?)$', url)
         if match:
             return match.groups()
 

@@ -42,7 +42,7 @@ class BitBucketClient(JSONApiClient):
                 (None, None, None) if no match.
         """
 
-        match = re.match(r'^https?://bitbucket\.org/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/src/([^/#?]+)/?|/?)|/?)$', url)
+        match = re.match(r'^https?://bitbucket\.org/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/src/([^#?]*[^/#?])/?|/?)|/?)$', url)
         if match:
             return match.groups()
 

@@ -30,7 +30,7 @@ class GitLabClient(JSONApiClient):
             The branch name may be a branch name or a commit
         """
 
-        match = re.match(r'^https?://gitlab\.com/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/-/tree/([^/#?]+)/?|/?)|/?)$', url)
+        match = re.match(r'^https?://gitlab\.com/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/-/tree/([^#?]*[^/#?])/?|/?)|/?)$', url)
         if match:
             return match.groups()
 

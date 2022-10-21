@@ -85,6 +85,14 @@ class GitHubClientTests(unittest.TestCase):
             ('packagecontrol-test', 'package_control-tester', 'master'),
             client.user_repo_branch('https://github.com/packagecontrol-test/package_control-tester/tree/master/')
         )
+        self.assertEqual(
+            ('packagecontrol-test', 'package_control-tester', 'foo/bar'),
+            client.user_repo_branch('https://github.com/packagecontrol-test/package_control-tester/tree/foo/bar')
+        )
+        self.assertEqual(
+            ('packagecontrol-test', 'package_control-tester', 'foo/bar'),
+            client.user_repo_branch('https://github.com/packagecontrol-test/package_control-tester/tree/foo/bar/')
+        )
 
     def test_repo_user_branch_04(self):
         client = GitHubClient(self.github_settings())
@@ -345,6 +353,14 @@ class GitLabClientTests(unittest.TestCase):
             ('packagecontrol-test', 'package_control-tester', 'master'),
             client.user_repo_branch('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master/')
         )
+        self.assertEqual(
+            ('packagecontrol-test', 'package_control-tester', 'foo/bar'),
+            client.user_repo_branch('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/foo/bar')
+        )
+        self.assertEqual(
+            ('packagecontrol-test', 'package_control-tester', 'foo/bar'),
+            client.user_repo_branch('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/foo/bar/')
+        )
 
     def test_repo_user_branch_04(self):
         client = GitLabClient(self.gitlab_settings())
@@ -588,6 +604,14 @@ class BitBucketClientTests(unittest.TestCase):
         self.assertEqual(
             ('packagecontrol-test', 'package_control-tester', 'master'),
             client.user_repo_branch('https://bitbucket.org/packagecontrol-test/package_control-tester/src/master/')
+        )
+        self.assertEqual(
+            ('packagecontrol-test', 'package_control-tester', 'foo/bar'),
+            client.user_repo_branch('https://bitbucket.org/packagecontrol-test/package_control-tester/src/foo/bar')
+        )
+        self.assertEqual(
+            ('packagecontrol-test', 'package_control-tester', 'foo/bar'),
+            client.user_repo_branch('https://bitbucket.org/packagecontrol-test/package_control-tester/src/foo/bar/')
         )
 
     def test_repo_user_branch_04(self):
