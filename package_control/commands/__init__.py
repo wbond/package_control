@@ -10,17 +10,17 @@ from .install_package_command import InstallPackageCommand
 from .install_packages_command import InstallPackagesCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
-from .remove_package_command import RemovePackageCommand
-from .remove_packages_command import RemovePackagesCommand
-from .upgrade_all_packages_command import UpgradeAllPackagesCommand
-from .upgrade_package_command import UpgradePackageCommand
 from .package_control_disable_debug_mode_command import PackageControlDisableDebugModeCommand
 from .package_control_enable_debug_mode_command import PackageControlEnableDebugModeCommand
 from .package_control_insert_command import PackageControlInsertCommand
 from .package_control_tests_command import PackageControlTestsCommand
 from .remove_channel_command import RemoveChannelCommand
+from .remove_package_command import RemovePackageCommand
+from .remove_packages_command import RemovePackagesCommand
 from .remove_repository_command import RemoveRepositoryCommand
 from .satisfy_libraries_command import SatisfyLibrariesCommand
+from .upgrade_all_packages_command import UpgradeAllPackagesCommand
+from .upgrade_package_command import UpgradePackageCommand
 
 
 __all__ = [
@@ -36,15 +36,15 @@ __all__ = [
     'InstallPackagesCommand',
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',
-    'RemovePackageCommand',
-    'RemovePackagesCommand',
-    'UpgradeAllPackagesCommand',
-    'UpgradePackageCommand',
     'PackageControlDisableDebugModeCommand',
     'PackageControlEnableDebugModeCommand',
     'PackageControlInsertCommand',
     'PackageControlTestsCommand',
     'RemoveChannelCommand',
+    'RemovePackageCommand',
+    'RemovePackagesCommand',
     'RemoveRepositoryCommand',
-    'SatisfyLibrariesCommand'
+    'SatisfyLibrariesCommand',
+    'UpgradeAllPackagesCommand',
+    'UpgradePackageCommand',
 ]
