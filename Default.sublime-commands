@@ -20,6 +20,10 @@
         "command": "install_packages"
     },
     {
+        "caption": "Package Control: Advanced Remove Packages",
+        "command": "remove_packages"
+    },
+    {
         "caption": "Package Control: Create Package File",
         "command": "create_package"
     },

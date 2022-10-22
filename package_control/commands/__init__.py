@@ -11,6 +11,7 @@ from .install_packages_command import InstallPackagesCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
 from .remove_package_command import RemovePackageCommand
+from .remove_packages_command import RemovePackagesCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
 from .package_control_disable_debug_mode_command import PackageControlDisableDebugModeCommand
@@ -36,6 +37,7 @@ __all__ = [
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',
     'RemovePackageCommand',
+    'RemovePackagesCommand',
     'UpgradeAllPackagesCommand',
     'UpgradePackageCommand',
     'PackageControlDisableDebugModeCommand',
