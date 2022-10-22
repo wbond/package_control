@@ -16,8 +16,8 @@
         "command": "enable_packages"
     },
     {
-        "caption": "Package Control: Advanced Install Package",
-        "command": "advanced_install_package"
+        "caption": "Package Control: Advanced Install Packages",
+        "command": "install_packages"
     },
     {
         "caption": "Package Control: Create Package File",

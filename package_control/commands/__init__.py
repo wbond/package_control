@@ -1,6 +1,5 @@
 from .add_channel_command import AddChannelCommand
 from .add_repository_command import AddRepositoryCommand
-from .advanced_install_package_command import AdvancedInstallPackageCommand
 from .create_package_command import CreatePackageCommand
 from .disable_package_command import DisablePackageCommand
 from .disable_packages_command import DisablePackagesCommand
@@ -8,6 +7,7 @@ from .discover_packages_command import DiscoverPackagesCommand
 from .enable_package_command import EnablePackageCommand
 from .enable_packages_command import EnablePackagesCommand
 from .install_package_command import InstallPackageCommand
+from .install_packages_command import InstallPackagesCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
 from .remove_package_command import RemovePackageCommand
@@ -25,7 +25,6 @@ from .satisfy_libraries_command import SatisfyLibrariesCommand
 __all__ = [
     'AddChannelCommand',
     'AddRepositoryCommand',
-    'AdvancedInstallPackageCommand',
     'CreatePackageCommand',
     'DisablePackageCommand',
     'DisablePackagesCommand',
@@ -33,6 +32,7 @@ __all__ = [
     'EnablePackageCommand',
     'EnablePackagesCommand',
     'InstallPackageCommand',
+    'InstallPackagesCommand',
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',
     'RemovePackageCommand',

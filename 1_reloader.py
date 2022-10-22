@@ -220,6 +220,7 @@ mods_load_order = [
     '.commands.enable_packages_command',
     '.commands.existing_packages_command',
     '.commands.install_package_command',
+    '.commands.install_packages_command',
     '.commands.list_packages_command',
     '.commands.list_unmanaged_packages_command',
     '.commands.remove_channel_command',

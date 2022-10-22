@@ -10,56 +10,53 @@ from ..show_error import show_error
 from ..thread_progress import ThreadProgress
 
 
-class AdvancedInstallPackageCommand(sublime_plugin.ApplicationCommand):
+class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
 
     """
-    A command that accepts a comma-separated list of packages to install, or
-    prompts the user to paste a comma-separated list
+    A command that accepts a list of packages to install,
+    or prompts the user to paste a comma-separated list.
+
+    Example:
+
+    ```py
+    sublime.run_command("install_packages", {"packages": ["Package 1", "Package 2"]})
+    ```
     """
 
     def run(self, packages=None):
-        if packages:
-            if isinstance(packages, str):
-                packages = self.split(packages)
+        if isinstance(packages, list):
+            thread = InstallPackagesThread(packages)
+            thread.start()
+            message = 'Installing package'
+            if len(packages) > 1:
+                message += 's'
+            ThreadProgress(thread, message, '')
+            return
 
-            if isinstance(packages, list):
-                thread = AdvancedInstallPackageThread(packages)
-                thread.start()
-                message = 'Installing package'
-                if len(packages) > 1:
-                    message += 's'
-                ThreadProgress(thread, message, '')
+        def on_done(input_text):
+            packages = []
+            for package in input_text.split(','):
+                if package:
+                    package = package.strip()
+                    if package:
+                        packages.append(package)
+
+            if not packages:
+                show_error('No package names were entered')
                 return
 
+            self.run(packages)
+
         sublime.active_window().show_input_panel(
-            'Packages to Install (Comma-separated)',
+            'Packages to install (comma-separated)',
             '',
-            self.on_done,
+            on_done,
             None,
             None
         )
 
-    def on_done(self, input_text):
-        """
-        Input panel handler - adds the provided URL as a repository
 
-        :param input_text:
-            A string of the URL to the new repository
-        """
-
-        packages = self.split(input_text.strip())
-        if not packages:
-            show_error('No package names were entered')
-            return
-
-        self.run(packages)
-
-    @staticmethod
-    def split(packages):
-        return [package.strip() for package in packages.split(',') if package]
-
-
-class AdvancedInstallPackageThread(threading.Thread, PackageDisabler):
+class InstallPackagesThread(threading.Thread, PackageDisabler):
 
     """
     A thread to run the installation of one or more packages in
