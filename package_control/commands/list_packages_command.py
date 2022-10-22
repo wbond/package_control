@@ -1,5 +1,7 @@
 import os
 
+import sublime
+
 from .. import package_io
 from .. import sys_path
 from .existing_packages_command import ExistingPackagesCommand
