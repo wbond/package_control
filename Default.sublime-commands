@@ -8,6 +8,14 @@
         "command": "add_channel"
     },
     {
+        "caption": "Package Control: Advanced Disable Packages",
+        "command": "disable_packages"
+    },
+    {
+        "caption": "Package Control: Advanced Enable Packages",
+        "command": "enable_packages"
+    },
+    {
         "caption": "Package Control: Advanced Install Package",
         "command": "advanced_install_package"
     },

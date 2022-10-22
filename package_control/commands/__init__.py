@@ -3,8 +3,10 @@ from .add_repository_command import AddRepositoryCommand
 from .advanced_install_package_command import AdvancedInstallPackageCommand
 from .create_package_command import CreatePackageCommand
 from .disable_package_command import DisablePackageCommand
+from .disable_packages_command import DisablePackagesCommand
 from .discover_packages_command import DiscoverPackagesCommand
 from .enable_package_command import EnablePackageCommand
+from .enable_packages_command import EnablePackagesCommand
 from .install_package_command import InstallPackageCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
@@ -26,8 +28,10 @@ __all__ = [
     'AdvancedInstallPackageCommand',
     'CreatePackageCommand',
     'DisablePackageCommand',
+    'DisablePackagesCommand',
     'DiscoverPackagesCommand',
     'EnablePackageCommand',
+    'EnablePackagesCommand',
     'InstallPackageCommand',
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',
