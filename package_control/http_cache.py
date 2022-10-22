@@ -4,7 +4,7 @@ import time
 from . import sys_path
 
 
-class HttpCache(object):
+class HttpCache:
 
     """
     A data store for caching HTTP response data.
