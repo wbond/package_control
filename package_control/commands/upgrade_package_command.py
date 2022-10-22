@@ -7,7 +7,6 @@ from ..package_installer import PackageInstaller
 from ..package_installer import PackageInstallerThread
 from ..package_renamer import PackageRenamer
 from ..show_error import show_message
-from ..show_quick_panel import show_quick_panel
 from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
@@ -52,7 +51,11 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
             show_message('There are no packages ready for upgrade')
             return
 
-        show_quick_panel(self.window, self.package_list, self.on_done)
+        self.window.show_quick_panel(
+            self.package_list,
+            self.on_done,
+            sublime.KEEP_OPEN_ON_FOCUS_LOST
+        )
 
     def on_done(self, picked):
         """

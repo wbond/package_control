@@ -8,7 +8,6 @@ import sublime_plugin
 from .. import package_io
 from ..package_manager import PackageManager
 from ..show_error import show_message
-from ..show_quick_panel import show_quick_panel
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
@@ -77,18 +76,22 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
             show_message(self.no_packages_error())
             return
 
-        def on_done(picked):
-            if picked == -1:
+        def on_done(index):
+            if index == -1:
                 return
 
             if USE_QUICK_PANEL_ITEM:
-                package_name = package_list[picked].trigger
+                package_name = package_list[index].trigger
             else:
-                package_name = package_list[picked][0]
+                package_name = package_list[index][0]
 
             self.on_done(manager, package_name)
 
-        show_quick_panel(sublime.active_window(), package_list, on_done)
+        sublime.active_window().show_quick_panel(
+            package_list,
+            on_done,
+            sublime.KEEP_OPEN_ON_FOCUS_LOST
+        )
 
     def action(self):
         """

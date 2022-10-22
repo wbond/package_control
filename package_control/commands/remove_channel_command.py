@@ -3,7 +3,6 @@ import sublime_plugin
 
 from .. import text
 from ..settings import pc_settings_filename
-from ..show_quick_panel import show_quick_panel
 
 
 class RemoveChannelCommand(sublime_plugin.ApplicationCommand):
@@ -42,8 +41,11 @@ class RemoveChannelCommand(sublime_plugin.ApplicationCommand):
             run = True
 
         if run:
-            show_quick_panel(sublime.active_window(), self.channels, self.on_done)
-
+            sublime.active_window().show_quick_panel(
+                self.channels,
+                self.on_done,
+                sublime.KEEP_OPEN_ON_FOCUS_LOST
+            )
     def on_done(self, index):
         """
         Quick panel handler - removes the channel from settings

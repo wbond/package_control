@@ -3,7 +3,6 @@ import sublime_plugin
 
 from ..settings import pc_settings_filename
 from ..show_error import show_message
-from ..show_quick_panel import show_quick_panel
 
 
 class RemoveRepositoryCommand(sublime_plugin.ApplicationCommand):
@@ -19,7 +18,11 @@ class RemoveRepositoryCommand(sublime_plugin.ApplicationCommand):
             show_message('There are no repositories to remove')
             return
 
-        show_quick_panel(sublime.active_window(), self.repositories, self.on_done)
+        sublime.active_window().show_quick_panel(
+            self.repositories,
+            self.on_done,
+            sublime.KEEP_OPEN_ON_FOCUS_LOST
+        )
 
     def on_done(self, index):
         """

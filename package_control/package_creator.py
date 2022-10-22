@@ -5,7 +5,6 @@ import sublime
 from . import sys_path
 from .package_manager import PackageManager
 from .show_error import show_message
-from .show_quick_panel import show_quick_panel
 
 
 class PackageCreator:
@@ -34,7 +33,12 @@ class PackageCreator:
         if not self.packages:
             show_message('There are no packages available to be packaged')
             return
-        show_quick_panel(self.window, self.packages, self.on_done_packages)
+
+        self.window.show_quick_panel(
+            self.packages,
+            self.on_done_packages,
+            sublime.KEEP_OPEN_ON_FOCUS_LOST
+        )
 
     def on_done_packages(self, picked):
         """
@@ -63,7 +67,11 @@ class PackageCreator:
             self.profiles.append(key)
 
         def show_panel():
-            show_quick_panel(self.window, self.profiles, self.on_done_profile)
+            self.window.show_quick_panel(
+                self.profiles,
+                self.on_done_profile,
+                sublime.KEEP_OPEN_ON_FOCUS_LOST
+            )
         sublime.set_timeout(show_panel, 50)
 
     def on_done_profile(self, picked):

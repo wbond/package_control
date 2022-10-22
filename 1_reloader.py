@@ -41,7 +41,6 @@ mods_load_order = [
     '.processes',
     '.selectors',
     '.settings',
-    '.show_quick_panel',
     '.thread_progress',
     '.package_io',
     '.deps.semver',
