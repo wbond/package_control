@@ -6,23 +6,24 @@ import sublime_plugin
 
 from ..console_write import console_write
 from ..package_installer import PackageInstaller
+from ..package_renamer import PackageRenamer
 from ..show_error import show_error, show_message
 from ..thread_progress import ThreadProgress
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
+class UpgradePackagesCommand(sublime_plugin.ApplicationCommand):
 
     """
-    A command that accepts a list of packages to install,
+    A command that accepts a list of packages to upgrade,
     or prompts the user to paste a comma-separated list.
 
     Example:
 
     ```py
     sublime.run_command(
-        "install_packages",
+        "upgrade_packages",
         {
             "packages": ["Package 1", "Package 2"],
             "unattended": False  # don't suppress error dialogs
@@ -33,9 +34,9 @@ class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None, unattended=False):
         if isinstance(packages, list):
-            thread = InstallPackagesThread(packages, unattended)
+            thread = UpgradePackagesThread(packages, unattended)
             thread.start()
-            message = 'Installing package'
+            message = 'Upgrading package'
             if len(packages) > 1:
                 message += 's'
             ThreadProgress(thread, message, '')
@@ -56,7 +57,7 @@ class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
             self.run(packages, False)
 
         sublime.active_window().show_input_panel(
-            'Packages to install (comma-separated)',
+            'Packages to upgrade (comma-separated)',
             '',
             on_done,
             None,
@@ -64,7 +65,7 @@ class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
         )
 
 
-class InstallPackagesThread(threading.Thread, PackageInstaller):
+class UpgradePackagesThread(threading.Thread, PackageInstaller):
 
     """
     A thread to run the installation of one or more packages in
@@ -75,13 +76,14 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
         Constructs a new instance.
 
         :param packages:
-            The list of package names
+            The list of package names to upgrade.
+            If `None` all packages are upgraded.
 
         :param unattended:
             A flag to decide whether to display modal error/message dialogs.
         """
 
-        self.packages = set(packages)
+        self.packages = set(packages) if packages else None
         self.unattended = unattended
 
         threading.Thread.__init__(self)
@@ -89,46 +91,44 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
 
     def run(self):
         console_write('Loading repository...')
-        package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
-        if not package_list:
-            console_write('There are no packages available for installation')
-            if not self.unattended:
-                show_message(
-                    '''
-                    There are no packages available for installation
-
-                    Please see https://packagecontrol.io/docs/troubleshooting for help
-                    '''
-                )
-            return
+        PackageRenamer().rename_packages(self.manager)
+        package_list = self.make_package_list(['install', 'reinstall', 'none'])
 
         if USE_QUICK_PANEL_ITEM:
-            package_names = {info.trigger for info in package_list if info.trigger in self.packages}
+            package_names = {
+                info.trigger for info in package_list
+                if self.packages is not None and info.trigger in self.packages
+            }
         else:
-            package_names = {info[0] for info in package_list if info[0] in self.packages}
+            package_names = {
+                info[0] for info in package_list
+                if self.packages is not None and info[0] in self.packages
+            }
 
         if not package_names:
-            console_write('All packages already installed!')
+            console_write('All packages up-to-date!')
             if not self.unattended:
-                show_message('All packages already installed!')
+                show_message('All packages up-to-date!')
             return
 
+        # If Package Control is being upgraded, just do that
+        if 'Package Control' in package_names:
+            package_names = {'Package Control'}
+
         console_write(
-            'Installing %d package%s...',
+            'Upgrading %d package%s...',
             (len(package_names), 's' if len(package_names) != 1 else '')
         )
 
-        self.disable_packages(package_names, 'install')
+        disabled_packages = self.disable_packages(package_names, 'upgrade')
         time.sleep(0.7)
-
-        deffered = set()
 
         try:
             for package in sorted(package_names, key=lambda s: s.lower()):
                 result = self.manager.install_package(package)
                 # do not re-enable package if operation is dereffered to next start
-                if result is None:
-                    deffered.add(package)
+                if result is None and package in disabled_packages:
+                    disabled_packages.remove(package)
         finally:
             time.sleep(0.7)
-            self.reenable_packages(package_names - deffered, 'install')
+            self.reenable_packages(disabled_packages, 'upgrade')

@@ -21,6 +21,7 @@ from .remove_repository_command import RemoveRepositoryCommand
 from .satisfy_libraries_command import SatisfyLibrariesCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
+from .upgrade_packages_command import UpgradePackagesCommand
 
 
 __all__ = [
@@ -47,4 +48,5 @@ __all__ = [
     'SatisfyLibrariesCommand',
     'UpgradeAllPackagesCommand',
     'UpgradePackageCommand',
+    'UpgradePackagesCommand',
 ]
