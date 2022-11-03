@@ -93,12 +93,12 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
             if USE_QUICK_PANEL_ITEM:
                 package_names = {
                     info.trigger for info in package_list
-                    if self.packages is not None and info.trigger in self.packages
+                    if self.packages is None or info.trigger in self.packages
                 }
             else:
                 package_names = {
                     info[0] for info in package_list
-                    if self.packages is not None and info[0] in self.packages
+                    if self.packages is None or info[0] in self.packages
                 }
 
             if not package_names:
