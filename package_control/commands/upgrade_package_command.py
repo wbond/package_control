@@ -80,9 +80,11 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
 
             try:
                 result = self.manager.install_package(package_name)
+                if result is True:
+                    progress.finish('Package %s successfully upgraded' % package_name)
+
             finally:
                 # Do not reenable if deferred until next restart
                 if result is not None:
                     time.sleep(0.7)
                     self.reenable_packages(package_name, 'upgrade')
-                    progress.finish('Package %s successfully upgraded' % package_name)

@@ -128,10 +128,11 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
                     # do not re-enable package if operation is dereffered to next start
                     if result is None and package in disabled_packages:
                         disabled_packages.remove(package)
-            finally:
-                time.sleep(0.7)
-                self.reenable_packages(disabled_packages, 'upgrade')
 
                 message = 'All packages updated!'
                 console_write(message)
                 progress.finish(message)
+
+            finally:
+                time.sleep(0.7)
+                self.reenable_packages(disabled_packages, 'upgrade')

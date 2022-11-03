@@ -98,9 +98,6 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
                         deffered.add(package)
                     elif result is True:
                         num_removed += 1
-            finally:
-                time.sleep(0.7)
-                self.reenable_packages(self.packages - deffered, 'remove')
 
                 num_packages = len(self.packages)
                 if num_packages == 1:
@@ -113,3 +110,7 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
                     console_write(message)
 
                 progress.finish(message)
+
+            finally:
+                time.sleep(0.7)
+                self.reenable_packages(self.packages - deffered, 'remove')

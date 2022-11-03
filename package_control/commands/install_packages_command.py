@@ -130,10 +130,11 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
                     # do not re-enable package if operation is dereffered to next start
                     if result is None:
                         deffered.add(package)
-            finally:
-                time.sleep(0.7)
-                self.reenable_packages(package_names - deffered, 'install')
 
                 message = 'All packages installed!'
                 console_write(message)
                 progress.finish(message)
+
+            finally:
+                time.sleep(0.7)
+                self.reenable_packages(package_names - deffered, 'install')
