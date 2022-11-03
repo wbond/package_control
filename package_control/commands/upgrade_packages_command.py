@@ -6,11 +6,9 @@ import sublime_plugin
 
 from ..activity_indicator import ActivityIndicator
 from ..console_write import console_write
-from ..package_installer import PackageInstaller
+from ..package_installer import PackageInstaller, USE_QUICK_PANEL_ITEM
 from ..package_renamer import PackageRenamer
 from ..show_error import show_error, show_message
-
-USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
 class UpgradePackagesCommand(sublime_plugin.ApplicationCommand):
