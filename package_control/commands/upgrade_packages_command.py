@@ -113,24 +113,34 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
             if 'Package Control' in package_names:
                 package_names = {'Package Control'}
 
-            console_write(
-                'Upgrading %d package%s...',
-                (len(package_names), 's' if len(package_names) != 1 else '')
-            )
+            num_packages = len(package_names)
+            if num_packages > 1:
+                console_write('Upgrading %d packages...' % num_packages)
 
             disabled_packages = self.disable_packages(package_names, 'upgrade')
             time.sleep(0.7)
 
+            num_upgraded = 0
+
             try:
                 for package in sorted(package_names, key=lambda s: s.lower()):
-                    progress.set_label('Upgrading %s' % package)
+                    progress.set_label('Upgrading package %s' % package)
                     result = self.manager.install_package(package)
+                    if result is True:
+                        num_upgraded += 1
                     # do not re-enable package if operation is dereffered to next start
-                    if result is None and package in disabled_packages:
+                    elif result is None and package in disabled_packages:
                         disabled_packages.remove(package)
 
-                message = 'All packages updated!'
-                console_write(message)
+                if num_packages == 1:
+                    message = 'Package %s successfully upgraded' % list(package_names)[0]
+                elif num_packages == num_upgraded:
+                    message = 'All packages successfully upgraded'
+                    console_write(message)
+                else:
+                    message = '%d of %d packages successfully upgraded' % (num_upgraded, num_packages)
+                    console_write(message)
+
                 progress.finish(message)
 
             finally:

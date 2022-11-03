@@ -20,7 +20,15 @@ class EnablePackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None):
         if isinstance(packages, list):
-            PackageDisabler.reenable_packages(packages, 'enable')
+            unique_packages = set(packages)
+            PackageDisabler.reenable_packages(unique_packages, 'enable')
+
+            if len(unique_packages) == 1:
+                message = 'Package %s successfully enabled.' % packages[0]
+            else:
+                message = '%d packages have been enabled.' % len(unique_packages)
+
+            sublime.status_message(message)
             return
 
         def on_done(input_text):
@@ -36,7 +44,6 @@ class EnablePackagesCommand(sublime_plugin.ApplicationCommand):
                 return
 
             self.run(packages)
-            sublime.status_message('Packages have been enabled.')
 
         sublime.active_window().show_input_panel(
             'Packages to enable (comma-separated)',

@@ -113,26 +113,35 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
                     show_message(message)
                 return
 
-            console_write(
-                'Installing %d package%s...',
-                (len(package_names), 's' if len(package_names) != 1 else '')
-            )
+            num_packages = len(package_names)
+            if num_packages > 1:
+                console_write('Installing %d packages...' % num_packages)
 
             self.disable_packages(package_names, 'install')
             time.sleep(0.7)
 
             deffered = set()
+            num_installed = 0
 
             try:
                 for package in sorted(package_names, key=lambda s: s.lower()):
-                    progress.set_label('Installing %s' % package)
+                    progress.set_label('Installing package %s' % package)
                     result = self.manager.install_package(package)
+                    if result is True:
+                        num_installed += 1
                     # do not re-enable package if operation is dereffered to next start
-                    if result is None:
+                    elif result is None:
                         deffered.add(package)
 
-                message = 'All packages installed!'
-                console_write(message)
+                if num_packages == 1:
+                    message = 'Package %s successfully installed' % list(package_names)[0]
+                elif num_packages == num_installed:
+                    message = 'All packages successfully installed'
+                    console_write(message)
+                else:
+                    message = '%d of %d packages successfully installed' % (num_installed, num_packages)
+                    console_write(message)
+
                 progress.finish(message)
 
             finally:

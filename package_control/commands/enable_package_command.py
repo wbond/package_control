@@ -1,6 +1,5 @@
 import sublime
 
-from .. import text
 from ..package_disabler import PackageDisabler
 from .existing_packages_command import ExistingPackagesCommand
 
@@ -51,10 +50,4 @@ class EnablePackageCommand(ExistingPackagesCommand):
 
         PackageDisabler.reenable_packages(package_name, 'enable')
 
-        sublime.status_message(text.format(
-            '''
-            Package %s successfully removed from list of disabled packages -
-            restarting Sublime Text may be required
-            ''',
-            package_name
-        ))
+        sublime.status_message('Package %s successfully enabled.' % package_name)

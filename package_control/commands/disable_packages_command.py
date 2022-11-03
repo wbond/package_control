@@ -20,7 +20,21 @@ class DisablePackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None):
         if isinstance(packages, list):
-            PackageDisabler.disable_packages(packages, 'disable')
+            unique_packages = set(packages)
+            disabled = PackageDisabler.disable_packages(unique_packages, 'disable')
+
+            num_packages = len(unique_packages)
+            num_disabled = len(disabled)
+
+            if num_packages == num_disabled:
+                if num_packages == 1:
+                    message = 'Package %s successfully disabled.' % packages[0]
+                else:
+                    message = '%d packages have been disabled.' % num_disabled
+            else:
+                message = '%d of %d packages have been disabled.' % (num_disabled, num_packages)
+
+            sublime.status_message(message)
             return
 
         def on_done(input_text):
@@ -36,7 +50,6 @@ class DisablePackagesCommand(sublime_plugin.ApplicationCommand):
                 return
 
             self.run(packages)
-            sublime.status_message('Packages have been disabled.')
 
         sublime.active_window().show_input_panel(
             'Packages to disable (comma-separated)',

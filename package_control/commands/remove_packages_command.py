@@ -81,7 +81,9 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
             message = 'Removing %d packages...' % num_packages
 
         with ActivityIndicator(message) as progress:
-            console_write(message)
+
+            if num_packages > 1:
+                console_write(message)
 
             self.disable_packages(self.packages, 'remove')
             time.sleep(0.7)
@@ -93,20 +95,19 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
                 for package in sorted(self.packages, key=lambda s: s.lower()):
                     progress.set_label('Removing package %s' % package)
                     result = self.manager.remove_package(package)
-                    # do not re-enable package if operation is dereffered to next start
-                    if result is None:
-                        deffered.add(package)
-                    elif result is True:
+                    if result is True:
                         num_removed += 1
+                    # do not re-enable package if operation is dereffered to next start
+                    elif result is None:
+                        deffered.add(package)
 
-                num_packages = len(self.packages)
                 if num_packages == 1:
                     message = 'Package %s successfully removed' % list(self.packages)[0]
                 elif num_packages == num_removed:
-                    message = 'All packages successfully rmoved'
+                    message = 'All packages successfully removed'
                     console_write(message)
                 else:
-                    message = '%d of %d packages successfully rmoved' % (num_removed, num_packages)
+                    message = '%d of %d packages successfully removed' % (num_removed, num_packages)
                     console_write(message)
 
                 progress.finish(message)
