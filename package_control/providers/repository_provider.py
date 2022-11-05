@@ -12,7 +12,7 @@ from ..clients.gitlab_client import GitLabClient
 from ..console_write import console_write
 from ..download_manager import http_get, resolve_urls, update_url
 from ..downloaders.downloader_exception import DownloaderException
-from ..versions import version_sort
+from ..package_version import version_sort
 from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import ProviderException
 from .schema_compat import SchemaVersion

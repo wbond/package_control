@@ -5,7 +5,7 @@ import sublime
 
 from .package_manager import PackageManager
 from .package_disabler import PackageDisabler
-from .versions import PackageVersion
+from .package_version import PackageVersion
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 

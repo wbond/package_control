@@ -35,6 +35,7 @@ from .package_io import (
     read_package_file,
     regular_file_exists
 )
+from .package_version import PackageVersion, version_sort
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .providers.channel_provider import UncachedChannelRepositoryError
 from .providers.provider_exception import ProviderException
@@ -43,7 +44,6 @@ from .settings import load_list_setting, pc_settings_filename, save_list_setting
 from .show_error import show_error
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
-from .versions import PackageVersion, version_sort
 
 
 DEFAULT_CHANNEL = 'https://packagecontrol.io/channel_v3.json'

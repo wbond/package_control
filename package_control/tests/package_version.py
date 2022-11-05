@@ -1,6 +1,6 @@
 import unittest
 
-from ..versions import PackageVersion, SemVer
+from ..package_version import PackageVersion, SemVer
 
 
 class PackageVersionTests(unittest.TestCase):

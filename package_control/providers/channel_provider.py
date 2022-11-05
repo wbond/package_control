@@ -5,7 +5,7 @@ from itertools import chain
 
 from ..console_write import console_write
 from ..download_manager import http_get, resolve_urls, update_url
-from ..versions import version_sort
+from ..package_version import version_sort
 from .provider_exception import ProviderException
 from .schema_compat import SchemaVersion
 

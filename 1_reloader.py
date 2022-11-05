@@ -44,7 +44,7 @@ mods_load_order = [
     '.activity_indicator',
     '.package_io',
     '.deps.semver',
-    '.versions',
+    '.package_version',
 
     '.deps.asn1crypto._errors',
     '.deps.asn1crypto._int',
