@@ -17,7 +17,7 @@ def _tracker():
 
     try:
         return _tracker.cache
-    except AttributeError:
+    except:
         tracker = sublime.load_settings("Package Control Events")
         if tracker is not None and tracker.settings_id > 0:
             _tracker.cache = tracker
