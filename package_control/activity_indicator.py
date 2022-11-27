@@ -15,8 +15,7 @@ class ActivityIndicator:
 
     def __init__(self, label=None):
         self.label = label
-        self.interval = 100
-        self.width = 8
+        self.interval = 120
         self._lock = Lock()
         self._running = False
         self._ticks = 0
@@ -115,10 +114,7 @@ class ActivityIndicator:
             The activity indicator string to display in the status bar
         """
 
-        status = self._ticks % (2 * self.width)
-        before = min(status, (2 * self.width) - status)
-        after = self.width - before
-        text = "[{}={}]".format(" " * before, " " * after)
+        text = '⣷⣯⣟⡿⢿⣻⣽⣾'[self._ticks % 8]
         if self.label:
             text += " " + self.label
         return text
