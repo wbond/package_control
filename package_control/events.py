@@ -5,7 +5,7 @@ import sublime
 
 # This ensures we don't run into issues calling the event tracking methods
 # from threads
-_lock = threading.Lock()
+__lock = threading.Lock()
 
 
 def _tracker():
@@ -17,7 +17,7 @@ def _tracker():
 
     try:
         return _tracker.cache
-    except:
+    except AttributeError:
         tracker = sublime.load_settings("Package Control Events")
         if tracker is not None and tracker.settings_id > 0:
             _tracker.cache = tracker
@@ -43,7 +43,7 @@ def add(event_type, package, version):
     if event_type not in ('install', 'pre_upgrade', 'post_upgrade', 'remove'):
         raise KeyError(repr(event_type))
 
-    with _lock:
+    with __lock:
         tracker = _tracker()
         packages = tracker.get(event_type, {})
         packages[package] = version
@@ -71,7 +71,7 @@ def clear(event_type, package, future=False):
         raise KeyError(repr(event_type))
 
     def do_clear():
-        with _lock:
+        with __lock:
             tracker = _tracker()
             packages = tracker.get(event_type, {})
             if package in packages:
@@ -96,7 +96,9 @@ def install(name):
         False if not just installed
     """
 
-    return _tracker().get('install', {}).get(name, False)
+    with __lock:
+        event = _tracker().get('install') or {}
+        return event.get(name, False)
 
 
 def pre_upgrade(name):
@@ -111,7 +113,9 @@ def pre_upgrade(name):
         False if not being upgraded
     """
 
-    return _tracker().get('pre_upgrade', {}).get(name, False)
+    with __lock:
+        event = _tracker().get('pre_upgrade') or {}
+        return event.get(name, False)
 
 
 def post_upgrade(name):
@@ -126,7 +130,9 @@ def post_upgrade(name):
         False if not just upgraded
     """
 
-    return _tracker().get('post_upgrade', {}).get(name, False)
+    with __lock:
+        event = _tracker().get('post_upgrade') or {}
+        return event.get(name, False)
 
 
 def remove(name):
@@ -141,4 +147,6 @@ def remove(name):
         False if not being removed
     """
 
-    return _tracker().get('remove', {}).get(name, False)
+    with __lock:
+        event = _tracker().get('remove') or {}
+        return event.get(name, False)
