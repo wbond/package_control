@@ -33,7 +33,7 @@ use_ctypes()
 # it has OpenSSL statically linked, and we can't dlopen() that.
 # ST 4081 broke sys.executable to return "sublime_text", but other 4xxx builds
 # will contain "plugin_host".
-if sys.version_info == (3, 8) and sys.platform == 'linux' and (
+if sys.version_info[:2] == (3, 8) and sys.platform == 'linux' and (
         'sublime_text' in sys.executable or
         'plugin_host' in sys.executable):
     install_dir = os.path.dirname(sys.executable)
