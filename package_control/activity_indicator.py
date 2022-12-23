@@ -84,11 +84,10 @@ class ActivityIndicator:
         Invoke status bar update with specified interval.
         """
 
-        with self._lock:
-            if self._running:
-                self._ticks += 1
-                self.update(self.render_indicator_text())
-                sublime.set_timeout(self.tick, self.interval)
+        if self._running:
+            self._ticks += 1
+            self.update(self.render_indicator_text())
+            sublime.set_timeout(self.tick, self.interval)
 
     def update(self, text):
         """
