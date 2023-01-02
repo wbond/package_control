@@ -1,5 +1,4 @@
 import os
-import re
 import shutil
 
 import sublime
@@ -54,25 +53,6 @@ class Library:
             return self._to_tuple() < rhs._to_tuple()
         return self_lt < rhs_lt
 
-    @property
-    def path(self):
-        return os.path.join(sys_path.lib_paths()[self.python_version], self.name)
-
-
-def _name_from_dist_info_dirname(dirname):
-    library_name = dirname[:-10]
-    return re.sub(
-        r'-(?:'
-        r'(\d+(?:\.\d+)*)'
-        r'([-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\.?\d*)?'
-        r'(-\d+|(?:[-._]?(?:rev|r|post)\.?\d*))?'
-        r'([-._]?dev\.?\d*)?'
-        r')$',
-        '',
-        library_name,
-        count=1
-    )
-
 
 def list_all():
     """
@@ -93,10 +73,8 @@ def list_all():
             record_path = os.path.join(path, 'RECORD')
             if not os.path.isfile(record_path):
                 continue
-            out.add(Library(
-                _name_from_dist_info_dirname(fname),
-                python_version
-            ))
+            out.add(Library(fname, python_version))
+
     return out
 
 
@@ -125,10 +103,8 @@ def list_unmanaged():
                 if f.read().strip().startswith('Package Control'):
                     continue
 
-            out.add(Library(
-                _name_from_dist_info_dirname(fname),
-                python_version
-            ))
+            out.add(Library(fname, python_version))
+
     return out
 
 

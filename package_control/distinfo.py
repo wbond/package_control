@@ -9,14 +9,17 @@ from . import pep440
 from . import sys_path
 
 _dist_info_pattern = re.compile(
-    r'''(?x)
-    (?P<name>.+?)-(?P<version>
-        (?P<major>[0-9]+)
-      \.(?P<minor>[0-9]+)
-      \.(?P<patch>[0-9]+)
-      (?:\-(?P<prerelease>(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?))?
-      (?:\+(?P<build>(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?))?
-    )'''
+    r"""(?x)
+    (?P<name>.+?)
+    -
+    (?P<version>
+        (?:\d+(?:\.\d+)*)
+        (?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\.?\d*)?
+        (?:-\d+|(?:[-._]?(?:rev|r|post)\.?\d*))?
+        (?:[-._]?dev\.?\d*)?
+    )
+    \.dist-info$
+    """
 )
 
 
@@ -24,42 +27,9 @@ class DistInfoNotFoundError(FileNotFoundError):
     pass
 
 
-def match_dist_info_dir(dir_name, library_name):
-    """
-    Match a given directory name against the library name.
-
-    .dist-info directories are always of the form <name>-<semver>. This
-    function extracts the name part and compares it with the given
-    library_name.
-
-    :param dir_name:
-        An unicode string of a directory name which might be the desired
-        .dist-info directory, representing the library.
-
-    :param library_name:
-        An unicode string of a library name, to find a .dist-info directory
-        for.
-
-    :returns:
-        The regexp match object, if dir_name is the .dist-info directory of
-        the given library or False otherwise.
-
-        The match object provides all information the .dist-info directory
-        name can offer:
-
-        match['name']        - library name
-        match['version']     - full semver version string
-        match['major']       - semver part feed SemVer() with
-        match['minor']       - semver part feed SemVer() with
-        match['patch']       - semver part feed SemVer() with
-        match['prerelease']  - semver part feed SemVer() with
-        match['build']       - semver part feed SemVer() with
-    """
-
-    match = _dist_info_pattern.match(dir_name)
-    if match and match.groupdict()['name'] == library_name:
-        return match
-    return False
+def library_name_from_dist_info_dirname(dirname):
+    parts = _dist_info_pattern.match(dirname)
+    return parts['name'] if parts else None
 
 
 def find_dist_info_dir(install_root, library_name):
@@ -80,29 +50,10 @@ def find_dist_info_dir(install_root, library_name):
         DistInfoNotFoundError if no .dist-info directory was found.
     """
 
-    for dir_name in os.listdir(install_root):
-        if match_dist_info_dir(dir_name, library_name):
-            return DistInfoDir(install_root, dir_name)
+    for fname in os.listdir(install_root):
+        if library_name == library_name_from_dist_info_dirname(fname):
+            return DistInfoDir(install_root, fname)
     raise DistInfoNotFoundError('Library {} not installed!'.format(library_name))
-
-
-def list_dist_info_dirs(install_root):
-    """
-    Generates a list of all .dist-info directories in the given
-    installlation directory.
-
-    :param install_root:
-        An unicode string of an absolute path of the directory libraries are
-        installed in
-
-    :yields:
-        DistInfoDir objects for all .dist-info directories.
-    """
-
-    for dir_name in os.listdir(install_root):
-        if dir_name.endswith('.dist-info'):
-            yield DistInfoDir(install_root, dir_name)
-    return False
 
 
 def _verify_file(abs_path, hash_, size):
