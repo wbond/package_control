@@ -123,17 +123,12 @@ def _norm_tuples(a, b):
 
 
 class PEP440Version():
-    string = ''
-    tup = tuple()
-    # Versions allow wildcards when used with == operator
-    wildcard = False
+    __slots__ = ["string", "tup", "wildcard"]
 
     def __init__(self, string):
-        self.wildcard = False
-        if string.endswith(".*"):
-            string = string[:-2]
-            self.wildcard = True
-        self.string = string
+        # Versions allow wildcards when used with == operator
+        self.wildcard = string.endswith(".*")
+        self.string = string[:-2] if self.wildcard else string
         self.tup = _pep440_to_tuple(string)
 
     def __str__(self):
@@ -182,8 +177,7 @@ def pep440_version_specifier(string):
 
 
 class PEP440VersionComparator():
-    operator = None
-    pep440_version = None
+    __slots__ = ["operator", "pep440_version"]
 
     def __init__(self, operator, pep440_version):
         self.operator = operator
