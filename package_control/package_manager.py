@@ -1125,17 +1125,12 @@ class PackageManager:
 
         try:
             lib_path = sys_path.lib_paths()[python_version]
-
-            try:
-                existing_did = library.distinfo.find_dist_info_dir(lib_path, library_name)
-            except FileNotFoundError:
-                existing_did = None
-
-            is_upgrade = existing_did is not None
+            installed_library = library.find_installed(library_name, python_version)
+            is_upgrade = installed_library is not None
 
             modified_paths = set()
             if is_upgrade:
-                _, modified_ris = existing_did.verify_files()
+                _, modified_ris = installed_library.dist_info.verify_files()
                 for mri in modified_ris:
                     modified_paths.add(mri.relative_path)
 
@@ -1223,7 +1218,7 @@ class PackageManager:
 
             if is_upgrade:
                 try:
-                    library.remove(existing_did.install_root, library_name)
+                    library.remove(installed_library)
                 except OSError as e:
                     console_write(
                         '''
@@ -1656,8 +1651,6 @@ class PackageManager:
 
         available_libraries = self.list_available_libraries(python_version)
 
-        lib_path = sys_path.lib_paths()[python_version]
-
         error = False
         for library_name in library_names:
             installed_version = None
@@ -1685,14 +1678,12 @@ class PackageManager:
 
             info = available_libraries[library_name]
 
-            try:
-                existing_did = library.distinfo.find_dist_info_dir(lib_path, library_name)
-                installed_version = existing_did.read_metadata()['version']
-            except FileNotFoundError:
-                installed_version = None
-
-            if installed_version:
-                installed_version = pep440.PEP440Version(installed_version)
+            installed_version = None
+            installed_library = library.find_installed(library_name, python_version)
+            if installed_library:
+                installed_version = installed_library.dist_info.read_metadata()['version']
+                if installed_version:
+                    installed_version = pep440.PEP440Version(installed_version)
 
             library_releases = info.get('releases', [])
             library_release = library_releases[0] if library_releases else {}
@@ -1958,14 +1949,14 @@ class PackageManager:
         Deletes a library
 
         :param lib:
-            The library.Library() to delete
+            The library.InstalledLibrary() to delete
 
         :return:
             bool if the library was successfully deleted
         """
 
         try:
-            library.remove(sys_path.lib_paths()[lib.python_version], lib.name)
+            library.remove(lib)
         except library.distinfo.DistInfoNotFoundError:
             console_write(
                 '''

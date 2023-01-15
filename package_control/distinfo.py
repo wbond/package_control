@@ -32,30 +32,6 @@ def library_name_from_dist_info_dirname(dirname):
     return parts['name'] if parts else None
 
 
-def find_dist_info_dir(install_root, library_name):
-    """
-    Find the .dist-info directory for a given library.
-
-    :param install_root:
-        An unicode string of an absolute path of the directory libraries are
-        installed in
-
-    :param library_name:
-        An unicode string of the library name
-
-    :returns:
-        An unicode string of the .dist-info directory.
-
-    :raises:
-        DistInfoNotFoundError if no .dist-info directory was found.
-    """
-
-    for fname in os.listdir(install_root):
-        if library_name == library_name_from_dist_info_dirname(fname):
-            return DistInfoDir(install_root, fname)
-    raise DistInfoNotFoundError('Library {} not installed!'.format(library_name))
-
-
 def _verify_file(abs_path, hash_, size):
     """
     Verifies a file hasn't been modified using the filesize and SHA256 hash
@@ -161,6 +137,12 @@ class DistInfoDir:
         self.install_root = install_root
         self.dir_name = dist_info_dir
         self.dir_path = os.path.join(install_root, dist_info_dir)
+
+    def library_name(self):
+        """
+        Return the library name, which is the distinfo dir name without version.
+        """
+        return library_name_from_dist_info_dirname(self.dir_name)
 
     def exists(self):
         """

@@ -54,12 +54,20 @@ class Library:
         return self_lt < rhs_lt
 
 
+class InstalledLibrary(Library):
+    __slots__ = ['dist_info']
+
+    def __init__(self, dist_info_dir, python_version):
+        self.dist_info = distinfo.DistInfoDir(sys_path.lib_paths()[python_version], dist_info_dir)
+        super().__init__(self.dist_info.library_name(), python_version)
+
+
 def list_all():
     """
     List all dependencies installed
 
     :return:
-        A set of Library() object
+        A set of InstalledLibrary() object
     """
 
     out = set()
@@ -73,7 +81,7 @@ def list_all():
             record_path = os.path.join(path, 'RECORD')
             if not os.path.isfile(record_path):
                 continue
-            out.add(Library(fname, python_version))
+            out.add(InstalledLibrary(fname, python_version))
 
     return out
 
@@ -83,7 +91,7 @@ def list_unmanaged():
     List all dependencies installed that Package Control didn't install
 
     :return:
-        A set of Library() objects
+        A set of InstalledLibrary() objects
     """
 
     out = set()
@@ -103,9 +111,30 @@ def list_unmanaged():
                 if f.read().strip().startswith('Package Control'):
                     continue
 
-            out.add(Library(fname, python_version))
+            out.add(InstalledLibrary(fname, python_version))
 
     return out
+
+
+def find_installed(library_name, python_version):
+    """
+    Find a library by name in given directory.
+
+    :param library_name:
+        An unicode string of the library name
+
+    :param python_version:
+        A unicode string of "3.3" or "3.8"
+
+    returns:
+        An InstalledLibrary() object
+    """
+
+    install_root = sys_path.lib_paths()[python_version]
+    for fname in os.listdir(install_root):
+        if library_name == distinfo.library_name_from_dist_info_dirname(fname):
+            return InstalledLibrary(fname, python_version)
+    return None
 
 
 def convert_dependency(dependency_path, python_version, name, version, description, url):
@@ -232,21 +261,23 @@ def install(dist_info, new_install_root):
         shutil.move(src_path, dest_path)
 
 
-def remove(install_root, name):
+def remove(installed_library):
     """
     Deletes all of the files from a library
 
     :param install_root:
         A unicode string of directory libraries are installed in
 
-    :param name:
-        A unicode string of the library name
+    :param installed_library:
+        A InstalledLibrary object representing the library to remove
 
     :raises:
         OSError - when a permission error occurs trying to remove a file
     """
 
-    dist_info = distinfo.find_dist_info_dir(install_root, name)
+    dist_info = installed_library.dist_info
+    if not dist_info.exists():
+        raise distinfo.DistInfoNotFoundError()
 
     for rel_path in dist_info.top_level_paths():
         # Remove the .dist-info dir last so we have info for cleanup in case
