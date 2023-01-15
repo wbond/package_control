@@ -75,10 +75,7 @@ def list_all():
         for fname in os.listdir(install_root):
             if not fname.endswith(".dist-info"):
                 continue
-            path = os.path.join(install_root, fname)
-            if not os.path.isdir(path):
-                continue
-            record_path = os.path.join(path, 'RECORD')
+            record_path = os.path.join(install_root, fname, 'RECORD')
             if not os.path.isfile(record_path):
                 continue
             out.add(InstalledLibrary(fname, python_version))
@@ -99,10 +96,7 @@ def list_unmanaged():
         for fname in os.listdir(install_root):
             if not fname.endswith(".dist-info"):
                 continue
-            path = os.path.join(install_root, fname)
-            if not os.path.isdir(path):
-                continue
-            installer_path = os.path.join(path, 'INSTALLER')
+            installer_path = os.path.join(install_root, fname, 'INSTALLER')
             if not os.path.isfile(installer_path):
                 continue
 
