@@ -136,7 +136,13 @@ class DistInfoDir:
 
         self.install_root = install_root
         self.dir_name = dist_info_dir
-        self.dir_path = os.path.join(install_root, dist_info_dir)
+
+    @property
+    def path(self):
+        """
+        Return the absolute path of the distinfo directory on filesystem.
+        """
+        return os.path.join(self.install_root, self.dir_name)
 
     def library_name(self):
         """
@@ -152,14 +158,14 @@ class DistInfoDir:
         :rtype:     bool
         """
 
-        return os.path.isdir(self.dir_path)
+        return os.path.isdir(self.path)
 
     def ensure_exists(self):
         """
         Create the .dist-info directory if it doesn't exist on filesystem.
         """
 
-        os.makedirs(self.dir_path, exist_ok=True)
+        os.makedirs(self.path, exist_ok=True)
 
     @staticmethod
     def generate_wheel(python_version, plat_specific):
@@ -265,7 +271,7 @@ class DistInfoDir:
                 sha = base64.urlsafe_b64encode(digest).rstrip(b'=')
             return (_unix_path(rel_path), 'sha256=%s' % sha.decode('utf-8'), str(size))
 
-        for fname in os.listdir(self.dir_path):
+        for fname in os.listdir(self.path):
             rel_path = os.path.join(self.dir_name, fname)
             if fname == 'RECORD':
                 entries.append((_unix_path(rel_path), '', ''))
@@ -352,7 +358,7 @@ class DistInfoDir:
             An unicode string of the absolute path of the given file.
         """
 
-        return os.path.join(self.dir_path, file_name)
+        return os.path.join(self.path, file_name)
 
     def read_metadata(self):
         """
