@@ -59,7 +59,7 @@ class InstalledLibrary(Library):
 
     def __init__(self, dist_info_dir, python_version):
         self.dist_info = distinfo.DistInfoDir(sys_path.lib_paths()[python_version], dist_info_dir)
-        super().__init__(self.dist_info.library_name(), python_version)
+        super().__init__(self.dist_info.library_name, python_version)
 
 
 def list_all():

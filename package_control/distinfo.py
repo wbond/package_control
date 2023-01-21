@@ -144,6 +144,7 @@ class DistInfoDir:
         """
         return os.path.join(self.install_root, self.dir_name)
 
+    @property
     def library_name(self):
         """
         Return the library name, which is the distinfo dir name without version.
