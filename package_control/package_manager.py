@@ -1198,12 +1198,6 @@ class PackageManager:
             else:
                 temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
 
-            new_did = library.distinfo.DistInfoDir(
-                lib_path,
-                "%s-%s.dist-info" % (library_name, release.get("version"))
-            )
-            new_did.ensure_exists()
-
             modified_paths = set()
             _, modified_ris = temp_did.verify_files()
             for mri in modified_ris:
