@@ -1205,8 +1205,12 @@ class PackageManager:
 
             if modified_paths:
                 console_write(
-                    'Unable to upgrade library "%s" because files in the archive have been modified: "%s"',
-                    (library_name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
+                    'Unable to %s library "%s" because files in the archive have been modified: "%s"',
+                    (
+                        'upgrade' if is_upgrade else 'install',
+                        library_name,
+                        '", "'.join(sorted(modified_paths, key=lambda s: s.lower()))
+                    )
                 )
                 return False
 
