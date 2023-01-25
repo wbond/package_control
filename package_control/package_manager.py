@@ -1114,8 +1114,6 @@ class PackageManager:
 
         release = libraries[library_name]['releases'][0]
 
-        url = release['url']
-
         tmp_dir = sys_path.longpath(tempfile.mkdtemp(''))
         tmp_library_dir = os.path.join(tmp_dir, library_name)
 
@@ -1141,7 +1139,7 @@ class PackageManager:
                 )
                 return False
 
-            library_zip = self._download_zip_file(library_name, url)
+            library_zip = self._download_zip_file(library_name, release['url'])
             if library_zip is False:
                 return False
 
@@ -1283,8 +1281,6 @@ class PackageManager:
 
         release = packages[package_name]['releases'][0]
 
-        url = release['url']
-
         unpacked_package_dir = get_package_dir(package_name)
         package_path = get_installed_package_path(package_name)
         package_filename = os.path.basename(package_path)
@@ -1331,7 +1327,7 @@ class PackageManager:
             old_version = self.get_metadata(package_name).get('version')
             is_upgrade = old_version is not None
 
-            package_zip = self._download_zip_file(package_name, url)
+            package_zip = self._download_zip_file(package_name, release['url'])
             if package_zip is False:
                 return False
 
