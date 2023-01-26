@@ -343,7 +343,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         )
 
         for lib in missing_libraries:
-            if self.manager.install_library(lib.name, lib.python_version):
+            if self.manager.install_library(lib):
                 console_write('Installed library %s for Python %s', (lib.name, lib.python_version))
                 self.updated_libraries = True
 

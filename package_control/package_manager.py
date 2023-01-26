@@ -1093,37 +1093,39 @@ class PackageManager:
                     )
         return should_retry
 
-    def install_library(self, library_name, python_version):
-        libraries = self.list_available_libraries(python_version)
+    def install_library(self, lib):
+        libraries = self.list_available_libraries(lib.python_version)
 
-        if library_name not in libraries:
-            if library_name in self.settings.get('unavailable_libraries', []):
+        if lib.name not in libraries:
+            if lib.name in self.settings.get('unavailable_libraries', []):
                 console_write(
                     '''
                     The library "%s" is either not available on this platform,
                     for Python %s, or for this version of Sublime Text
                     ''',
-                    (library_name, python_version)
+                    (lib.name, lib.python_version)
                 )
             else:
                 console_write(
                     'The library "%s" is not available for Python %s',
-                    (library_name, python_version)
+                    (lib.name, lib.python_version)
                 )
             return False
 
-        release = libraries[library_name]['releases'][0]
+
+        available_library = available_libraries[lib.name]
+        release = available_library['releases'][0]
 
         tmp_dir = sys_path.longpath(tempfile.mkdtemp(''))
-        tmp_library_dir = os.path.join(tmp_dir, library_name)
+        tmp_library_dir = os.path.join(tmp_dir, lib.name)
 
         # This is refers to the zipfile later on, so we define it here so we can
         # close the zip file if set during the finally clause
         library_zip = None
 
         try:
-            lib_path = sys_path.lib_paths()[python_version]
-            installed_library = library.find_installed(library_name, python_version)
+            lib_path = sys_path.lib_paths()[lib.python_version]
+            installed_library = library.find_installed(lib.name, lib.python_version)
             is_upgrade = installed_library is not None
 
             modified_paths = set()
@@ -1135,15 +1137,15 @@ class PackageManager:
             if len(modified_paths):
                 console_write(
                     'Unable to upgrade library "%s" because files on disk have been modified: "%s"',
-                    (library_name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
+                    (lib.name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
                 )
                 return False
 
-            library_zip = self._download_zip_file(library_name, release['url'])
+            library_zip = self._download_zip_file(lib.name, release['url'])
             if library_zip is False:
                 return False
 
-            common_folder = self._common_folder(library_name, library_zip)
+            common_folder = self._common_folder(lib.name, library_zip)
             if common_folder is False:
                 return False
 
@@ -1152,7 +1154,7 @@ class PackageManager:
             extracted_files = set()
             extracted_dirs = set()
             should_retry = self._extract_zip(
-                library_name,
+                lib.name,
                 library_zip,
                 tmp_library_dir,
                 extracted_dirs,
@@ -1168,28 +1170,27 @@ class PackageManager:
             library_zip.close()
             library_zip = None
 
-            new_did_name = '%s-%s.dist-info' % (library_name, release['version'])
+            new_did_name = '%s-%s.dist-info' % (lib.name, release['version'])
             wheel_filename = new_did_name + '/WHEEL'
             is_whl = wheel_filename in extracted_paths
 
             if not is_whl:
 
-                lib = libraries[library_name]
                 try:
                     temp_did = library.convert_dependency(
                         tmp_library_dir,
-                        python_version,
-                        library_name,
+                        lib.python_version,
+                        lib.name,
                         release['version'],
-                        lib.get('description'),
-                        lib.get('homepage')
+                        available_library.get('description'),
+                        available_library.get('homepage')
                     )
                 except ValueError as e:
                     console_write(
                         '''
                         Failed to install the library "%s": %s
                         ''',
-                        (library_name, e)
+                        (lib.name, e)
                     )
                     return False
 
@@ -1206,7 +1207,7 @@ class PackageManager:
                     'Unable to %s library "%s" because files in the archive have been modified: "%s"',
                     (
                         'upgrade' if is_upgrade else 'install',
-                        library_name,
+                        lib.name,
                         '", "'.join(sorted(modified_paths, key=lambda s: s.lower()))
                     )
                 )
@@ -1220,7 +1221,7 @@ class PackageManager:
                         '''
                         Failed to upgrade the library "%s": %s
                         ''',
-                        (library_name, e)
+                        (lib.name, e)
                     )
                     return False
 
@@ -1365,7 +1366,10 @@ class PackageManager:
                 library_names = self.select_libraries(lib_info)
 
             if library_names:
-                self.install_libraries_by_name(library_names, python_version, fail_early=False)
+                self.install_libraries(
+                    (library.Library(name, python_version) for name in library_names),
+                    fail_early=False
+                )
 
             # By default, ST prefers .sublime-package files since this allows
             # overriding files in the Packages/{package_name}/ folder.
@@ -1613,47 +1617,17 @@ class PackageManager:
             A boolean indicating if the libraries are properly installed
         """
 
-        # group libraries by python_version
-        library_names = {}
-        for lib in libraries:
-            library_names.setdefault(lib.python_version, []).append(lib.name)
-
-        # install libraries per python_version
-        return all(
-            self.install_libraries_by_name(library_names, python_version, fail_early)
-            for python_version, library_names in library_names.items()
-        )
-
-    def install_libraries_by_name(self, library_names, python_version, fail_early=True):
-        """
-        Ensures a list of libraries are installed and up-to-date
-
-        :param library_names:
-            A list of library names
-
-        :param python_version:
-            A unicode string of "3.3" or "3.8"
-
-        :param fail_early:
-            Whether to abort installation if a library installation fails.
-
-        :return:
-            A boolean indicating if the libraries are properly installed
-        """
-
         debug = self.settings.get('debug')
 
-        available_libraries = self.list_available_libraries(python_version)
-
         error = False
-        for library_name in library_names:
+        for lib in libraries:
             installed_version = None
             available_version = None
 
             def library_write(msg):
                 msg = "The library '{library_name}' " + msg
                 msg = msg.format(
-                    library_name=library_name,
+                    library_name=lib.name,
                     installed_version=installed_version,
                     available_version=available_version
                 )
@@ -1663,17 +1637,18 @@ class PackageManager:
                 if debug:
                     library_write(msg)
 
-            if library_name not in available_libraries:
-                library_write('is not available for Python ' + python_version)
+            available_libraries = self.list_available_libraries(lib.python_version)
+            if lib.name not in available_libraries:
+                library_write('is not available for Python ' + lib.python_version)
                 if fail_early:
                     return False
                 error = True
                 continue
 
-            info = available_libraries[library_name]
+            info = available_libraries[lib.name]
 
             installed_version = None
-            installed_library = library.find_installed(library_name, python_version)
+            installed_library = library.find_installed(lib.name, lib.python_version)
             if installed_library:
                 installed_version = installed_library.dist_info.read_metadata()['version']
                 if installed_version:
@@ -1707,7 +1682,7 @@ class PackageManager:
                 library_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
             if install_library:
-                library_result = self.install_library(library_name, python_version)
+                library_result = self.install_library(library.Library(library_name, python_version))
                 if not library_result:
                     library_write('could not be installed or updated')
                     if fail_early:
