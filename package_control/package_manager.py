@@ -1094,9 +1094,8 @@ class PackageManager:
         return should_retry
 
     def install_library(self, lib):
-        libraries = self.list_available_libraries(lib.python_version)
-
-        if lib.name not in libraries:
+        available_libraries = self.list_available_libraries(lib.python_version)
+        if lib.name not in available_libraries:
             if lib.name in self.settings.get('unavailable_libraries', []):
                 console_write(
                     '''
@@ -1111,7 +1110,6 @@ class PackageManager:
                     (lib.name, lib.python_version)
                 )
             return False
-
 
         available_library = available_libraries[lib.name]
         release = available_library['releases'][0]
@@ -1226,6 +1224,15 @@ class PackageManager:
                     return False
 
             library.install(temp_did, lib_path)
+
+            if is_upgrade:
+                console_write(
+                    'Upgraded library "%s" to %s for Python %s',
+                    (lib.name, release['version'], lib.python_version))
+            else:
+                console_write(
+                    'Installed library "%s" %s for Python %s',
+                    (lib.name, release['version'], lib.python_version))
 
             return True
 
@@ -1682,14 +1689,10 @@ class PackageManager:
                 library_write_debug('is installed and up to date ({installed_version}); leaving alone')
 
             if install_library:
-                library_result = self.install_library(library.Library(library_name, python_version))
-                if not library_result:
-                    library_write('could not be installed or updated')
+                if not self.install_library(lib):
                     if fail_early:
                         return False
                     error = True
-                else:
-                    library_write('has successfully been installed or updated')
 
         return not error
 

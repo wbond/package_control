@@ -344,7 +344,6 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         for lib in missing_libraries:
             if self.manager.install_library(lib):
-                console_write('Installed library %s for Python %s', (lib.name, lib.python_version))
                 self.updated_libraries = True
 
     def install_missing_packages(self, found_packages):
