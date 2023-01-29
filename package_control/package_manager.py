@@ -1219,7 +1219,23 @@ class PackageManager:
             wheel_filename = new_did_name + '/WHEEL'
             is_whl = wheel_filename in extracted_paths
 
-            if not is_whl:
+            if is_whl:
+                temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
+
+                _, modified_ris = temp_did.verify_files()
+                modified_paths = {mri.absolute_path for mri in modified_ris}
+                if modified_paths:
+                    console_write(
+                        'Unable to %s library "%s" because files in the archive have been modified: "%s"',
+                        (
+                            'upgrade' if is_upgrade else 'install',
+                            lib.name,
+                            '", "'.join(sorted(modified_paths, key=lambda s: s.lower()))
+                        )
+                    )
+                    return False
+
+            else:
                 try:
                     temp_did = library.convert_dependency(
                         tmp_library_dir,
@@ -1237,25 +1253,6 @@ class PackageManager:
                         (lib.name, e)
                     )
                     return False
-
-            else:
-                temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
-
-            modified_paths = set()
-            _, modified_ris = temp_did.verify_files()
-            for mri in modified_ris:
-                modified_paths.add(mri.absolute_path)
-
-            if modified_paths:
-                console_write(
-                    'Unable to %s library "%s" because files in the archive have been modified: "%s"',
-                    (
-                        'upgrade' if is_upgrade else 'install',
-                        lib.name,
-                        '", "'.join(sorted(modified_paths, key=lambda s: s.lower()))
-                    )
-                )
-                return False
 
             if is_upgrade:
                 try:
