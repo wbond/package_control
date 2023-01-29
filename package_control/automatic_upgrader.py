@@ -90,6 +90,14 @@ class AutomaticUpgrader:
         """
 
         installer = PackageInstaller()
+
+        required_libraries = installer.manager.find_required_libraries()
+        missing_libraries = installer.manager.find_missing_libraries(required_libraries=required_libraries)
+        installer.manager.install_libraries(
+            libraries=required_libraries - missing_libraries,
+            fail_early=False
+        )
+
         PackageRenamer().rename_packages(installer.manager)
 
         package_list = installer.make_package_list(
