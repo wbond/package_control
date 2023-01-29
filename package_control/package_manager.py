@@ -1094,8 +1094,32 @@ class PackageManager:
         return should_retry
 
     def install_library(self, lib):
+        """
+        Install a library
+
+        :param lib:
+            The library.Library object to install
+
+        :returns:
+            True, if the library is successfully installed or upgraded
+            False, if library could not be installed
+        """
+
+        debug = self.settings.get('debug')
+
+        installed_version = None
+        installed_library = library.find_installed(lib.name, lib.python_version)
+        if installed_library:
+            installed_version = installed_library.dist_info.read_metadata().get('version')
+            if installed_version:
+                installed_version = pep440.PEP440Version(installed_version)
+
+        is_upgrade = installed_library is not None
+
         available_libraries = self.list_available_libraries(lib.python_version)
-        if lib.name not in available_libraries:
+        try:
+            available_library = available_libraries[lib.name]
+        except (IndexError, KeyError):
             if lib.name in self.settings.get('unavailable_libraries', []):
                 console_write(
                     '''
@@ -1111,9 +1135,49 @@ class PackageManager:
                 )
             return False
 
-        available_library = available_libraries[lib.name]
-        release = available_library['releases'][0]
+        try:
+            release = available_library['releases'][0]
+            available_version = pep440.PEP440Version(release['version'])
+        except (IndexError, KeyError):
+            if is_upgrade:
+                console_write(
+                    '''
+                    The library "%s" for Python %s is installed,
+                    but the latest available release
+                    could not be determined; leaving alone
+                    ''',
+                    (lib.name, lib.python_version)
+                )
+                return True
 
+            console_write(
+                '''
+                The latest available release of library "%s" for Python %s
+                could not be determined
+                ''',
+                (lib.name, lib.python_version)
+            )
+            return False
+
+        if is_upgrade:
+            if installed_version >= available_version:
+                if debug:
+                    console_write(
+                        'The library "%s" for Python %s is installed and up to date',
+                        (lib.name, lib.python_version)
+                    )
+                return True
+
+            _, modified_ris = installed_library.dist_info.verify_files()
+            modified_paths = {mri.absolute_path for mri in modified_ris}
+            if modified_paths:
+                console_write(
+                    'Unable to upgrade library "%s" because files on disk have been modified: "%s"',
+                    (lib.name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
+                )
+                return False
+
+        lib_path = sys_path.lib_paths()[lib.python_version]
         tmp_dir = sys_path.longpath(tempfile.mkdtemp(''))
         tmp_library_dir = os.path.join(tmp_dir, lib.name)
 
@@ -1122,23 +1186,6 @@ class PackageManager:
         library_zip = None
 
         try:
-            lib_path = sys_path.lib_paths()[lib.python_version]
-            installed_library = library.find_installed(lib.name, lib.python_version)
-            is_upgrade = installed_library is not None
-
-            modified_paths = set()
-            if is_upgrade:
-                _, modified_ris = installed_library.dist_info.verify_files()
-                for mri in modified_ris:
-                    modified_paths.add(mri.relative_path)
-
-            if len(modified_paths):
-                console_write(
-                    'Unable to upgrade library "%s" because files on disk have been modified: "%s"',
-                    (lib.name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
-                )
-                return False
-
             library_zip = self._download_zip_file(lib.name, release['url'])
             if library_zip is False:
                 return False
@@ -1173,7 +1220,6 @@ class PackageManager:
             is_whl = wheel_filename in extracted_paths
 
             if not is_whl:
-
                 try:
                     temp_did = library.convert_dependency(
                         tmp_library_dir,
@@ -1624,75 +1670,12 @@ class PackageManager:
             A boolean indicating if the libraries are properly installed
         """
 
-        debug = self.settings.get('debug')
-
         error = False
         for lib in libraries:
-            installed_version = None
-            available_version = None
-
-            def library_write(msg):
-                msg = "The library '{library_name}' " + msg
-                msg = msg.format(
-                    library_name=lib.name,
-                    installed_version=installed_version,
-                    available_version=available_version
-                )
-                console_write(msg)
-
-            def library_write_debug(msg):
-                if debug:
-                    library_write(msg)
-
-            available_libraries = self.list_available_libraries(lib.python_version)
-            if lib.name not in available_libraries:
-                library_write('is not available for Python ' + lib.python_version)
+            if not self.install_library(lib):
                 if fail_early:
                     return False
                 error = True
-                continue
-
-            info = available_libraries[lib.name]
-
-            installed_version = None
-            installed_library = library.find_installed(lib.name, lib.python_version)
-            if installed_library:
-                installed_version = installed_library.dist_info.read_metadata()['version']
-                if installed_version:
-                    installed_version = pep440.PEP440Version(installed_version)
-
-            library_releases = info.get('releases', [])
-            library_release = library_releases[0] if library_releases else {}
-
-            available_version = library_release.get('version')
-            if available_version:
-                available_version = pep440.PEP440Version(available_version)
-
-            install_library = False
-            if not installed_version:
-                install_library = True
-                library_write('is not currently installed; installing...')
-            elif not library_releases:
-                library_write('is installed, but there are no available releases; leaving alone')
-            elif not available_version:
-                library_write(
-                    'is installed, but the latest available release '
-                    'could not be determined; leaving alone'
-                )
-            elif installed_version < available_version:
-                install_library = True
-                library_write(
-                    'is installed, but out of date; upgrading to latest '
-                    'release {available_version} from {installed_version}...'
-                )
-            else:
-                library_write_debug('is installed and up to date ({installed_version}); leaving alone')
-
-            if install_library:
-                if not self.install_library(lib):
-                    if fail_early:
-                        return False
-                    error = True
 
         return not error
 
