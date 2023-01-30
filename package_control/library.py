@@ -110,7 +110,7 @@ def list_unmanaged():
     return out
 
 
-def find_installed(library_name, python_version):
+def find_installed(lib):
     """
     Find a library by name in given directory.
 
@@ -124,10 +124,10 @@ def find_installed(library_name, python_version):
         An InstalledLibrary() object
     """
 
-    install_root = sys_path.lib_paths()[python_version]
+    install_root = sys_path.lib_paths()[lib.python_version]
     for fname in os.listdir(install_root):
-        if library_name == distinfo.library_name_from_dist_info_dirname(fname):
-            return InstalledLibrary(fname, python_version)
+        if lib.name == distinfo.library_name_from_dist_info_dirname(fname):
+            return InstalledLibrary(fname, lib.python_version)
     return None
 
 

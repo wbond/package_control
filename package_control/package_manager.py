@@ -1108,7 +1108,7 @@ class PackageManager:
         debug = self.settings.get('debug')
 
         installed_version = None
-        installed_library = library.find_installed(lib.name, lib.python_version)
+        installed_library = library.find_installed(lib)
         if installed_library:
             installed_version = installed_library.dist_info.read_metadata().get('version')
             if installed_version:
