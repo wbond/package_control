@@ -1194,6 +1194,32 @@ class PackageManager:
             if common_folder is False:
                 return False
 
+            library_names = release.get('libraries')
+            if not library_names:
+                # If libraries were not in the channel, try the package
+                try:
+                    lib_info_json = library_zip.read(common_folder + 'dependencies.json')
+                    lib_info = json.loads(lib_info_json.decode('utf-8'))
+                except (KeyError):
+                    lib_info = {}
+                except (ValueError):
+                    console_write(
+                        '''
+                        Failed to parse the dependencies.json of
+                        library "%s" for Python %s
+                        ''',
+                        (lib.name, lib.python_version)
+                    )
+                    return False
+
+                library_names = self.select_libraries(lib_info)
+
+            if library_names:
+                self.install_libraries(
+                    (library.Library(name, lib.python_version) for name in library_names),
+                    fail_early=False
+                )
+
             os.mkdir(tmp_library_dir)
 
             extracted_files = set()
@@ -1387,7 +1413,6 @@ class PackageManager:
                 return False
 
             python_version_path = common_folder + '.python-version'
-            libraries_path = common_folder + 'dependencies.json'
             python_version = "3.3"
             try:
                 python_version_raw = package_zip.read(python_version_path).decode('utf-8').strip()
@@ -1400,7 +1425,7 @@ class PackageManager:
             if not library_names:
                 # If libraries were not in the channel, try the package
                 try:
-                    lib_info_json = package_zip.read(libraries_path)
+                    lib_info_json = package_zip.read(common_folder + 'dependencies.json')
                     lib_info = json.loads(lib_info_json.decode('utf-8'))
                 except (KeyError):
                     lib_info = {}
