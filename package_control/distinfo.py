@@ -8,7 +8,7 @@ from . import __version__ as pc_version
 from . import pep440
 from . import sys_path
 
-_dist_info_pattern = re.compile(
+_DIST_INFO_PATTERN = re.compile(
     r"""(?x)
     (?P<name>.+?)
     -
@@ -23,13 +23,38 @@ _dist_info_pattern = re.compile(
 )
 
 
-class DistInfoNotFoundError(FileNotFoundError):
-    pass
-
-
 def library_name_from_dist_info_dirname(dirname):
-    parts = _dist_info_pattern.match(dirname)
+    """
+    Strip version and extension from .dist-info directory.
+
+    :param dirname:
+        A unicode string of a libraries .dist-info directory of the form
+
+           <library-name>-<pep440-version>.dist-info
+
+    :returns:
+        A unicode string with the name of the library.
+    """
+
+    parts = _DIST_INFO_PATTERN.match(dirname)
     return parts['name'] if parts else None
+
+
+def _trim_segments(rel_path, segments):
+    """
+    Trim a relative path to a specific number of segments
+
+    :param rel_path:
+        A unicode string of a relative path
+
+    :param segments:
+        An integer of the number of segments to retain
+
+    :return:
+        The relative path, trimmed to the number of segments
+    """
+
+    return '/'.join(rel_path.split('/')[0:segments])
 
 
 def _verify_file(abs_path, hash_, size):
@@ -62,6 +87,10 @@ def _verify_file(abs_path, hash_, size):
 
 
 class RecordInfo:
+    """
+    This class describes a the content of a /RECORD line.
+    """
+
     __slots__ = ['relative_path', 'absolute_path', 'size', 'sha256']
 
     def __init__(self, rel_path, abs_path, size, sha256):
@@ -90,21 +119,12 @@ class RecordInfo:
         ))
 
 
-def _trim_segments(rel_path, segments):
+class DistInfoNotFoundError(FileNotFoundError):
     """
-    Trim a relative path to a specific number of segments
-
-    :param rel_path:
-        A unicode string of a relative path
-
-    :param segments:
-        An integer of the number of segments to retain
-
-    :return:
-        The relative path, trimmed to the number of segments
+    This class describes a .dist-info directory not found error.
     """
 
-    return '/'.join(rel_path.split('/')[0:segments])
+    pass
 
 
 class DistInfoDir:
