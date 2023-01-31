@@ -552,9 +552,6 @@ class DistInfoDir:
         if metadata is False:
             return
 
-        if "requires-python" not in metadata:
-            return
-
         version_specifier = metadata.get("requires-python")
         if not version_specifier:
             return

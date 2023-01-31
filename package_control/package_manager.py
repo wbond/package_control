@@ -1261,6 +1261,12 @@ class PackageManager:
                     )
                     return False
 
+                try:
+                    temp_did.verify_python_version(lib.python_version)
+                except EnvironmentError as e:
+                    console_write(e)
+                    return False
+
             else:
                 try:
                     temp_did = library.convert_dependency(
