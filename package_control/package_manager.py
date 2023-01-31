@@ -1727,14 +1727,7 @@ class PackageManager:
 
         error = False
         for lib in orphaned_libraries:
-            if self.remove_library(lib):
-                console_write(
-                    '''
-                    The orphaned library %s for Python %s has been removed
-                    ''',
-                    (lib.name, lib.python_version)
-                )
-            else:
+            if not self.remove_library(lib):
                 error = True
 
         return not error
@@ -1940,6 +1933,7 @@ class PackageManager:
 
         try:
             library.remove(lib)
+
         except library.distinfo.DistInfoNotFoundError:
             console_write(
                 '''
@@ -1948,6 +1942,7 @@ class PackageManager:
                 (lib.name, lib.python_version)
             )
             return False
+
         except OSError:
             # THe way library.remove() works is that the .dist-info dir is
             # removed last. This means that any permissions errors will happen
@@ -1962,7 +1957,15 @@ class PackageManager:
                 (lib.name, lib.python_version)
             )
             return False
-        return True
+
+        else:
+            console_write(
+                '''
+                The orphaned library %s for Python %s has been removed
+                ''',
+                (lib.name, lib.python_version)
+            )
+            return True
 
     def remove_package(self, package_name):
         """
