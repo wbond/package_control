@@ -2,6 +2,9 @@
 	// BE SURE TO REMOVE THESE COMMENTS BEFORE USING THIS TEMPLATE SINCE
 	// COMMENTS ARE NOT ALLOWED IN JSON
 
+	// Used by LSP and LSP-json to provide linting and completions.
+	"$schema": "sublime://packagecontrol.io/schemas/repository/4.0.0",
+
 	"schema_version": "4.0.0",
 
 	// Packages can be specified with a simple URL to a GitHub or BitBucket
@@ -405,6 +408,7 @@
 					"base": "https://github.com/codexns/sublime-bz2",
 					"tags": true,
 					"sublime_text": "*",
+					"platforms": ["*"],
 					"python_versions": ["3.3", "3.8"]
 				}
 			]
