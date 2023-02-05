@@ -300,7 +300,7 @@ class DistInfoDir:
                 entries.append(_entry(rel_path))
 
         for package_dir in package_dirs:
-            for root, dirs, files in os.walk(os.path.join(self.install_root, package_dir)):
+            for root, _, files in os.walk(os.path.join(self.install_root, package_dir)):
                 for f in files:
                     path = os.path.join(root, f)
                     rel_path = os.path.relpath(path, self.install_root)
@@ -398,7 +398,6 @@ class DistInfoDir:
                 except ValueError:
                     break
             return entries
-        return False
 
     def write_metadata(self, name, version, desc, homepage):
         """
@@ -436,7 +435,6 @@ class DistInfoDir:
 
         with open(self.abs_path('INSTALLER'), 'r', encoding='utf-8') as fobj:
             return fobj.readline().strip()
-        return False
 
     def write_installer(self):
         """
@@ -473,7 +471,6 @@ class DistInfoDir:
                 )
                 entries.append(ri)
             return entries
-        return False
 
     def top_level_paths(self):
         """
@@ -542,7 +539,6 @@ class DistInfoDir:
                 key, value = line.split(': ')
                 entries[key.strip().lower()] = value.strip()
             return entries
-        return False
 
     def write_wheel(self, python_version, plat_specific):
         """
