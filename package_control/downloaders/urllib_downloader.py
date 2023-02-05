@@ -1,5 +1,6 @@
 import re
 import sys
+import urllib.request as urllib_compat
 from http.client import HTTPException, BadStatusLine
 from urllib.request import (
     build_opener,
@@ -10,19 +11,18 @@ from urllib.request import (
     Request,
 )
 from urllib.error import HTTPError, URLError
-import urllib.request as urllib_compat
 from socket import error as ConnectionError
 
+from .. import text
+from ..ca_certs import get_ca_bundle_path
 from ..console_write import console_write
 from ..http.validating_https_handler import ValidatingHTTPSHandler
 from ..http.debuggable_http_handler import DebuggableHTTPHandler
 from .downloader_exception import DownloaderException
-from ..ca_certs import get_ca_bundle_path
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
 from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
-from .. import text
+from .decoding_downloader import DecodingDownloader
+from .limiting_downloader import LimitingDownloader
 
 
 class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader, BasicAuthDownloader):

@@ -3,27 +3,26 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import base64
-import re
-import sys
-import os
 import hashlib
+import os
+import re
 import socket
+import sys
 from urllib.parse import urlparse
 from urllib.request import parse_keqv_list, parse_http_list
 
-from ..console_write import console_write
-from .downloader_exception import DownloaderException
-from .oscrypto_downloader_exception import OscryptoDownloaderException
-from ..ca_certs import get_user_ca_bundle_path
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
-from .basic_auth_downloader import BasicAuthDownloader
-from .caching_downloader import CachingDownloader
 from .. import text
-
+from ..ca_certs import get_user_ca_bundle_path
+from ..console_write import console_write
 from ..deps.asn1crypto.util import OrderedDict
 from ..deps.asn1crypto import pem, x509
 from ..deps.oscrypto import use_ctypes, use_openssl
+from .downloader_exception import DownloaderException
+from .oscrypto_downloader_exception import OscryptoDownloaderException
+from .basic_auth_downloader import BasicAuthDownloader
+from .caching_downloader import CachingDownloader
+from .decoding_downloader import DecodingDownloader
+from .limiting_downloader import LimitingDownloader
 
 use_ctypes()
 

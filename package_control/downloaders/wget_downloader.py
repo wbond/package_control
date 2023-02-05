@@ -1,18 +1,18 @@
-import tempfile
-import re
 import os
+import re
 import sys
+import tempfile
 
+from ..ca_certs import get_ca_bundle_path
 from ..console_write import console_write
 from .cli_downloader import CliDownloader
 from .non_http_error import NonHttpError
 from .non_clean_exit_error import NonCleanExitError
 from .downloader_exception import DownloaderException
-from ..ca_certs import get_ca_bundle_path
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
 from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
+from .decoding_downloader import DecodingDownloader
+from .limiting_downloader import LimitingDownloader
 
 
 class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, CachingDownloader, BasicAuthDownloader):
