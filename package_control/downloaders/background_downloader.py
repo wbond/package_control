@@ -57,7 +57,6 @@ class BackgroundDownloader(threading.Thread):
             for provider_class in self.providers:
                 if provider_class.match_url(url):
                     provider = provider_class(url, self.settings)
+                    provider.prefetch()
+                    self.used_providers[url] = provider
                     break
-
-            provider.prefetch()
-            self.used_providers[url] = provider
