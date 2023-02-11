@@ -1393,6 +1393,10 @@ class PackageManager:
                 console_write('Upgraded %s', package_name)
                 return result
 
+        # package is to be renamed during upgrade
+        old_package_name = package_name
+        package_name = self.settings.get('renamed_packages', {}).get(package_name) or package_name
+
         packages = self.list_available_packages()
         if package_name not in packages:
             if package_name in self.settings.get('unavailable_packages', []):
@@ -1422,7 +1426,7 @@ class PackageManager:
         package_zip = None
 
         try:
-            old_version = self.get_metadata(package_name).get('version')
+            old_version = self.get_metadata(old_package_name).get('version')
             is_upgrade = old_version is not None
 
             package_zip = self._download_zip_file(package_name, release['url'])
@@ -1466,6 +1470,9 @@ class PackageManager:
                     (library.Library(name, python_version) for name in library_names),
                     fail_early=False
                 )
+
+            if package_name != old_package_name:
+                self.rename_package(old_package_name, package_name)
 
             # By default, ST prefers .sublime-package files since this allows
             # overriding files in the Packages/{package_name}/ folder.
@@ -1619,8 +1626,15 @@ class PackageManager:
             # settings across computers and have the same packages installed
             settings = sublime.load_settings(pc_settings_filename())
             names = load_list_setting(settings, 'installed_packages')
+            update_installed_packages = False
+
+            if package_name != old_package_name and old_package_name in names:
+                names.remove(old_package_name)
+                update_installed_packages = True
             if package_name not in names:
                 names.add(package_name)
+                update_installed_packages = True
+            if update_installed_packages:
                 settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))
 
             # If we extracted directly into the Packages/{package_name}/
@@ -1697,6 +1711,94 @@ class PackageManager:
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
             sublime.set_timeout_async(lambda: delete_directory(tmp_dir), 1000)
+
+    def rename_package(self, package_name, new_package_name):
+        """
+        Rename a package
+
+        :param package_name:
+            The package name
+        :param new_package_name:
+            The new package name
+
+        :returns:
+            ``True`` on success
+            ``False`` if package can not be renamed
+        """
+
+        # User package needs to be checked as it exists in Data/Packages/
+        if package_name.lower() == 'user' or new_package_name.lower() == 'user':
+            console_write(
+                '''
+                The package "%s" can not be renamed
+                ''',
+                package_name
+            )
+            return False
+
+        case_insensitive_fs = self.settings['platform'] in ['windows', 'osx']
+        changing_case = case_insensitive_fs and package_name.lower() == new_package_name.lower()
+
+        def do_rename(old, new):
+            # Windows will not allow you to rename to the same name with
+            # a different case, so we work around that with a temporary name
+            if changing_case:
+                temp_path = os.path.join(os.path.dirname(sublime.packages_path()), '__' + new)
+                os.rename(old, temp_path)
+                old = temp_path
+
+            os.rename(old, new)
+
+        package_file = get_installed_package_path(package_name)
+
+        try:
+            do_rename(package_file, get_installed_package_path(new_package_name))
+        except FileNotFoundError:
+            # package file does not exist, nothing to do
+            pass
+        except FileExistsError:
+            # delete source file if destination already exists
+            try:
+                os.remove(package_file)
+            except (OSError, IOError) as e:
+                if self.settings.get('debug'):
+                    console_write(
+                        '''
+                        Unable to remove package "%s" -
+                        deferring until next start: %s
+                        ''',
+                        (package_name, e)
+                    )
+
+        package_dir = get_package_dir(package_name)
+
+        try:
+            do_rename(package_dir, get_package_dir(new_package_name))
+        except FileNotFoundError:
+            # package dir does not exist, nothing to do
+            pass
+        except FileExistsError:
+            # delete source dir if destination already exists
+            if not self.backup_package_dir(package_name):
+                console_write('It is therefore not removed automatically.')
+
+            elif not delete_directory(package_dir):
+                if self.settings.get('debug'):
+                    console_write(
+                        '''
+                        Unable to remove directory for package "%s" -
+                        deferring until next start
+                        ''',
+                        package_name
+                    )
+                create_empty_file(os.path.join(package_dir, 'package-control.cleanup'))
+
+        # Remove optionally present cache if exists
+        # ST will recreate cache for renamed packages, automatically
+        delete_directory(get_package_cache_dir(package_name))
+        delete_directory(get_package_module_cache_dir(package_name))
+
+        return True
 
     def remove_package(self, package_name):
         """

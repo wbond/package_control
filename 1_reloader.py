@@ -211,7 +211,6 @@ mods_load_order = [
     '.package_creator',
     '.package_disabler',
     '.package_installer',
-    '.package_renamer',
 
     '.tests',
     '.tests.downloaders',

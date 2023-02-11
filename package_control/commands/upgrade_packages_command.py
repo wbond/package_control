@@ -7,7 +7,6 @@ import sublime_plugin
 from ..activity_indicator import ActivityIndicator
 from ..console_write import console_write
 from ..package_installer import PackageInstaller, USE_QUICK_PANEL_ITEM
-from ..package_renamer import PackageRenamer
 from ..show_error import show_error, show_message
 
 
@@ -86,8 +85,6 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
         message = 'Loading repository...'
         with ActivityIndicator(message) as progress:
             console_write(message)
-
-            PackageRenamer().rename_packages(self.manager)
 
             package_list = self.make_package_list(actions=(self.PULL, self.UPGRADE))
 

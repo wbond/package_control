@@ -10,7 +10,6 @@ import sublime
 from . import sys_path
 from .console_write import console_write
 from .package_installer import PackageInstaller
-from .package_renamer import PackageRenamer
 from .settings import pc_settings_filename
 
 USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
@@ -97,8 +96,6 @@ class AutomaticUpgrader:
             libraries=required_libraries - missing_libraries,
             fail_early=False
         )
-
-        PackageRenamer().rename_packages(installer.manager)
 
         package_list = installer.make_package_list(
             actions=(installer.PULL, installer.UPGRADE),

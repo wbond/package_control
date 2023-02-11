@@ -6,7 +6,6 @@ import sublime_plugin
 
 from ..activity_indicator import ActivityIndicator
 from ..package_installer import PackageInstaller, USE_QUICK_PANEL_ITEM
-from ..package_renamer import PackageRenamer
 from ..show_error import show_message
 
 
@@ -40,8 +39,6 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         """
 
         with ActivityIndicator('Loading repository...'):
-            PackageRenamer().rename_packages(self.manager)
-
             package_list = self.make_package_list(actions=(self.PULL, self.UPGRADE))
             if not package_list:
                 show_message('There are no packages ready for upgrade')
