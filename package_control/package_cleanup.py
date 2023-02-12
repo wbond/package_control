@@ -85,7 +85,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 'Re-enabling %d package%s after a Package Control operation was interrupted...',
                 (len(in_process), 's' if len(in_process) != 1 else '')
             )
-            self.reenable_packages(in_process, 'enable')
+            self.reenable_packages({self.ENABLE: in_process})
 
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
@@ -277,7 +277,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                     (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
                 )
 
-                reenable_packages = self.disable_packages(migrate_packages, 'upgrade')
+                reenable_packages = self.disable_packages({self.UPGRADE: migrate_packages})
                 time.sleep(0.7)
 
                 try:
@@ -295,10 +295,10 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 finally:
                     if reenable_packages:
                         time.sleep(0.7)
-                        self.reenable_packages(reenable_packages, 'upgrade')
+                        self.reenable_packages({self.UPGRADE: reenable_packages})
 
         if incompatible_packages:
-            self.disable_packages(incompatible_packages, 'disable')
+            self.disable_packages({PackageDisabler.DISABLE: incompatible_packages})
 
             if len(incompatible_packages) == 1:
                 message = '''
@@ -396,7 +396,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             (len(missing_packages), 's' if len(missing_packages) != 1 else '')
         )
 
-        reenable_packages = self.disable_packages(missing_packages, 'install')
+        reenable_packages = self.disable_packages({self.INSTALL: missing_packages})
         time.sleep(0.7)
 
         try:
@@ -410,7 +410,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         finally:
             if reenable_packages:
                 time.sleep(0.7)
-                self.reenable_packages(reenable_packages, 'install')
+                self.reenable_packages({self.INSTALL: reenable_packages})
 
     def remove_orphaned_packages(self, found_packages):
         """
@@ -451,7 +451,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         )
 
         # disable orphaned packages and reset theme, color scheme or syntaxes if needed
-        self.disable_packages(orphaned_packages, 'remove')
+        self.disable_packages({self.REMOVE: orphaned_packages})
         time.sleep(0.7)
 
         # re-enable all removed packages, even if they were disabled before
@@ -517,6 +517,6 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         finally:
             if reenable_packages:
                 time.sleep(0.7)
-                self.reenable_packages(reenable_packages, 'remove')
+                self.reenable_packages({self.REMOVE: reenable_packages})
 
         return orphaned_packages

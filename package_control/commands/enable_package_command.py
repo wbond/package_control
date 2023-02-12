@@ -48,6 +48,6 @@ class EnablePackageCommand(ExistingPackagesCommand):
             A package name to perform action for
         """
 
-        PackageDisabler.reenable_packages(package_name, 'enable')
+        PackageDisabler.reenable_packages({PackageDisabler.ENABLE: package_name})
 
         sublime.status_message('Package %s successfully enabled.' % package_name)

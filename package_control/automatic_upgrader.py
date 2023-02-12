@@ -131,7 +131,7 @@ class AutomaticUpgrader:
             (len(package_list), 's' if len(package_list) != 1 else '')
         )
 
-        reenable_packages = installer.disable_packages(package_list, 'upgrade')
+        reenable_packages = installer.disable_packages({installer.UPGRADE: package_list})
         # Wait so that the ignored packages can be "unloaded"
         time.sleep(0.7)
 
@@ -146,4 +146,4 @@ class AutomaticUpgrader:
         finally:
             if reenable_packages:
                 time.sleep(0.7)
-                installer.reenable_packages(reenable_packages, 'upgrade')
+                installer.reenable_packages({installer.UPGRADE: reenable_packages})

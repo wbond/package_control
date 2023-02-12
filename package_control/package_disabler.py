@@ -18,6 +18,32 @@ from .show_error import show_error
 
 
 class PackageDisabler:
+
+    DISABLE = 'disable'
+    """
+    A key used to create package_operations for disable_packages or reenable_packages.
+    """
+
+    ENABLE = 'enable'
+    """
+    A key used to create package_operations for disable_packages or reenable_packages.
+    """
+
+    INSTALL = 'install'
+    """
+    A key used to create package_operations for disable_packages or reenable_packages.
+    """
+
+    REMOVE = 'remove'
+    """
+    A key used to create package_operations for disable_packages or reenable_packages.
+    """
+
+    UPGRADE = 'upgrade'
+    """
+    A key used to create package_operations for disable_packages or reenable_packages.
+    """
+
     color_scheme_packages = {}
     """
     A dictionary of packages, containing a color scheme.
@@ -166,22 +192,26 @@ class PackageDisabler:
         return 'unknown version'
 
     @staticmethod
-    def disable_packages(packages, operation='upgrade'):
+    def disable_packages(package_operations):
         """
         Disables one or more packages before installing or upgrading to prevent
         errors where Sublime Text tries to read files that no longer exist, or
         read a half-written file.
 
-        :param packages:
-            The string package name, or an array of strings
+        :param package_operations:
+            A dictionary of operations for a set of packages.
 
-        :param operation:
-            The type of operation that caused the package to be disabled:
-             - "upgrade"
-             - "remove"
-             - "install"
-             - "disable"
-             - "loader" - deprecated
+            ``{operation: {packages}}``
+
+            The key is an `operation` that caused the packages to be disabled:
+
+             - PackageDisabler.DISABLE
+             - PackageDisabler.ENABLE
+             - PackageDisabler.INSTALL
+             - PackageDisabler.REMOVE
+             - PackageDisabler.UPGRADE
+
+            The value can be a package name string, or an array of strings
 
         :return:
             A set of package names that were disabled
@@ -190,42 +220,51 @@ class PackageDisabler:
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
             ignored_at_start = load_list_setting(settings, 'ignored_packages')
+            ignored = set()
 
             pc_settings = sublime.load_settings(pc_settings_filename())
             in_process_at_start = load_list_setting(pc_settings, 'in_process_packages')
+            in_process = set()
 
-            if not isinstance(packages, (list, set, tuple)):
-                packages = [packages]
-            packages = set(packages)
+            effected = set()
 
-            disabled = packages - (ignored_at_start - in_process_at_start)
-            ignored = ignored_at_start | disabled
+            for operation, packages in package_operations.items():
+                # convert packages to a set
+                if not isinstance(packages, set):
+                    if isinstance(packages, (list, tuple)):
+                        packages = set(packages)
+                    else:
+                        packages = {packages}
 
-            # Clear packages from in-progress when disabling them, otherwise
-            # they automatically get re-enabled the next time Sublime Text starts
-            if operation == 'disable':
-                in_process = in_process_at_start - packages
-            else:
-                in_process = in_process_at_start | disabled
+                disabled = packages - (ignored_at_start - in_process_at_start)
+                effected |= disabled
+                ignored |= ignored_at_start | disabled
 
-            # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
-            # If False, reset to defaults only.
-            backup = operation in ('install', 'upgrade')
-            if backup:
-                # cancel pending settings restore request
-                PackageDisabler.restore_id = 0
+                # Clear packages from in-progress when disabling them, otherwise
+                # they automatically get re-enabled the next time Sublime Text starts
+                if operation == PackageDisabler.DISABLE:
+                    in_process |= in_process_at_start - packages
+                else:
+                    in_process |= in_process_at_start | disabled
 
-            PackageDisabler.backup_and_reset_settings(disabled, backup)
+                # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
+                # If False, reset to defaults only.
+                backup = operation in (PackageDisabler.INSTALL, PackageDisabler.UPGRADE)
+                if backup:
+                    # cancel pending settings restore request
+                    PackageDisabler.restore_id = 0
 
-            if operation == 'upgrade':
-                for package in disabled:
-                    version = PackageDisabler.get_version(package)
-                    events.add('pre_upgrade', package, version)
+                PackageDisabler.backup_and_reset_settings(disabled, backup)
 
-            elif operation == 'remove':
-                for package in disabled:
-                    version = PackageDisabler.get_version(package)
-                    events.add(operation, package, version)
+                if operation == PackageDisabler.UPGRADE:
+                    for package in disabled:
+                        version = PackageDisabler.get_version(package)
+                        events.add('pre_upgrade', package, version)
+
+                elif operation == PackageDisabler.REMOVE:
+                    for package in disabled:
+                        version = PackageDisabler.get_version(package)
+                        events.add('remove', package, version)
 
             save_list_setting(
                 pc_settings,
@@ -243,23 +282,27 @@ class PackageDisabler:
                 ignored_at_start
             )
 
-            return disabled
+            return effected
 
     @staticmethod
-    def reenable_packages(packages, operation='upgrade'):
+    def reenable_packages(package_operations):
         """
         Re-enables packages after they have been installed or upgraded
 
-        :param packages:
-            The string package name, or an array of strings
+        :param package_operations:
+            A dictionary of operations for a set of packages.
 
-        :param operation:
-            The type of operation that caused the package to be re-enabled:
-             - "upgrade"
-             - "remove"
-             - "install"
-             - "enable"
-             - "loader" - deprecated
+            ``{operation: {packages}}``
+
+            The key is an `operation` that caused the packages to be disabled:
+
+             - PackageDisabler.DISABLE
+             - PackageDisabler.ENABLE
+             - PackageDisabler.INSTALL
+             - PackageDisabler.REMOVE
+             - PackageDisabler.UPGRADE
+
+            The value can be a package name string, or an array of strings
         """
 
         with PackageDisabler.lock:
@@ -269,49 +312,60 @@ class PackageDisabler:
             pc_settings = sublime.load_settings(pc_settings_filename())
             in_process = load_list_setting(pc_settings, 'in_process_packages')
 
-            if not isinstance(packages, set):
-                if not isinstance(packages, (list, tuple)):
-                    packages = [packages]
-                packages = set(packages)
+            need_restore = False
+            effected = set()
 
-            if operation == 'install':
-                packages &= in_process
-                for package in packages:
-                    version = PackageDisabler.get_version(package)
-                    events.add(operation, package, version)
-                    events.clear(operation, package, future=True)
+            for operation, packages in package_operations.items():
+                # convert packages to a set
+                if not isinstance(packages, set):
+                    if isinstance(packages, (list, tuple)):
+                        packages = set(packages)
+                    else:
+                        packages = {packages}
 
-            elif operation == 'upgrade':
-                packages &= in_process
-                for package in packages:
-                    version = PackageDisabler.get_version(package)
-                    events.add('post_upgrade', package, version)
-                    events.clear('post_upgrade', package, future=True)
-                    events.clear('pre_upgrade', package)
+                if operation == PackageDisabler.INSTALL:
+                    packages &= in_process
+                    for package in packages:
+                        version = PackageDisabler.get_version(package)
+                        events.add('install', package, version)
+                        events.clear('install', package, future=True)
+                    need_restore = True
 
-            elif operation == 'remove':
-                packages &= in_process
-                for package in packages:
-                    events.clear('remove', package)
+                elif operation == PackageDisabler.UPGRADE:
+                    packages &= in_process
+                    for package in packages:
+                        version = PackageDisabler.get_version(package)
+                        events.add('post_upgrade', package, version)
+                        events.clear('post_upgrade', package, future=True)
+                        events.clear('pre_upgrade', package)
+                    need_restore = True
 
-            save_list_setting(
-                settings,
-                preferences_filename(),
-                'ignored_packages',
-                ignored - packages,
-                ignored
-            )
+                elif operation == PackageDisabler.REMOVE:
+                    packages &= in_process
+                    for package in packages:
+                        events.clear('remove', package)
 
-            save_list_setting(
-                pc_settings,
-                pc_settings_filename(),
-                'in_process_packages',
-                in_process - packages,
-                in_process
-            )
+                effected |= packages
+
+            if effected:
+                save_list_setting(
+                    settings,
+                    preferences_filename(),
+                    'ignored_packages',
+                    ignored - effected,
+                    ignored
+                )
+
+                save_list_setting(
+                    pc_settings,
+                    pc_settings_filename(),
+                    'in_process_packages',
+                    in_process - effected,
+                    in_process
+                )
 
             # restore settings after installing missing packages or upgrades
-            if operation in ('install', 'upgrade'):
+            if need_restore:
                 # By delaying the restore, we give Sublime Text some time to
                 # re-enable packages, making errors less likely
                 PackageDisabler.restore_id += 1

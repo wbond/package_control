@@ -75,7 +75,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         result = False
 
         with ActivityIndicator('Upgrading package %s' % package_name) as progress:
-            self.disable_packages(package_name, 'upgrade')
+            self.disable_packages({self.UPGRADE: package_name})
             time.sleep(0.7)
 
             try:
@@ -87,4 +87,4 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
                 # Do not reenable if deferred until next restart
                 if result is not None:
                     time.sleep(0.7)
-                    self.reenable_packages(package_name, 'upgrade')
+                    self.reenable_packages({self.UPGRADE: package_name})

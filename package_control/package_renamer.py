@@ -70,8 +70,7 @@ class PackageRenamer(PackageDisabler):
 
             if not os.path.exists(new_package_path) or (case_insensitive_fs and changing_case):
 
-                self.disable_packages(package_name, 'remove')
-                self.disable_packages(new_package_name, 'install')
+                self.disable_packages({self.REMOVE: package_name, self.INSTALL: new_package_name})
 
                 try:
                     time.sleep(0.7)
@@ -99,13 +98,12 @@ class PackageRenamer(PackageDisabler):
 
                 finally:
                     time.sleep(0.7)
-                    self.reenable_packages(package_name, 'remove')
-                    self.reenable_packages(new_package_name, 'install')
+                    self.reenable_packages({self.REMOVE: package_name, self.INSTALL: new_package_name})
 
             else:
                 remove_result = True
 
-                self.disable_packages(package_name, 'remove')
+                self.disable_packages({self.REMOVE: package_name})
 
                 try:
                     time.sleep(0.7)
@@ -125,7 +123,7 @@ class PackageRenamer(PackageDisabler):
                     # Do not reenable if removal has been delayed until next restart
                     if remove_result is not None:
                         time.sleep(0.7)
-                        self.reenable_packages(package_name, 'remove')
+                        self.reenable_packages({self.REMOVE: package_name})
 
         save_list_setting(
             settings,

@@ -21,7 +21,7 @@ class EnablePackagesCommand(sublime_plugin.ApplicationCommand):
     def run(self, packages=None):
         if isinstance(packages, list):
             unique_packages = set(packages)
-            PackageDisabler.reenable_packages(unique_packages, 'enable')
+            PackageDisabler.reenable_packages({PackageDisabler.ENABLE: unique_packages})
 
             if len(unique_packages) == 1:
                 message = 'Package %s successfully enabled.' % packages[0]

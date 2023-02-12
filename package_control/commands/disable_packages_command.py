@@ -21,7 +21,7 @@ class DisablePackagesCommand(sublime_plugin.ApplicationCommand):
     def run(self, packages=None):
         if isinstance(packages, list):
             unique_packages = set(packages)
-            disabled = PackageDisabler.disable_packages(unique_packages, 'disable')
+            disabled = PackageDisabler.disable_packages({PackageDisabler.DISABLE: unique_packages})
 
             num_packages = len(unique_packages)
             num_disabled = len(disabled)

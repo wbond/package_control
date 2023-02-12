@@ -50,6 +50,6 @@ class DisablePackageCommand(ExistingPackagesCommand):
             A package name to perform action for
         """
 
-        PackageDisabler.disable_packages(package_name, 'disable')
+        PackageDisabler.disable_packages({PackageDisabler.DISABLE: package_name})
 
         sublime.status_message('Package %s successfully disabled.' % package_name)

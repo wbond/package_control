@@ -80,7 +80,7 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
         result = False
 
         with ActivityIndicator('Installing package %s' % package_name) as progress:
-            self.disable_packages(package_name, 'install')
+            self.disable_packages({self.INSTALL: package_name})
             time.sleep(0.7)
 
             try:
@@ -92,4 +92,4 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
                 # Do not reenable if deferred until next restart
                 if result is not None:
                     time.sleep(0.7)
-                    self.reenable_packages(package_name, 'install')
+                    self.reenable_packages({self.INSTALL: package_name})

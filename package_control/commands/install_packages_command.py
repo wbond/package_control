@@ -117,7 +117,7 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
             if num_packages > 1:
                 console_write('Installing %d packages...' % num_packages)
 
-            self.disable_packages(package_names, 'install')
+            self.disable_packages({self.INSTALL: package_names})
             time.sleep(0.7)
 
             deffered = set()
@@ -146,4 +146,4 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
 
             finally:
                 time.sleep(0.7)
-                self.reenable_packages(package_names - deffered, 'install')
+                self.reenable_packages({self.INSTALL: package_names - deffered})

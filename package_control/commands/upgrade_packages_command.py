@@ -117,7 +117,7 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
             if num_packages > 1:
                 console_write('Upgrading %d packages...' % num_packages)
 
-            disabled_packages = self.disable_packages(package_names, 'upgrade')
+            disabled_packages = self.disable_packages({self.UPGRADE: package_names})
             time.sleep(0.7)
 
             num_upgraded = 0
@@ -145,4 +145,4 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
 
             finally:
                 time.sleep(0.7)
-                self.reenable_packages(disabled_packages, 'upgrade')
+                self.reenable_packages({self.UPGRADE: disabled_packages})

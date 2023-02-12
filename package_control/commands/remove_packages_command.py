@@ -85,7 +85,7 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
             if num_packages > 1:
                 console_write(message)
 
-            self.disable_packages(self.packages, 'remove')
+            self.disable_packages({self.REMOVE: self.packages})
             time.sleep(0.7)
 
             deffered = set()
@@ -114,4 +114,4 @@ class RemovePackagesThread(threading.Thread, PackageDisabler):
 
             finally:
                 time.sleep(0.7)
-                self.reenable_packages(self.packages - deffered, 'remove')
+                self.reenable_packages({self.REMOVE: self.packages - deffered})
