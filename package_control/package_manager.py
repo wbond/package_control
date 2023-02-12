@@ -1581,11 +1581,10 @@ class PackageManager:
                     )
                     return None
 
-            version = metadata.get("version")
             if is_upgrade:
-                console_write('Upgraded %s to %s', (package_name, version))
+                console_write('Upgraded %s to %s', (package_name, new_version))
             else:
-                console_write('Installed %s %s', (package_name, version))
+                console_write('Installed %s %s', (package_name, new_version))
 
             return True
 
