@@ -259,12 +259,12 @@ class PackageDisabler:
                 if operation == PackageDisabler.UPGRADE:
                     for package in disabled:
                         version = PackageDisabler.get_version(package)
-                        events.add('pre_upgrade', package, version)
+                        events.add(events.PRE_UPGRADE, package, version)
 
                 elif operation == PackageDisabler.REMOVE:
                     for package in disabled:
                         version = PackageDisabler.get_version(package)
-                        events.add('remove', package, version)
+                        events.add(events.REMOVE, package, version)
 
             save_list_setting(
                 pc_settings,
@@ -327,23 +327,23 @@ class PackageDisabler:
                     packages &= in_process
                     for package in packages:
                         version = PackageDisabler.get_version(package)
-                        events.add('install', package, version)
-                        events.clear('install', package, future=True)
+                        events.add(events.INSTALL, package, version)
+                        events.clear(events.INSTALL, package, future=True)
                     need_restore = True
 
                 elif operation == PackageDisabler.UPGRADE:
                     packages &= in_process
                     for package in packages:
                         version = PackageDisabler.get_version(package)
-                        events.add('post_upgrade', package, version)
-                        events.clear('post_upgrade', package, future=True)
-                        events.clear('pre_upgrade', package)
+                        events.add(events.POST_UPGRADE, package, version)
+                        events.clear(events.POST_UPGRADE, package, future=True)
+                        events.clear(events.PRE_UPGRADE, package)
                     need_restore = True
 
                 elif operation == PackageDisabler.REMOVE:
                     packages &= in_process
                     for package in packages:
-                        events.clear('remove', package)
+                        events.clear(events.REMOVE, package)
 
                 effected |= packages
 

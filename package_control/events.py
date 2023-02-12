@@ -2,6 +2,10 @@ import threading
 
 import sublime
 
+INSTALL = 'install'
+REMOVE = 'remove'
+PRE_UPGRADE = 'pre_upgrade'
+POST_UPGRADE = 'post_upgrade'
 
 # This ensures we don't run into issues calling the event tracking methods
 # from threads
@@ -40,7 +44,7 @@ def add(event_type, package, version):
         The version of the package the event is for
     """
 
-    if event_type not in ('install', 'pre_upgrade', 'post_upgrade', 'remove'):
+    if event_type not in (INSTALL, PRE_UPGRADE, POST_UPGRADE, REMOVE):
         raise KeyError(repr(event_type))
 
     with __lock:
@@ -67,7 +71,7 @@ def clear(event_type, package, future=False):
         If the clear should happen in 5 seconds, instead of immediately
     """
 
-    if event_type not in ('install', 'pre_upgrade', 'post_upgrade', 'remove'):
+    if event_type not in (INSTALL, PRE_UPGRADE, POST_UPGRADE, REMOVE):
         raise KeyError(repr(event_type))
 
     def do_clear():
@@ -97,7 +101,7 @@ def install(name):
     """
 
     with __lock:
-        event = _tracker().get('install') or {}
+        event = _tracker().get(INSTALL) or {}
         return event.get(name, False)
 
 
@@ -114,7 +118,7 @@ def pre_upgrade(name):
     """
 
     with __lock:
-        event = _tracker().get('pre_upgrade') or {}
+        event = _tracker().get(PRE_UPGRADE) or {}
         return event.get(name, False)
 
 
@@ -131,7 +135,7 @@ def post_upgrade(name):
     """
 
     with __lock:
-        event = _tracker().get('post_upgrade') or {}
+        event = _tracker().get(POST_UPGRADE) or {}
         return event.get(name, False)
 
 
@@ -148,5 +152,5 @@ def remove(name):
     """
 
     with __lock:
-        event = _tracker().get('remove') or {}
+        event = _tracker().get(REMOVE) or {}
         return event.get(name, False)
