@@ -1,4 +1,3 @@
-import compileall
 import datetime
 import json
 # To prevent import errors in thread with datetime
@@ -9,7 +8,6 @@ import shutil
 import tempfile
 import zipfile
 
-from fnmatch import fnmatch
 from io import BytesIO
 from urllib.parse import urlencode, urlparse
 
@@ -41,7 +39,6 @@ from .providers.channel_provider import UncachedChannelRepositoryError
 from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
 from .settings import load_list_setting, pc_settings_filename, save_list_setting
-from .show_error import show_error
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 
@@ -830,87 +827,6 @@ class PackageManager:
         """:return: The name of the package after passing through mapping rules"""
 
         return self.settings.get('package_name_map', {}).get(package_name, package_name)
-
-    def create_package(self, package_name, package_destination, profile=None):
-        """
-        Creates a .sublime-package file from the running Packages directory
-
-        :param package_name:
-            The package to create a .sublime-package file for
-
-        :param package_destination:
-            The full filesystem path of the directory to save the new
-            .sublime-package file in.
-
-        :param profile:
-            If None, the "dirs_to_ignore", "files_to_ignore", "files_to_include"
-            and "package_destination" settings will be used when creating the
-            package. If a string, will look in the "package_profiles" setting
-            and use the profile name to select a sub-dictionary which may
-            contain all of the ignore/include settings.
-
-        :return: bool if the package file was successfully created
-        """
-
-        package_dir = get_package_dir(package_name)
-        if not os.path.isdir(package_dir):
-            show_error(
-                '''
-                The folder for the package name specified, %s,
-                does not exists in %s
-                ''',
-                (package_name, sys_path.packages_path())
-            )
-            return False
-
-        package_filename = package_name + '.sublime-package'
-        package_path = os.path.join(package_destination, package_filename)
-
-        try:
-            os.makedirs(package_destination, exist_ok=True)
-
-            with zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED) as package_file:
-
-                compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
-
-                profile_settings = self.settings.get('package_profiles', {}).get(profile)
-
-                def get_profile_setting(setting, default):
-                    if profile_settings:
-                        profile_value = profile_settings.get(setting)
-                        if profile_value is not None:
-                            return profile_value
-                    return self.settings.get(setting, default)
-
-                dirs_to_ignore = get_profile_setting('dirs_to_ignore', [])
-                files_to_ignore = get_profile_setting('files_to_ignore', [])
-                files_to_include = get_profile_setting('files_to_include', [])
-
-                for root, dirs, files in os.walk(package_dir):
-                    # remove all "dirs_to_ignore" from "dirs" to make os.walk ignore them
-                    dirs[:] = [x for x in dirs if x not in dirs_to_ignore]
-                    for file in files:
-                        full_path = os.path.join(root, file)
-                        relative_path = os.path.relpath(full_path, package_dir)
-
-                        ignore_matches = (fnmatch(relative_path, p) for p in files_to_ignore)
-                        include_matches = (fnmatch(relative_path, p) for p in files_to_include)
-                        if any(ignore_matches) and not any(include_matches):
-                            continue
-
-                        package_file.write(full_path, relative_path)
-
-        except (OSError, IOError) as e:
-            show_error(
-                '''
-                An error occurred creating the package file %s in %s.
-
-                %s
-                ''',
-                (package_filename, package_destination, e)
-            )
-            return False
-        return True
 
     def _download_zip_file(self, name, url):
         try:

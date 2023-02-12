@@ -1,10 +1,15 @@
+import compileall
 import os
+import zipfile
 
 import sublime
 
+from fnmatch import fnmatch
+
 from . import sys_path
 from .package_manager import PackageManager
-from .show_error import show_message
+from .package_io import get_package_dir
+from .show_error import show_error, show_message
 
 
 class PackageCreator:
@@ -113,13 +118,70 @@ class PackageCreator:
         if destination is None:
             return
 
-        if self.manager.create_package(self.package_name, destination, profile=self.profile):
+        package_dir = get_package_dir(self.package_name)
+        if not os.path.isdir(package_dir):
+            show_error(
+                '''
+                The folder for the package name specified, %s,
+                does not exists in %s
+                ''',
+                (self.package_name, sys_path.packages_path())
+            )
+            return False
+
+        package_filename = self.package_name + '.sublime-package'
+        package_path = os.path.join(destination, package_filename)
+
+        try:
+            os.makedirs(destination, exist_ok=True)
+
+            with zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED) as package_file:
+
+                compileall.compile_dir(package_dir, quiet=True, legacy=True, optimize=2)
+
+                profile_settings = self.manager.settings.get('package_profiles', {}).get(self.profile)
+
+                def get_profile_setting(setting, default):
+                    if profile_settings:
+                        profile_value = profile_settings.get(setting)
+                        if profile_value is not None:
+                            return profile_value
+                    return self.manager.settings.get(setting, default)
+
+                dirs_to_ignore = get_profile_setting('dirs_to_ignore', [])
+                files_to_ignore = get_profile_setting('files_to_ignore', [])
+                files_to_include = get_profile_setting('files_to_include', [])
+
+                for root, dirs, files in os.walk(package_dir):
+                    # remove all "dirs_to_ignore" from "dirs" to make os.walk ignore them
+                    dirs[:] = [x for x in dirs if x not in dirs_to_ignore]
+                    for file in files:
+                        full_path = os.path.join(root, file)
+                        relative_path = os.path.relpath(full_path, package_dir)
+
+                        ignore_matches = (fnmatch(relative_path, p) for p in files_to_ignore)
+                        include_matches = (fnmatch(relative_path, p) for p in files_to_include)
+                        if any(ignore_matches) and not any(include_matches):
+                            continue
+
+                        package_file.write(full_path, relative_path)
+
             self.window.run_command(
                 'open_dir',
                 {
                     "dir": sys_path.shortpath(destination),
                     "file": self.package_name + '.sublime-package'
                 }
+            )
+
+        except (IOError, OSError) as e:
+            show_error(
+                '''
+                An error occurred creating the package file %s in %s.
+
+                %s
+                ''',
+                (package_filename, destination, e)
             )
 
     def get_package_destination(self):
