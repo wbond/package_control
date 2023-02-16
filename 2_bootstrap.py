@@ -23,7 +23,7 @@ LOADER_PACKAGE_PATH = os.path.join(
 
 def plugin_loaded():
     if os.path.exists(LOADER_PACKAGE_PATH):
-        PackageDisabler.disable_packages([LOADER_PACKAGE_NAME], 'loader')
+        PackageDisabler.disable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
 
         def start_bootstrap():
             threading.Thread(target=_migrate_loaders).start()
@@ -93,7 +93,7 @@ def _migrate_loaders():
         os.remove(LOADER_PACKAGE_PATH)
 
         def _reenable_loader():
-            PackageDisabler.reenable_packages([LOADER_PACKAGE_NAME], 'loader')
+            PackageDisabler.reenable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
             show_message(
                 '''
                 Dependencies have just been migrated to python libraries.

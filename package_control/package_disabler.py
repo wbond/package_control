@@ -44,6 +44,11 @@ class PackageDisabler:
     A key used to create package_operations for disable_packages or reenable_packages.
     """
 
+    LOADER = 'loader'
+    """
+    A key used to create package_operations for disable_packages or reenable_packages.
+    """
+
     color_scheme_packages = {}
     """
     A dictionary of packages, containing a color scheme.
@@ -210,6 +215,7 @@ class PackageDisabler:
              - PackageDisabler.INSTALL
              - PackageDisabler.REMOVE
              - PackageDisabler.UPGRADE
+             - PackageDisabler.LOADER (deprecated)
 
             The value can be a package name string, or an array of strings
 
@@ -301,6 +307,7 @@ class PackageDisabler:
              - PackageDisabler.INSTALL
              - PackageDisabler.REMOVE
              - PackageDisabler.UPGRADE
+             - PackageDisabler.LOADER (deprecated)
 
             The value can be a package name string, or an array of strings
         """
