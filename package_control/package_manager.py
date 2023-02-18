@@ -38,7 +38,7 @@ from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .providers.channel_provider import UncachedChannelRepositoryError
 from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
-from .settings import load_list_setting, pc_settings_filename, save_list_setting
+from .settings import load_list_setting, pc_settings_filename
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 
@@ -1522,7 +1522,7 @@ class PackageManager:
             names = load_list_setting(settings, 'installed_packages')
             if package_name not in names:
                 names.add(package_name)
-                save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
+                settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))
 
             # If we extracted directly into the Packages/{package_name}/
             # we probably need to remove an old Installed Packages/{package_name].sublime-package
@@ -1906,7 +1906,7 @@ class PackageManager:
         names = load_list_setting(settings, 'installed_packages')
         if package_name in names:
             names.remove(package_name)
-            save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
+            settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))
 
         version = self.get_metadata(package_name).get('version')
 
