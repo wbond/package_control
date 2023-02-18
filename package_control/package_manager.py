@@ -1888,9 +1888,47 @@ class PackageManager:
 
         The deletion process consists of:
 
-        1. Deleting the directory (or marking it for deletion if deletion fails)
-        2. Submitting usage info
-        3. Removing the package from the list of installed packages
+        1. Removing the package from the list of installed packages
+        2. Deleting the directory (or marking it for deletion if deletion fails)
+        3. Submitting usage info
+
+        :param package_name:
+            The package to delete
+
+        :return:
+            ``True`` if the package was successfully deleted
+            ``False`` if the package doesn't exist or can not be deleted
+            ``None`` if the package needs to be cleaned up on the next restart
+            and should not be reenabled
+        """
+
+        settings = sublime.load_settings(pc_settings_filename())
+        names = load_list_setting(settings, 'installed_packages')
+        if package_name in names:
+            names.remove(package_name)
+            save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
+
+        version = self.get_metadata(package_name).get('version')
+
+        result = self.delete_package(package_name)
+        if result is not False:
+            self.record_usage({
+                'package': package_name,
+                'operation': 'remove',
+                'version': version
+            })
+
+            # Remove libraries that are no longer needed
+            self.cleanup_libraries(package_name)
+
+        return result
+
+    def delete_package(self, package_name):
+        """
+        Delete package resources from filesystem.
+
+        The method removes all package related files and directories without
+        manipulating any metadata such as installed_packages or uploading usage data.
 
         :param package_name:
             The package to delete
@@ -1912,10 +1950,10 @@ class PackageManager:
             )
             return False
 
-        installed_package_path = get_installed_package_path(package_name)
+        package_file = get_installed_package_path(package_name)
         package_dir = get_package_dir(package_name)
 
-        can_delete_file = os.path.exists(installed_package_path)
+        can_delete_file = os.path.exists(package_file)
         can_delete_dir = os.path.exists(package_dir)
 
         if not can_delete_file and not can_delete_dir:
@@ -1927,50 +1965,48 @@ class PackageManager:
             )
             return False
 
-        version = self.get_metadata(package_name).get('version')
+        result = True
 
-        cleanup_complete = True
-
-        try:
-            if can_delete_file:
-                os.remove(installed_package_path)
-        except (OSError, IOError):
-            cleanup_complete = False
+        if can_delete_file:
+            try:
+                os.remove(package_file)
+            except (OSError, IOError) as e:
+                if self.settings.get('debug'):
+                    console_write(
+                        '''
+                        Unable to remove package "%s" -
+                        deferring until next start: %s
+                        ''',
+                        (package_name, e)
+                    )
+                result = None
 
         if can_delete_dir:
-            if can_delete_file and not self.backup_package_dir(package_name):
+            if not self.backup_package_dir(package_name):
                 console_write('It is therefore not removed automatically.')
 
             elif not delete_directory(package_dir):
+                if self.settings.get('debug'):
+                    console_write(
+                        '''
+                        Unable to remove directory for package "%s" -
+                        deferring until next start
+                        ''',
+                        package_name
+                    )
                 create_empty_file(os.path.join(package_dir, 'package-control.cleanup'))
-                cleanup_complete = False
+                result = None
 
         # remove optionally present cache if exists
         delete_directory(get_package_cache_dir(package_name))
         delete_directory(get_package_module_cache_dir(package_name))
 
-        params = {
-            'package': package_name,
-            'operation': 'remove',
-            'version': version
-        }
-        self.record_usage(params)
-
-        settings = sublime.load_settings(pc_settings_filename())
-        names = load_list_setting(settings, 'installed_packages')
-        if package_name in names:
-            names.remove(package_name)
-            save_list_setting(settings, pc_settings_filename(), 'installed_packages', names)
-
-        message = 'The package %s has been removed' % package_name
-        if not cleanup_complete:
+        message = 'The package "%s" has been removed' % package_name
+        if result is None:
             message += ' and will be cleaned up on the next restart'
         console_write(message)
 
-        # Remove libraries that are no longer needed
-        self.cleanup_libraries(package_name)
-
-        return True if cleanup_complete else None
+        return result
 
     def record_usage(self, params):
         """

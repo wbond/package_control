@@ -12,9 +12,6 @@ from .package_disabler import PackageDisabler
 from .package_io import (
     create_empty_file,
     get_installed_package_path,
-    get_package_dir,
-    get_package_cache_dir,
-    get_package_module_cache_dir,
     package_file_exists
 )
 from .package_manager import PackageManager
@@ -459,59 +456,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         try:
             for package_name in orphaned_packages:
-                cleanup_complete = True
-
-                installed_package_path = get_installed_package_path(package_name)
-                try:
-                    os.remove(installed_package_path)
-                    console_write(
-                        '''
-                        Removed package %s
-                        ''',
-                        package_name
-                    )
-                except FileNotFoundError:
-                    pass
-                except (OSError, IOError) as e:
-                    console_write(
-                        '''
-                        Unable to remove package "%s" -
-                        deferring until next start: %s
-                        ''',
-                        (package_name, e)
-                    )
-                    cleanup_complete = False
-
-                package_dir = get_package_dir(package_name)
-                can_delete_dir = os.path.exists(package_dir)
-                if can_delete_dir:
-                    if not self.manager.backup_package_dir(package_name):
-                        continue
-
-                    if delete_directory(package_dir):
-                        console_write(
-                            '''
-                            Removed directory for package %s
-                            ''',
-                            package_name
-                        )
-
-                    else:
-                        create_empty_file(os.path.join(package_dir, 'package-control.cleanup'))
-                        console_write(
-                            '''
-                            Unable to remove directory for package "%s" -
-                            deferring until next start
-                            ''',
-                            package_name
-                        )
-                        cleanup_complete = False
-
-                # remove optionally present cache if exists
-                delete_directory(get_package_cache_dir(package_name))
-                delete_directory(get_package_module_cache_dir(package_name))
-
-                if cleanup_complete:
+                if self.manager.delete_package(package_name):
                     reenable_packages.add(package_name)
 
         finally:
