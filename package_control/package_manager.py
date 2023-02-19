@@ -31,7 +31,8 @@ from .package_io import (
     list_sublime_package_dirs,
     list_sublime_package_files,
     read_package_file,
-    regular_file_exists
+    regular_file_exists,
+    zip_file_exists,
 )
 from .package_version import PackageVersion, version_sort
 from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
@@ -1262,8 +1263,42 @@ class PackageManager:
                  and should not be reenabled
         """
 
-        packages = self.list_available_packages()
+        # Handle VCS packages first as those might not be registered
+        # in one of the repositories or channels.
+        upgrader = self.instantiate_upgrader(package_name)
+        if upgrader:
+            # We explicitly don't support the "libraries" key when dealing
+            # with packages installed via VCS
+            to_ignore = self.settings.get('ignore_vcs_packages')
+            if to_ignore is True:
+                console_write(
+                    '''
+                    Skipping %s package "%s" since the setting
+                    "ignore_vcs_packages" is set to true
+                    ''',
+                    (upgrader.cli_name, package_name)
+                )
+                return False
 
+            if isinstance(to_ignore, list) and package_name in to_ignore:
+                console_write(
+                    '''
+                    Skipping %s package "%s" since it is listed in the
+                    "ignore_vcs_packages" setting
+                    ''',
+                    (upgrader.cli_name, package_name)
+                )
+                return False
+
+            result = upgrader.run()
+
+            # We are done here, if the package is an unmanaged VCS package.
+            # Otherwise the package might just be an override.
+            if not zip_file_exists(package_name, 'package-metadata.json'):
+                console_write('Upgraded %s', package_name)
+                return result
+
+        packages = self.list_available_packages()
         if package_name not in packages:
             if package_name in self.settings.get('unavailable_packages', []):
                 console_write(
@@ -1292,37 +1327,6 @@ class PackageManager:
         package_zip = None
 
         try:
-            upgrader = self.instantiate_upgrader(package_name)
-            if upgrader:
-                # We explicitly don't support the "libraries" key when dealing
-                # with packages installed via VCS
-                to_ignore = self.settings.get('ignore_vcs_packages')
-                if to_ignore is True:
-                    console_write(
-                        '''
-                        Skipping %s package "%s" since the setting
-                        "ignore_vcs_packages" is set to true
-                        ''',
-                        (upgrader.cli_name, package_name)
-                    )
-                    return False
-
-                if isinstance(to_ignore, list) and package_name in to_ignore:
-                    console_write(
-                        '''
-                        Skipping %s package "%s" since it is listed in the
-                        "ignore_vcs_packages" setting
-                        ''',
-                        (upgrader.cli_name, package_name)
-                    )
-                    return False
-
-                result = upgrader.run()
-
-                console_write('Upgraded %s', package_name)
-
-                return result
-
             old_version = self.get_metadata(package_name).get('version')
             is_upgrade = old_version is not None
 
