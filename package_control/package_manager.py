@@ -1651,49 +1651,6 @@ class PackageManager:
 
         return not error
 
-    def backup_package_dir(self, package_name):
-        """
-        Does a full backup of the Packages/{package}/ dir to Backup/
-
-        :param package_name:
-            The name of the package to back up
-
-        :return:
-            If the backup succeeded
-        """
-
-        package_dir = get_package_dir(package_name)
-        if not os.path.exists(package_dir):
-            return True
-
-        backup_dir = os.path.join(
-            sys_path.data_path(), 'Backup', datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        )
-        package_backup_dir = os.path.join(backup_dir, package_name)
-
-        try:
-            if os.path.exists(package_backup_dir):
-                console_write(
-                    '''
-                    Backup folder "%s" already exists!
-                    ''',
-                    package_backup_dir
-                )
-            else:
-                os.makedirs(backup_dir, exist_ok=True)
-            shutil.copytree(package_dir, package_backup_dir)
-            return True
-
-        except (OSError, IOError) as e:
-            delete_directory(package_backup_dir)
-            console_write(
-                '''
-                Failed to backup the package directory for "%s": %s
-                ''',
-                (package_name, e)
-            )
-            return False
-
     def remove_library(self, lib):
         """
         Deletes a library
@@ -1866,6 +1823,49 @@ class PackageManager:
         console_write(message)
 
         return result
+
+    def backup_package_dir(self, package_name):
+        """
+        Does a full backup of the Packages/{package}/ dir to Backup/
+
+        :param package_name:
+            The name of the package to back up
+
+        :return:
+            If the backup succeeded
+        """
+
+        package_dir = get_package_dir(package_name)
+        if not os.path.exists(package_dir):
+            return True
+
+        backup_dir = os.path.join(
+            sys_path.data_path(), 'Backup', datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        )
+        package_backup_dir = os.path.join(backup_dir, package_name)
+
+        try:
+            if os.path.exists(package_backup_dir):
+                console_write(
+                    '''
+                    Backup folder "%s" already exists!
+                    ''',
+                    package_backup_dir
+                )
+            else:
+                os.makedirs(backup_dir, exist_ok=True)
+            shutil.copytree(package_dir, package_backup_dir)
+            return True
+
+        except (OSError, IOError) as e:
+            delete_directory(package_backup_dir)
+            console_write(
+                '''
+                Failed to backup the package directory for "%s": %s
+                ''',
+                (package_name, e)
+            )
+            return False
 
     def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version):
         """
