@@ -1239,6 +1239,101 @@ class PackageManager:
             # after we close it.
             sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
 
+    def install_libraries(self, libraries, fail_early=True):
+        """
+        Ensures a list of libraries are installed and up-to-date
+
+        :param libraries:
+            A list of library.Library() objects
+
+        :param fail_early:
+            Whether to abort installation if a library installation fails.
+
+        :return:
+            A boolean indicating if the libraries are properly installed
+        """
+
+        error = False
+        for lib in libraries:
+            if not self.install_library(lib):
+                if fail_early:
+                    return False
+                error = True
+
+        return not error
+
+    def cleanup_libraries(self, ignore_package=None, required_libraries=None):
+        """
+        Remove all not needed libraries by the installed packages,
+        ignoring the specified package.
+
+        :param ignore_package:
+            The package to ignore when enumerating libraries.
+            Not used when required_libraries is provided.
+
+        :param required_libraries:
+            All required libraries, for speedup purposes.
+
+        :return:
+            Boolean indicating the success of the removals.
+        """
+
+        orphaned_libraries = self.find_orphaned_libraries(ignore_package, required_libraries)
+
+        error = False
+        for lib in orphaned_libraries:
+            if not self.remove_library(lib):
+                error = True
+
+        return not error
+
+    def remove_library(self, lib):
+        """
+        Deletes a library
+
+        :param lib:
+            The library.InstalledLibrary() to delete
+
+        :return:
+            bool if the library was successfully deleted
+        """
+
+        try:
+            library.remove(lib)
+
+        except library.distinfo.DistInfoNotFoundError:
+            console_write(
+                '''
+                The library specified, "%s" for Python %s, is not installed
+                ''',
+                (lib.name, lib.python_version)
+            )
+            return False
+
+        except OSError:
+            # THe way library.remove() works is that the .dist-info dir is
+            # removed last. This means that any permissions errors will happen
+            # before we remove the metadata, and thus we'll still think the
+            # library is installed when ST restarts, and we can try removing
+            # it again in the future.
+            console_write(
+                '''
+                Failed to remove the library %s for Python %s -
+                deferring until next start
+                ''',
+                (lib.name, lib.python_version)
+            )
+            return False
+
+        else:
+            console_write(
+                '''
+                The orphaned library %s for Python %s has been removed
+                ''',
+                (lib.name, lib.python_version)
+            )
+            return True
+
     def install_package(self, package_name):
         """
         Downloads and installs (or upgrades) a package
@@ -1602,101 +1697,6 @@ class PackageManager:
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
             sublime.set_timeout_async(lambda: delete_directory(tmp_dir), 1000)
-
-    def install_libraries(self, libraries, fail_early=True):
-        """
-        Ensures a list of libraries are installed and up-to-date
-
-        :param libraries:
-            A list of library.Library() objects
-
-        :param fail_early:
-            Whether to abort installation if a library installation fails.
-
-        :return:
-            A boolean indicating if the libraries are properly installed
-        """
-
-        error = False
-        for lib in libraries:
-            if not self.install_library(lib):
-                if fail_early:
-                    return False
-                error = True
-
-        return not error
-
-    def cleanup_libraries(self, ignore_package=None, required_libraries=None):
-        """
-        Remove all not needed libraries by the installed packages,
-        ignoring the specified package.
-
-        :param ignore_package:
-            The package to ignore when enumerating libraries.
-            Not used when required_libraries is provided.
-
-        :param required_libraries:
-            All required libraries, for speedup purposes.
-
-        :return:
-            Boolean indicating the success of the removals.
-        """
-
-        orphaned_libraries = self.find_orphaned_libraries(ignore_package, required_libraries)
-
-        error = False
-        for lib in orphaned_libraries:
-            if not self.remove_library(lib):
-                error = True
-
-        return not error
-
-    def remove_library(self, lib):
-        """
-        Deletes a library
-
-        :param lib:
-            The library.InstalledLibrary() to delete
-
-        :return:
-            bool if the library was successfully deleted
-        """
-
-        try:
-            library.remove(lib)
-
-        except library.distinfo.DistInfoNotFoundError:
-            console_write(
-                '''
-                The library specified, "%s" for Python %s, is not installed
-                ''',
-                (lib.name, lib.python_version)
-            )
-            return False
-
-        except OSError:
-            # THe way library.remove() works is that the .dist-info dir is
-            # removed last. This means that any permissions errors will happen
-            # before we remove the metadata, and thus we'll still think the
-            # library is installed when ST restarts, and we can try removing
-            # it again in the future.
-            console_write(
-                '''
-                Failed to remove the library %s for Python %s -
-                deferring until next start
-                ''',
-                (lib.name, lib.python_version)
-            )
-            return False
-
-        else:
-            console_write(
-                '''
-                The orphaned library %s for Python %s has been removed
-                ''',
-                (lib.name, lib.python_version)
-            )
-            return True
 
     def remove_package(self, package_name):
         """
