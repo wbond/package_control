@@ -22,8 +22,7 @@ class SatisfyLibrariesCommand(sublime_plugin.ApplicationCommand):
 class SatisfyLibrariesThread(threading.Thread):
 
     """
-    A thread to run the action of retrieving available packages in. Uses the
-    default PackageInstaller.on_done quick panel handler.
+    A thread to run the action of installing required and removing orphaned libraries.
     """
 
     def __init__(self, manager):
