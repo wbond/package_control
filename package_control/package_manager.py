@@ -177,6 +177,11 @@ class PackageManager:
 
         return is_compatible_platform(platforms) and is_compatible_version(sublime_text)
 
+    def get_mapped_name(self, package_name):
+        """:return: The name of the package after passing through mapping rules"""
+
+        return self.settings.get('package_name_map', {}).get(package_name, package_name)
+
     def get_python_version(self, package_name):
         """
         Returns the version of python a package runs under
@@ -823,11 +828,6 @@ class PackageManager:
             required_libraries = self.find_required_libraries(ignore_package)
         unmanaged_libraries = library.list_unmanaged()
         return installed_libraries - required_libraries - unmanaged_libraries
-
-    def get_mapped_name(self, package_name):
-        """:return: The name of the package after passing through mapping rules"""
-
-        return self.settings.get('package_name_map', {}).get(package_name, package_name)
 
     def _download_zip_file(self, name, url):
         try:
