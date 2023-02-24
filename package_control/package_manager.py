@@ -182,25 +182,6 @@ class PackageManager:
 
         return self.settings.get('package_name_map', {}).get(package_name, package_name)
 
-    def get_python_version(self, package_name):
-        """
-        Returns the version of python a package runs under
-
-        :param package_name:
-            The name of the package
-
-        :return:
-            A unicode string of "3.3" or "3.8"
-        """
-
-        python_version = read_package_file(package_name, ".python-version")
-        if python_version:
-            python_version = python_version.strip()
-            if python_version in sys_path.lib_paths():
-                return python_version
-
-        return "3.3"
-
     def get_metadata(self, package_name):
         """
         Returns the package metadata for an installed package
@@ -268,6 +249,46 @@ class PackageManager:
 
         return set(library.Library(name, python_version) for name in names)
 
+    def get_python_version(self, package_name):
+        """
+        Returns the version of python a package runs under
+
+        :param package_name:
+            The name of the package
+
+        :return:
+            A unicode string of "3.3" or "3.8"
+        """
+
+        python_version = read_package_file(package_name, ".python-version")
+        if python_version:
+            python_version = python_version.strip()
+            if python_version in sys_path.lib_paths():
+                return python_version
+
+        return "3.3"
+
+    def get_version(self, package_name):
+        """
+        Determines the current version for a package
+
+        :param package_name:
+            The package name
+        """
+
+        version = self.get_metadata(package_name).get('version')
+
+        if version:
+            return version
+
+        upgrader = self.instantiate_upgrader(package_name)
+        if upgrader:
+            version = upgrader.latest_commit()
+            if version:
+                return '%s commit %s' % (upgrader.cli_name, version)
+
+        return 'unknown version'
+
     def _is_git_package(self, package_name):
         """
         :param package_name:
@@ -304,27 +325,6 @@ class PackageManager:
         """
 
         return self._is_git_package(package_name) or self._is_hg_package(package_name)
-
-    def get_version(self, package_name):
-        """
-        Determines the current version for a package
-
-        :param package_name:
-            The package name
-        """
-
-        version = self.get_metadata(package_name).get('version')
-
-        if version:
-            return version
-
-        upgrader = self.instantiate_upgrader(package_name)
-        if upgrader:
-            version = upgrader.latest_commit()
-            if version:
-                return '%s commit %s' % (upgrader.cli_name, version)
-
-        return 'unknown version'
 
     def instantiate_upgrader(self, package_name):
         """
