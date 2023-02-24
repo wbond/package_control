@@ -1010,6 +1010,29 @@ class PackageManager:
                     )
         return should_retry
 
+    def install_libraries(self, libraries, fail_early=True):
+        """
+        Ensures a list of libraries are installed and up-to-date
+
+        :param libraries:
+            A list of library.Library() objects
+
+        :param fail_early:
+            Whether to abort installation if a library installation fails.
+
+        :return:
+            A boolean indicating if the libraries are properly installed
+        """
+
+        error = False
+        for lib in libraries:
+            if not self.install_library(lib):
+                if fail_early:
+                    return False
+                error = True
+
+        return not error
+
     def install_library(self, lib):
         """
         Install a library
@@ -1238,29 +1261,6 @@ class PackageManager:
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
             sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
-
-    def install_libraries(self, libraries, fail_early=True):
-        """
-        Ensures a list of libraries are installed and up-to-date
-
-        :param libraries:
-            A list of library.Library() objects
-
-        :param fail_early:
-            Whether to abort installation if a library installation fails.
-
-        :return:
-            A boolean indicating if the libraries are properly installed
-        """
-
-        error = False
-        for lib in libraries:
-            if not self.install_library(lib):
-                if fail_early:
-                    return False
-                error = True
-
-        return not error
 
     def cleanup_libraries(self, ignore_package=None, required_libraries=None):
         """
