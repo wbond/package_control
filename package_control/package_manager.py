@@ -1694,151 +1694,6 @@ class PackageManager:
             )
             return False
 
-    def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version):
-        """
-        Prints out package install and upgrade messages
-
-        The functionality provided by this allows package maintainers to
-        show messages to the user when a package is installed, or when
-        certain version upgrade occur.
-
-        :param package_name:
-            The name of the package the message is for
-
-        :param package_dir:
-            The full filesystem path to the package directory
-
-        :param is_upgrade:
-            If the install was actually an upgrade
-
-        :param old_version:
-            The string version of the package before the upgrade occurred
-
-        :param new_version:
-            The new (string) version of the package
-        """
-
-        try:
-            messages_file = os.path.join(package_dir, 'messages.json')
-            with open(messages_file, 'r', encoding='utf-8') as fobj:
-                message_info = json.load(fobj)
-        except (FileNotFoundError):
-            return
-        except (ValueError):
-            console_write(
-                '''
-                Error parsing messages.json for %s
-                ''',
-                package_name
-            )
-            return
-
-        def read_message(message_path):
-            with open(sys_path.longpath(message_path), 'r', encoding='utf-8', errors='replace') as fobj:
-                return '\n  %s\n' % fobj.read().rstrip().replace('\n', '\n  ')
-
-        output = ''
-        if not is_upgrade:
-            install_file = message_info.get('install')
-            if install_file:
-                try:
-                    install_path = os.path.join(package_dir, install_file)
-                    output += read_message(install_path)
-                except (FileNotFoundError):
-                    console_write(
-                        '''
-                        Error opening install message for %s from %s
-                        ''',
-                        (package_name, install_file)
-                    )
-
-        elif is_upgrade and old_version:
-            upgrade_messages = list(set(message_info.keys()) - set(['install']))
-            upgrade_messages = version_sort(upgrade_messages, reverse=True)
-            old_version_cmp = PackageVersion(old_version)
-            new_version_cmp = PackageVersion(new_version)
-
-            for version in upgrade_messages:
-                version_cmp = PackageVersion(version)
-                if version_cmp <= old_version_cmp:
-                    break
-                # If the package developer sets up release notes for future
-                # versions, we don't want to show them for every release
-                if version_cmp > new_version_cmp:
-                    continue
-
-                upgrade_file = message_info.get(version)
-                upgrade_path = os.path.join(package_dir, upgrade_file)
-
-                try:
-                    output += read_message(upgrade_path)
-                except (FileNotFoundError):
-                    console_write(
-                        '''
-                        Error opening %s message for %s from %s
-                        ''',
-                        (version, package_name, upgrade_file)
-                    )
-
-        if not output:
-            return
-        else:
-            output = '\n\n%s\n%s\n' % (package_name, '-' * len(package_name)) + output
-
-        def print_to_panel():
-            window = sublime.active_window()
-
-            views = window.views()
-            view = None
-            for _view in views:
-                if _view.name() == 'Package Control Messages':
-                    view = _view
-                    break
-
-            if not view:
-                view = window.new_file()
-                view.set_name('Package Control Messages')
-                view.set_scratch(True)
-                view.settings().set("word_wrap", True)
-                view.settings().set("auto_indent", False)
-                view.settings().set("tab_width", 2)
-            else:
-                view.set_read_only(False)
-                if window.active_view() != view:
-                    window.focus_view(view)
-
-            def write(string):
-                view.run_command('insert', {'characters': string})
-
-            old_sel = list(view.sel())
-            old_vpos = view.viewport_position()
-
-            size = view.size()
-            view.sel().clear()
-            view.sel().add(sublime.Region(size, size))
-
-            if not view.size():
-                write(text.format(
-                    '''
-                    Package Control Messages
-                    ========================
-                    '''
-                ))
-            write(output)
-
-            # Move caret to the new end of the file if it was previously
-            if sublime.Region(size, size) == old_sel[-1]:
-                old_sel[-1] = sublime.Region(view.size(), view.size())
-
-            view.sel().clear()
-            for reg in old_sel:
-                view.sel().add(reg)
-
-            view.set_viewport_position(old_vpos, False)
-            view.set_read_only(True)
-
-        sublime.set_timeout(print_to_panel, 1)
-
     def remove_library(self, lib):
         """
         Deletes a library
@@ -2011,6 +1866,151 @@ class PackageManager:
         console_write(message)
 
         return result
+
+    def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version):
+        """
+        Prints out package install and upgrade messages
+
+        The functionality provided by this allows package maintainers to
+        show messages to the user when a package is installed, or when
+        certain version upgrade occur.
+
+        :param package_name:
+            The name of the package the message is for
+
+        :param package_dir:
+            The full filesystem path to the package directory
+
+        :param is_upgrade:
+            If the install was actually an upgrade
+
+        :param old_version:
+            The string version of the package before the upgrade occurred
+
+        :param new_version:
+            The new (string) version of the package
+        """
+
+        try:
+            messages_file = os.path.join(package_dir, 'messages.json')
+            with open(messages_file, 'r', encoding='utf-8') as fobj:
+                message_info = json.load(fobj)
+        except (FileNotFoundError):
+            return
+        except (ValueError):
+            console_write(
+                '''
+                Error parsing messages.json for %s
+                ''',
+                package_name
+            )
+            return
+
+        def read_message(message_path):
+            with open(sys_path.longpath(message_path), 'r', encoding='utf-8', errors='replace') as fobj:
+                return '\n  %s\n' % fobj.read().rstrip().replace('\n', '\n  ')
+
+        output = ''
+        if not is_upgrade:
+            install_file = message_info.get('install')
+            if install_file:
+                try:
+                    install_path = os.path.join(package_dir, install_file)
+                    output += read_message(install_path)
+                except (FileNotFoundError):
+                    console_write(
+                        '''
+                        Error opening install message for %s from %s
+                        ''',
+                        (package_name, install_file)
+                    )
+
+        elif is_upgrade and old_version:
+            upgrade_messages = list(set(message_info.keys()) - set(['install']))
+            upgrade_messages = version_sort(upgrade_messages, reverse=True)
+            old_version_cmp = PackageVersion(old_version)
+            new_version_cmp = PackageVersion(new_version)
+
+            for version in upgrade_messages:
+                version_cmp = PackageVersion(version)
+                if version_cmp <= old_version_cmp:
+                    break
+                # If the package developer sets up release notes for future
+                # versions, we don't want to show them for every release
+                if version_cmp > new_version_cmp:
+                    continue
+
+                upgrade_file = message_info.get(version)
+                upgrade_path = os.path.join(package_dir, upgrade_file)
+
+                try:
+                    output += read_message(upgrade_path)
+                except (FileNotFoundError):
+                    console_write(
+                        '''
+                        Error opening %s message for %s from %s
+                        ''',
+                        (version, package_name, upgrade_file)
+                    )
+
+        if not output:
+            return
+        else:
+            output = '\n\n%s\n%s\n' % (package_name, '-' * len(package_name)) + output
+
+        def print_to_panel():
+            window = sublime.active_window()
+
+            views = window.views()
+            view = None
+            for _view in views:
+                if _view.name() == 'Package Control Messages':
+                    view = _view
+                    break
+
+            if not view:
+                view = window.new_file()
+                view.set_name('Package Control Messages')
+                view.set_scratch(True)
+                view.settings().set("word_wrap", True)
+                view.settings().set("auto_indent", False)
+                view.settings().set("tab_width", 2)
+            else:
+                view.set_read_only(False)
+                if window.active_view() != view:
+                    window.focus_view(view)
+
+            def write(string):
+                view.run_command('insert', {'characters': string})
+
+            old_sel = list(view.sel())
+            old_vpos = view.viewport_position()
+
+            size = view.size()
+            view.sel().clear()
+            view.sel().add(sublime.Region(size, size))
+
+            if not view.size():
+                write(text.format(
+                    '''
+                    Package Control Messages
+                    ========================
+                    '''
+                ))
+            write(output)
+
+            # Move caret to the new end of the file if it was previously
+            if sublime.Region(size, size) == old_sel[-1]:
+                old_sel[-1] = sublime.Region(view.size(), view.size())
+
+            view.sel().clear()
+            for reg in old_sel:
+                view.sel().add(reg)
+
+            view.set_viewport_position(old_vpos, False)
+            view.set_read_only(True)
+
+        sublime.set_timeout(print_to_panel, 1)
 
     def record_usage(self, params):
         """
