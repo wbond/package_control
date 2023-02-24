@@ -151,32 +151,6 @@ class PackageManager:
             clear_cache()
         set_cache('filtered_settings', filtered_settings)
 
-    def is_compatible(self, package_name):
-        """
-        Detects if a package is compatible with the current Sublime Text install
-
-        :param package_name:
-            A package's name string to check for compatibility
-
-        :return:
-            If the package is compatible
-        """
-
-        metadata = self.get_metadata(package_name)
-        if not metadata:
-            # unmanaged or unable to parse meta data
-            # can't say something about compatibility, asume the best
-            return True
-
-        sublime_text = metadata.get('sublime_text')
-        platforms = metadata.get('platforms', [])
-
-        # This indicates the metadata is old, so we assume a match
-        if not sublime_text and not platforms:
-            return True
-
-        return is_compatible_platform(platforms) and is_compatible_version(sublime_text)
-
     def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""
 
@@ -288,6 +262,32 @@ class PackageManager:
                 return '%s commit %s' % (upgrader.cli_name, version)
 
         return 'unknown version'
+
+    def is_compatible(self, package_name):
+        """
+        Detects if a package is compatible with the current Sublime Text install
+
+        :param package_name:
+            A package's name string to check for compatibility
+
+        :return:
+            If the package is compatible
+        """
+
+        metadata = self.get_metadata(package_name)
+        if not metadata:
+            # unmanaged or unable to parse meta data
+            # can't say something about compatibility, asume the best
+            return True
+
+        sublime_text = metadata.get('sublime_text')
+        platforms = metadata.get('platforms', [])
+
+        # This indicates the metadata is old, so we assume a match
+        if not sublime_text and not platforms:
+            return True
+
+        return is_compatible_platform(platforms) and is_compatible_version(sublime_text)
 
     def _is_git_package(self, package_name):
         """
