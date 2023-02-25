@@ -84,7 +84,7 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
         message = 'Loading repository...'
         with ActivityIndicator(message) as progress:
             console_write(message)
-            package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
+            package_list = self.make_package_list(actions=(self.INSTALL, self.OVERWRITE))
             if not package_list:
                 message = 'There are no packages available for installation'
                 console_write(message)

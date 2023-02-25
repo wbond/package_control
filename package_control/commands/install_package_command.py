@@ -41,7 +41,7 @@ class InstallPackageThread(threading.Thread, PackageInstaller):
         """
 
         with ActivityIndicator('Loading repository...'):
-            package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
+            package_list = self.make_package_list(actions=(self.INSTALL, self.OVERWRITE))
             if not package_list:
                 show_message(
                     '''

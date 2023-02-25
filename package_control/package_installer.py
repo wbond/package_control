@@ -16,21 +16,46 @@ class PackageInstaller(PackageDisabler):
     Provides helper functionality related to installing packages
     """
 
+    NONE = 'none'
+    """
+    Do nothing.
+    """
+
+    DOWNGRADE = 'downgrade'
+    """
+    Downgrade an installed package if latest available one is of smaller version.
+    """
+
+    REINSTALL = 'reinstall'
+    """
+    Reinstall existing managed packages.
+    """
+
+    OVERWRITE = 'overwrite'
+    """
+    Overwrite existing unmanaged packages.
+    """
+
+    PULL = 'pull'
+    """
+    Upgrade unmanaged vcs packages.
+    """
+
     def __init__(self):
         self.manager = PackageManager()
 
-    def make_package_list(self, ignore_actions=[], ignore_packages=[]):
+    def make_package_list(self, actions, ignore_packages=[]):
         """
         Creates a list of packages and what operation would be performed for
         each. Allows filtering by the applicable action or package name.
         Returns the information in a format suitable for displaying in the
         quick panel.
 
-        :param ignore_actions:
-            A list of actions to ignore packages by. Valid actions include:
+        :param actions:
+            A list or tuple of actions to include packages by. Valid actions include:
             `install`, `upgrade`, `downgrade`, `reinstall`, `overwrite`,
-            `pull` and `none`. `pull` andd `none` are for Git and Hg
-            repositories. `pull` is present when incoming changes are detected,
+            `pull` and `none`. `pull` and `none` are for Git and Hg repositories.
+            `pull` is present when incoming changes are detected,
             where as `none` is selected if no commits are available. `overwrite`
             is for packages that do not include version information via the
             `package-metadata.json` file.
@@ -50,7 +75,7 @@ class PackageInstaller(PackageDisabler):
 
         url_pattern = re.compile(r'^https?://')
 
-        ignore_vcs_packages = 'pull' in ignore_actions
+        ignore_vcs_packages = 'pull' not in actions
         if not ignore_vcs_packages:
             ignore_vcs_packages = self.manager.settings.get('ignore_vcs_packages')
 
@@ -89,32 +114,32 @@ class PackageInstaller(PackageDisabler):
             if installed:
                 if vcs:
                     if incoming:
-                        action = 'pull'
+                        action = self.PULL
                         extra = ' with ' + vcs
                     else:
-                        action = 'none'
+                        action = self.NONE
                         extra = ''
                 elif not installed_version:
-                    action = 'overwrite'
+                    action = self.OVERWRITE
                     extra = ' %s with %s' % (installed_version_name, new_version)
                 else:
                     installed_version = PackageVersion(installed_version)
                     new_version_cmp = PackageVersion(release['version'])
                     if new_version_cmp > installed_version:
-                        action = 'upgrade'
+                        action = self.UPGRADE
                         extra = ' to %s from %s' % (new_version, installed_version_name)
                     elif new_version_cmp < installed_version:
-                        action = 'downgrade'
+                        action = self.DOWNGRADE
                         extra = ' to %s from %s' % (new_version, installed_version_name)
                     else:
-                        action = 'reinstall'
+                        action = self.REINSTALL
                         extra = ' %s' % new_version
             else:
-                action = 'install'
+                action = self.INSTALL
                 extra = ' %s' % new_version
             extra += ';'
 
-            if action in ignore_actions:
+            if action not in actions:
                 continue
 
             description = info.get('description')

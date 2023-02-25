@@ -101,13 +101,7 @@ class AutomaticUpgrader:
         PackageRenamer().rename_packages(installer.manager)
 
         package_list = installer.make_package_list(
-            [
-                'install',
-                'reinstall',
-                'downgrade',
-                'overwrite',
-                'none'
-            ],
+            actions=(installer.PULL, installer.UPGRADE),
             ignore_packages=self.settings.get('auto_upgrade_ignore')
         )
         if not package_list:
