@@ -42,7 +42,7 @@ class UpgradePackageThread(threading.Thread, PackageInstaller):
         with ActivityIndicator('Loading repository...'):
             PackageRenamer().rename_packages(self.manager)
 
-            package_list = self.make_package_list(actions=(self.OVERWRITE, self.PULL, self.UPGRADE))
+            package_list = self.make_package_list(actions=(self.PULL, self.UPGRADE))
             if not package_list:
                 show_message('There are no packages ready for upgrade')
                 return

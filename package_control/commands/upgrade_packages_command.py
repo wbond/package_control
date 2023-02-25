@@ -89,7 +89,7 @@ class UpgradePackagesThread(threading.Thread, PackageInstaller):
 
             PackageRenamer().rename_packages(self.manager)
 
-            package_list = self.make_package_list(actions=(self.OVERWRITE, self.PULL, self.UPGRADE))
+            package_list = self.make_package_list(actions=(self.PULL, self.UPGRADE))
 
             if USE_QUICK_PANEL_ITEM:
                 package_names = {

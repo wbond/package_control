@@ -72,7 +72,7 @@
         "command": "satisfy_libraries"
     },
     {
-        "caption": "Package Control: Upgrade/Overwrite All Packages",
+        "caption": "Package Control: Upgrade All Packages",
         "command": "upgrade_all_packages"
     },
     {
