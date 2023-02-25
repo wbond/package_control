@@ -19,7 +19,7 @@ class PackageInstaller(PackageDisabler):
     def __init__(self):
         self.manager = PackageManager()
 
-    def make_package_list(self, ignore_actions=[], override_action=None, ignore_packages=[]):
+    def make_package_list(self, ignore_actions=[], ignore_packages=[]):
         """
         Creates a list of packages and what operation would be performed for
         each. Allows filtering by the applicable action or package name.
@@ -34,10 +34,6 @@ class PackageInstaller(PackageDisabler):
             where as `none` is selected if no commits are available. `overwrite`
             is for packages that do not include version information via the
             `package-metadata.json` file.
-
-        :param override_action:
-            A string action name to override the displayed action for all listed
-            packages.
 
         :param ignore_packages:
             A list of packages names that should not be returned in the list
@@ -81,50 +77,45 @@ class PackageInstaller(PackageDisabler):
 
             vcs = None
 
-            if override_action:
-                action = override_action
-                extra = ''
-
-            else:
-                if self.manager.is_vcs_package(package):
-                    if ignore_vcs_packages is True:
-                        continue
-                    if isinstance(ignore_vcs_packages, list) and package in ignore_vcs_packages:
-                        continue
-                    upgrader = self.manager.instantiate_upgrader(package)
-                    vcs = upgrader.cli_name
-                    incoming = upgrader.incoming()
-
-                if installed:
-                    if vcs:
-                        if incoming:
-                            action = 'pull'
-                            extra = ' with ' + vcs
-                        else:
-                            action = 'none'
-                            extra = ''
-                    elif not installed_version:
-                        action = 'overwrite'
-                        extra = ' %s with %s' % (installed_version_name, new_version)
-                    else:
-                        installed_version = PackageVersion(installed_version)
-                        new_version_cmp = PackageVersion(release['version'])
-                        if new_version_cmp > installed_version:
-                            action = 'upgrade'
-                            extra = ' to %s from %s' % (new_version, installed_version_name)
-                        elif new_version_cmp < installed_version:
-                            action = 'downgrade'
-                            extra = ' to %s from %s' % (new_version, installed_version_name)
-                        else:
-                            action = 'reinstall'
-                            extra = ' %s' % new_version
-                else:
-                    action = 'install'
-                    extra = ' %s' % new_version
-                extra += ';'
-
-                if action in ignore_actions:
+            if self.manager.is_vcs_package(package):
+                if ignore_vcs_packages is True:
                     continue
+                if isinstance(ignore_vcs_packages, list) and package in ignore_vcs_packages:
+                    continue
+                upgrader = self.manager.instantiate_upgrader(package)
+                vcs = upgrader.cli_name
+                incoming = upgrader.incoming()
+
+            if installed:
+                if vcs:
+                    if incoming:
+                        action = 'pull'
+                        extra = ' with ' + vcs
+                    else:
+                        action = 'none'
+                        extra = ''
+                elif not installed_version:
+                    action = 'overwrite'
+                    extra = ' %s with %s' % (installed_version_name, new_version)
+                else:
+                    installed_version = PackageVersion(installed_version)
+                    new_version_cmp = PackageVersion(release['version'])
+                    if new_version_cmp > installed_version:
+                        action = 'upgrade'
+                        extra = ' to %s from %s' % (new_version, installed_version_name)
+                    elif new_version_cmp < installed_version:
+                        action = 'downgrade'
+                        extra = ' to %s from %s' % (new_version, installed_version_name)
+                    else:
+                        action = 'reinstall'
+                        extra = ' %s' % new_version
+            else:
+                action = 'install'
+                extra = ' %s' % new_version
+            extra += ';'
+
+            if action in ignore_actions:
+                continue
 
             description = info.get('description')
             if not description:
