@@ -44,7 +44,7 @@ class PackageInstaller(PackageDisabler):
     def __init__(self):
         self.manager = PackageManager()
 
-    def make_package_list(self, actions, ignore_packages=[]):
+    def make_package_list(self, actions, ignore_packages=None):
         """
         Creates a list of packages and what operation would be performed for
         each. Allows filtering by the applicable action or package name.
