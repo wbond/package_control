@@ -51,9 +51,10 @@ def add(event_type, package, version):
 
     with __lock:
         tracker = _tracker()
-        packages = tracker.get(event_type, {})
-        packages[package] = version
-        tracker.set(event_type, packages)
+        if tracker:
+            packages = tracker.get(event_type, {})
+            packages[package] = version
+            tracker.set(event_type, packages)
 
 
 def clear(event_type, package, future=False):
@@ -79,10 +80,11 @@ def clear(event_type, package, future=False):
     def do_clear():
         with __lock:
             tracker = _tracker()
-            packages = tracker.get(event_type, {})
-            if package in packages:
-                del packages[package]
-                tracker.set(event_type, packages)
+            if tracker:
+                packages = tracker.get(event_type)
+                if packages and package in packages:
+                    del packages[package]
+                    tracker.set(event_type, packages)
 
     if future:
         sublime.set_timeout(do_clear, 5000)
