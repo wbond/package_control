@@ -204,7 +204,7 @@ class Cli:
                             setting is changed.
                             '''
                         )
-                    show_error(message)
+                    console_write(message)
                     return False
 
             if meaningful_output and self.debug and len(output) > 0:
