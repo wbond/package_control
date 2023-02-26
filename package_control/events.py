@@ -10,6 +10,7 @@ POST_UPGRADE = 'post_upgrade'
 # This ensures we don't run into issues calling the event tracking methods
 # from threads
 __lock = threading.Lock()
+__tracker = None
 
 
 def _tracker():
@@ -19,14 +20,15 @@ def _tracker():
     Use an unsaved settings object to share events across plugin_hosts.
     """
 
-    try:
-        return _tracker.cache
-    except AttributeError:
+    global __tracker
+
+    if not isinstance(__tracker, sublime.Settings):
         tracker = sublime.load_settings("Package Control Events")
-        if tracker is not None and tracker.settings_id > 0:
-            _tracker.cache = tracker
-            return tracker
-        return {}  # return dummy dictionary until API is ready
+        if tracker is None or tracker.settings_id == 0:
+            return {}
+        __tracker = tracker
+
+    return __tracker
 
 
 def add(event_type, package, version):
