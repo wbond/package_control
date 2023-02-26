@@ -165,9 +165,6 @@ class Cli:
                             prompt. Please ensure %s works without a prompt, or
                             change the "ignore_vcs_packages" Package Control
                             setting to true.
-
-                            Sublime Text will need to be restarted once these
-                            changes are made.
                             ''',
                             binary_name
                         )
@@ -199,9 +196,6 @@ class Cli:
 
                             VCS-based packages can be ignored by changing the
                             "ignore_vcs_packages" setting to true.
-
-                            Sublime Text will need to be restarted once the
-                            setting is changed.
                             '''
                         )
                     console_write(message)
