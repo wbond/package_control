@@ -30,7 +30,15 @@ class UpgradePackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None, unattended=False):
         if isinstance(packages, list):
-            UpgradePackagesThread(packages, unattended).start()
+
+            def worker():
+                message = 'Searching updates...'
+                with ActivityIndicator(message) as progress:
+                    console_write(message)
+                    upgrader = PackageTaskRunner()
+                    upgrader.upgrade_packages(packages, None, unattended, progress)
+
+            threading.Thread(target=worker).start()
             return
 
         def on_done(input_text):
@@ -54,34 +62,3 @@ class UpgradePackagesCommand(sublime_plugin.ApplicationCommand):
             None,
             None
         )
-
-
-class UpgradePackagesThread(threading.Thread, PackageTaskRunner):
-
-    """
-    A thread to run the installation of one or more packages in
-    """
-
-    def __init__(self, packages, unattended):
-        """
-        Constructs a new instance.
-
-        :param packages:
-            The list of package names to upgrade.
-            If `None` all packages are upgraded.
-
-        :param unattended:
-            A flag to decide whether to display modal error/message dialogs.
-        """
-
-        self.packages = set(packages) if packages else None
-        self.unattended = unattended
-
-        threading.Thread.__init__(self)
-        PackageTaskRunner.__init__(self)
-
-    def run(self):
-        message = 'Loading repository...'
-        with ActivityIndicator(message) as progress:
-            console_write(message)
-            self.upgrade_packages(self.packages, None, self.unattended, progress)

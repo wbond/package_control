@@ -17,62 +17,40 @@ class InstallPackageCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self):
-        InstallPackageThread().start()
 
+        def show_quick_panel():
+            installer = PackageTaskRunner()
 
-class InstallPackageThread(threading.Thread, PackageTaskRunner):
+            with ActivityIndicator('Loading packages...') as progress:
+                tasks = installer.create_package_tasks(actions=(installer.INSTALL, installer.OVERWRITE))
+                if not tasks:
+                    message = 'There are no packages available for installation'
+                    console_write(message)
+                    progress.finish(message)
+                    show_message(
+                        '''
+                        %s
 
-    """
-    A thread to run the action of retrieving available packages in. Uses the
-    default PackageTaskRunner.on_done quick panel handler.
-    """
+                        Please see https://packagecontrol.io/docs/troubleshooting for help
+                        ''',
+                        message
+                    )
+                    return
 
-    def __init__(self):
-        """
-        Constructs a new instance.
-        """
+            def on_done(picked):
+                if picked == -1:
+                    return
 
-        threading.Thread.__init__(self)
-        PackageTaskRunner.__init__(self)
+                def worker(task):
+                    with ActivityIndicator('Installing package %s' % task.package_name) as progress:
+                        installer.run_install_tasks([task], progress)
 
-    def run(self):
-        """
-        Load and display a list of packages available for install
-        """
+                threading.Thread(target=worker, args=[tasks[picked]]).start()
 
-        with ActivityIndicator('Loading repository...') as progress:
-            tasks = self.create_package_tasks(actions=(self.INSTALL, self.OVERWRITE))
-            if not tasks:
-                message = 'There are no packages available for installation'
-                console_write(message)
-                progress.finish(message)
-                show_message(
-                    '''
-                    %s
+            sublime.active_window().show_quick_panel(
+                installer.render_quick_panel_items(tasks),
+                on_done,
+                sublime.KEEP_OPEN_ON_FOCUS_LOST
+            )
 
-                    Please see https://packagecontrol.io/docs/troubleshooting for help
-                    ''',
-                    message
-                )
-                return
-
-        def on_done(picked):
-            if picked > -1:
-                threading.Thread(target=self.install, args=[tasks[picked]]).start()
-
-        sublime.active_window().show_quick_panel(
-            self.render_quick_panel_items(tasks),
-            on_done,
-            sublime.KEEP_OPEN_ON_FOCUS_LOST
-        )
-
-    def install(self, task):
-        """
-        Install selected package
-
-        :param task:
-            The ``PackageInstallTask`` object for the package to install
-        """
-
-        with ActivityIndicator('Installing package %s' % task.package_name) as progress:
-            self.run_install_tasks([task], progress)
+        threading.Thread(target=show_quick_panel).start()

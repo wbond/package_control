@@ -16,57 +16,50 @@ class UpgradePackageCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self):
-        UpgradePackageThread().start()
 
+        def show_quick_panel():
+            upgrader = PackageTaskRunner()
 
-class UpgradePackageThread(threading.Thread, PackageTaskRunner):
+            with ActivityIndicator('Searching updates...') as progress:
+                tasks = upgrader.create_package_tasks(
+                    actions=(upgrader.PULL, upgrader.UPGRADE),
+                    ignore_packages=upgrader.get_ignored_packages()  # don't upgrade disabled packages
+                )
+                if tasks is False:
+                    message = 'There are no packages available for upgrade'
+                    console_write(message)
+                    progress.finish(message)
+                    show_message(
+                        '''
+                        %s
 
-    """
-    A thread to run the action of retrieving upgradable packages in.
-    """
+                        Please see https://packagecontrol.io/docs/troubleshooting for help
+                        ''',
+                        message
+                    )
+                    return
 
-    def __init__(self):
-        """
-        Constructs a new instance.
-        """
+                if not tasks:
+                    message = 'All packages up-to-date!'
+                    console_write(message)
+                    progress.finish(message)
+                    show_message(message)
+                    return
 
-        threading.Thread.__init__(self)
-        PackageTaskRunner.__init__(self)
+            def on_done(picked):
+                if picked == -1:
+                    return
 
-    def run(self):
-        """
-        Load and display a list of packages available for upgrade
-        """
+                def worker(task):
+                    with ActivityIndicator('Upgrading package %s' % task.package_name) as progress:
+                        upgrader.run_upgrade_tasks([task], progress)
 
-        with ActivityIndicator('Loading repository...') as progress:
-            tasks = self.create_package_tasks(
-                actions=(self.PULL, self.UPGRADE),
-                ignore_packages=self.get_ignored_packages()  # don't upgrade disabled packages
+                threading.Thread(target=worker, args=[tasks[picked]]).start()
+
+            sublime.active_window().show_quick_panel(
+                upgrader.render_quick_panel_items(tasks),
+                on_done,
+                sublime.KEEP_OPEN_ON_FOCUS_LOST
             )
-            if not tasks:
-                message = 'There are no packages ready for upgrade'
-                console_write(message)
-                progress.finish(message)
-                show_message(message)
-                return
 
-        def on_done(picked):
-            if picked > -1:
-                threading.Thread(target=self.upgrade, args=[tasks[picked]]).start()
-
-        sublime.active_window().show_quick_panel(
-            self.render_quick_panel_items(tasks),
-            on_done,
-            sublime.KEEP_OPEN_ON_FOCUS_LOST
-        )
-
-    def upgrade(self, task):
-        """
-        Upgrade selected package
-
-        :param task:
-            The ``PackageInstallTask`` object for the package to upgrade
-        """
-
-        with ActivityIndicator('Upgrading package %s' % task.package_name) as progress:
-            self.run_upgrade_tasks([task], progress)
+        threading.Thread(target=show_quick_panel).start()
