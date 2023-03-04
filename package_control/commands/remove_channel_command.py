@@ -18,7 +18,7 @@ class RemoveChannelCommand(sublime_plugin.ApplicationCommand):
         "remove_channel",
         {
             "url": "https://my-server.com/channel.json",
-            "unattended": False  # don't suppress error dialogs
+            "unattended": False  # if True, suppress error dialogs
         }
     )
     ```

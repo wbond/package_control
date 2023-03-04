@@ -17,7 +17,7 @@ class RemoveRepositoryCommand(sublime_plugin.ApplicationCommand):
         "remove_repository",
         {
             "url": "https://my-server.com/repository.json",
-            "unattended": False  # don't suppress error dialogs
+            "unattended": False  # if True, suppress error dialogs
         }
     )
     ```

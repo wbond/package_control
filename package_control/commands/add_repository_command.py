@@ -20,7 +20,7 @@ class AddRepositoryCommand(sublime_plugin.ApplicationCommand):
         "add_repository",
         {
             "url": "https://my-server.com/repository.json",
-            "unattended": False  # don't suppress error dialogs
+            "unattended": False  # if True, suppress error dialogs
         }
     )
     ```

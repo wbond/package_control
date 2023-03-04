@@ -24,7 +24,7 @@ class UpgradePackagesCommand(sublime_plugin.ApplicationCommand):
         "upgrade_packages",
         {
             "packages": ["Package 1", "Package 2"],
-            "unattended": False  # don't suppress error dialogs
+            "unattended": False  # if True, suppress error dialogs
         }
     )
     ```

@@ -20,7 +20,7 @@ class AddChannelCommand(sublime_plugin.ApplicationCommand):
         "add_channel",
         {
             "url": "https://my-server.com/channel.json",
-            "unattended": False  # don't suppress error dialogs
+            "unattended": False  # if True, suppress error dialogs
         }
     )
     ```

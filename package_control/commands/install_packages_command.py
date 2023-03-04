@@ -23,7 +23,7 @@ class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
         "install_packages",
         {
             "packages": ["Package 1", "Package 2"],
-            "unattended": False  # don't suppress error dialogs
+            "unattended": False  # if True, suppress error dialogs
         }
     )
     ```
