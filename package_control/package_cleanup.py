@@ -380,7 +380,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
                 self.pc_settings,
                 self.pc_filename,
                 'installed_packages',
-                installed_packages - missing_packages + renamed_packages
+                installed_packages - missing_packages | renamed_packages
             )
 
         # Make sure not to overwrite existing packages after renaming is applied.
