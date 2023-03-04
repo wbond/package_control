@@ -94,7 +94,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             self.manager.cleanup_libraries()
 
         if self.pc_settings.get('auto_upgrade'):
-            AutomaticUpgrader().run()
+            AutomaticUpgrader(self.manager).run()
 
         if self.failed_cleanup:
             show_error(

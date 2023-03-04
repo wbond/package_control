@@ -1,13 +1,12 @@
 import threading
-import time
 
 import sublime
 import sublime_plugin
 
 from ..activity_indicator import ActivityIndicator
 from ..console_write import console_write
-from ..package_installer import PackageInstaller, USE_QUICK_PANEL_ITEM
-from ..show_error import show_error, show_message
+from ..package_tasks import PackageTaskRunner
+from ..show_error import show_error
 
 
 class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
@@ -57,7 +56,7 @@ class InstallPackagesCommand(sublime_plugin.ApplicationCommand):
         )
 
 
-class InstallPackagesThread(threading.Thread, PackageInstaller):
+class InstallPackagesThread(threading.Thread, PackageTaskRunner):
 
     """
     A thread to run the installation of one or more packages in
@@ -78,72 +77,10 @@ class InstallPackagesThread(threading.Thread, PackageInstaller):
         self.unattended = unattended
 
         threading.Thread.__init__(self)
-        PackageInstaller.__init__(self)
+        PackageTaskRunner.__init__(self)
 
     def run(self):
         message = 'Loading repository...'
         with ActivityIndicator(message) as progress:
             console_write(message)
-            package_list = self.make_package_list(actions=(self.INSTALL, self.OVERWRITE))
-            if not package_list:
-                message = 'There are no packages available for installation'
-                console_write(message)
-                progress.finish(message)
-                if not self.unattended:
-                    show_message(
-                        '''
-                        %s
-
-                        Please see https://packagecontrol.io/docs/troubleshooting for help
-                        ''',
-                        message
-                    )
-                return
-
-            if USE_QUICK_PANEL_ITEM:
-                package_names = {info.trigger for info in package_list if info.trigger in self.packages}
-            else:
-                package_names = {info[0] for info in package_list if info[0] in self.packages}
-
-            if not package_names:
-                message = 'All specified packages already installed!'
-                console_write(message)
-                progress.finish(message)
-                if not self.unattended:
-                    show_message(message)
-                return
-
-            num_packages = len(package_names)
-            if num_packages > 1:
-                console_write('Installing %d packages...' % num_packages)
-
-            self.disable_packages({self.INSTALL: package_names})
-            time.sleep(0.7)
-
-            deffered = set()
-            num_installed = 0
-
-            try:
-                for package in sorted(package_names, key=lambda s: s.lower()):
-                    progress.set_label('Installing package %s' % package)
-                    result = self.manager.install_package(package)
-                    if result is True:
-                        num_installed += 1
-                    # do not re-enable package if operation is dereffered to next start
-                    elif result is None:
-                        deffered.add(package)
-
-                if num_packages == 1:
-                    message = 'Package %s successfully installed' % list(package_names)[0]
-                elif num_packages == num_installed:
-                    message = 'All packages successfully installed'
-                    console_write(message)
-                else:
-                    message = '%d of %d packages successfully installed' % (num_installed, num_packages)
-                    console_write(message)
-
-                progress.finish(message)
-
-            finally:
-                time.sleep(0.7)
-                self.reenable_packages({self.INSTALL: package_names - deffered})
+            self.install_packages(self.packages, self.unattended, progress)

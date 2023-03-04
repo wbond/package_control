@@ -9,10 +9,7 @@ import sublime
 
 from . import sys_path
 from .console_write import console_write
-from .package_installer import PackageInstaller
-from .settings import pc_settings_filename
-
-USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+from .package_tasks import PackageTaskRunner
 
 
 class AutomaticUpgrader:
@@ -23,8 +20,8 @@ class AutomaticUpgrader:
     settings.
     """
 
-    def __init__(self):
-        self.settings = sublime.load_settings(pc_settings_filename())
+    def __init__(self, manager):
+        self.manager = manager
         self.last_run = 0
         self.last_version = 0
         self.next_run = 0
@@ -67,7 +64,7 @@ class AutomaticUpgrader:
         except (FileNotFoundError, ValueError, TypeError):
             pass
 
-        frequency = self.settings.get('auto_upgrade_frequency')
+        frequency = self.manager.settings.get('auto_upgrade_frequency')
         if frequency and self.last_run:
             self.next_run = int(self.last_run) + (frequency * 60 * 60)
 
@@ -88,53 +85,21 @@ class AutomaticUpgrader:
         version. Also renames any installed packages to their new names.
         """
 
-        installer = PackageInstaller()
+        upgrader = PackageTaskRunner(self.manager)
 
-        required_libraries = installer.manager.find_required_libraries()
-        missing_libraries = installer.manager.find_missing_libraries(required_libraries=required_libraries)
-        installer.manager.install_libraries(
+        # upgrade existing libraries
+        required_libraries = upgrader.manager.find_required_libraries()
+        missing_libraries = upgrader.manager.find_missing_libraries(required_libraries=required_libraries)
+        upgrader.manager.install_libraries(
             libraries=required_libraries - missing_libraries,
             fail_early=False
         )
 
-        package_list = installer.make_package_list(
-            actions=(installer.PULL, installer.UPGRADE),
-            ignore_packages=self.settings.get('auto_upgrade_ignore')
+        # run updater synchronously to delay any "You must restart ST" dialogs
+        # Note: we are in PackageCleanup thread here
+        completed = upgrader.upgrade_packages(
+            ignore_packages=upgrader.manager.settings.get('auto_upgrade_ignore'),
+            unattended=True
         )
-        if not package_list:
+        if completed:
             self.save_last_run()
-            console_write('All packages up-to-date!')
-            return
-
-        if USE_QUICK_PANEL_ITEM:
-            package_list = [info.trigger for info in package_list]
-        else:
-            package_list = [info[0] for info in package_list]
-
-        # If Package Control is being upgraded, just do that and restart
-        if 'Package Control' in package_list:
-            package_list = ['Package Control']
-        else:
-            self.save_last_run()
-
-        console_write(
-            'Upgrading %d package%s...',
-            (len(package_list), 's' if len(package_list) != 1 else '')
-        )
-
-        reenable_packages = installer.disable_packages({installer.UPGRADE: package_list})
-        # Wait so that the ignored packages can be "unloaded"
-        time.sleep(0.7)
-
-        try:
-            for package_name in package_list:
-                result = installer.manager.install_package(package_name)
-
-                # re-enable if upgrade is not deferred to next start
-                if result is None and package_name in reenable_packages:
-                    reenable_packages.remove(package_name)
-
-        finally:
-            if reenable_packages:
-                time.sleep(0.7)
-                installer.reenable_packages({installer.UPGRADE: reenable_packages})
