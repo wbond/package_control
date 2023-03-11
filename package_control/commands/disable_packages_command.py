@@ -20,12 +20,7 @@ class DisablePackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None):
         if isinstance(packages, list):
-            unique_packages = set(packages)
-
-            try:
-                unique_packages.remove('Package Control')
-            except:
-                pass
+            unique_packages = set(packages) - {'Package Control'}
 
             disabled = PackageDisabler.disable_packages({PackageDisabler.DISABLE: unique_packages})
 
