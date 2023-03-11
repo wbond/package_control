@@ -117,7 +117,6 @@ def _install_injectors():
     """
 
     injector_code = """
-        import importlib
         import os
         import zipfile
 
@@ -148,9 +147,11 @@ def _install_injectors():
                 pass
 
         elif os.path.exists(__pkg_path):
+            from importlib.machinery import SourceFileLoader
+
             __file_path = os.path.join(__pkg_path,  '__init__.py')
 
-            __loader__ = importlib.machinery.SourceFileLoader('package_control', __file_path)
+            __loader__ = SourceFileLoader('package_control', __file_path)
 
             try:
                 with open(__file_path, 'r', encoding='utf-8') as __f:
@@ -158,6 +159,7 @@ def _install_injectors():
             except (OSError):
                 pass
 
+            del globals()['SourceFileLoader']
 
         if __code is None:
             raise ModuleNotFoundError("No module named 'package_control'")
@@ -176,7 +178,6 @@ def _install_injectors():
         del globals()['sublime_plugin']
         del globals()['zipfile']
         del globals()['os']
-        del globals()['importlib']
 
         __data = {}
         exec(__code, __data)
