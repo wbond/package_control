@@ -21,32 +21,32 @@ class PackageDisabler:
 
     DISABLE = 'disable'
     """
-    A key used to create package_operations for disable_packages or reenable_packages.
+    A key used to create package_actions for disable_packages or reenable_packages.
     """
 
     ENABLE = 'enable'
     """
-    A key used to create package_operations for disable_packages or reenable_packages.
+    A key used to create package_actions for disable_packages or reenable_packages.
     """
 
     INSTALL = 'install'
     """
-    A key used to create package_operations for disable_packages or reenable_packages.
+    A key used to create package_actions for disable_packages or reenable_packages.
     """
 
     REMOVE = 'remove'
     """
-    A key used to create package_operations for disable_packages or reenable_packages.
+    A key used to create package_actions for disable_packages or reenable_packages.
     """
 
     UPGRADE = 'upgrade'
     """
-    A key used to create package_operations for disable_packages or reenable_packages.
+    A key used to create package_actions for disable_packages or reenable_packages.
     """
 
     LOADER = 'loader'
     """
-    A key used to create package_operations for disable_packages or reenable_packages.
+    A key used to create package_actions for disable_packages or reenable_packages.
     """
 
     color_scheme_packages = {}
@@ -197,18 +197,18 @@ class PackageDisabler:
         return 'unknown version'
 
     @staticmethod
-    def disable_packages(package_operations):
+    def disable_packages(package_actions):
         """
         Disables one or more packages before installing or upgrading to prevent
         errors where Sublime Text tries to read files that no longer exist, or
         read a half-written file.
 
-        :param package_operations:
-            A dictionary of operations for a set of packages.
+        :param package_actions:
+            A dictionary of actions for a set of packages.
 
-            ``{operation: {packages}}``
+            ``{action: {packages}}``
 
-            The key is an `operation` that caused the packages to be disabled:
+            The key is an `action` that caused the packages to be disabled:
 
              - PackageDisabler.DISABLE
              - PackageDisabler.ENABLE
@@ -234,7 +234,7 @@ class PackageDisabler:
 
             effected = set()
 
-            for operation, packages in package_operations.items():
+            for action, packages in package_actions.items():
                 # convert packages to a set
                 if not isinstance(packages, set):
                     if isinstance(packages, (list, tuple)):
@@ -248,12 +248,12 @@ class PackageDisabler:
 
                 # Clear packages from in-progress when disabling them, otherwise
                 # they automatically get re-enabled the next time Sublime Text starts
-                if operation == PackageDisabler.DISABLE:
+                if action == PackageDisabler.DISABLE:
                     in_process |= in_process_at_start - packages
 
                 # Make sure to re-enable installed or removed packages,
                 # even if they were disabled before.
-                elif operation == PackageDisabler.INSTALL or operation == PackageDisabler.REMOVE:
+                elif action == PackageDisabler.INSTALL or action == PackageDisabler.REMOVE:
                     in_process |= in_process_at_start | packages
 
                 # Keep disabled packages disabled after update
@@ -262,19 +262,19 @@ class PackageDisabler:
 
                 # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
                 # If False, reset to defaults only.
-                backup = operation in (PackageDisabler.INSTALL, PackageDisabler.UPGRADE)
+                backup = action in (PackageDisabler.INSTALL, PackageDisabler.UPGRADE)
                 if backup:
                     # cancel pending settings restore request
                     PackageDisabler.restore_id = 0
 
                 PackageDisabler.backup_and_reset_settings(disabled, backup)
 
-                if operation == PackageDisabler.UPGRADE:
+                if action == PackageDisabler.UPGRADE:
                     for package in disabled:
                         version = PackageDisabler.get_version(package)
                         events.add(events.PRE_UPGRADE, package, version)
 
-                elif operation == PackageDisabler.REMOVE:
+                elif action == PackageDisabler.REMOVE:
                     for package in disabled:
                         version = PackageDisabler.get_version(package)
                         events.add(events.REMOVE, package, version)
@@ -298,16 +298,16 @@ class PackageDisabler:
             return effected
 
     @staticmethod
-    def reenable_packages(package_operations):
+    def reenable_packages(package_actions):
         """
         Re-enables packages after they have been installed or upgraded
 
-        :param package_operations:
-            A dictionary of operations for a set of packages.
+        :param package_actions:
+            A dictionary of actions for a set of packages.
 
-            ``{operation: {packages}}``
+            ``{action: {packages}}``
 
-            The key is an `operation` that caused the packages to be disabled:
+            The key is an `action` that caused the packages to be disabled:
 
              - PackageDisabler.DISABLE
              - PackageDisabler.ENABLE
@@ -329,7 +329,7 @@ class PackageDisabler:
             need_restore = False
             effected = set()
 
-            for operation, packages in package_operations.items():
+            for action, packages in package_actions.items():
                 # convert packages to a set
                 if not isinstance(packages, set):
                     if isinstance(packages, (list, tuple)):
@@ -337,7 +337,7 @@ class PackageDisabler:
                     else:
                         packages = {packages}
 
-                if operation == PackageDisabler.INSTALL:
+                if action == PackageDisabler.INSTALL:
                     packages &= in_process
                     for package in packages:
                         version = PackageDisabler.get_version(package)
@@ -345,7 +345,7 @@ class PackageDisabler:
                         events.clear(events.INSTALL, package, future=True)
                     need_restore = True
 
-                elif operation == PackageDisabler.UPGRADE:
+                elif action == PackageDisabler.UPGRADE:
                     packages &= in_process
                     for package in packages:
                         version = PackageDisabler.get_version(package)
@@ -354,7 +354,7 @@ class PackageDisabler:
                         events.clear(events.PRE_UPGRADE, package)
                     need_restore = True
 
-                elif operation == PackageDisabler.REMOVE:
+                elif action == PackageDisabler.REMOVE:
                     packages &= in_process
                     for package in packages:
                         events.clear(events.REMOVE, package)
