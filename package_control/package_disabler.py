@@ -250,6 +250,13 @@ class PackageDisabler:
                 # they automatically get re-enabled the next time Sublime Text starts
                 if operation == PackageDisabler.DISABLE:
                     in_process |= in_process_at_start - packages
+
+                # Make sure to re-enable installed or removed packages,
+                # even if they were disabled before.
+                elif operation == PackageDisabler.INSTALL or operation == PackageDisabler.REMOVE:
+                    in_process |= in_process_at_start | packages
+
+                # Keep disabled packages disabled after update
                 else:
                     in_process |= in_process_at_start | disabled
 
