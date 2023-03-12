@@ -67,9 +67,8 @@ class PackageInstallTask(BasePackageTask):
 
 
 class PackageTaskRunner(PackageDisabler):
-
     """
-    Provides helper functionality related to installing packages
+    Provides business logic related to installing/upgrading or removing packages
     """
 
     NONE = 'none'
@@ -206,6 +205,75 @@ class PackageTaskRunner(PackageDisabler):
             return True
 
         return self.run_upgrade_tasks(tasks, progress)
+
+    def remove_packages(self, packages, progress=None, package_kind=''):
+        """
+        Removes packages.
+
+        :param packages:
+            A list or set of unicode strings with package names to remove.
+
+        :param progress:
+            An ``ActivityIndicator`` object to use for status information.
+
+        :param package_kind:
+            A unicode string with an additional package attribute.
+            (e.g.: `orphaned`, `incompatible`, ...)
+        """
+
+        if package_kind:
+            package_kind += ' '
+
+        if isinstance(packages, str):
+            packages = {packages}
+        elif not isinstance(packages, set):
+            if not isinstance(packages, (list, tuple)):
+                raise TypeError("Argument 'packages' must be a string, list or set!")
+            packages = set(packages)
+
+        num_packages = len(packages)
+        if num_packages == 1:
+            message = 'Removing {}package {}'.format(package_kind, list(packages)[0])
+        else:
+            message = 'Removing {} {}packages...'.format(num_packages, package_kind)
+            console_write(message)
+
+        if progress:
+            progress.set_label(message)
+
+        self.disable_packages({self.REMOVE: packages})
+        time.sleep(0.7)
+
+        deffered = set()
+        num_success = 0
+
+        try:
+            for package in sorted(packages, key=lambda s: s.lower()):
+                if progress:
+                    progress.set_label('Removing {}package {}'.format(package_kind, package))
+                result = self.manager.remove_package(package)
+                if result is True:
+                    num_success += 1
+                # do not re-enable package if operation is dereffered to next start
+                elif result is None:
+                    deffered.add(package)
+
+            if num_packages == 1:
+                message = 'Package {} successfully removed'.format(list(packages)[0])
+            elif num_packages == num_success:
+                message = 'All {}packages successfully removed'.format(package_kind)
+                console_write(message)
+            else:
+                message = '{} of {} {}packages successfully removed'.format(
+                    num_success, num_packages, package_kind)
+                console_write(message)
+
+            if progress:
+                progress.finish(message)
+
+        finally:
+            time.sleep(0.7)
+            self.reenable_packages({self.REMOVE: packages - deffered})
 
     def run_install_tasks(self, tasks, progress=None):
         """

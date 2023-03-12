@@ -15,6 +15,7 @@ from .package_io import (
     package_file_exists
 )
 from .package_manager import PackageManager
+from .package_tasks import PackageTaskRunner
 from .settings import load_list_setting, pc_settings_filename, save_list_setting
 from .show_error import show_error, show_message
 
@@ -439,29 +440,8 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             found_packages - load_list_setting(self.pc_settings, 'installed_packages')
         ))
 
-        if not orphaned_packages:
-            return set()
-
-        console_write(
-            'Removing %d orphaned package%s...',
-            (len(orphaned_packages), 's' if len(orphaned_packages) != 1 else '')
-        )
-
-        # disable orphaned packages and reset theme, color scheme or syntaxes if needed
-        self.disable_packages({self.REMOVE: orphaned_packages})
-        time.sleep(0.7)
-
-        # re-enable all removed packages, even if they were disabled before
-        reenable_packages = set()
-
-        try:
-            for package_name in orphaned_packages:
-                if self.manager.delete_package(package_name):
-                    reenable_packages.add(package_name)
-
-        finally:
-            if reenable_packages:
-                time.sleep(0.7)
-                self.reenable_packages({self.REMOVE: reenable_packages})
+        if orphaned_packages:
+            remover = PackageTaskRunner(self.manager)
+            remover.remove_packages(orphaned_packages, package_kind='orphaned')
 
         return orphaned_packages

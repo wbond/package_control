@@ -1,5 +1,8 @@
+import threading
+
+from ..activity_indicator import ActivityIndicator
+from ..package_tasks import PackageTaskRunner
 from .existing_packages_command import ExistingPackagesCommand
-from .remove_packages_command import RemovePackagesThread
 
 
 class RemovePackageCommand(ExistingPackagesCommand):
@@ -47,4 +50,9 @@ class RemovePackageCommand(ExistingPackagesCommand):
             A package name to perform action for
         """
 
-        RemovePackagesThread(manager, package_name).start()
+        def worker():
+            with ActivityIndicator() as progress:
+                remover = PackageTaskRunner(manager)
+                remover.remove_packages([package_name], progress)
+
+        threading.Thread(target=worker).start()
