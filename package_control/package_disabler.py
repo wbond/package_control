@@ -1,7 +1,7 @@
 import functools
 import json
 import os
-import threading
+from threading import RLock
 
 import sublime
 
@@ -155,7 +155,7 @@ class PackageDisabler:
     }
     """
 
-    lock = threading.Lock()
+    lock = RLock()
     restore_id = 0
 
     @staticmethod
@@ -165,10 +165,10 @@ class PackageDisabler:
             return load_list_setting(settings, 'ignored_packages')
 
     @staticmethod
-    def set_ignored_packages(ignored):
+    def in_progress_packages():
         with PackageDisabler.lock:
-            settings = sublime.load_settings(preferences_filename())
-            save_list_setting(settings, preferences_filename(), 'ignored_packages', ignored)
+            settings = sublime.load_settings(pc_settings_filename())
+            return load_list_setting(settings, 'in_progress_packages')
 
     @staticmethod
     def get_version(package):

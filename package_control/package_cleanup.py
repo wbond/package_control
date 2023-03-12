@@ -2,8 +2,6 @@ import os
 import threading
 import time
 
-import sublime
-
 from . import sys_path, __version__
 from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
@@ -14,13 +12,11 @@ from .package_io import (
     get_installed_package_path,
     package_file_exists
 )
-from .package_manager import PackageManager
 from .package_tasks import PackageTaskRunner
-from .settings import load_list_setting, pc_settings_filename, save_list_setting
 from .show_error import show_error, show_message
 
 
-class PackageCleanup(threading.Thread, PackageDisabler):
+class PackageCleanup(threading.Thread, PackageTaskRunner):
 
     """
     Perform initial package maintenance tasks after start of ST.
@@ -44,10 +40,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        PackageDisabler.__init__(self)
-        self.manager = PackageManager()
-        self.pc_filename = pc_settings_filename()
-        self.pc_settings = sublime.load_settings(self.pc_filename)
+        PackageTaskRunner.__init__(self)
         self.failed_cleanup = set()
         self.updated_libraries = False
 
@@ -55,15 +48,13 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         # This song and dance is necessary so Package Control doesn't try to clean
         # itself up, but also get properly marked as installed in the settings
         # Ensure we record the installation of Package Control itself
-        installed_packages = load_list_setting(self.pc_settings, 'installed_packages')
-        if 'Package Control' not in installed_packages:
+        updated = self.manager.update_installed_packages(add='Package Control')
+        if updated:
             self.manager.record_usage({
                 'package': 'Package Control',
                 'operation': 'install',
                 'version': __version__
             })
-            installed_packages.add('Package Control')
-            save_list_setting(self.pc_settings, self.pc_filename, 'installed_packages', installed_packages)
 
         # Scan through packages and complete pending operations
         found_packages = self.cleanup_pending_packages()
@@ -77,7 +68,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         # Make sure we didn't accidentally ignore packages because something was
         # interrupted before it completed. Keep orphan packages disabled which
         # are deferred to next start.
-        in_process = load_list_setting(self.pc_settings, 'in_process_packages') - removed_packages
+        in_process = self.in_progress_packages() - removed_packages
         if in_process:
             console_write(
                 'Re-enabling %d package%s after a Package Control operation was interrupted...',
@@ -91,17 +82,17 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         self.install_missing_packages(found_packages)
         self.install_missing_libraries()
 
-        if self.pc_settings.get('remove_orphaned', True):
+        if self.manager.settings.get('remove_orphaned', True):
             self.manager.cleanup_libraries()
 
-        if self.pc_settings.get('auto_upgrade'):
+        if self.manager.settings.get('auto_upgrade'):
             AutomaticUpgrader(self.manager).run()
 
         if self.failed_cleanup:
             show_error(
                 '''
                 Package cleanup could not be completed.
-                You may need to restoart your OS to unlock relevant files and directories.
+                You may need to restart your OS to unlock relevant files and directories.
 
                 The following packages are effected: "%s"
                 ''',
@@ -111,7 +102,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
 
         message = ''
 
-        in_process = load_list_setting(self.pc_settings, 'in_process_packages')
+        in_process = self.in_progress_packages()
         if in_process:
             message += 'to complete pending package operations on "%s"' \
                 % '", "'.join(sorted(in_process, key=lambda s: s.lower()))
@@ -265,7 +256,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         if not incompatible_packages:
             return set()
 
-        if self.pc_settings.get('auto_migrate', True):
+        if self.manager.settings.get('auto_migrate', True):
 
             available_packages = set(self.manager.list_available_packages())
             migrate_packages = incompatible_packages & available_packages
@@ -356,10 +347,10 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             A set of packages found on filesystem.
         """
 
-        if not self.pc_settings.get('install_missing', True):
+        if not self.manager.settings.get('install_missing', True):
             return
 
-        installed_packages = load_list_setting(self.pc_settings, 'installed_packages')
+        installed_packages = self.manager.installed_packages()
         missing_packages = installed_packages - found_packages
         if not missing_packages:
             return
@@ -377,12 +368,7 @@ class PackageCleanup(threading.Thread, PackageDisabler):
         renamed_packages = self.manager.settings.get('renamed_packages', {})
         renamed_packages = {renamed_packages.get(p, p) for p in missing_packages}
         if renamed_packages != missing_packages:
-            save_list_setting(
-                self.pc_settings,
-                self.pc_filename,
-                'installed_packages',
-                installed_packages - missing_packages | renamed_packages
-            )
+            self.manager.update_installed_packages(add=renamed_packages, remove=missing_packages)
 
         # Make sure not to overwrite existing packages after renaming is applied.
         missing_packages = renamed_packages - found_packages
@@ -431,17 +417,16 @@ class PackageCleanup(threading.Thread, PackageDisabler):
             A set of orphaned packages, which have successfully been removed.
         """
 
-        if not self.pc_settings.get('remove_orphaned', True):
+        if not self.manager.settings.get('remove_orphaned', True):
             return set()
 
         # find all managed orphaned packages
         orphaned_packages = set(filter(
             lambda p: package_file_exists(p, 'package-metadata.json'),
-            found_packages - load_list_setting(self.pc_settings, 'installed_packages')
+            found_packages - self.manager.installed_packages()
         ))
 
         if orphaned_packages:
-            remover = PackageTaskRunner(self.manager)
-            remover.remove_packages(orphaned_packages, package_kind='orphaned')
+            self.remove_packages(orphaned_packages, package_kind='orphaned')
 
         return orphaned_packages

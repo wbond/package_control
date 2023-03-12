@@ -1,5 +1,5 @@
 import sublime
-from threading import Lock
+from threading import RLock
 
 
 class ActivityIndicator:
@@ -16,7 +16,7 @@ class ActivityIndicator:
     def __init__(self, label=None):
         self.label = label
         self.interval = 120
-        self._lock = Lock()
+        self._lock = RLock()
         self._running = False
         self._ticks = 0
         self._view = None

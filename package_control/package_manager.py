@@ -9,6 +9,7 @@ import tempfile
 import zipfile
 
 from io import BytesIO
+from threading import RLock
 from urllib.parse import urlencode, urlparse
 
 import sublime
@@ -39,7 +40,7 @@ from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .providers.channel_provider import UncachedChannelRepositoryError
 from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
-from .settings import load_list_setting, pc_settings_filename
+from .settings import load_list_setting, pc_settings_filename, save_list_setting
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 
@@ -65,6 +66,8 @@ class PackageManager:
     the usage server.
     """
 
+    lock = RLock()
+
     def __init__(self):
         """
         Constructs a new instance.
@@ -76,6 +79,7 @@ class PackageManager:
         self.settings = {}
         settings = sublime.load_settings(pc_settings_filename())
         setting_names = [
+            'auto_migrate',
             'auto_upgrade',
             'auto_upgrade_frequency',
             'auto_upgrade_ignore',
@@ -96,12 +100,14 @@ class PackageManager:
             'http_proxy',
             'https_proxy',
             'ignore_vcs_packages',
+            'install_missing',
             'install_prereleases',
             'package_destination',
             'package_name_map',
             'package_profiles',
             'proxy_password',
             'proxy_username',
+            'remove_orphaned',
             'renamed_packages',
             'repositories',
             'submit_url',
@@ -775,6 +781,58 @@ class PackageManager:
         packages |= set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
+
+    def installed_packages(self):
+        """
+        Return a set of installed package names from registy.
+
+        :returns:
+            A set of ``installed_packages``.
+        """
+
+        with PackageManager.lock:
+            settings = sublime.load_settings(pc_settings_filename())
+            return load_list_setting(settings, 'installed_packages')
+
+    def update_installed_packages(self, add=None, remove=None):
+        """
+        Add and/or remove packages to installed package registry.
+
+        :param add:
+            A list/tuple/set of or a unicode string with the packages
+            to add to the list of installed packages.
+
+        :param remove:
+            A list/tuple/set of or a unicode string with the packages
+            to remove from the list of installed packages.
+
+        :returns:
+            A set of ``installed_packages``.
+        """
+
+        with PackageManager.lock:
+            file_name = pc_settings_filename()
+            settings = sublime.load_settings(file_name)
+            names_at_start = names = load_list_setting(settings, 'installed_packages')
+
+            if add:
+                if isinstance(add, str):
+                    add = {add}
+                elif isinstance(add, (list, tuple)):
+                    add = set(add)
+                names |= add
+
+            if remove:
+                if isinstance(remove, str):
+                    remove = {remove}
+                elif isinstance(remove, (list, tuple)):
+                    remove = set(remove)
+                names -= remove
+
+            result = names_at_start != names
+            if result:
+                save_list_setting(settings, file_name, 'installed_packages', names)
+            return result
 
     def find_required_libraries(self, ignore_package=None):
         """
@@ -1624,18 +1682,10 @@ class PackageManager:
 
             # Record the install in the settings file so that you can move
             # settings across computers and have the same packages installed
-            settings = sublime.load_settings(pc_settings_filename())
-            names = load_list_setting(settings, 'installed_packages')
-            update_installed_packages = False
-
-            if package_name != old_package_name and old_package_name in names:
-                names.remove(old_package_name)
-                update_installed_packages = True
-            if package_name not in names:
-                names.add(package_name)
-                update_installed_packages = True
-            if update_installed_packages:
-                settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))
+            self.update_installed_packages(
+                add=package_name,
+                remove=old_package_name if package_name != old_package_name else None
+            )
 
             # If we extracted directly into the Packages/{package_name}/
             # we probably need to remove an old Installed Packages/{package_name].sublime-package
@@ -1820,11 +1870,7 @@ class PackageManager:
             and should not be reenabled
         """
 
-        settings = sublime.load_settings(pc_settings_filename())
-        names = load_list_setting(settings, 'installed_packages')
-        if package_name in names:
-            names.remove(package_name)
-            settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))
+        self.update_installed_packages(remove=package_name)
 
         version = self.get_metadata(package_name).get('version')
 
