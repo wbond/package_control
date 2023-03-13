@@ -1,4 +1,3 @@
-import sublime
 import sublime_plugin
 
 from ..package_creator import PackageCreator
@@ -11,4 +10,4 @@ class CreatePackageCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self):
-        PackageCreator(sublime.active_window()).run()
+        PackageCreator().run()

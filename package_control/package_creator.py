@@ -18,7 +18,7 @@ class PackageCreator:
     Abstract class for commands that create .sublime-package files
     """
 
-    def __init__(self, window):
+    def __init__(self):
         """
         Constructs a new instance.
 
@@ -26,7 +26,7 @@ class PackageCreator:
             The ``sublime.Window`` object the task is invoked from.
         """
 
-        self.window = window
+        self.window = sublime.active_window()
         self.manager = PackageManager()
 
     def run(self):
