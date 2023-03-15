@@ -23,7 +23,7 @@ class UpgradePackageCommand(sublime_plugin.ApplicationCommand):
             with ActivityIndicator('Searching updates...') as progress:
                 tasks = upgrader.create_package_tasks(
                     actions=(upgrader.PULL, upgrader.UPGRADE),
-                    ignore_packages=upgrader.get_ignored_packages()  # don't upgrade disabled packages
+                    ignore_packages=upgrader.ignored_packages()  # don't upgrade disabled packages
                 )
                 if tasks is False:
                     message = 'There are no packages available for upgrade'

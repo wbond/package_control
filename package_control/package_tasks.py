@@ -177,7 +177,7 @@ class PackageTaskRunner(PackageDisabler):
         tasks = self.create_package_tasks(
             actions=(self.PULL, self.UPGRADE),
             include_packages=packages,
-            ignore_packages=(ignore_packages or set()) | self.get_ignored_packages()  # don't upgrade disabled packages
+            ignore_packages=(ignore_packages or set()) | self.ignored_packages()  # don't upgrade disabled packages
         )
         if tasks is False:
             message = 'There are no packages available for upgrade'

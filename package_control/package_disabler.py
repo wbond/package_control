@@ -159,7 +159,7 @@ class PackageDisabler:
     restore_id = 0
 
     @staticmethod
-    def get_ignored_packages():
+    def ignored_packages():
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
             return load_list_setting(settings, 'ignored_packages')
