@@ -414,6 +414,7 @@
 							"properties": {
 								"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
 								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+								"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" },
 								"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
 								"sha256": { "$ref": "#/definitions/ReleaseValues/sha256" },
 								"url": { "$ref": "#/definitions/ReleaseValues/url" },
@@ -443,7 +444,8 @@
 										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
 										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
 										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
-										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
 									},
 									"required": [
 										"sublime_text",
@@ -465,7 +467,8 @@
 										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
 										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
 										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
-										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
 									},
 									"required": [
 										"sublime_text",

@@ -593,6 +593,17 @@ class RepositoryProvider(BaseRepositoryProvider):
                 if self.schema_version.major < 4 and 'dependencies' in release:
                     download_info['libraries'] = release['dependencies']
 
+                if self.schema_version.major >= 4:
+                    # Package releases may optionally contain `python_versions` list to tell
+                    # which python version they are compatibilible with.
+                    # The main purpose is to be able to opt-in unmaintained packages to python 3.8
+                    # if they are known not to cause trouble.
+                    value = release.get('python_versions')
+                    if value:
+                        if not isinstance(value, list):
+                            value = [value]
+                        download_info['python_versions'] = value
+
                 if 'platforms' not in download_info:
                     download_info['platforms'] = ['*']
 

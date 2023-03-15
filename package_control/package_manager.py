@@ -1495,14 +1495,20 @@ class PackageManager:
             if common_folder is False:
                 return False
 
-            python_version_path = common_folder + '.python-version'
             python_version = "3.3"
             try:
-                python_version_raw = package_zip.read(python_version_path).decode('utf-8').strip()
+                python_version_file = common_folder + '.python-version'
+                python_version_raw = package_zip.read(python_version_file).decode('utf-8').strip()
                 if python_version_raw in sys_path.lib_paths():
                     python_version = python_version_raw
             except (KeyError):
-                pass
+                # no .python-version found in archive,
+                # get best matching python version from upstream release data
+                python_versions = release.get("python_versions")
+                if python_versions:
+                    match = max(pep440.PEP440Version(s) for s in set(sys_path.lib_paths()) & set(python_versions))
+                    if match:
+                        python_version = str(match)
 
             library_names = release.get('libraries')
             if not library_names:
@@ -1647,6 +1653,17 @@ class PackageManager:
             # No need to handle symlink at this stage it was already removed
             # and we are not working with symlink here anymore.
             clear_directory(package_dir, extracted_paths)
+
+            # Create .python-version file to opt-in to certain plugin_host.
+            # It enables unmaintained packages/plugins to be opted-in to newer python version
+            # via upstream release information or via local settings.
+            if python_version != '3.3':
+                try:
+                    python_version_file = os.path.join(package_dir, '.python-version')
+                    with open(python_version_file, 'x') as fobj:
+                        fobj.write(python_version)
+                except FileExistsError:
+                    pass
 
             new_version = release['version']
 

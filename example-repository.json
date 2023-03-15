@@ -235,6 +235,19 @@
 			]
 		},
 
+		// Opt-in to certain plugin_hosts by adding an optional `python_versions`
+		// key with a list of supported python versions. Valid values are "3.3" and "3.8"
+		{
+			"details": "https://github.com/wbond/sublime_alignment",
+			"releases": [
+				{
+					"sublime_text": "*",
+					"python_versions": ["3.3", "3.8"],
+					"tags": true
+				}
+			]
+		},
+
 		// Mark a release as requiring one or more libraries
 		{
 			"details": "https://github.com/wbond/sublime_alignment",
