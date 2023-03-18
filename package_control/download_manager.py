@@ -185,6 +185,41 @@ def resolve_urls(root_url, uris):
         yield url
 
 
+def resolve_url(root_url, url):
+    """
+    Convert a list of relative uri's to absolute urls/paths.
+
+    :param root_url:
+        The root url string
+
+    :param uris:
+        An iteratable of relative uri's to resolve.
+
+    :returns:
+        A generator of resolved URLs
+    """
+
+    scheme_match = re.match(r'(https?:)//', root_url, re.I)
+    if scheme_match is None:
+        root_dir = os.path.dirname(root_url)
+    else:
+        root_dir = ''
+
+    if url.startswith('//'):
+        if scheme_match is not None:
+            return scheme_match.group(1) + url
+        else:
+            return 'https:' + url
+
+    elif url.startswith('./') or url.startswith('../'):
+        if root_dir:
+            return os.path.normpath(os.path.join(root_dir, url))
+        else:
+            return urljoin(root_url, url)
+
+    return url
+
+
 def update_url(url, debug):
     """
     Takes an old, out-dated URL and updates it. Mostly used with GitHub URLs

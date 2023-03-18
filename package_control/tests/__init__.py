@@ -6,6 +6,7 @@ from . import clients, distinfo, downloaders, providers, library, selectors, pac
 
 TEST_CLASSES = [
     package_version.PackageVersionTests,
+    downloaders.ResolveUrlTests,
     downloaders.CurlDownloaderTests,
     downloaders.OscryptoDownloaderTests,
     downloaders.UrlLibDownloaderTests,

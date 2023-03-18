@@ -10,7 +10,7 @@ from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.gitlab_client import GitLabClient
 from ..console_write import console_write
-from ..download_manager import http_get, resolve_urls, update_url
+from ..download_manager import http_get, resolve_url, resolve_urls, update_url
 from ..downloaders.downloader_exception import DownloaderException
 from ..package_version import version_sort
 from .base_repository_provider import BaseRepositoryProvider
@@ -310,7 +310,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                     # Validate url
                     value = release.get('url')
                     if value:
-                        download_info['url'] = update_url(value, debug)
+                        download_info['url'] = update_url(resolve_url(self.repo_url, value), debug)
 
                     # Validate supported platforms
                     value = release.get('platforms', ['*'])
@@ -347,6 +347,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                                 (info['name'], self.repo_url)
                             ))
 
+                        base_url = resolve_url(self.repo_url, base)
                         downloads = None
 
                         if tags:
@@ -354,12 +355,12 @@ class RepositoryProvider(BaseRepositoryProvider):
                             if tags is not True:
                                 extra = tags
                             for client in clients:
-                                downloads = client.download_info_from_tags(base, extra)
+                                downloads = client.download_info_from_tags(base_url, extra)
                                 if downloads is not None:
                                     break
                         else:
                             for client in clients:
-                                downloads = client.download_info_from_branch(base, branch)
+                                downloads = client.download_info_from_branch(base_url, branch)
                                 if downloads is not None:
                                     break
 
@@ -506,6 +507,8 @@ class RepositoryProvider(BaseRepositoryProvider):
 
             # Try to grab package-level details from GitHub or BitBucket
             if details:
+                details = resolve_url(self.repo_url, details)
+
                 if invalid_sources is not None and details in invalid_sources:
                     continue
 
@@ -585,7 +588,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                     if field in release:
                         value = release[field]
                         if field == 'url':
-                            value = update_url(value, debug)
+                            value = update_url(resolve_url(self.repo_url, value), debug)
                         if field == 'platforms' and not isinstance(release['platforms'], list):
                             value = [value]
                         download_info[field] = value
@@ -612,7 +615,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                         download_info['sublime_text'] = '<3000'
 
                     if 'details' in release:
-                        download_details = release['details']
+                        download_details = resolve_url(self.repo_url, release['details'])
 
                         try:
                             downloads = None
@@ -672,6 +675,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                                     (info['name'], self.repo_url)
                                 ))
 
+                            base_url = resolve_url(self.repo_url, base)
                             downloads = None
 
                             if tags:
@@ -679,12 +683,12 @@ class RepositoryProvider(BaseRepositoryProvider):
                                 if tags is not True:
                                     extra = tags
                                 for client in clients:
-                                    downloads = client.download_info_from_tags(base, extra)
+                                    downloads = client.download_info_from_tags(base_url, extra)
                                     if downloads is not None:
                                         break
                             else:
                                 for client in clients:
-                                    downloads = client.download_info_from_branch(base, branch)
+                                    downloads = client.download_info_from_branch(base_url, branch)
                                     if downloads is not None:
                                         break
 
@@ -763,7 +767,7 @@ class RepositoryProvider(BaseRepositoryProvider):
                     info[field] = []
 
             if 'readme' in info:
-                info['readme'] = update_url(info['readme'], debug)
+                info['readme'] = update_url(resolve_url(self.repo_url, info['readme']), debug)
 
             for field in ['description', 'readme', 'issues', 'donate', 'buy']:
                 if field not in info:

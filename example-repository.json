@@ -398,6 +398,32 @@
 					"sublime_text": "*"
 				}
 			]
+		},
+
+		// URLs may be provided relative to the location of this repository.json
+		{
+			"details": "../alignment",
+			"releases": [
+				{
+					// The version number needs to be a semantic version
+					// number per http://semver.org 2.x.x
+					"version": "2.0.0",
+
+					// The URL needs to be a zip file containing the package.
+					// It is permissible for the zip file to contain a single
+					// root folder with any name. All file will be extracted
+					// out of this single root folder. This allows zip files
+					// from GitHub and BitBucket to be used a sources.
+					"url": "./downloads/alignment-2.0.0.zip",
+
+					// The date MUST be in the form "YYYY-MM-DD HH:MM:SS" and
+					// SHOULD be UTC
+					"date": "2011-09-18 20:12:41",
+
+					// The obligatory version selector
+					"sublime_text": "*"
+				}
+			]
 		}
 	],
 

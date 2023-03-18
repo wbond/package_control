@@ -487,9 +487,9 @@
 						"InfoValues": {
 							"DetailsValue": {
 								"type": "string",
-								"format": "uri",
-								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or library from.",
-								"pattern": "https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+"
+								"format": "uri-reference",
+								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or library from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
+								"pattern": "(?:https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+|\\.\\.?/.*)"
 							},
 							"NameValue": {
 								"type": "string",
@@ -624,8 +624,8 @@
 							},
 							"url": {
 								"type": "string",
-								"format": "uri",
-								"markdownDescription": "```json\n\"url\": \"https://any-domain.com/package.sublime-package\"\n```\n\nURL of the download artefact. Can be a `*.sublime-package` or a `*.whl`\n\n_Used in conjunction with `version`._"
+								"format": "uri-reference",
+								"markdownDescription": "```json\n\"url\": \"https://any-domain.com/downloads/mypackage-2.0.0.zip\"\n```\n\nURL of the download artefact.\n\nThe URL needs to be a zip file containing the package.\n\nIt is permissible for the zip file to contain a single root folder with any name. All file will be extracted out of this single root folder. This allows zip files from GitHub and BitBucket to be used a sources.\n\nThe URL can be relative to the location of this repository.json (e.g.: `./downloads/mypackage-2.0.0.zip`).\n\n_Used in conjunction with `version`._"
 							},
 							"version": {
 								"type": "string",
