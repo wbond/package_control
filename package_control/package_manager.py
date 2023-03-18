@@ -1495,20 +1495,44 @@ class PackageManager:
             if common_folder is False:
                 return False
 
+            # By default, ST prefers .sublime-package files since this allows
+            # overriding files in the Packages/{package_name}/ folder.
+            # If the package maintainer doesn't want a .sublime-package
+            try:
+                package_zip.getinfo(common_folder + '.no-sublime-package')
+                unpack = True
+            except (KeyError):
+                unpack = False
+
             python_version = "3.3"
+            supported_python_versions = set(sys_path.lib_paths().keys())
+
             try:
                 python_version_file = common_folder + '.python-version'
                 python_version_raw = package_zip.read(python_version_file).decode('utf-8').strip()
-                if python_version_raw in sys_path.lib_paths():
+                if python_version_raw in supported_python_versions:
                     python_version = python_version_raw
             except (KeyError):
                 # no .python-version found in archive,
                 # get best matching python version from upstream release data
                 python_versions = release.get("python_versions")
                 if python_versions:
-                    match = max(pep440.PEP440Version(s) for s in set(sys_path.lib_paths()) & set(python_versions))
-                    if match:
-                        python_version = str(match)
+                    python_version_raw = str(max(map(pep440.PEP440Version, set(python_versions) & supported_python_versions)))
+                    if python_version_raw:
+                        python_version = python_version_raw
+
+            # Try to read .python-version from existing unpacked package directory to respect local
+            # opt-in to certain plugin_host and to install correct libraries.
+            try:
+                python_version_file = os.path.join(get_package_dir(old_package_name), '.python-version')
+                with open(python_version_file, 'r', encoding='utf-8') as fobj:
+                    python_version_raw = fobj.read().strip()
+                    if python_version_raw in supported_python_versions and (
+                        unpack or pep440.PEP440Version(python_version_raw) > pep440.PEP440Version(python_version)
+                    ):
+                        python_version = python_version_raw
+            except (FileNotFoundError):
+                pass
 
             library_names = release.get('libraries')
             if not library_names:
@@ -1537,15 +1561,6 @@ class PackageManager:
 
             if package_name != old_package_name:
                 self.rename_package(old_package_name, package_name)
-
-            # By default, ST prefers .sublime-package files since this allows
-            # overriding files in the Packages/{package_name}/ folder.
-            # If the package maintainer doesn't want a .sublime-package
-            try:
-                package_zip.getinfo(common_folder + '.no-sublime-package')
-                unpack = True
-            except (KeyError):
-                unpack = False
 
             # If we determined it should be unpacked, we extract directly
             # into the Packages/{package_name}/ folder
