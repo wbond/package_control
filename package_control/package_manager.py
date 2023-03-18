@@ -40,7 +40,7 @@ from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .providers.channel_provider import UncachedChannelRepositoryError
 from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
-from .settings import load_list_setting, pc_settings_filename, save_list_setting
+from .settings import load_list_setting, pc_settings_filename
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 
@@ -794,7 +794,7 @@ class PackageManager:
             settings = sublime.load_settings(pc_settings_filename())
             return load_list_setting(settings, 'installed_packages')
 
-    def update_installed_packages(self, add=None, remove=None):
+    def update_installed_packages(self, add=None, remove=None, persist=True):
         """
         Add and/or remove packages to installed package registry.
 
@@ -806,6 +806,9 @@ class PackageManager:
             A list/tuple/set of or a unicode string with the packages
             to remove from the list of installed packages.
 
+        :param persist:
+            Save changed settings to disk.
+
         :returns:
             A set of ``installed_packages``.
         """
@@ -813,7 +816,8 @@ class PackageManager:
         with PackageManager.lock:
             file_name = pc_settings_filename()
             settings = sublime.load_settings(file_name)
-            names_at_start = names = load_list_setting(settings, 'installed_packages')
+            names_at_start = load_list_setting(settings, 'installed_packages')
+            names = names_at_start.copy()
 
             if add:
                 if isinstance(add, str):
@@ -829,10 +833,10 @@ class PackageManager:
                     remove = set(remove)
                 names -= remove
 
-            result = names_at_start != names
-            if result:
-                save_list_setting(settings, file_name, 'installed_packages', names)
-            return result
+            if names != names_at_start:
+                settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))
+                if persist:
+                    sublime.save_settings(file_name)
 
     def find_required_libraries(self, ignore_package=None):
         """
@@ -1716,7 +1720,8 @@ class PackageManager:
             # settings across computers and have the same packages installed
             self.update_installed_packages(
                 add=package_name,
-                remove=old_package_name if package_name != old_package_name else None
+                remove=old_package_name if package_name != old_package_name else None,
+                persist=False
             )
 
             # If we extracted directly into the Packages/{package_name}/
@@ -1902,7 +1907,7 @@ class PackageManager:
             and should not be reenabled
         """
 
-        self.update_installed_packages(remove=package_name)
+        self.update_installed_packages(remove=package_name, persist=False)
 
         version = self.get_metadata(package_name).get('version')
 
