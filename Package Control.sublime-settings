@@ -34,6 +34,9 @@
 	// The URL to post install, upgrade and removal notices to
 	"submit_url": "https://packagecontrol.io/submit",
 
+	// Maximum days to keep backups. All older ones are removed when ST starts
+	"max_backup_age": 14,
+
 	// If missing packages should be automatically installed when ST starts
 	"install_missing": true,
 

@@ -102,6 +102,7 @@ class PackageManager:
             'ignore_vcs_packages',
             'install_missing',
             'install_prereleases',
+            'max_backup_age',
             'package_destination',
             'package_name_map',
             'package_profiles',
@@ -2051,6 +2052,30 @@ class PackageManager:
                 (package_name, e)
             )
             return False
+
+    def prune_backup_dir(self):
+        """
+        Remove all backups older than ``max_backup_age`` days.
+        """
+
+        age = max(0, self.settings.get('max_backup_age', 14))
+        today = datetime.date.today()
+        backup_dir = os.path.join(sys_path.data_path(), 'Backup')
+
+        if not os.path.isdir(backup_dir):
+            return
+
+        for fname in os.listdir(backup_dir):
+            package_backup_dir = os.path.join(backup_dir, fname)
+            if not os.path.isdir(package_backup_dir):
+                continue
+
+            try:
+                date = datetime.date(int(fname[:4]), int(fname[4:6]), int(fname[6:8]))
+                if (today - date).days > age:
+                    delete_directory(package_backup_dir)
+            except ValueError:
+                continue
 
     def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version):
         """

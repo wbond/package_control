@@ -56,6 +56,9 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 'version': __version__
             })
 
+        # To limit diskspace occupied remove all old enough backups
+        self.manager.prune_backup_dir()
+
         # Scan through packages and complete pending operations
         found_packages = self.cleanup_pending_packages()
 
