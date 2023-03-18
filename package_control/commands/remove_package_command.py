@@ -53,6 +53,6 @@ class RemovePackageCommand(ExistingPackagesCommand):
         def worker():
             with ActivityIndicator() as progress:
                 remover = PackageTaskRunner(manager)
-                remover.remove_packages([package_name], progress)
+                remover.remove_packages({package_name}, progress)
 
         threading.Thread(target=worker).start()
