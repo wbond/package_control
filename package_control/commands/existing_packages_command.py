@@ -1,3 +1,4 @@
+import datetime
 import html
 import os
 import re
@@ -35,6 +36,8 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
             if package in default_packages:
                 description = 'Bundled Sublime Text Package'
                 installed_version = default_version
+                install_time = None
+                upgrade_time = None
                 url = ''
 
             else:
@@ -53,6 +56,9 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
                 else:
                     installed_version = 'v' + version if version else 'unknown version'
 
+                install_time = metadata.get('install_time')
+                upgrade_time = metadata.get('upgrade_time')
+
                 url = metadata.get('url', '')
 
             if USE_QUICK_PANEL_ITEM:
@@ -62,7 +68,14 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
                 url_display = url_pattern.sub('', url)
                 if url_display:
                     final_line += '; <a href="%s">%s</a>' % (url, url_display)
-                package_entry = sublime.QuickPanelItem(package, [description, final_line])
+
+                annotation = ""
+                if upgrade_time:
+                    annotation = datetime.datetime.fromtimestamp(upgrade_time).strftime('Updated at %c')
+                elif install_time:
+                    annotation = datetime.datetime.fromtimestamp(install_time).strftime('Installed at %c')
+
+                package_entry = sublime.QuickPanelItem(package, [description, final_line], annotation)
             else:
                 final_line = action + installed_version
                 url_display = url_pattern.sub('', url)

@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import tempfile
+import time
 import zipfile
 
 from io import BytesIO
@@ -1475,7 +1476,8 @@ class PackageManager:
 
             return False
 
-        release = packages[package_name]['releases'][0]
+        package = packages[package_name]
+        release = package['releases'][0]
 
         unpacked_package_dir = get_package_dir(package_name)
         package_path = get_installed_package_path(package_name)
@@ -1489,7 +1491,8 @@ class PackageManager:
         package_zip = None
 
         try:
-            old_version = self.get_metadata(old_package_name).get('version')
+            old_metadata = self.get_metadata(old_package_name)
+            old_version = old_metadata.get('version')
             is_upgrade = old_version is not None
 
             package_zip = self._download_zip_file(package_name, release['url'])
@@ -1690,15 +1693,19 @@ class PackageManager:
             self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
 
             with open(package_metadata_file, 'w', encoding='utf-8') as fobj:
-                url = packages[package_name]['homepage']
+                now = time.time()
+                install_time = old_metadata.get("install_time", now)
                 metadata = {
                     "version": new_version,
+                    "install_time": install_time,
                     "sublime_text": release['sublime_text'],
                     "platforms": release['platforms'],
-                    "url": url,
+                    "url": package['homepage'],
                     "description": packages[package_name]['description'],
                     'libraries': release.get('libraries', [])
                 }
+                if is_upgrade:
+                    metadata['upgrade_time'] = now
                 json.dump(metadata, fobj)
 
             # Submit install and upgrade info
