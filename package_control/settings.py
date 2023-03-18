@@ -62,19 +62,21 @@ def save_list_setting(settings, filename, name, new_value, old_value=None):
     :param old_value:
         If not None, then this and the new_value will be compared. If they
         are the same, the settings will not be flushed to disk.
+
+    :return:
+        ``True``, if settings have been saved.
+        ``False``, if ``new_value`` and ``old_value`` were equal.
     """
 
-    # Clean up the list to only include unique values, sorted
-    new_value = sorted(
-        new_value if isinstance(new_value, set) else set(new_value),
-        key=lambda s: s.lower()
-    )
+    if not isinstance(old_value, set):
+        new_value = set(new_value)
 
     if old_value is not None:
         if not isinstance(old_value, set):
             old_value = set(old_value)
         if old_value == new_value:
-            return
+            return False
 
-    settings.set(name, new_value)
+    settings.set(name, sorted(new_value, key=lambda s: s.lower()))
     sublime.save_settings(filename)
+    return True
