@@ -775,6 +775,23 @@ class PackageManager:
         packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
+    def cooperate_packages(self):
+        """
+        Return a set of cooperate package names from registy.
+
+        Cooperate packages ...
+
+        1. are automatically installed for a user
+        2. are managed by a dedicated Package Control.sublime-settings
+        3. can't be removed by user via `Package Control: Remove Package`
+
+        :returns:
+            A set of ``cooperate_packages``.
+        """
+
+        settings = sublime.load_settings(pc_settings_filename())
+        return load_list_setting(settings, 'cooperate_packages')
+
     def installed_packages(self):
         """
         Return a set of installed package names from registy.
@@ -785,7 +802,10 @@ class PackageManager:
 
         with PackageManager.lock:
             settings = sublime.load_settings(pc_settings_filename())
-            return load_list_setting(settings, 'installed_packages')
+            return (
+                load_list_setting(settings, 'cooperate_packages') |
+                load_list_setting(settings, 'installed_packages')
+            )
 
     def update_installed_packages(self, add=None, remove=None, persist=True):
         """
@@ -825,6 +845,8 @@ class PackageManager:
                 elif isinstance(remove, (list, tuple)):
                     remove = set(remove)
                 names -= remove
+
+            names -= load_list_setting(settings, 'cooperate_packages')
 
             if names != names_at_start:
                 settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))

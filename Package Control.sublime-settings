@@ -11,6 +11,20 @@
 	// setting
 	"repositories": [],
 
+	// A list of cooperation managed packages.
+	//
+	// The list is not manipulated by Package Control.
+	//
+	// Cooperate packages:
+	// 1. are automatically installed and upgraded
+	// 2. can't be removed by user via `Package Control: Remove Package`
+	"cooperate_packages": [],
+
+	// A list of user managed packages.
+	// It contains all packages, which have been installed via Package Control,
+	// except those from `cooperate_packages` setting.
+	"installed_packages": [],
+
 	// A list of packages to install pre-release versions for. Versions
 	// under 1.0.0 are not considered pre-release, only those using the SemVer
 	// -prerelease suffixes will be ignored if the package is not in this

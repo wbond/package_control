@@ -233,6 +233,9 @@ class PackageTaskRunner(PackageDisabler):
                 raise TypeError("Argument 'packages' must be a string, list or set!")
             packages = set(packages)
 
+        # prevent cooperate packages from beeing removed
+        packages -= self.manager.cooperate_packages()
+
         num_packages = len(packages)
         if num_packages == 1:
             message = 'Removing {}package {}'.format(package_kind, list(packages)[0])

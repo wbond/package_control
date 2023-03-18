@@ -28,7 +28,7 @@ class RemovePackageCommand(ExistingPackagesCommand):
 
     def list_packages(self, manager):
         """
-        Build a list of packages to display.
+        Build a list of packages installed by user.
 
         :param manager:
             The package manager instance to use.
@@ -37,7 +37,7 @@ class RemovePackageCommand(ExistingPackagesCommand):
             A list of package names to add to the quick panel
         """
 
-        return manager.list_packages()
+        return manager.list_packages() - manager.cooperate_packages()
 
     def on_done(self, manager, package_name):
         """
