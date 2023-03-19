@@ -388,50 +388,20 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             return
 
         installed_packages = self.manager.installed_packages()
-        missing_packages = installed_packages - found_packages
-        if not missing_packages:
-            return
 
-        # Fetch a list of available (and renamed) packages and abort
-        # if there are none available for installation.
-        # An empty list indicates connection or configuration problems.
-        available_packages = set(self.manager.list_available_packages())
-        if not available_packages:
-            return
-
-        # Detect renamed packages and prepare batched install with new names.
-        # Update `installed_packages` setting to remove old names without loosing something
-        # in case installation fails.
-        renamed_packages = self.manager.settings.get('renamed_packages', {})
-        renamed_packages = {renamed_packages.get(p, p) for p in missing_packages}
-        if renamed_packages != missing_packages:
-            self.manager.update_installed_packages(add=renamed_packages, remove=missing_packages)
-
-        # Make sure not to overwrite existing packages after renaming is applied.
-        missing_packages = renamed_packages - found_packages
-        if not missing_packages:
-            return
-
-        console_write(
-            'Installing %s missing package%s...',
-            (len(missing_packages), 's' if len(missing_packages) != 1 else '')
+        tasks = self.create_package_tasks(
+            actions=(self.INSTALL, self.OVERWRITE),
+            include_packages=installed_packages,
+            found_packages=found_packages
         )
+        if tasks:
+            self.run_install_tasks(tasks, package_kind='missing')
 
-        reenable_packages = self.disable_packages({self.INSTALL: missing_packages})
-        time.sleep(0.7)
-
-        try:
-            for package_name in missing_packages:
-                result = self.manager.install_package(package_name)
-
-                # re-enable if upgrade is not deferred to next start
-                if result is None and package_name in reenable_packages:
-                    reenable_packages.remove(package_name)
-
-        finally:
-            if reenable_packages:
-                time.sleep(0.7)
-                self.reenable_packages({self.INSTALL: reenable_packages})
+        # Drop remaining missing packages, which seem no longer available upstream,
+        # to avoid trying again and again each time ST starts.
+        missing_packages = installed_packages - set(self.manager.list_packages())
+        if missing_packages:
+            self.manager.update_installed_packages(remove=missing_packages)
 
     def remove_orphaned_packages(self, found_packages):
         """

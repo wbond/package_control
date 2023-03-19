@@ -275,7 +275,7 @@ class PackageTaskRunner(PackageDisabler):
             time.sleep(0.7)
             self.reenable_packages({self.REMOVE: packages - deffered})
 
-    def run_install_tasks(self, tasks, progress=None):
+    def run_install_tasks(self, tasks, progress=None, package_kind=''):
         """
         Execute specified package install tasks
 
@@ -284,13 +284,20 @@ class PackageTaskRunner(PackageDisabler):
 
         :param progress:
             An ``ActivityIndicator`` object to use for status information.
+
+        :param package_kind:
+            A unicode string with an additional package attribute.
+            (e.g.: `missing`, ...)
         """
+
+        if package_kind:
+            package_kind += ' '
 
         num_packages = len(tasks)
         if num_packages == 1:
-            message = 'Installing package {}'.format(tasks[0].package_name)
+            message = 'Installing {}package {}'.format(package_kind, tasks[0].package_name)
         else:
-            message = 'Installing {} packages...'.format(num_packages)
+            message = 'Installing {} {}packages...'.format(num_packages, package_kind)
             console_write(message)
 
         if progress:
@@ -306,7 +313,7 @@ class PackageTaskRunner(PackageDisabler):
         try:
             for task in tasks:
                 if progress:
-                    progress.set_label('Installing package {}'.format(task.package_name))
+                    progress.set_label('Installing {}package {}'.format(package_kind, task.package_name))
                 result = self.manager.install_package(task.package_name)
                 if result is True:
                     num_success += 1
@@ -317,10 +324,11 @@ class PackageTaskRunner(PackageDisabler):
             if num_packages == 1:
                 message = 'Package {} successfully installed'.format(tasks[0].package_name)
             elif num_packages == num_success:
-                message = 'All packages successfully installed'
+                message = 'All {}packages successfully installed'.format(package_kind)
                 console_write(message)
             else:
-                message = '{} of {} packages successfully installed'.format(num_success, num_packages)
+                message = '{} of {} {}packages successfully installed'.format(
+                    num_success, num_packages, package_kind)
                 console_write(message)
 
             if progress:
@@ -417,7 +425,7 @@ class PackageTaskRunner(PackageDisabler):
 
         return update_completed
 
-    def create_package_tasks(self, actions, include_packages=None, ignore_packages=None):
+    def create_package_tasks(self, actions, include_packages=None, ignore_packages=None, found_packages=None):
         """
         Makes tasks.
 
@@ -436,6 +444,11 @@ class PackageTaskRunner(PackageDisabler):
         :param ignore_packages:
             A list/set of package names that should not be returned in the list
 
+        :param found_packages:
+            A list/set of package names found on filesystem to be used for task creation.
+            It primarily exists to re-use existing data for optimization purposes.
+            If ``None`` is provided, a list is created internally.
+
         :return:
             A list of ``PackageInstallTask`` objects on success.
             ``False``, if no packages are available upstream, most likely a connection error.
@@ -447,7 +460,8 @@ class PackageTaskRunner(PackageDisabler):
         if not available_packages:
             return False
 
-        found_packages = self.manager.list_packages()
+        if found_packages is None:
+            found_packages = self.manager.list_packages()
         renamed_packages = self.manager.settings.get('renamed_packages', {})
 
         # VCS package updates
