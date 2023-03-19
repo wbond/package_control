@@ -7,7 +7,6 @@ from . import sys_path, __version__
 from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
 from .console_write import console_write
-from .package_disabler import PackageDisabler
 from .package_io import (
     create_empty_file,
     get_installed_package_path,
@@ -70,7 +69,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         found_packages -= removed_packages
 
         # Make sure we didn't accidentally ignore packages because something was
-        # interrupted before it completed. Keep orphan packages disabled which
+        # interrupted before it completed. Keep orphaned packages disabled which
         # are deferred to next start.
         in_process = self.in_progress_packages() - removed_packages
         if in_process:
@@ -78,7 +77,18 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 'Re-enabling %d package%s after a Package Control operation was interrupted...',
                 (len(in_process), 's' if len(in_process) != 1 else '')
             )
-            self.reenable_packages({self.ENABLE: in_process})
+
+        # Remove non-existing packages from ignored_packages list.
+        orphaned_ignored_packages = self.ignored_packages() - found_packages \
+            - set(self.manager.list_default_packages())
+
+        if in_process or orphaned_ignored_packages:
+            self.reenable_packages({self.ENABLE: in_process | orphaned_ignored_packages})
+
+        # garbage collect no longer needed sets
+        in_process = None
+        orphaned_ignored_packages = None
+        removed_packages = None
 
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
@@ -314,7 +324,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                         self.reenable_packages({self.UPGRADE: reenable_packages})
 
         if incompatible_packages:
-            self.disable_packages({PackageDisabler.DISABLE: incompatible_packages})
+            self.disable_packages({self.DISABLE: incompatible_packages})
 
             if len(incompatible_packages) == 1:
                 message = '''
