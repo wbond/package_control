@@ -1696,6 +1696,7 @@ class PackageManager:
                 now = time.time()
                 install_time = old_metadata.get("install_time", now)
                 metadata = {
+                    "name": package_name,
                     "version": new_version,
                     "install_time": install_time,
                     "sublime_text": release['sublime_text'],

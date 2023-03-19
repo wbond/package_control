@@ -1,4 +1,5 @@
 import os
+import json
 import threading
 import time
 
@@ -239,6 +240,29 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
                 elif not self.manager.install_package(package_name):
                     create_empty_file(reinstall_file)
+
+            # Convert unpacked managed package into unmanaged package,
+            # if folder name no longer matches original package name,
+            # in ordert to avoid it being removed as orphaned.
+            try:
+                clear = False
+                metadata_file = os.path.join(package_dir, 'package-metadata.json')
+
+                with open(metadata_file, 'r', encoding='utf-8') as fobj:
+                    metadata = json.load(fobj)
+                    clear = metadata['name'] != package_name
+
+                if clear:
+                    os.remove(metadata_file)
+                    console_write(
+                        '''
+                        Package "%s" is now unmanaged as it was renamed by user.
+                        ''',
+                        package_name
+                    )
+
+            except (OSError, KeyError, ValueError):
+                pass
 
             found_packages.add(package_name)
 
