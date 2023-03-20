@@ -9,9 +9,10 @@ import tempfile
 import time
 import zipfile
 
+from concurrent import futures
 from io import BytesIO
 from threading import RLock
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 
 import sublime
 
@@ -22,7 +23,6 @@ from .clear_directory import clear_directory, delete_directory
 from .clients.client_exception import ClientException
 from .console_write import console_write
 from .download_manager import http_get
-from .downloaders.background_downloader import BackgroundDownloader
 from .downloaders.downloader_exception import DownloaderException
 from .package_io import (
     create_empty_file,
@@ -434,9 +434,8 @@ class PackageManager:
         """
 
         cache_ttl = self.settings.get('cache_length', 300)
-
-        repositories = self.settings.get('repositories', [])
         channels = self.settings.get('channels', [])
+        repositories = self.settings.get('repositories', [])
 
         # Update any old default channel URLs users have in their config
         found_default = False
@@ -570,17 +569,24 @@ class PackageManager:
             )
 
         cache_ttl = self.settings.get('cache_length', 300)
-        repositories = self.list_repositories()
+        name_map = self.settings.get('package_name_map', {})
+        downloaders = []
+        executor = None
+        providers = []
         packages = {}
         libraries = {}
-        bg_downloaders = {}
-        active = []
-        repos_to_download = []
-        name_map = self.settings.get('package_name_map', {})
+
+        def download_repo(url):
+            for provider_class in REPOSITORY_PROVIDERS:
+                if provider_class.match_url(url):
+                    provider = provider_class(url, self.settings)
+                    provider.prefetch()
+                    providers.append(provider)
+                    break
 
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
-        for repo in reversed(repositories):
+        for repo in reversed(self.list_repositories()):
             if re.match(r'https?://([^.]+\.)*package-control\.io', repo):
                 console_write('Removed malicious repository %s' % repo)
                 continue
@@ -598,30 +604,15 @@ class PackageManager:
                 libraries.update(repository_libraries)
 
             if repository_packages is None and repository_libraries is None:
-                domain = urlparse(repo).hostname
-                if domain not in bg_downloaders:
-                    bg_downloaders[domain] = BackgroundDownloader(
-                        self.settings, REPOSITORY_PROVIDERS)
-                bg_downloaders[domain].add_url(repo)
-                repos_to_download.append(repo)
+                if executor is None:
+                    executor = futures.ThreadPoolExecutor(max_workers=10)
+                downloaders.append(executor.submit(download_repo, repo))
 
-        for bg_downloader in bg_downloaders.values():
-            bg_downloader.start()
-            active.append(bg_downloader)
-
-        # Wait for all of the downloaders to finish
-        while active:
-            bg_downloader = active.pop()
-            bg_downloader.join()
+        # wait for downloads to complete
+        futures.wait(downloaders)
 
         # Grabs the results and stuff it all in the cache
-        for repo in repos_to_download:
-            domain = urlparse(repo).hostname
-            bg_downloader = bg_downloaders[domain]
-            provider = bg_downloader.get_provider(repo)
-            if not provider:
-                continue
-
+        for provider in providers:
             repository_packages = {}
             unavailable_packages = []
             for name, info in provider.get_packages():
@@ -650,21 +641,21 @@ class PackageManager:
             for _, exception in provider.get_broken_libraries():
                 console_write(exception)
 
-            cache_key = repo + '.packages'
+            cache_key = provider.repo_url + '.packages'
             set_cache(cache_key, repository_packages, cache_ttl)
             packages.update(repository_packages)
 
-            cache_key = repo + '.libraries'
+            cache_key = provider.repo_url + '.libraries'
             set_cache(cache_key, repository_libraries, cache_ttl)
             libraries.update(repository_libraries)
 
             renamed_packages = provider.get_renamed_packages()
-            set_cache_under_settings(self, 'renamed_packages', repo, renamed_packages, cache_ttl)
+            set_cache_under_settings(self, 'renamed_packages', provider.repo_url, renamed_packages, cache_ttl)
 
             set_cache_under_settings(
                 self,
                 'unavailable_packages',
-                repo,
+                provider.repo_url,
                 unavailable_packages,
                 cache_ttl,
                 list_=True
@@ -672,7 +663,7 @@ class PackageManager:
             set_cache_under_settings(
                 self,
                 'unavailable_libraries',
-                repo,
+                provider.repo_url,
                 unavailable_libraries,
                 cache_ttl,
                 list_=True

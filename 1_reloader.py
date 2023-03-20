@@ -177,7 +177,6 @@ mods_load_order = [
     '.downloaders.wininet_downloader',
     '.downloaders.oscrypto_downloader_exception',
     '.downloaders.oscrypto_downloader',
-    '.downloaders.background_downloader',
     '.downloaders',
 
     '.download_manager',
