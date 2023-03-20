@@ -59,6 +59,10 @@ class HgUpgrader(VcsUpgrader):
         args.extend(self.update_command)
         args.append('default')
         self.execute(args, self.working_copy, meaningful_output=True)
+
+        cache_key = self.working_copy + '.incoming'
+        set_cache(cache_key, None, 0)
+
         return True
 
     def incoming(self):
