@@ -2,6 +2,8 @@ import html
 import re
 import time
 
+from concurrent import futures
+
 import sublime
 
 from .console_write import console_write
@@ -469,6 +471,14 @@ class PackageTaskRunner(PackageDisabler):
         if not ignore_vcs_packages:
             ignore_vcs_packages = self.manager.settings.get('ignore_vcs_packages', False)
 
+        executor = futures.ThreadPoolExecutor(max_workers=10)
+        vcs_futures = []
+
+        def create_vcs_task(upgrader, package_name):
+            if not upgrader.incoming():
+                return None
+            return PackageInstallTask(self.PULL, package_name, upgrader=upgrader)
+
         # packages to upgrade
         for package_name in found_packages:
             if include_packages and package_name not in include_packages:
@@ -485,8 +495,8 @@ class PackageTaskRunner(PackageDisabler):
                     continue
                 if isinstance(ignore_vcs_packages, list) and package_name in ignore_vcs_packages:
                     continue
-                if upgrader.incoming():
-                    tasks.append(PackageInstallTask(self.PULL, package_name, upgrader=upgrader))
+
+                vcs_futures.append(executor.submit(create_vcs_task, upgrader, package_name))
                 continue
 
             # if a package was renamed, new name is to be used to lookup update info
@@ -516,6 +526,13 @@ class PackageTaskRunner(PackageDisabler):
 
             if action in actions:
                 tasks.append(PackageInstallTask(action, package_name, package_version, update_info))
+
+        # add results from vcs upgraders
+        vcs_futures = futures.wait(vcs_futures)
+        for future in vcs_futures.done:
+            task = future.result()
+            if task:
+                tasks.append(task)
 
         # packages to install
         if self.INSTALL in actions:
