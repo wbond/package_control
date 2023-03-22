@@ -1,8 +1,8 @@
 import os
 import sys
-from zipimport import zipimporter
 
 import sublime
+import sublime_plugin
 
 PREFIX = '\\\\?\\' if sys.platform == 'win32' else ''
 
@@ -12,27 +12,27 @@ try:
 
     __default_packages_path = os.path.dirname(os.path.dirname(default_module.__file__))
 
-    # When loaded as unpacked package, __file__ ends up being
-    # {data_dir}/Packages/Package Control/package_control/sys_path.py
-    if not isinstance(__loader__, zipimporter):
-        __packages_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        # For a non-development build, the Installed Packages are next to the Packages dir
-        __installed_packages_path = os.path.join(os.path.dirname(__packages_path), 'Installed Packages')
-        if not os.path.exists(__installed_packages_path):
-            __installed_packages_path = None
-
     # When loaded as a .sublime-package file, __file__ ends up being
     # {data_dir}/Installed Packages/Package Control.sublime-package/package_control/sys_path.py
-    else:
+    if isinstance(__loader__, sublime_plugin.ZipLoader):
         __installed_packages_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         # For a non-development build, the Packages are next to the Installed Packages dir
         __packages_path = os.path.join(os.path.dirname(__installed_packages_path), 'Packages')
         if not os.path.exists(__packages_path):
             __packages_path = None
 
+    # When loaded as unpacked package, __file__ ends up being
+    # {data_dir}/Packages/Package Control/package_control/sys_path.py
+    else:
+        __packages_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        # For a non-development build, the Installed Packages are next to the Packages dir
+        __installed_packages_path = os.path.join(os.path.dirname(__packages_path), 'Installed Packages')
+        if not os.path.exists(__installed_packages_path):
+            __installed_packages_path = None
+
     if __packages_path is None:
         # default package must not be zipped in dev environment
-        if isinstance(default_module.__loader__, zipimporter):
+        if isinstance(default_module.__loader__, sublime_plugin.ZipLoader):
             raise FileNotFoundError('Packages')
         __packages_path = __default_packages_path
 
