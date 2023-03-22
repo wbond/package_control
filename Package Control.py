@@ -12,8 +12,21 @@ pc_python_path = os.path.join(sys_path.packages_path(), 'Package Control', 'Pack
 has_packed = os.path.exists(package_path)
 has_unpacked = os.path.exists(pc_python_path)
 
+# Ensure least requires ST version
+if int(sublime.version()) < 3143:
+    message = text.format(
+        '''
+        Package Control
+
+        This package requires at least Sublime Text 3143.
+
+        Please considder updating ST or remove Package Control.
+        '''
+    )
+    sublime.error_message(message)
+
 # Ensure the user has installed Package Control properly
-if installed_dir != 'Package Control':
+elif installed_dir != 'Package Control':
     message = text.format(
         '''
         Package Control

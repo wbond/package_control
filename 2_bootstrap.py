@@ -22,6 +22,10 @@ LOADER_PACKAGE_PATH = os.path.join(
 
 
 def plugin_loaded():
+    if int(sublime.version()) < 3143:
+        PackageDisabler.disable_packages({PackageDisabler.DISABLE: "Package Control"})
+        return
+
     if os.path.exists(LOADER_PACKAGE_PATH):
         PackageDisabler.disable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
 
