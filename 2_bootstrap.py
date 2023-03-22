@@ -202,8 +202,16 @@ def _install_injectors():
 
     for lib_path in sys_path.lib_paths().values():
         injector_path = os.path.join(lib_path, 'package_control.py')
+
         try:
-            with open(injector_path, 'xb') as fobj:
+            with open(injector_path, 'rb') as fobj:
+                if injector_code == fobj.read():
+                    continue
+        except FileNotFoundError:
+            pass
+
+        try:
+            with open(injector_path, 'wb') as fobj:
                 fobj.write(injector_code)
         except FileExistsError:
             pass

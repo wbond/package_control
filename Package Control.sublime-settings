@@ -1,4 +1,8 @@
 {
+	// A cookie to verify, whether Package Control has been set-up.
+	// It is written/updated automatically. Please do not edit!
+	"bootstrapped": 0,
+
 	// A list of URLs that each contain a JSON file with a list of repositories.
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
