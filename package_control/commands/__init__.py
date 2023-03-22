@@ -6,6 +6,7 @@ from .disable_packages_command import DisablePackagesCommand
 from .discover_packages_command import DiscoverPackagesCommand
 from .enable_package_command import EnablePackageCommand
 from .enable_packages_command import EnablePackagesCommand
+from .install_cooperate_packages import InstallCooperatePackagesCommand
 from .install_package_command import InstallPackageCommand
 from .install_packages_command import InstallPackagesCommand
 from .list_packages_command import ListPackagesCommand
@@ -33,6 +34,7 @@ __all__ = [
     'DiscoverPackagesCommand',
     'EnablePackageCommand',
     'EnablePackagesCommand',
+    'InstallCooperatePackagesCommand',
     'InstallPackageCommand',
     'InstallPackagesCommand',
     'ListPackagesCommand',
