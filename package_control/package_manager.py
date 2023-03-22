@@ -731,7 +731,7 @@ class PackageManager:
 
         return library.list_all()
 
-    def list_packages(self, unpacked_only=False):
+    def list_packages(self, ignored_packages=None, unpacked_only=False):
         """
         List installed packages on the machine
 
@@ -745,6 +745,8 @@ class PackageManager:
         packages = set(list_sublime_package_dirs(sys_path.packages_path()))
         if unpacked_only is False:
             packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
+        if ignored_packages:
+            packages -= ignored_packages
         packages -= set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
