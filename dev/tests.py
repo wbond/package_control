@@ -18,6 +18,12 @@ sublime = importlib.machinery.SourceFileLoader(
     os.path.join(PACKAGE_ROOT, "dev/sublime.py")
 ).load_module()
 
+# Mock the sublime_plugin module for CLI usage
+sublime_plugin = importlib.machinery.SourceFileLoader(
+    "sublime_plugin",
+    os.path.join(PACKAGE_ROOT, "dev/sublime_plugin.py")
+).load_module()
+
 
 import package_control.tests
 
