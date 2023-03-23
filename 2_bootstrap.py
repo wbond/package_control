@@ -22,6 +22,18 @@ LOADER_PACKAGE_PATH = os.path.join(
 
 
 def plugin_loaded():
+    """
+    Run bootstrapping once plugin is loaded
+
+    Bootstapping is executed with little delay to work around a ST core bug,
+    which causes `sublime.load_resource()` to fail when being called directly
+    by `plugin_loaded()` hook.
+    """
+
+    sublime.set_timeout(_plugin_loaded, 100)
+
+
+def _plugin_loaded():
     if int(sublime.version()) < 3143:
         PackageDisabler.disable_packages({PackageDisabler.DISABLE: "Package Control"})
         return
