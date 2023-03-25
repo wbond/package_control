@@ -150,14 +150,14 @@
 
 						"LibraryTemplatesList": {
 							"type": "array",
-							"markdownDescription": "```json\n\"libraries\": [\n\t{\n\t\t\"name\": \"mylib\",\n\t\t\"description\": \"A Sublime Text library to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"issues\": \"www.github.com/user/repo/issues\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of library information.",
+							"markdownDescription": "```json\n\"libraries\": [\n\t{\n\t\t\"name\": \"mylib\",\n\t\t\"description\": \"A Sublime Text library to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of library information.",
 							"items": { "$ref": "#/definitions/LibraryTemplate" },
 							"additionalItems": false,
 							"uniqueItems": true
 						},
 						"LibraryTemplate": {
 							"type": "object",
-							"markdownDescription": "```json\n{\n\t\"name\": \"libname\",\n\t\"description\": \"A Sublime Text library to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"www.github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a library.",
+							"markdownDescription": "```json\n{\n\t\"name\": \"libname\",\n\t\"description\": \"A Sublime Text library to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a library.",
 							"additionalProperties": false,
 							"properties": {
 								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
@@ -326,7 +326,7 @@
 
 						"PackageTemplatesList": {
 							"type": "array",
-							"markdownDescription": "```json\n\"packages\": [\n\t{\n\t\t\"name\": \"May Package\",\n\t\t\"details\": \"www.github.com/user/repo\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of package information.",
+							"markdownDescription": "```json\n\"packages\": [\n\t{\n\t\t\"name\": \"May Package\",\n\t\t\"details\": \"https://github.com/user/repo\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of package information.",
 							"items": { "$ref": "#/definitions/PackageTemplate" },
 							"additionalItems": false,
 							"uniqueItems": true
@@ -335,7 +335,7 @@
 							"oneOf": [
 								{
 									"type": "object",
-									"markdownDescription": "```json\n{\n\t\"name\": \"May Package\",\n\t\"details\": \"www.github.com/user/repo\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"markdownDescription": "```json\n{\n\t\"name\": \"May Package\",\n\t\"details\": \"https://github.com/user/repo\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
 									"additionalProperties": false,
 									"properties": {
 										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
@@ -363,7 +363,7 @@
 								},
 								{
 									"type": "object",
-									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"www.github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
 									"additionalProperties": false,
 									"properties": {
 										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
@@ -554,7 +554,7 @@
 						"ReleaseValues": {
 							"base": {
 								"type": "string",
-								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.",
+								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
 								"pattern": "https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+"
 							},
 							"branch": {
