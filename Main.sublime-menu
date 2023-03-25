@@ -1,18 +1,40 @@
 [
     {
+        "id": "tools",
+        "children": [
+            {
+                "id": "packages",
+                "children": [
+                    {
+                        "caption": "Package Control",
+                        "id": "package-control",
+                        "children":
+                        [
+                            {
+                                "caption": "New Channel…",
+                                "command": "new_channel_json"
+                            },
+                            {
+                                "caption": "New Repository…",
+                                "command": "new_repository_json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "id": "preferences",
-        "children":
-        [
+        "children": [
             {
                 "caption": "Package Settings",
                 "mnemonic": "P",
                 "id": "package-settings",
-                "children":
-                [
+                "children": [
                     {
                         "caption": "Package Control",
-                        "children":
-                        [
+                        "children": [
                             {
                                 "caption": "Settings",
                                 "command": "edit_settings",

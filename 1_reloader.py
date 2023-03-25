@@ -229,6 +229,7 @@ mods_load_order = [
     '.commands.install_packages_command',
     '.commands.list_packages_command',
     '.commands.list_unmanaged_packages_command',
+    '.commands.new_template_command',
     '.commands.remove_channel_command',
     '.commands.remove_package_command',
     '.commands.remove_packages_command',

@@ -11,6 +11,8 @@ from .install_package_command import InstallPackageCommand
 from .install_packages_command import InstallPackagesCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
+from .new_template_command import NewChannelJsonCommand
+from .new_template_command import NewRepositoryJsonCommand
 from .package_control_disable_debug_mode_command import PackageControlDisableDebugModeCommand
 from .package_control_enable_debug_mode_command import PackageControlEnableDebugModeCommand
 from .package_control_insert_command import PackageControlInsertCommand
@@ -39,6 +41,8 @@ __all__ = [
     'InstallPackagesCommand',
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',
+    'NewChannelJsonCommand',
+    'NewRepositoryJsonCommand',
     'PackageControlDisableDebugModeCommand',
     'PackageControlEnableDebugModeCommand',
     'PackageControlInsertCommand',

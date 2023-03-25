@@ -80,6 +80,14 @@
         "command": "upgrade_package"
     },
     {
+        "caption": "Package Control: New Channel…",
+        "command": "new_channel_json"
+    },
+    {
+        "caption": "Package Control: New Repository…",
+        "command": "new_repository_json"
+    },
+    {
         "caption": "Package Control: Enable Debug Mode",
         "command": "package_control_enable_debug_mode"
     },
