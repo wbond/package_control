@@ -20,6 +20,7 @@ class NewChannelJsonCommand(sublime_plugin.WindowCommand):
             """
             {
             \t"\\$schema": "sublime://packagecontrol.io/schemas/channel/4.0.0",
+            \t"schema_version": "4.0.0",
             \t"repositories": [
             \t\t"$0"
             \t]
@@ -40,6 +41,7 @@ class NewRepositoryJsonCommand(sublime_plugin.WindowCommand):
             """
             {
             \t"\\$schema": "sublime://packagecontrol.io/schemas/repository/4.0.0",
+            \t"schema_version": "4.0.0",
             \t"packages": [
             \t\t$0
             \t],
