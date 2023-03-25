@@ -130,7 +130,10 @@ class PackageManager:
         if self.settings.get('https_proxy') is False:
             self.settings['https_proxy'] = ''
 
-        self.settings['max_releases'] = 1  # fetch latest release only, from code hosters
+        # Fetch least required information from code hosters to save some time
+        # and fetch more packages/libraries before hitting rate limits.
+        self.settings['min_api_calls'] = True
+        self.settings['max_releases'] = 1
 
         # We cache these to prevent IPC calls between plugin_host and the main
         # Sublime Text executable

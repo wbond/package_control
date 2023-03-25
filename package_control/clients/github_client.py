@@ -178,6 +178,7 @@ class GitHubClient(JSONApiClient):
                     return
 
         user_repo = tags_match.group(1)
+        is_client = self.settings.get('min_api_calls', False)
         max_releases = self.settings.get('max_releases', 0)
         num_releases = 0
 
@@ -185,8 +186,11 @@ class GitHubClient(JSONApiClient):
         for release in sorted(_get_releases(user_repo, tag_prefix), reverse=True):
             version, tag, tag_url = release
 
-            tag_info = self.fetch_json(tag_url)
-            timestamp = tag_info['commit']['committer']['date'][0:19].replace('T', ' ')
+            if is_client:
+                timestamp = 0
+            else:
+                tag_info = self.fetch_json(tag_url)
+                timestamp = tag_info['commit']['committer']['date'][0:19].replace('T', ' ')
 
             output.append(self._make_download_info(user_repo, tag, str(version), timestamp))
 
