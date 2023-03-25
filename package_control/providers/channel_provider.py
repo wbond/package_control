@@ -373,6 +373,11 @@ class ChannelProvider:
                 if field not in package:
                     package[field] = defaults[field]
 
+            # Workaround for packagecontrol.io, which adds `authors` instead of `author`
+            # to cached packages and libraries.
+            if 'authors' in package:
+                package['author'] = package.pop('authors')
+
             releases = version_sort(package.get('releases', []), 'platforms', reverse=True)
             package['releases'] = releases
             package['last_modified'] = releases[0]['date'] if releases else None
