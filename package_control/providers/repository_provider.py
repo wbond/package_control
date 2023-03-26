@@ -70,24 +70,23 @@ class RepositoryProvider(BaseRepositoryProvider):
             DownloaderException: when an error occurs trying to open a URL
         """
 
-        if self.repo_url in self.failed_sources:
-            return False
-
         if self.repo_info is not None:
             return True
 
+        if self.repo_url in self.failed_sources:
+            return False
+
         try:
             self.fetch_repo()
-        except (DownloaderException, ProviderException) as e:
+        except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo_url] = e
-            self.cache['get_libraries'] = {}
-            self.cache['get_packages'] = {}
+            self.libraries = {}
+            self.packages = {}
             return False
 
         return True
 
     def fetch_repo(self):
-        self.cache = {}
         self.repo_info = self.fetch_json(self.repo_url)
         self.schema_version = self.repo_info['schema_version']
 
@@ -206,8 +205,8 @@ class RepositoryProvider(BaseRepositoryProvider):
             tuples
         """
 
-        if 'get_libraries' in self.cache:
-            for key, value in self.cache['get_libraries'].items():
+        if self.libraries is not None:
+            for key, value in self.libraries.items():
                 yield (key, value)
             return
 
@@ -421,7 +420,7 @@ class RepositoryProvider(BaseRepositoryProvider):
             except (DownloaderException, ClientException, ProviderException) as e:
                 self.broken_libriaries[info['name']] = e
 
-        self.cache['get_libraries'] = output
+        self.libraries = output
 
     def get_packages(self, invalid_sources=None):
         """
@@ -462,8 +461,8 @@ class RepositoryProvider(BaseRepositoryProvider):
             tuples
         """
 
-        if 'get_packages' in self.cache:
-            for key, value in self.cache['get_packages'].items():
+        if self.packages is not None:
+            for key, value in self.packages.items():
                 yield (key, value)
             return
 
@@ -787,7 +786,7 @@ class RepositoryProvider(BaseRepositoryProvider):
             output[info['name']] = info
             yield (info['name'], info)
 
-        self.cache['get_packages'] = output
+        self.packages = output
 
     def get_sources(self):
         """

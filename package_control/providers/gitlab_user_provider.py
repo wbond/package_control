@@ -87,8 +87,8 @@ class GitLabUserProvider(BaseRepositoryProvider):
             tuples
         """
 
-        if 'get_packages' in self.cache:
-            for key, value in self.cache['get_packages'].items():
+        if self.packages is not None:
+            for key, value in self.packages.items():
                 yield (key, value)
             return
 
@@ -103,7 +103,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
                 raise GitProviderUserInfoException(self)
         except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo_url] = e
-            self.cache['get_packages'] = {}
+            self.packages = {}
             return
 
         output = {}
@@ -142,4 +142,4 @@ class GitLabUserProvider(BaseRepositoryProvider):
             except (DownloaderException, ClientException, ProviderException) as e:
                 self.failed_sources[repo_url] = e
 
-        self.cache['get_packages'] = output
+        self.packages = output

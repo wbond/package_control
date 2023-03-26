@@ -28,8 +28,9 @@ class BaseRepositoryProvider:
     __slots__ = [
         'broken_libriaries'
         'broken_packages',
-        'cache',
         'failed_sources',
+        'libraries',
+        'packages',
         'repo_url',
         'settings',
     ]
@@ -38,7 +39,8 @@ class BaseRepositoryProvider:
         self.broken_libriaries = {}
         self.broken_packages = {}
         self.failed_sources = {}
-        self.cache = {}
+        self.libraries = None
+        self.packages = None
         self.repo_url = repo_url
         self.settings = settings
 

@@ -99,8 +99,8 @@ class GitLabRepositoryProvider(BaseRepositoryProvider):
             tuples
         """
 
-        if 'get_packages' in self.cache:
-            for key, value in self.cache['get_packages'].items():
+        if self.packages is not None:
+            for key, value in self.packages.items():
                 yield (key, value)
             return
 
@@ -138,9 +138,9 @@ class GitLabRepositoryProvider(BaseRepositoryProvider):
                 'donate': repo_info['donate'],
                 'buy': None
             }
-            self.cache['get_packages'] = {name: details}
+            self.packages = {name: details}
             yield (name, details)
 
         except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo_url] = e
-            self.cache['get_packages'] = {}
+            self.packages = {}
