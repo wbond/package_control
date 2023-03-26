@@ -50,16 +50,20 @@ class ChannelProvider:
     """
 
     __slots__ = [
-        'channel_info',
         'channel_url',
         'schema_version',
+        'repositories',
+        'libraries_cache',
+        'packages_cache',
         'settings',
     ]
 
     def __init__(self, channel_url, settings):
-        self.channel_info = None
         self.channel_url = channel_url
-        self.schema_version = None
+        self.schema_version = SchemaVersion('4.0.0')
+        self.repositories = None
+        self.libraries_cache = {}
+        self.packages_cache = {}
         self.settings = settings
 
     @classmethod
@@ -91,7 +95,7 @@ class ChannelProvider:
             DownloaderException: when an error occurs trying to open a URL
         """
 
-        if self.channel_info is not None:
+        if self.repositories is not None:
             return
 
         if re.match(r'https?://', self.channel_url, re.I):
@@ -129,8 +133,9 @@ class ChannelProvider:
         if 'repositories' not in channel_info:
             raise InvalidChannelFileException(self, 'the "repositories" JSON key is missing.')
 
-        self.channel_info = self._migrate_channel_info(channel_info, schema_version)
-        self.schema_version = schema_version
+        self.repositories = self._migrate_repositories(channel_info, schema_version)
+        self.packages_cache = self._migrate_packages_cache(channel_info, schema_version)
+        self.libraries_cache = self._migrate_libraries_cache(channel_info, schema_version)
 
     def get_renamed_packages(self):
         """
@@ -145,7 +150,7 @@ class ChannelProvider:
         self.fetch()
 
         output = {}
-        for package in chain(*self.channel_info.get('packages_cache', {}).values()):
+        for package in chain(*self.packages_cache.values()):
             previous_names = package.get('previous_names', [])
             if not isinstance(previous_names, list):
                 previous_names = [previous_names]
@@ -166,7 +171,7 @@ class ChannelProvider:
 
         self.fetch()
 
-        return self.channel_info['repositories']
+        return self.repositories
 
     def get_sources(self):
         """
@@ -210,6 +215,7 @@ class ChannelProvider:
                         {
                             'sublime_text': compatible version,
                             'platforms': [platform name, ...],
+                            'python_versions': ['3.3', '3.8'],
                             'url': url,
                             'date': date,
                             'version': version,
@@ -223,11 +229,10 @@ class ChannelProvider:
 
         self.fetch()
 
-        packages_cache = self.channel_info.get('packages_cache', {})
-        if repo_url not in packages_cache:
+        if repo_url not in self.packages_cache:
             raise UncachedChannelRepositoryError(repo_url)
 
-        for package in packages_cache[repo_url]:
+        for package in self.packages_cache[repo_url]:
             if package['releases']:
                 yield (package['name'], package)
 
@@ -268,11 +273,10 @@ class ChannelProvider:
 
         self.fetch()
 
-        libraries_cache = self.channel_info.get('libraries_cache', {})
-        if repo_url not in libraries_cache:
+        if repo_url not in self.libraries_cache:
             raise UncachedChannelRepositoryError(repo_url)
 
-        for library in libraries_cache[repo_url]:
+        for library in self.libraries_cache[repo_url]:
             if library['releases']:
                 yield (library['name'], library)
 
@@ -290,7 +294,7 @@ class ChannelProvider:
 
         self.fetch()
 
-        for package in chain(*self.channel_info.get('packages_cache', {}).values()):
+        for package in chain(*self.packages_cache.values()):
             if not package['releases']:
                 yield package['name']
 
@@ -308,28 +312,9 @@ class ChannelProvider:
 
         self.fetch()
 
-        for library in chain(*self.channel_info.get('libraries_cache', {}).values()):
+        for library in chain(*self.libraries_cache.values()):
             if not library['releases']:
                 yield library['name']
-
-    def _migrate_channel_info(self, channel_info, schema_version):
-        """
-        Transform input channel_info to scheme version 4.0.0
-
-        :param channel_info:
-            The input channel information of any scheme version
-
-        :param schema_version:
-            The schema version of the input channel information
-
-        :returns:
-            channel_info object of scheme version 4.0.0
-        """
-
-        channel_info['repositories'] = self._migrate_repositories(channel_info, schema_version)
-        channel_info['packages_cache'] = self._migrate_packages_cache(channel_info, schema_version)
-        channel_info['libraries_cache'] = self._migrate_libraries_cache(channel_info, schema_version)
-        return channel_info
 
     def _migrate_repositories(self, channel_info, schema_version):
 
@@ -418,11 +403,13 @@ class ChannelProvider:
                 del library['load_order']
                 for release in library['releases']:
                     release['python_versions'] = ['3.3']
+                library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
+
         else:
             libraries_cache = channel_info.get('libraries_cache', {})
 
-        for library in chain(*libraries_cache.values()):
-            library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
+            for library in chain(*libraries_cache.values()):
+                library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
 
         # Fix any out-dated repository URLs in libraries cache
         return {update_url(name, debug): info for name, info in libraries_cache.items()}
