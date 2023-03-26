@@ -57,6 +57,7 @@ class RepositoryProvider(BaseRepositoryProvider):
 
     def __init__(self, repo_url, settings):
         super().__init__(repo_url, settings)
+        self.included_urls = set()
         self.repo_info = None
         self.schema_version = None
 
@@ -77,7 +78,8 @@ class RepositoryProvider(BaseRepositoryProvider):
             return False
 
         try:
-            self.fetch_repo()
+            self.repo_info = self.fetch_repo(self.repo_url)
+            self.schema_version = self.repo_info['schema_version']
         except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo_url] = e
             self.libraries = {}
@@ -86,38 +88,7 @@ class RepositoryProvider(BaseRepositoryProvider):
 
         return True
 
-    def fetch_repo(self):
-        self.repo_info = self.fetch_json(self.repo_url)
-        self.schema_version = self.repo_info['schema_version']
-
-        # The 4.0.0 repository schema renamed dependencies key to libraries.
-        if self.schema_version.major < 4:
-            self.repo_info['libraries'] = self.repo_info.pop('dependencies', [])
-
-        for key in ('packages', 'libraries'):
-            if key not in self.repo_info:
-                self.repo_info[key] = []
-
-        if 'includes' not in self.repo_info:
-            return
-
-        # Allow repositories to include other repositories
-        for include in resolve_urls(self.repo_url, self.repo_info.pop('includes', [])):
-            include_info = self.fetch_json(include)
-            include_version = include_info['schema_version']
-            if include_version != self.schema_version:
-                raise ProviderException(
-                    'Scheme version of included repository %s doesn\'t match its parent.' % include)
-
-            included_packages = include_info.get('packages', [])
-            self.repo_info['packages'].extend(included_packages)
-
-            # The 4.0.0 repository schema renamed dependencies key to libraries.
-            libraries_key = 'libraries' if include_version.major >= 4 else 'dependencies'
-            included_libraries = include_info.get(libraries_key, [])
-            self.repo_info['libraries'].extend(included_libraries)
-
-    def fetch_json(self, location):
+    def fetch_repo(self, location):
         """
         Fetches the contents of a URL of file path
 
@@ -131,6 +102,12 @@ class RepositoryProvider(BaseRepositoryProvider):
         :return:
             A dict of the parsed JSON
         """
+
+        # Prevent circular includes
+        if location in self.included_urls:
+            raise ProviderException('Error, repository "%s" already included.' % location)
+
+        self.included_urls.add(location)
 
         if re.match(r'https?://', location, re.I):
             json_string = http_get(location, self.settings, 'Error downloading repository.')
@@ -158,18 +135,49 @@ class RepositoryProvider(BaseRepositoryProvider):
             raise InvalidRepoFileException(self, 'parsing JSON failed.')
 
         try:
-            repo_info['schema_version'] = SchemaVersion(repo_info['schema_version'])
+            schema_version = repo_info['schema_version'] = SchemaVersion(repo_info['schema_version'])
         except KeyError:
             raise InvalidRepoFileException(
                 self, 'the "schema_version" JSON key is missing.')
         except ValueError as e:
             raise InvalidRepoFileException(self, e)
 
-        if isinstance(repo_info['packages'], dict):
-            raise InvalidRepoFileException(
-                self,
-                'the "packages" key is an object, not an array. '
-                'This indicates it is a channel not a repository.')
+        # Main keys depending on scheme version
+        if schema_version.major < 4:
+            repo_keys = {'packages', 'dependencies', 'includes'}
+        else:
+            repo_keys = {'packages', 'libraries', 'includes'}
+
+        # Check existence of at least one required main key
+        if not set(repo_info.keys()) & repo_keys:
+            raise InvalidRepoFileException(self, 'it doesn\'t look like a repository.')
+
+        # Check type of existing main keys
+        for key in repo_keys:
+            if key in repo_info and not isinstance(repo_info[key], list):
+                raise InvalidRepoFileException(self, 'the "%s" key is not an array.' % key)
+
+        # Migrate dependencies to libraries
+        # The 4.0.0 repository schema renamed dependencies key to libraries.
+        if schema_version.major < 4:
+            repo_info['libraries'] = repo_info.pop('dependencies', [])
+
+        # Allow repositories to include other repositories, recursively
+        includes = repo_info.pop('includes', None)
+        if includes:
+            for include in resolve_urls(self.repo_url, includes):
+                try:
+                    include_info = self.fetch_repo(include)
+                except (DownloaderException, ClientException, ProviderException) as e:
+                    self.failed_sources[include] = e
+                else:
+                    include_version = include_info['schema_version']
+                    if include_version != schema_version:
+                        raise ProviderException(
+                            'Scheme version of included repository %s doesn\'t match its parent.' % include)
+
+                    repo_info['packages'].extend(include_info.get('packages', []))
+                    repo_info['libraries'].extend(include_info.get('libraries', []))
 
         return repo_info
 
