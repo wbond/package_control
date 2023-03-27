@@ -6,7 +6,6 @@ from .disable_packages_command import DisablePackagesCommand
 from .discover_packages_command import DiscoverPackagesCommand
 from .enable_package_command import EnablePackageCommand
 from .enable_packages_command import EnablePackagesCommand
-from .install_cooperate_packages import InstallCooperatePackagesCommand
 from .install_package_command import InstallPackageCommand
 from .install_packages_command import InstallPackagesCommand
 from .list_packages_command import ListPackagesCommand
@@ -22,6 +21,7 @@ from .remove_package_command import RemovePackageCommand
 from .remove_packages_command import RemovePackagesCommand
 from .remove_repository_command import RemoveRepositoryCommand
 from .satisfy_libraries_command import SatisfyLibrariesCommand
+from .satisfy_packages_command import SatisfyPackagesCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
 from .upgrade_package_command import UpgradePackageCommand
 from .upgrade_packages_command import UpgradePackagesCommand
@@ -36,7 +36,6 @@ __all__ = [
     'DiscoverPackagesCommand',
     'EnablePackageCommand',
     'EnablePackagesCommand',
-    'InstallCooperatePackagesCommand',
     'InstallPackageCommand',
     'InstallPackagesCommand',
     'ListPackagesCommand',
@@ -52,6 +51,7 @@ __all__ = [
     'RemovePackagesCommand',
     'RemoveRepositoryCommand',
     'SatisfyLibrariesCommand',
+    'SatisfyPackagesCommand',
     'UpgradeAllPackagesCommand',
     'UpgradePackageCommand',
     'UpgradePackagesCommand',

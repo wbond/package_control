@@ -32,6 +32,7 @@ from .package_io import (
     get_package_module_cache_dir,
     list_sublime_package_dirs,
     list_sublime_package_files,
+    package_file_exists,
     read_package_file,
     regular_file_exists,
     zip_file_exists,
@@ -299,6 +300,19 @@ class PackageManager:
             return True
 
         return is_compatible_platform(platforms) and is_compatible_version(sublime_text)
+
+    def is_managed(self, package_name):
+        """
+        Check if package is managed by Package Control.
+
+        :param package_name:
+            A package's name string to check for compatibility
+
+        :return:
+            ``True`` If the package is managed, ``False`` otherwise.
+        """
+
+        return package_file_exists(package_name, 'package-metadata.json')
 
     def _is_git_package(self, package_name):
         """
@@ -780,22 +794,36 @@ class PackageManager:
         packages -= {'Binary', 'Default', 'Text', 'User'}
         return sorted(packages, key=lambda s: s.lower())
 
-    def cooperate_packages(self):
+    def predefined_packages(self):
         """
-        Return a set of cooperate package names from registy.
+        Return a set of predefined package names from registy.
 
-        Cooperate packages ...
+        This method merges values of ``installed_packages`` settings from all
+        Package Control.sublime-settings files found in any but the ``User`` package.
 
-        1. are automatically installed for a user
-        2. are managed by a dedicated Package Control.sublime-settings
-        3. can't be removed by user via `Package Control: Remove Package`
+        It enables 3rd-party packages to ship predefined lists of packages to maintain
+        available by Package Control via their own Package Control.sublime-settings.
 
         :returns:
-            A set of ``cooperate_packages``.
+            A set of ``installed_packages``.
         """
 
-        settings = sublime.load_settings(pc_settings_filename())
-        return load_list_setting(settings, 'cooperate_packages')
+        merged = set()
+
+        for file_name in sublime.find_resources('Package Control.sublime-settings'):
+            if file_name.startswith('Packages/User/'):
+                continue
+
+            try:
+                content = sublime.decode_value(sublime.load_resource(file_name))
+                package_namess = content.get('installed_packages')
+                if isinstance(package_namess, list):
+                    merged |= set(package_namess)
+
+            except (AttributeError, FileNotFoundError, ValueError) as e:
+                console_write('Unable to load "%s": %s', (file_name, e))
+
+        return merged
 
     def installed_packages(self):
         """
@@ -808,7 +836,7 @@ class PackageManager:
         with PackageManager.lock:
             settings = sublime.load_settings(pc_settings_filename())
             return (
-                load_list_setting(settings, 'cooperate_packages') |
+                self.predefined_packages() |
                 load_list_setting(settings, 'installed_packages')
             )
 
@@ -851,7 +879,7 @@ class PackageManager:
                     remove = set(remove)
                 names -= remove
 
-            names -= load_list_setting(settings, 'cooperate_packages')
+            names -= self.predefined_packages()
 
             if names != names_at_start:
                 settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))

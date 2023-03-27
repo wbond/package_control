@@ -37,7 +37,7 @@ class RemovePackageCommand(ExistingPackagesCommand):
             A list of package names to add to the quick panel
         """
 
-        return manager.list_packages(ignored_packages=manager.cooperate_packages())
+        return manager.list_packages(ignored_packages=manager.predefined_packages())
 
     def on_done(self, manager, package_name):
         """

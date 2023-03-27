@@ -233,8 +233,8 @@ class PackageTaskRunner(PackageDisabler):
                 raise TypeError("Argument 'packages' must be a string, list or set!")
             packages = set(packages)
 
-        # prevent cooperate packages from beeing removed
-        packages -= self.manager.cooperate_packages()
+        # prevent predefined packages from beeing removed
+        packages -= self.manager.predefined_packages()
 
         num_packages = len(packages)
         if num_packages == 1:
@@ -279,6 +279,37 @@ class PackageTaskRunner(PackageDisabler):
         finally:
             time.sleep(0.7)
             self.reenable_packages({self.REMOVE: packages - deffered})
+
+    def satisfy_packages(self, progress=None):
+        """
+        Install missing and remove orphened packages.
+
+        :param progress:
+            An ``ActivityIndicator`` object to use for status information.
+        """
+
+        installed_packages = self.manager.installed_packages()
+        found_packages = self.manager.list_packages()
+
+        # find missing packages
+        tasks = self.create_package_tasks(
+            actions=(self.INSTALL, self.OVERWRITE),
+            include_packages=installed_packages,
+            found_packages=found_packages
+        )
+
+        if tasks:
+            self.run_install_tasks(tasks, progress, package_kind='missing')
+
+        # find all managed orphaned packages
+        orphaned_packages = set(filter(self.manager.is_managed, found_packages - installed_packages))
+        if orphaned_packages:
+            self.remove_packages(orphaned_packages, progress, package_kind='orphaned')
+
+        message = 'All packages satisfied!'
+        console_write(message)
+        if progress:
+            progress.finish(message)
 
     def run_install_tasks(self, tasks, progress=None, package_kind=''):
         """

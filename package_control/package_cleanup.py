@@ -10,7 +10,6 @@ from .console_write import console_write
 from .package_io import (
     create_empty_file,
     get_installed_package_path,
-    package_file_exists
 )
 from .package_tasks import PackageTaskRunner
 from .show_error import show_error, show_message
@@ -429,7 +428,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         # find all managed orphaned packages
         orphaned_packages = set(filter(
-            lambda p: package_file_exists(p, 'package-metadata.json'),
+            self.manager.is_managed,
             found_packages - self.manager.installed_packages()
         ))
 

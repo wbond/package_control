@@ -31,18 +31,16 @@
 	// the "channels" setting.
 	"repositories": [],
 
-	// A list of cooperation managed packages.
+	// A list of packages, which have been installed via Package Control.
 	//
-	// The list is not manipulated by Package Control.
+	// All packages in this list are automatically installed at start,
+	// if missing on filesystem (see: ``install_missing``).
 	//
-	// Cooperate packages:
-	// 1. are automatically installed and upgraded
-	// 2. can't be removed by user via `Package Control: Remove Package`
-	"cooperate_packages": [],
-
-	// A list of user managed packages.
-	// It contains all packages, which have been installed via Package Control,
-	// except those from `cooperate_packages` setting.
+	// Values of all all found Package Control.sublime-settings are merged to
+	// determine the list of packages to install. Any package can therefore
+	// ship a list of required packages, it wants to also be installed.
+	// Such packages are can't be uninstalled by user and aren't added to
+	// Packages/User/Package Control.sublime-settings
 	"installed_packages": [],
 
 	// A list of packages to install pre-release versions for. Versions

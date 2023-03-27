@@ -238,6 +238,7 @@ mods_load_order = [
     '.commands.upgrade_package_command',
     '.commands.package_control_insert_command',
     '.commands.satisfy_libraries_command',
+    '.commands.satisfy_packages_command',
     '.commands.package_control_tests_command',
     '.commands.package_control_edit_settings_command',
     '.commands.package_control_disable_debug_mode_command',

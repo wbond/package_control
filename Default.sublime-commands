@@ -72,6 +72,10 @@
         "command": "satisfy_libraries"
     },
     {
+        "caption": "Package Control: Satisfy Packages",
+        "command": "satisfy_packages"
+    },
+    {
         "caption": "Package Control: Upgrade All Packages",
         "command": "upgrade_all_packages"
     },
