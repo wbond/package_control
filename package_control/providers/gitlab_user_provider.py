@@ -112,6 +112,9 @@ class GitLabUserProvider(BaseRepositoryProvider):
             name = repo_info['name']
             repo_url = client.repo_url(author, name)
 
+            if invalid_sources is not None and repo_url in invalid_sources:
+                continue
+
             try:
                 downloads = client.download_info_from_branch(repo_url, repo_info['default_branch'])
                 if not downloads:
