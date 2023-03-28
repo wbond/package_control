@@ -10,9 +10,25 @@
 		"https://packagecontrol.io/channel_v3.json"
 	],
 
-	// A list of URLs that contain a packages JSON file. These repositories
-	// are placed in order before repositories from the "channels"
-	// setting
+	// A list of URLs that contain a packages JSON file or point to a
+	// Github, GitLab or BitBucket user, repository or reference.
+	//
+	// Examples:
+	//
+	//    https://my-server.com/packages/repository.json
+	//    https://github.com/{user}
+	//    https://github.com/{user}/{repo}
+	//    https://github.com/{user}/{repo}/tags
+	//    https://github.com/{user}/{repo}/tree/{branch}
+	//
+	// Note:
+	//
+	//    Authentication via `http_basic_auth` setting may be required to avoid
+	//    hitting rate limit too early and often, if many codehoster repositories
+	//    are listed here.
+	//
+	// These repositories are placed in order before repositories from
+	// the "channels" setting.
 	"repositories": [],
 
 	// A list of cooperation managed packages.
@@ -35,15 +51,15 @@
 	// list.
 	"install_prereleases": [],
 
+	// This helps solve naming issues where a repository is not named the
+	// same as the package should be. This is primarily only useful for
+	// GitHub, Gitlab and BitBucket repositories. This mapping will override
+	// the mapping that is retrieved from the repository channels.
+	"package_name_map": {},
+
 	// If debugging information for HTTP/HTTPS connections should be printed
 	// to the Sublime Text console
 	"debug": false,
-
-	// This helps solve naming issues where a repository it not named the
-	// same as the package should be. This is primarily only useful for
-	// GitHub and BitBucket repositories. This mapping will override the
-	// mapping that is retrieved from the repository channels.
-	"package_name_map": {},
 
 	// If package install, upgrade and removal info should be submitted to
 	// the channel for aggregated statistics
@@ -91,6 +107,7 @@
 	// if WinINet is not working properly, this will be used by the Urllib
 	// downloader, which acts as a fallback.
 	"http_proxy": "",
+
 	// An HTTPS proxy server to use for requests - this will inherit from
 	// http_proxy if it is set to "" or null and http_proxy has a value. You
 	// can set this to false to prevent inheriting from http_proxy. Not
