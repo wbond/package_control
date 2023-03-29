@@ -7,7 +7,7 @@ from ..console_write import console_write
 from ..download_manager import http_get, resolve_urls, update_url
 from ..package_version import version_sort
 from .provider_exception import ProviderException
-from .schema_compat import SchemaVersion
+from .schema_version import SchemaVersion
 
 
 class InvalidChannelFileException(ProviderException):

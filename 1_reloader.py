@@ -196,7 +196,7 @@ mods_load_order = [
     '.providers.github_user_provider',
     '.providers.gitlab_repository_provider',
     '.providers.gitlab_user_provider',
-    '.providers.schema_compat',
+    '.providers.schema_version',
     '.providers.channel_provider',
     '.providers.repository_provider',
     '.providers',

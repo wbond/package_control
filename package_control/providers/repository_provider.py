@@ -15,7 +15,7 @@ from ..downloaders.downloader_exception import DownloaderException
 from ..package_version import version_sort
 from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import ProviderException
-from .schema_compat import SchemaVersion
+from .schema_version import SchemaVersion
 
 
 class InvalidRepoFileException(ProviderException):
