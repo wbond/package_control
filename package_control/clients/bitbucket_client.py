@@ -253,13 +253,16 @@ class BitBucketClient(JSONApiClient):
         if author is None:
             author = repo_info['owner'].get('username')
 
+        is_client = self.settings.get('min_api_calls', False)
+        readme_url = None if is_client else self._readme_url(user_repo, branch)
+
         return {
             'name': repo_info['name'],
             'description': repo_info['description'] or 'No description provided',
             'homepage': repo_info['website'] or url,
             'author': author,
             'donate': None,
-            'readme': self._readme_url(user_repo, branch),
+            'readme': readme_url,
             'issues': issues_url if repo_info['has_issues'] else None,
             'default_branch': branch
         }
