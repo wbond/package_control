@@ -14,7 +14,7 @@ class NewChannelJsonCommand(sublime_plugin.WindowCommand):
         view = self.window.new_file()
         view.settings().set("default_dir", os.path.join(sublime.packages_path(), "User"))
         view.assign_syntax("JSON.sublime-syntax")
-        view.set_name("repository.json")
+        view.set_name("channel.json")
 
         template = reformat(
             """
