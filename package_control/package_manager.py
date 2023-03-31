@@ -756,7 +756,7 @@ class PackageManager:
             Only list packages that are not inside of .sublime-package files
 
         :return:
-            A list of all installed, non-default, non-library, package names
+            A set of all installed, non-default, non-library, package names
         """
 
         packages = set(list_sublime_package_dirs(sys_path.packages_path()))
@@ -766,33 +766,33 @@ class PackageManager:
             packages -= ignored_packages
         packages -= set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
-        return sorted(packages, key=lambda s: s.lower())
+        return packages
 
     def list_default_packages(self):
         """
         Lists all builtin packages shipped with ST
 
         :return:
-            A list of default package names
+            A set of default package names
         """
 
         packages = set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
-        return sorted(packages, key=lambda s: s.lower())
+        return packages
 
     def list_all_packages(self):
         """
         Lists all packages on the machine
 
         :return:
-            A list of all package names, including default packages
+            A set of all package names, including default packages
         """
 
         packages = set(list_sublime_package_dirs(sys_path.packages_path()))
         packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
         packages |= set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'Binary', 'Default', 'Text', 'User'}
-        return sorted(packages, key=lambda s: s.lower())
+        return packages
 
     def predefined_packages(self):
         """

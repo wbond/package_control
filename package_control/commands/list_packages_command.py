@@ -38,7 +38,7 @@ class ListPackagesCommand(ExistingPackagesCommand):
             A list of package names to add to the quick panel
         """
 
-        return manager.list_packages()
+        return sorted(manager.list_packages(), key=lambda s: s.lower())
 
     def on_done(self, manager, package_name):
         """

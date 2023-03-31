@@ -27,4 +27,5 @@ class ListUnmanagedPackagesCommand(ListPackagesCommand):
         ignored_packages = load_list_setting(settings, 'unmanaged_packages_ignore')
         ignored_packages |= load_list_setting(settings, 'installed_packages')
 
-        return sorted(set(manager.list_packages()) - ignored_packages, key=lambda s: s.lower())
+        packages = manager.list_packages() - ignored_packages
+        return sorted(packages, key=lambda s: s.lower())

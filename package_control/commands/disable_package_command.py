@@ -35,10 +35,10 @@ class DisablePackageCommand(ExistingPackagesCommand):
             A list of package names to add to the quick panel
         """
 
-        packages = manager.list_all_packages()
-        ignored = PackageDisabler.ignored_packages()
-        ignored.add('Package Control')
-        return sorted(set(packages) - ignored, key=lambda s: s.lower())
+        return sorted(
+            manager.list_all_packages() - PackageDisabler.ignored_packages() - {'Package Control'},
+            key=lambda s: s.lower()
+        )
 
     def on_done(self, manager, package_name):
         """

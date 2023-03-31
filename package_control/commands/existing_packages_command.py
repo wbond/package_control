@@ -32,7 +32,7 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
         url_pattern = re.compile(r'^https?://')
 
         package_list = []
-        for package in self.list_packages(manager):
+        for package in sorted(self.list_packages(manager), key=lambda s: s.lower()):
             if package in default_packages:
                 description = 'Bundled Sublime Text Package'
                 installed_version = default_version

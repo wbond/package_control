@@ -79,7 +79,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         # Remove non-existing packages from ignored_packages list.
         orphaned_ignored_packages = self.ignored_packages() - found_packages \
-            - set(self.manager.list_default_packages())
+            - self.manager.list_default_packages()
 
         if in_process or orphaned_ignored_packages:
             self.reenable_packages({self.ENABLE: in_process | orphaned_ignored_packages})
@@ -398,7 +398,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         # Drop remaining missing packages, which seem no longer available upstream,
         # to avoid trying again and again each time ST starts.
-        missing_packages = installed_packages - set(self.manager.list_packages())
+        missing_packages = installed_packages - self.manager.list_packages()
         if missing_packages:
             self.manager.update_installed_packages(remove=missing_packages)
 
