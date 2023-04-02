@@ -2,8 +2,9 @@ import os
 import json
 import threading
 import time
+import traceback
 
-from . import sys_path, __version__
+from . import sys_path, text, __version__
 from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
 from .console_write import console_write
@@ -288,7 +289,10 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             A set of invalid packages which are not available for current ST or OS.
         """
 
-        incompatible_packages = set(filter(lambda p: not self.manager.is_compatible(p), found_packages))
+        incompatible_packages = set(filter(
+            lambda p: not self.manager.is_compatible(p),
+            found_packages - self.ignored_packages()
+        ))
         if not incompatible_packages:
             return set()
 
@@ -305,8 +309,10 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 reenable_packages = self.disable_packages({self.UPGRADE: migrate_packages})
                 time.sleep(0.7)
 
-                try:
-                    for package_name in migrate_packages:
+                for package_name in sorted(migrate_packages, key=lambda s: s.lower()):
+
+                    try:
+                        console_write('Migrating package %s...', package_name)
                         result = self.manager.install_package(package_name)
 
                         # re-enable if upgrade is not deferred to next start
@@ -317,32 +323,39 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                         if result is not False:
                             incompatible_packages.remove(package_name)
 
-                finally:
-                    if reenable_packages:
-                        time.sleep(0.7)
-                        self.reenable_packages({self.UPGRADE: reenable_packages})
+                    except Exception as e:
+                        traceback.print_tb(e.__traceback__)
+
+                if reenable_packages:
+                    time.sleep(0.7)
+                    self.reenable_packages({self.UPGRADE: reenable_packages})
 
         if incompatible_packages:
             self.disable_packages({self.DISABLE: incompatible_packages})
 
             if len(incompatible_packages) == 1:
-                message = '''
+                message = text.format(
+                    '''
                     The following incompatible package was found installed:
 
                     - %s
 
                     It has been disabled as automatic migration was not possible!
                     '''
+                )
             else:
-                message = '''
+                message = text.format(
+                    '''
                     The following incompatible packages were found installed:
 
                     - %s
 
                     They have been disabled as automatic migration was not possible!
                     '''
+                )
 
-            message += '''
+            message += text.format(
+                '''
 
                 This is usually due to syncing packages across different
                 machines in a way that does not check package metadata for
@@ -352,6 +365,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 information about how to properly sync configuration and
                 packages across machines.
                 '''
+            )
 
             show_error(message, '\n- '.join(sorted(incompatible_packages, key=lambda s: s.lower())))
 
