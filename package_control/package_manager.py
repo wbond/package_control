@@ -901,9 +901,10 @@ class PackageManager:
 
         output = set()
         for package in self.list_packages():
-            if package == ignore_package:
-                continue
-            output |= self.get_libraries(package)
+            if package != ignore_package:
+                output |= self.get_libraries(package)
+
+        output |= self.get_libraries('User')
         return output
 
     def find_missing_libraries(self, ignore_package=None, required_libraries=None):
