@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 import threading
 import zipfile
 from textwrap import dedent
@@ -8,8 +7,10 @@ from textwrap import dedent
 import sublime
 
 from .package_control import library, sys_path
+from .package_control.clear_directory import delete_directory
 from .package_control.console_write import console_write
 from .package_control.package_disabler import PackageDisabler
+from .package_control.package_io import create_empty_file
 from .package_control.settings import pc_settings_filename
 from .package_control.show_error import show_message
 
@@ -17,7 +18,7 @@ from .package_control.show_error import show_message
 LOADER_PACKAGE_NAME = '0_package_control_loader'
 LOADER_PACKAGE_PATH = os.path.join(
     sys_path.installed_packages_path(),
-    '%s.sublime-package' % LOADER_PACKAGE_NAME
+    LOADER_PACKAGE_NAME + '.sublime-package'
 )
 
 
@@ -101,7 +102,8 @@ def _migrate_loaders():
                     )
                     library.install(did, lib_path)
 
-                    shutil.rmtree(dep_path)
+                    if not delete_directory(dep_path):
+                        create_empty_file(os.path.join(dep_path, 'package-control.cleanup'))
 
                 except (Exception) as e:
                     console_write('Error trying to migrate dependency %s - %s' % (name, e))
