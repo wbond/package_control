@@ -132,7 +132,7 @@ def _install_injectors():
     Makes sure the module injectors are in place
     """
 
-    injector_code = """
+    injector_code = R"""
         import os
         import zipfile
 
@@ -180,7 +180,6 @@ def _install_injectors():
         if __code is None:
             raise ModuleNotFoundError("No module named 'package_control'")
 
-
         __file__ = __file_path
         __package__ = 'package_control'
         __path__ = [__pkg_path]
@@ -213,7 +212,7 @@ def _install_injectors():
         del globals()['__cached__']
     """
 
-    injector_code = dedent(injector_code).strip() + "\n"
+    injector_code = dedent(injector_code).lstrip()
     injector_code = injector_code.encode('utf-8')
 
     for lib_path in sys_path.lib_paths().values():
