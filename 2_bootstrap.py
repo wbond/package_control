@@ -1,8 +1,8 @@
 import json
 import os
-import threading
 import zipfile
 from textwrap import dedent
+from threading import Thread
 
 import sublime
 
@@ -14,6 +14,7 @@ from .package_control.package_io import create_empty_file
 from .package_control.settings import pc_settings_filename
 from .package_control.show_error import show_message
 
+__all__ = ['plugin_loaded']
 
 LOADER_PACKAGE_NAME = '0_package_control_loader'
 LOADER_PACKAGE_PATH = os.path.join(
@@ -31,24 +32,23 @@ def plugin_loaded():
     by `plugin_loaded()` hook.
     """
 
-    sublime.set_timeout(_plugin_loaded, 100)
+    sublime.set_timeout(_bootstrap, 10)
 
 
-def _plugin_loaded():
+def _bootstrap():
     if int(sublime.version()) < 3143:
         PackageDisabler.disable_packages({PackageDisabler.DISABLE: "Package Control"})
         return
 
-    if os.path.exists(LOADER_PACKAGE_PATH):
-        PackageDisabler.disable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
+    _install_injectors()
 
-        def start_bootstrap():
-            threading.Thread(target=_migrate_loaders).start()
+    if not os.path.exists(LOADER_PACKAGE_PATH):
+        _mark_bootstrapped()
+        return
 
-        # Give ST a second to disable 0_package_control_loader
-        sublime.set_timeout(start_bootstrap, 1000)
-    else:
-        _install_injectors()
+    PackageDisabler.disable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
+    # Give ST a second to disable 0_package_control_loader
+    sublime.set_timeout(lambda: Thread(target=_migrate_dependencies).start(), 1000)
 
 
 def _mark_bootstrapped():
@@ -63,7 +63,7 @@ def _mark_bootstrapped():
         sublime.save_settings(pc_settings_filename())
 
 
-def _migrate_loaders():
+def _migrate_dependencies():
     """
     Moves old Package Control 3-style dependencies to the new 4-style
     libraries, which use the Lib folder
@@ -111,6 +111,7 @@ def _migrate_loaders():
         os.remove(LOADER_PACKAGE_PATH)
 
         def _reenable_loader():
+            _mark_bootstrapped()
             PackageDisabler.reenable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
             show_message(
                 '''
@@ -124,9 +125,6 @@ def _migrate_loaders():
 
     except (OSError) as e:
         console_write('Error trying to migrate dependencies - %s' % e)
-        raise
-
-    _install_injectors()
 
 
 def _install_injectors():
@@ -234,5 +232,3 @@ def _install_injectors():
             pass
         except OSError as e:
             console_write('Unable to write injector to "%s" - %s' % (injector_path, e))
-
-    sublime.set_timeout(_mark_bootstrapped, 10)
