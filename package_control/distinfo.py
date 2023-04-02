@@ -37,7 +37,7 @@ def library_name_from_dist_info_dirname(dirname):
     """
 
     parts = _DIST_INFO_PATTERN.match(dirname)
-    return parts['name'] if parts else None
+    return parts.group('name') if parts else None
 
 
 def _trim_segments(rel_path, segments):
