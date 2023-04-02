@@ -1,6 +1,5 @@
-import sublime
 import os
-import shutil
+import sublime
 
 
 from .package_control import text, sys_path
@@ -120,40 +119,6 @@ else:
             )
             sublime.error_message(message)
             return
-
-        # Ensure we have a Cache dir we can use for temporary data
-        if not os.path.exists(sys_path.pc_cache_dir()):
-            os.mkdir(sys_path.pc_cache_dir())
-
-        # Clean up the old HTTP cache dir
-        legacy_http_cache = os.path.join(sys_path.user_config_dir(), 'Package Control.cache')
-        http_cache = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
-        if os.path.exists(legacy_http_cache):
-            if not os.path.exists(http_cache):
-                console_write(
-                    '''
-                    Moving HTTP cache data into "Cache/Package Control/http_cache/"
-                    '''
-                )
-                shutil.move(legacy_http_cache, http_cache)
-            else:
-                console_write(
-                    '''
-                    Removing old HTTP cache data"
-                    '''
-                )
-                shutil.rmtree(legacy_http_cache)
-
-        # Clean up old CA bundle paths
-        legacy_ca_filenames = [
-            'Package Control.system-ca-bundle',
-            'Package Control.merged-ca-bundle',
-            'oscrypto-ca-bundle.crt'
-        ]
-        for legacy_ca_filename in legacy_ca_filenames:
-            legacy_ca_path = os.path.join(sys_path.user_config_dir(), legacy_ca_filename)
-            if os.path.exists(legacy_ca_path):
-                os.unlink(legacy_ca_path)
 
         pc_settings = sublime.load_settings(pc_settings_filename())
 
