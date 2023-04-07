@@ -164,9 +164,9 @@ class GitLabClient(JSONApiClient):
         if not tags_match:
             return None
 
-        def _get_releases(user_repo, tag_prefix=None, page_size=100):
+        def _get_releases(user_repo, tag_prefix=None, page_size=1000):
             used_versions = set()
-            for page in range(100):
+            for page in range(10):
                 query_string = urlencode({'page': page * page_size, 'per_page': page_size})
                 tags_url = self._api_url(user_repo, '/repository/tags?%s' % query_string)
                 tags_json = self.fetch_json(tags_url)
