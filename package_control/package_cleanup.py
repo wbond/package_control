@@ -331,7 +331,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                     self.reenable_packages({self.UPGRADE: reenable_packages})
 
         if incompatible_packages:
-            self.disable_packages({self.DISABLE: incompatible_packages})
+            self.remove_packages(incompatible_packages, package_kind='incompatible')
 
             if len(incompatible_packages) == 1:
                 message = text.format(
@@ -340,8 +340,9 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
                     - %s
 
-                    It has been disabled as automatic migration was not possible!
-                    '''
+                    It has been removed as migration was not possible!
+                    ''',
+                    incompatible_packages
                 )
             else:
                 message = text.format(
@@ -350,8 +351,9 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
                     - %s
 
-                    They have been disabled as automatic migration was not possible!
-                    '''
+                    They have been removed as migration was not possible!
+                    ''',
+                    ('\n- '.join(sorted(incompatible_packages, key=lambda s: s.lower())))
                 )
 
             message += text.format(
@@ -367,7 +369,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 '''
             )
 
-            show_error(message, '\n- '.join(sorted(incompatible_packages, key=lambda s: s.lower())))
+            show_message(message)
 
         return incompatible_packages
 
