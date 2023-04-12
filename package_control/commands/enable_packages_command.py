@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 
 from ..package_disabler import PackageDisabler
+from ..package_manager import PackageManager
 from ..show_error import show_error
 
 
@@ -20,7 +21,9 @@ class EnablePackagesCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, packages=None):
         if isinstance(packages, list):
-            unique_packages = set(packages)
+            manager = PackageManager()
+            unique_packages = set(filter(lambda p: manager.is_compatible(p), packages))
+
             PackageDisabler.reenable_packages({PackageDisabler.ENABLE: unique_packages})
 
             if len(unique_packages) == 1:

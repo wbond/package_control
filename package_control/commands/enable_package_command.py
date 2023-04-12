@@ -35,7 +35,10 @@ class EnablePackageCommand(ExistingPackagesCommand):
             A list of package names to add to the quick panel
         """
 
-        return sorted(PackageDisabler.ignored_packages(), key=lambda s: s.lower())
+        return sorted(
+            filter(lambda p: manager.is_compatible(p), PackageDisabler.ignored_packages()),
+            key=lambda s: s.lower()
+        )
 
     def on_done(self, manager, package_name):
         """
