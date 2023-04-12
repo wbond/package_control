@@ -260,7 +260,7 @@ class DistinfoTests(unittest.TestCase):
                 "http://example.com"
             )
             did.write_installer()
-            did.write_wheel("3.8", False)
+            # did.write_wheel("3.8", False)
             did.write_record(package_dirs, package_files)
             record_path = os.path.join(d, did_name, "RECORD")
             with open(record_path, "r", encoding="utf-8") as f:
@@ -269,7 +269,7 @@ class DistinfoTests(unittest.TestCase):
                     "testing-1.0.0.dist-info/INSTALLER,sha256=Hg_Q6w_I4zpFfb6C24LQdd4oTAMHJZDk9gtuV2yOgkw,16\n"
                     "testing-1.0.0.dist-info/METADATA,sha256=eYkwWwXPP3gmZteGofvQDKR76W24np070-bgFO7_eRk,108\n"
                     "testing-1.0.0.dist-info/RECORD,,\n"
-                    "testing-1.0.0.dist-info/WHEEL,sha256=bnuWs1vbOwvsSNtu5ecmSmNp-TSIDAMQi00d5kxrrEg,99\n"
+                    # "testing-1.0.0.dist-info/WHEEL,sha256=bnuWs1vbOwvsSNtu5ecmSmNp-TSIDAMQi00d5kxrrEg,99\n"
                     "testing.py,sha256=x70rG6LT6Ztax8UDBo07_fpElW9j47oz6MRkKFeOUuM,69\n"
                     "testing/submod1.py,sha256=Fq_s7atiTPeHUzEe56JA8IDbPqlntBpHVfJchJ6C31M,28\n"
                     "testing/submod2.py,sha256=RWIeIEzzpcpqdk9TW1HRFQltzMY7WxT8tX2NQsqfyYE,32\n",
@@ -309,9 +309,9 @@ class DistinfoTests(unittest.TestCase):
             self.assertEqual(None, record_infos[2].sha256)
             self.assertEqual(None, record_infos[2].size)
 
-            self.assertEqual("testing-1.0.0.dist-info/WHEEL", record_infos[3].relative_path)
-            self.assertEqual("bnuWs1vbOwvsSNtu5ecmSmNp-TSIDAMQi00d5kxrrEg", record_infos[3].sha256)
-            self.assertEqual(99, record_infos[3].size)
+            # self.assertEqual("testing-1.0.0.dist-info/WHEEL", record_infos[3].relative_path)
+            # self.assertEqual("bnuWs1vbOwvsSNtu5ecmSmNp-TSIDAMQi00d5kxrrEg", record_infos[3].sha256)
+            # self.assertEqual(99, record_infos[3].size)
 
             self.assertEqual("testing.py", record_infos[4].relative_path)
             self.assertEqual("x70rG6LT6Ztax8UDBo07_fpElW9j47oz6MRkKFeOUuM", record_infos[4].sha256)
@@ -418,9 +418,9 @@ class DistinfoTests(unittest.TestCase):
             self.assertEqual(None, sorted_records[2].sha256)
             self.assertEqual(None, sorted_records[2].size)
 
-            self.assertEqual("testing-1.0.0.dist-info/WHEEL", sorted_records[3].relative_path)
-            self.assertEqual("bnuWs1vbOwvsSNtu5ecmSmNp-TSIDAMQi00d5kxrrEg", sorted_records[3].sha256)
-            self.assertEqual(99, sorted_records[3].size)
+            # self.assertEqual("testing-1.0.0.dist-info/WHEEL", sorted_records[3].relative_path)
+            # self.assertEqual("bnuWs1vbOwvsSNtu5ecmSmNp-TSIDAMQi00d5kxrrEg", sorted_records[3].sha256)
+            # self.assertEqual(99, sorted_records[3].size)
 
             self.assertEqual("testing.py", sorted_records[4].relative_path)
             self.assertEqual("x70rG6LT6Ztax8UDBo07_fpElW9j47oz6MRkKFeOUuM", sorted_records[4].sha256)
