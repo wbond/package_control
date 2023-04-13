@@ -176,7 +176,7 @@ class BitBucketClient(JSONApiClient):
         if not tags_match:
             return None
 
-        def _get_releases(user_repo, tag_prefix, page_size=1000):
+        def _get_releases(user_repo, tag_prefix, page_size=100):
             used_versions = set()
             query_string = urlencode({'pagelen': page_size})
             tags_url = self._api_url(user_repo, '/refs/tags?%s' % query_string)
