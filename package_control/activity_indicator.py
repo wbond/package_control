@@ -68,16 +68,16 @@ class ActivityIndicator:
             The final status message to display
         """
 
-        with self._lock:
-            if self._running:
+        def clear():
+            with self._lock:
+                self.clear()
+
+        if self._running:
+            with self._lock:
                 self._running = False
                 self.update(message)
 
-                def clear():
-                    with self._lock:
-                        self.clear()
-
-                sublime.set_timeout(clear, 2000)
+            sublime.set_timeout(clear, 2000)
 
     def tick(self):
         """
