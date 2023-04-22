@@ -385,7 +385,7 @@ class PackageDisabler:
                 # By delaying the restore, we give Sublime Text some time to
                 # re-enable packages, making errors less likely
                 PackageDisabler.restore_id += 1
-                sublime.set_timeout(functools.partial(
+                sublime.set_timeout_async(functools.partial(
                     PackageDisabler.restore_settings, PackageDisabler.restore_id), 1000)
 
     @staticmethod
