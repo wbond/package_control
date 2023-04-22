@@ -155,6 +155,8 @@ class PackageDisabler:
     }
     """
 
+    index_files = None
+
     lock = RLock()
     restore_id = 0
 
@@ -428,6 +430,14 @@ class PackageDisabler:
         settings = sublime.load_settings(preferences_filename())
         cached_settings = {}
 
+        # Temporarily disable indexing during package updates, so multiple syntax
+        # packages can be disabled/installed and re-enabled without indexer restarting
+        # for each one individually. Also we don't want to re-index while a syntax
+        # package is being disabled for upgrade - just once after upgrade is finished.
+        if backup:
+            PackageDisabler.index_files = settings.get('index_files')
+            settings.set('index_files', False)
+
         # Backup and reset global theme(s)
         for key, default_file in PackageDisabler.default_themes.items():
             theme_file = settings.get(key)
@@ -521,6 +531,11 @@ class PackageDisabler:
             save_settings = False
 
             try:
+                # restore indexing settings
+                if PackageDisabler.index_files is not None:
+                    settings.set('index_files', PackageDisabler.index_files)
+                    save_settings = True
+
                 # restore global theme
                 all_missing_theme_packages = set()
 
@@ -601,6 +616,8 @@ class PackageDisabler:
             finally:
                 if save_settings:
                     sublime.save_settings(preferences_filename())
+
+                PackageDisabler.index_files = None
 
                 PackageDisabler.color_scheme_packages = {}
                 PackageDisabler.theme_packages = {}
