@@ -69,7 +69,7 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
                 if url_display:
                     final_line += '; <a href="%s">%s</a>' % (url, url_display)
 
-                annotation = ""
+                annotation = ''
                 if upgrade_time:
                     annotation = datetime.datetime.fromtimestamp(upgrade_time).strftime('Updated at %c')
                 elif install_time:
