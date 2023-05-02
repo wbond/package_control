@@ -633,7 +633,7 @@ class PackageTaskRunner(PackageDisabler):
 
                 annotation = ''
                 if task.last_modified:
-                    annotation = datetime.datetime.strptime(task.last_modified, '%Y-%m-%d %H:%M:%S').strftime('Updated at %a %b %d %H:%M:%S %Y')
+                    annotation = datetime.datetime.strptime(task.last_modified, '%Y-%m-%d %H:%M:%S').strftime('Updated at %a %b %d, %Y')
 
                 items.append(sublime.QuickPanelItem(task.package_name, [description, final_line], annotation))
 
