@@ -1,3 +1,4 @@
+from datetime import datetime
 import html
 import re
 import time
@@ -66,6 +67,12 @@ class PackageInstallTask(BasePackageTask):
         if not self.available_release:
             return None
         return PackageVersion(self.available_release['version'])
+
+    @property
+    def last_modified(self):
+        if not self.update_info:
+            return None
+        return self.update_info['last_modified']
 
 
 class PackageTaskRunner(PackageDisabler):
@@ -624,7 +631,14 @@ class PackageTaskRunner(PackageDisabler):
                         final_line += ' '
                     final_line += '<a href="{}">{}</a>'.format(homepage, homepage_display)
 
-                items.append(sublime.QuickPanelItem(task.package_name, [description, final_line]))
+                annotation = ''
+                if task.last_modified:
+                    annotation = datetime.strptime(
+                        task.last_modified,
+                        '%Y-%m-%d %H:%M:%S'
+                    ).strftime('Updated at %a %b %d, %Y')
+
+                items.append(sublime.QuickPanelItem(task.package_name, [description, final_line], annotation))
 
             else:
                 homepage_display = re.sub(r'^https?://', '', task.package_homepage)
