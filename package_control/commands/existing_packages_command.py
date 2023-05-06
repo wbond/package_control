@@ -71,9 +71,9 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
 
                 annotation = ''
                 if upgrade_time:
-                    annotation = datetime.datetime.fromtimestamp(upgrade_time).strftime('Updated at %a %b %d, %Y')
+                    annotation = datetime.datetime.fromtimestamp(upgrade_time).strftime('Updated on %a %b %d, %Y')
                 elif install_time:
-                    annotation = datetime.datetime.fromtimestamp(install_time).strftime('Installed at %a %b %d, %Y')
+                    annotation = datetime.datetime.fromtimestamp(install_time).strftime('Installed on %a %b %d, %Y')
 
                 package_entry = sublime.QuickPanelItem(package, [description, final_line], annotation)
             else:
