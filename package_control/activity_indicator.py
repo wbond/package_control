@@ -77,7 +77,7 @@ class ActivityIndicator:
                 self._running = False
                 self.update(message)
 
-            sublime.set_timeout(clear, 2000)
+            sublime.set_timeout(clear, 4000)
 
     def tick(self):
         """
