@@ -50,14 +50,24 @@ class UpgradePackageCommand(sublime_plugin.ApplicationCommand):
                 if picked == -1:
                     return
 
-                def worker(task):
-                    with ActivityIndicator('Upgrading package %s' % task.package_name) as progress:
-                        upgrader.run_upgrade_tasks([task], progress)
+                def worker(tasks):
+                    with ActivityIndicator('Preparing...') as progress:
+                        upgrader.run_upgrade_tasks(tasks, progress)
 
-                threading.Thread(target=worker, args=[tasks[picked]]).start()
+                threading.Thread(
+                    target=worker,
+                    args=[[tasks[picked - 1]] if picked > 0 else tasks]
+                ).start()
+
+            items = [
+                sublime.QuickPanelItem(
+                    "Upgrade All Packages",
+                    "Use this command to install all available upgrades."
+                )
+            ] + upgrader.render_quick_panel_items(tasks)
 
             sublime.active_window().show_quick_panel(
-                upgrader.render_quick_panel_items(tasks),
+                items,
                 on_done,
                 sublime.KEEP_OPEN_ON_FOCUS_LOST
             )
