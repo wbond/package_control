@@ -19,7 +19,7 @@ def show_error(string, params=None, strip=True, indent=None):
         If the last newline in the string should be removed
 
     :param indent:
-        If all lines should be indented by a set indent after being dedented
+        If all lines should be indented by a set indent after being de-dented
     """
 
     string = text.format(string, params, strip=strip, indent=indent)
@@ -41,7 +41,7 @@ def show_message(string, params=None, strip=True, indent=None):
         If the last newline in the string should be removed
 
     :param indent:
-        If all lines should be indented by a set indent after being dedented
+        If all lines should be indented by a set indent after being de-dented
     """
 
     string = text.format(string, params, strip=strip, indent=indent)

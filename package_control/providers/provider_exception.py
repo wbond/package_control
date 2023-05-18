@@ -8,7 +8,7 @@ class ProviderException(Exception):
 
 class GitProviderUserInfoException(ProviderException):
     """
-    Exception for signaling user information download error.
+    Exception for signalling user information download error.
 
     The exception is used to indicate a given URL not being in expected form
     to be used by given provider to download user info from.
@@ -24,7 +24,7 @@ class GitProviderUserInfoException(ProviderException):
 
 class GitProviderRepoInfoException(ProviderException):
     """
-    Exception for signaling repository information download error.
+    Exception for signalling repository information download error.
 
     The exception is used to indicate a given URL not being in expected form
     to be used by given provider to download repo info from.
@@ -40,7 +40,7 @@ class GitProviderRepoInfoException(ProviderException):
 
 class GitProviderDownloadInfoException(ProviderException):
     """
-    Exception for signaling download information download error.
+    Exception for signalling download information download error.
 
     The exception is used to indicate a given URL not being in expected form
     to be used by given provider to download release information from.

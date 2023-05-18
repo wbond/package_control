@@ -274,7 +274,7 @@ def remove(installed_library):
         raise distinfo.DistInfoNotFoundError()
 
     for rel_path in dist_info.top_level_paths():
-        # Remove the .dist-info dir last so we have info for cleanup in case
+        # Remove the .dist-info dir last so we have info for clean-up in case
         # we hit an error along the way
         if rel_path == dist_info.dir_name:
             continue

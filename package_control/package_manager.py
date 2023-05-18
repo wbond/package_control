@@ -289,7 +289,7 @@ class PackageManager:
         metadata = self.get_metadata(package_name)
         if not metadata:
             # unmanaged or unable to parse meta data
-            # can't say something about compatibility, asume the best
+            # can't say something about compatibility, assume the best
             return True
 
         sublime_text = metadata.get('sublime_text')
@@ -770,7 +770,7 @@ class PackageManager:
 
     def list_default_packages(self):
         """
-        Lists all builtin packages shipped with ST
+        Lists all built-in packages shipped with ST
 
         :return:
             A set of default package names
@@ -796,7 +796,7 @@ class PackageManager:
 
     def predefined_packages(self):
         """
-        Return a set of predefined package names from registy.
+        Return a set of predefined package names from registry.
 
         This method merges values of ``installed_packages`` settings from all
         Package Control.sublime-settings files found in any but the ``User`` package.
@@ -827,7 +827,7 @@ class PackageManager:
 
     def installed_packages(self):
         """
-        Return a set of installed package names from registy.
+        Return a set of installed package names from registry.
 
         :returns:
             A set of ``installed_packages``.
@@ -1012,7 +1012,7 @@ class PackageManager:
         if last_path and len(root_level_paths) == 0:
             root_level_paths.append(last_path[0:last_path.find('/') + 1])
 
-        # If there is only a single directory at the top leve, the file
+        # If there is only a single directory at the top level, the file
         # is most likely a zip from BitBucket or GitHub and we need
         # to skip the top-level dir when extracting
         if len(root_level_paths) == 1 and root_level_paths[0].endswith('/'):
@@ -1383,7 +1383,7 @@ class PackageManager:
             Not used when required_libraries is provided.
 
         :param required_libraries:
-            All required libraries, for speedup purposes.
+            All required libraries, for speed-up purposes.
 
         :return:
             Boolean indicating the success of the removals.
@@ -1466,7 +1466,7 @@ class PackageManager:
 
         :return: bool if the package was successfully installed or None
                  if the package needs to be cleaned up on the next restart
-                 and should not be reenabled
+                 and should not be re-enabled
         """
 
         # Handle VCS packages first as those might not be registered
@@ -1707,7 +1707,7 @@ class PackageManager:
                 # when the reinstall happens, and the appropriate
                 # usage info can be sent back to the server.
                 # No need to handle symlink at this stage it was already removed
-                # and we are not working with symlink here anymore.
+                # and we are not working with symlink here any more.
                 clear_directory(package_dir, {reinstall_file, package_metadata_file})
 
                 console_write(
@@ -1719,11 +1719,11 @@ class PackageManager:
                 )
                 return None
 
-            # Here we clean out any files that were not just overwritten. It is ok
+            # Here we clean out any files that were not just overwritten. It is ok,
             # if there is an error removing a file. The next time there is an
             # upgrade, it should be cleaned out successfully then.
             # No need to handle symlink at this stage it was already removed
-            # and we are not working with symlink here anymore.
+            # and we are not working with symlink here any more.
             clear_directory(package_dir, extracted_paths)
 
             # Create .python-version file to opt-in to certain plugin_host.
@@ -1962,7 +1962,7 @@ class PackageManager:
             ``True`` if the package was successfully deleted
             ``False`` if the package doesn't exist or can not be deleted
             ``None`` if the package needs to be cleaned up on the next restart
-            and should not be reenabled
+            and should not be re-enabled
         """
 
         self.update_installed_packages(remove=package_name, persist=False)
@@ -1996,7 +1996,7 @@ class PackageManager:
             ``True`` if the package was successfully deleted
             ``False`` if the package doesn't exist or can not be deleted
             ``None`` if the package needs to be cleaned up on the next restart
-            and should not be reenabled
+            and should not be re-enabled
         """
 
         # User package needs to be checked as it exists in Data/Packages/

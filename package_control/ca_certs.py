@@ -153,7 +153,7 @@ def print_cert_subject(cert, reason):
 def get_system_ca_bundle_path(settings, ca_bundle_dir):
     """
     Get the filesystem path to the system CA bundle. On Linux it looks in a
-    number of predefined places, however on OS X it has to be programatically
+    number of predefined places, however on OS X it has to be programmatically
     exported from the SystemRootCertificates.keychain. Windows does not ship
     with a CA bundle, but also we use WinINet on Windows, so we don't need to
     worry about CA certs.

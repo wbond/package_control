@@ -6,7 +6,7 @@ import sublime_plugin
 
 PREFIX = '\\\\?\\' if sys.platform == 'win32' else ''
 
-# Dermine default packages path
+# Determine default packages path
 try:
     import Default.sort as default_module
 

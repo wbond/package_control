@@ -56,13 +56,13 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 'version': __version__
             })
 
-        # To limit diskspace occupied remove all old enough backups
+        # To limit disk space occupied remove all old enough backups
         self.manager.prune_backup_dir()
 
         # Scan through packages and complete pending operations
         found_packages = self.cleanup_pending_packages()
 
-        # Cleanup packages that were installed via Package Control, but have been
+        # Clean-up packages that were installed via Package Control, but have been
         # removed from the "installed_packages" list - usually by removing them
         # from another computer and the settings file being synced.
         removed_packages = self.remove_orphaned_packages(found_packages)
@@ -105,7 +105,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         if self.failed_cleanup:
             show_error(
                 '''
-                Package cleanup could not be completed.
+                Package clean-up could not be completed.
                 You may need to restart your OS to unlock relevant files and directories.
 
                 The following packages are effected: "%s"
@@ -210,7 +210,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             if os.path.exists(os.path.join(package_dir, '.hidden-sublime-package')):
                 continue
 
-            # Cleanup packages that could not be removed due to in-use files
+            # Clean-up packages that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
                 if delete_directory(package_dir):
@@ -253,7 +253,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
             # Convert unpacked managed package into unmanaged package,
             # if folder name no longer matches original package name,
-            # in ordert to avoid it being removed as orphaned.
+            # in order to avoid it being removed as orphaned.
             try:
                 clear = False
                 metadata_file = os.path.join(package_dir, 'package-metadata.json')

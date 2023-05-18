@@ -52,7 +52,7 @@ class GitLabClient(JSONApiClient):
             The repository name
 
         :return:
-            The repositoy URL of given owner and repo name
+            The repository URL of given owner and repo name
         """
 
         return 'https://gitlab.com/%s/%s' % (quote(user_name), quote(repo_name))

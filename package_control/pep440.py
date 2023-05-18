@@ -85,7 +85,7 @@ def _pep440_to_tuple(version_string):
         normalized.append(post_tup)
     if dev_tup:
         normalized.append(dev_tup)
-    # This ensures regular releases happen after dev and prerelease, but
+    # This ensures regular releases happen after dev and pre-release, but
     # before post releases
     if not pre_tup and not post_tup and not dev_tup:
         normalized.append((0, 0))

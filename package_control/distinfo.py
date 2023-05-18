@@ -321,7 +321,7 @@ class DistInfoDir:
         :return:
             A set of unicode strings containing "important" files in a library
             archive that should be relocated into the .dist-info directory to
-            prevent depdencies overwriting each other in the lib folder
+            prevent dependencies overwriting each other in the lib folder
         """
 
         return {

@@ -18,7 +18,7 @@ def console_write(string, params=None, strip=True, indent=None, prefix=True):
         If a single trailing newline should be stripped
 
     :param indent:
-        If all lines should be indented by a set indent after being dedented
+        If all lines should be indented by a set indent after being de-dented
 
     :param prefix:
         If the string "Package Control: " should be prefixed to the string

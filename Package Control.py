@@ -19,7 +19,7 @@ if int(sublime.version()) < 3143:
 
         This package requires at least Sublime Text 3143.
 
-        Please considder updating ST or remove Package Control.
+        Please consider updating ST or remove Package Control.
         '''
     )
     sublime.error_message(message)
@@ -125,10 +125,10 @@ else:
         if pc_settings.get('bootstrapped') != 4:
             console_write(
                 '''
-                Not running package cleanup since bootstrapping is not yet complete
+                Not running package clean-up since bootstrapping is not yet complete
                 '''
             )
         else:
             # Start shortly after Sublime starts so package renames don't cause errors
-            # with keybindings, settings, etc disappearing in the middle of parsing
+            # with key bindings, settings, etc. disappearing in the middle of parsing
             sublime.set_timeout(lambda: PackageCleanup().start(), 2000)

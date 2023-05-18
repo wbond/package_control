@@ -81,7 +81,7 @@ class AutomaticUpgrader:
 
     def upgrade_packages(self):
         """
-        Upgrades all packages that are not currently upgraded to the lastest
+        Upgrades all packages that are not currently upgraded to the latest
         version. Also renames any installed packages to their new names.
         """
 
@@ -95,7 +95,7 @@ class AutomaticUpgrader:
             fail_early=False
         )
 
-        # run updater synchronously to delay any "You must restart ST" dialogs
+        # run updater synchronously to delay any "You must restart ST" dialogues
         # Note: we are in PackageCleanup thread here
         completed = upgrader.upgrade_packages(
             ignore_packages=upgrader.manager.settings.get('auto_upgrade_ignore'),

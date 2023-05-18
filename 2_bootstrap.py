@@ -27,7 +27,7 @@ def plugin_loaded():
     """
     Run bootstrapping once plugin is loaded
 
-    Bootstapping is executed with little delay to work around a ST core bug,
+    Bootstrapping is executed with little delay to work around a ST core bug,
     which causes `sublime.load_resource()` to fail when being called directly
     by `plugin_loaded()` hook.
     """

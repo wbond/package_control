@@ -240,7 +240,7 @@ class PackageTaskRunner(PackageDisabler):
                 raise TypeError("Argument 'packages' must be a string, list or set!")
             packages = set(packages)
 
-        # prevent predefined packages from beeing removed
+        # prevent predefined packages from being removed
         packages -= self.manager.predefined_packages()
 
         num_packages = len(packages)
@@ -256,7 +256,7 @@ class PackageTaskRunner(PackageDisabler):
         self.disable_packages({self.REMOVE: packages})
         time.sleep(0.7)
 
-        deffered = set()
+        deferred = set()
         num_success = 0
 
         try:
@@ -266,9 +266,9 @@ class PackageTaskRunner(PackageDisabler):
                 result = self.manager.remove_package(package)
                 if result is True:
                     num_success += 1
-                # do not re-enable package if operation is dereffered to next start
+                # do not re-enable package if operation is deferred to next start
                 elif result is None:
-                    deffered.add(package)
+                    deferred.add(package)
 
             if num_packages == 1:
                 message = 'Package {} successfully removed'.format(list(packages)[0])
@@ -285,11 +285,11 @@ class PackageTaskRunner(PackageDisabler):
 
         finally:
             time.sleep(0.7)
-            self.reenable_packages({self.REMOVE: packages - deffered})
+            self.reenable_packages({self.REMOVE: packages - deferred})
 
     def satisfy_packages(self, progress=None):
         """
-        Install missing and remove orphened packages.
+        Install missing and remove orphaned packages.
 
         :param progress:
             An ``ActivityIndicator`` object to use for status information.
@@ -360,7 +360,7 @@ class PackageTaskRunner(PackageDisabler):
                 result = self.manager.install_package(task.package_name)
                 if result is True:
                     num_success += 1
-                # do not re-enable package if operation is dereffered to next start
+                # do not re-enable package if operation is deferred to next start
                 elif result is None:
                     package_names.remove(task.package_name)
 
@@ -444,7 +444,7 @@ class PackageTaskRunner(PackageDisabler):
                 result = self.manager.install_package(package)
                 if result is True:
                     num_success += 1
-                # do not re-enable package if operation is dereffered to next start
+                # do not re-enable package if operation is deferred to next start
                 elif result is None:
                     disable_packages[self.REMOVE].remove(package)
                     if package != task.available_name:
