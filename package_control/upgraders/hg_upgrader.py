@@ -63,7 +63,7 @@ class HgUpgrader(VcsUpgrader):
             cache_key = self.working_copy + '.incoming'
             set_cache(cache_key, None, 0)
 
-        return result
+        return True
 
     def incoming(self):
         """:return: bool if remote revisions are available"""
