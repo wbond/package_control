@@ -856,7 +856,8 @@ class PackageManager:
             Save changed settings to disk.
 
         :returns:
-            A set of ``installed_packages``.
+            ``True`` if list of installed packages was updated
+            ``False`` if list of installed packages was already up-to-date
         """
 
         with PackageManager.lock:
@@ -881,10 +882,13 @@ class PackageManager:
 
             names -= self.predefined_packages()
 
-            if names != names_at_start:
+            result = names != names_at_start
+            if result:
                 settings.set('installed_packages', sorted(names, key=lambda s: s.lower()))
                 if persist:
                     sublime.save_settings(file_name)
+
+            return result
 
     def find_required_libraries(self, ignore_package=None):
         """

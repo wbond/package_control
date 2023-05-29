@@ -55,6 +55,8 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 'operation': 'install',
                 'version': __version__
             })
+            if self.manager.settings.get('debug'):
+                console_write("Prevented Package Control from removing itself.")
 
         # To limit disk space occupied remove all old enough backups
         self.manager.prune_backup_dir()
