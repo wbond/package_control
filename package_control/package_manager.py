@@ -1892,7 +1892,7 @@ class PackageManager:
             # Windows will not allow you to rename to the same name with
             # a different case, so we work around that with a temporary name
             if changing_case:
-                temp_path = os.path.join(os.path.dirname(sublime.packages_path()), '__' + new)
+                temp_path = os.path.join(os.path.dirname(sublime.packages_path()), new + "-renaming")
                 os.rename(old, temp_path)
                 old = temp_path
 
