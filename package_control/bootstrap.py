@@ -6,15 +6,14 @@ from threading import Thread
 
 import sublime
 
-from .package_control import library, sys_path
-from .package_control.clear_directory import delete_directory
-from .package_control.console_write import console_write
-from .package_control.package_disabler import PackageDisabler
-from .package_control.package_io import create_empty_file
-from .package_control.settings import pc_settings_filename
-from .package_control.show_error import show_message
+from . import library, sys_path
+from .clear_directory import delete_directory
+from .console_write import console_write
+from .package_cleanup import PackageCleanup
+from .package_disabler import PackageDisabler
+from .package_io import create_empty_file
+from .show_error import show_message
 
-__all__ = ['plugin_loaded']
 
 LOADER_PACKAGE_NAME = '0_package_control_loader'
 LOADER_PACKAGE_PATH = os.path.join(
@@ -23,44 +22,45 @@ LOADER_PACKAGE_PATH = os.path.join(
 )
 
 
-def plugin_loaded():
+def disable_package_control():
     """
-    Run bootstrapping once plugin is loaded
+    Disables Package Control
+
+    Disabling is executed with little delay to work around a ST core bug,
+    which causes `sublime.load_resource()` to fail when being called directly
+    by `plugin_loaded()` hook.
+    """
+
+    sublime.set_timeout(
+        lambda: PackageDisabler.disable_packages({PackageDisabler.DISABLE: 'Package Control'}),
+        10
+    )
+
+
+def bootstrap():
+    """
+    Bootstrap Package Control
 
     Bootstrapping is executed with little delay to work around a ST core bug,
     which causes `sublime.load_resource()` to fail when being called directly
     by `plugin_loaded()` hook.
     """
 
+    _install_injectors()
+
+    if not os.path.exists(LOADER_PACKAGE_PATH):
+        # Start shortly after Sublime starts so package renames don't cause errors
+        # with key bindings, settings, etc. disappearing in the middle of parsing
+        sublime.set_timeout(PackageCleanup().start, 2000)
+        return
+
     sublime.set_timeout(_bootstrap, 10)
 
 
 def _bootstrap():
-    if int(sublime.version()) < 3143:
-        PackageDisabler.disable_packages({PackageDisabler.DISABLE: "Package Control"})
-        return
-
-    _install_injectors()
-
-    if not os.path.exists(LOADER_PACKAGE_PATH):
-        _mark_bootstrapped()
-        return
-
     PackageDisabler.disable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
     # Give ST a second to disable 0_package_control_loader
-    sublime.set_timeout(lambda: Thread(target=_migrate_dependencies).start(), 1000)
-
-
-def _mark_bootstrapped():
-    """
-    Mark Package Control as successfully bootstrapped
-    """
-
-    pc_settings = sublime.load_settings(pc_settings_filename())
-
-    if pc_settings.get('bootstrapped') != 4:
-        pc_settings.set('bootstrapped', 4)
-        sublime.save_settings(pc_settings_filename())
+    sublime.set_timeout(Thread(target=_migrate_dependencies).start, 1000)
 
 
 def _migrate_dependencies():
@@ -111,7 +111,6 @@ def _migrate_dependencies():
         os.remove(LOADER_PACKAGE_PATH)
 
         def _reenable_loader():
-            _mark_bootstrapped()
             PackageDisabler.reenable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
             show_message(
                 '''

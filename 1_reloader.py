@@ -241,7 +241,8 @@ def _reload_submodules():
         '.commands',
 
         '.automatic_upgrader',
-        '.package_cleanup'
+        '.package_cleanup',
+        '.bootstrap'
     )
 
     mod_prefix = 'Package Control.package_control'

@@ -4,7 +4,7 @@ import sublime
 
 from .package_control import text, sys_path
 
-installed_dir, _ = __name__.split('.')
+installed_dir, _ = __name__.split('.', 1)
 
 package_path = os.path.join(sys_path.installed_packages_path(), 'Package Control.sublime-package')
 pc_python_path = os.path.join(sys_path.packages_path(), 'Package Control', 'Package Control.py')
@@ -23,6 +23,16 @@ if int(sublime.version()) < 3143:
         '''
     )
     sublime.error_message(message)
+
+    def plugin_loaded():
+        """
+        plugin loaded hook
+
+        Disable Package Control to avoid error message popping up again.
+        """
+
+        from .package_control.bootstrap import disable_package_control
+        disable_package_control()
 
 # Ensure the user has installed Package Control properly
 elif installed_dir != 'Package Control':
@@ -123,14 +133,13 @@ else:
         from .package_control.commands import *  # noqa
 
         def plugin_loaded():
-            from .package_control.package_cleanup import PackageCleanup
-            from .package_control.console_write import console_write
-            from .package_control.settings import pc_settings_filename
+            """
+            Run bootstrapping once plugin is loaded
 
-            pc_settings = sublime.load_settings(pc_settings_filename())
-            if pc_settings.get('bootstrapped') != 4:
-                console_write('Not running package clean-up since bootstrapping is not yet complete')
-            else:
-                # Start shortly after Sublime starts so package renames don't cause errors
-                # with key bindings, settings, etc. disappearing in the middle of parsing
-                sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
+            Bootstrapping is executed with little delay to work around a ST core bug,
+            which causes `sublime.load_resource()` to fail when being called directly
+            by `bootstrap()` hook.
+            """
+
+            from .package_control.bootstrap import bootstrap
+            bootstrap()
