@@ -84,51 +84,53 @@ elif has_packed and has_unpacked:
     )
     sublime.error_message(message)
 
-# Normal execution will finish setting up the package
 else:
-    from .package_control.commands import *  # noqa
-    from .package_control.package_cleanup import PackageCleanup
-    from .package_control.console_write import console_write
-    from .package_control.settings import pc_settings_filename
+    # Make sure the user's locale can handle non-ASCII. A whole bunch of
+    # work was done to try and make Package Control work even if the locale
+    # was poorly set, by manually encoding all file paths, but it ended up
+    # being a fool's errand since the package loading code built into
+    # Sublime Text is not written to work that way, and although packages
+    # could be installed, they could not be loaded properly.
+    try:
+        os.path.exists(os.path.join(sys_path.packages_path(), "fran\u2013ais"))
+    except (UnicodeEncodeError) as exception:
+        message = text.format(
+            '''
+            Package Control
 
-    def plugin_loaded():
-        # Make sure the user's locale can handle non-ASCII. A whole bunch of
-        # work was done to try and make Package Control work even if the locale
-        # was poorly set, by manually encoding all file paths, but it ended up
-        # being a fool's errand since the package loading code built into
-        # Sublime Text is not written to work that way, and although packages
-        # could be installed, they could not be loaded properly.
-        try:
-            os.path.exists(os.path.join(sys_path.packages_path(), "fran\u2013ais"))
-        except (UnicodeEncodeError):
-            message = text.format(
-                '''
-                Package Control
+            Your system's locale is set to a value that can not handle
+            non-ASCII characters. Package Control can not properly work
+            unless this is fixed.
 
-                Your system's locale is set to a value that can not handle
-                non-ASCII characters. Package Control can not properly work
-                unless this is fixed.
+            On Linux, please reference your distribution's docs for
+            information on properly setting the LANG and LC_CTYPE
+            environmental variables. As a temporary work-around, you can
+            launch Sublime Text from the terminal with:
 
-                On Linux, please reference your distribution's docs for
-                information on properly setting the LANG and LC_CTYPE
-                environmental variables. As a temporary work-around, you can
-                launch Sublime Text from the terminal with:
+              LANG=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 sublime_text
 
-                LANG=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 sublime_text
-                '''
-            )
-            sublime.error_message(message)
-            return
+            Error Details:
 
-        pc_settings = sublime.load_settings(pc_settings_filename())
+              %s
+            ''',
+            exception,
+            strip=False
+        )
+        sublime.error_message(message)
 
-        if pc_settings.get('bootstrapped') != 4:
-            console_write(
-                '''
-                Not running package clean-up since bootstrapping is not yet complete
-                '''
-            )
-        else:
-            # Start shortly after Sublime starts so package renames don't cause errors
-            # with key bindings, settings, etc. disappearing in the middle of parsing
-            sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
+    # Normal execution will finish setting up the package
+    else:
+        from .package_control.commands import *  # noqa
+
+        def plugin_loaded():
+            from .package_control.package_cleanup import PackageCleanup
+            from .package_control.console_write import console_write
+            from .package_control.settings import pc_settings_filename
+
+            pc_settings = sublime.load_settings(pc_settings_filename())
+            if pc_settings.get('bootstrapped') != 4:
+                console_write('Not running package clean-up since bootstrapping is not yet complete')
+            else:
+                # Start shortly after Sublime starts so package renames don't cause errors
+                # with key bindings, settings, etc. disappearing in the middle of parsing
+                sublime.set_timeout(lambda: PackageCleanup().start(), 2000)
