@@ -5,6 +5,7 @@ import time
 import traceback
 
 from . import sys_path, text, __version__
+from .activity_indicator import ActivityIndicator
 from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
 from .console_write import console_write
@@ -299,38 +300,54 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             return set()
 
         if self.manager.settings.get('auto_migrate', True):
-
             available_packages = set(self.manager.list_available_packages())
             migrate_packages = incompatible_packages & available_packages
             if migrate_packages:
-                console_write(
-                    'Migrating %s incompatible package%s...',
-                    (len(migrate_packages), 's' if len(migrate_packages) != 1 else '')
-                )
+                num_packages = len(migrate_packages)
+                if num_packages == 1:
+                    message = 'Migrating package {}'.format(list(migrate_packages)[0])
+                else:
+                    message = 'Migrating {} packages...'.format(num_packages)
+                    console_write(message)
 
-                reenable_packages = self.disable_packages({self.UPGRADE: migrate_packages})
-                time.sleep(0.7)
-
-                for package_name in sorted(migrate_packages, key=lambda s: s.lower()):
-
-                    try:
-                        console_write('Migrating package %s...', package_name)
-                        result = self.manager.install_package(package_name)
-
-                        # re-enable if upgrade is not deferred to next start
-                        if result is None and package_name in reenable_packages:
-                            reenable_packages.remove(package_name)
-
-                        # handle as compatible if update didn't explicitly fail
-                        if result is not False:
-                            incompatible_packages.remove(package_name)
-
-                    except Exception as e:
-                        traceback.print_tb(e.__traceback__)
-
-                if reenable_packages:
+                with ActivityIndicator(message) as progress:
+                    reenable_packages = self.disable_packages({self.UPGRADE: migrate_packages})
                     time.sleep(0.7)
-                    self.reenable_packages({self.UPGRADE: reenable_packages})
+
+                    num_success = 0
+
+                    for package_name in sorted(migrate_packages, key=lambda s: s.lower()):
+                        try:
+                            progress.set_label('Migrating package {}...'.format(package_name))
+                            result = self.manager.install_package(package_name)
+                            if result is True:
+                                num_success += 1
+
+                            # re-enable if upgrade is not deferred to next start
+                            if result is None and package_name in reenable_packages:
+                                reenable_packages.remove(package_name)
+
+                            # handle as compatible if update didn't explicitly fail
+                            if result is not False:
+                                incompatible_packages.remove(package_name)
+
+                        except Exception as e:
+                            traceback.print_tb(e.__traceback__)
+
+                    if num_packages == 1:
+                        message = 'Package {} successfully migrated'.format(list(migrate_packages)[0])
+                    elif num_packages == num_success:
+                        message = 'All packages successfully migrated'
+                        console_write(message)
+                    else:
+                        message = '{} of {} packages successfully migrated'.format(num_success, num_packages)
+                        console_write(message)
+
+                    if reenable_packages:
+                        time.sleep(0.7)
+                        self.reenable_packages({self.UPGRADE: reenable_packages})
+
+                    progress.finish(message)
 
         if incompatible_packages:
             self.remove_packages(incompatible_packages, package_kind='incompatible')
@@ -380,14 +397,18 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         if not missing_libraries:
             return
 
-        console_write(
-            'Installing %s missing librar%s...',
-            (len(missing_libraries), 'ies' if len(missing_libraries) != 1 else 'y')
-        )
+        num_libraries = len(missing_libraries)
+        if num_libraries == 1:
+            message = 'Installing library {}'.format(list(missing_libraries)[0])
+        else:
+            message = 'Installing {} libraries...'.format(num_libraries)
+            console_write(message)
 
-        for lib in missing_libraries:
-            if self.manager.install_library(lib):
-                self.updated_libraries = True
+        with ActivityIndicator(message) as progress:
+            for lib in missing_libraries:
+                progress.set_label('Installing library {}'.format(lib))
+                if self.manager.install_library(lib):
+                    self.updated_libraries = True
 
     def install_missing_packages(self, found_packages):
         """
@@ -451,6 +472,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         ))
 
         if orphaned_packages:
-            self.remove_packages(orphaned_packages, package_kind='orphaned')
+            with ActivityIndicator('Removing orphaned packages...') as progress:
+                self.remove_packages(orphaned_packages, package_kind='orphaned', progress=progress)
 
         return orphaned_packages

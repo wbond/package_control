@@ -8,6 +8,7 @@ import time
 import sublime
 
 from . import sys_path
+from .activity_indicator import ActivityIndicator
 from .console_write import console_write
 from .package_tasks import PackageTaskRunner
 
@@ -87,19 +88,21 @@ class AutomaticUpgrader:
 
         upgrader = PackageTaskRunner(self.manager)
 
-        # upgrade existing libraries
-        required_libraries = upgrader.manager.find_required_libraries()
-        missing_libraries = upgrader.manager.find_missing_libraries(required_libraries=required_libraries)
-        upgrader.manager.install_libraries(
-            libraries=required_libraries - missing_libraries,
-            fail_early=False
-        )
+        with ActivityIndicator('Searching updates...') as progress:
+            # upgrade existing libraries
+            required_libraries = upgrader.manager.find_required_libraries()
+            missing_libraries = upgrader.manager.find_missing_libraries(required_libraries=required_libraries)
+            upgrader.manager.install_libraries(
+                libraries=required_libraries - missing_libraries,
+                fail_early=False
+            )
 
-        # run updater synchronously to delay any "You must restart ST" dialogues
-        # Note: we are in PackageCleanup thread here
-        completed = upgrader.upgrade_packages(
-            ignore_packages=upgrader.manager.settings.get('auto_upgrade_ignore'),
-            unattended=True
-        )
-        if completed:
-            self.save_last_run()
+            # run updater synchronously to delay any "You must restart ST" dialogues
+            # Note: we are in PackageCleanup thread here
+            completed = upgrader.upgrade_packages(
+                ignore_packages=upgrader.manager.settings.get('auto_upgrade_ignore'),
+                unattended=True,
+                progress=progress
+            )
+            if completed:
+                self.save_last_run()
