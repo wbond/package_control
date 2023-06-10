@@ -21,7 +21,7 @@ class Library:
             raise TypeError("python_version must be a unicode string")
         if python_version not in sys_path.lib_paths():
             raise ValueError("python_version must be one of %s, not %r" % (
-                    list(sys_path.lib_paths().keys()), python_version)
+                list(sys_path.lib_paths().keys()), python_version)
             )
 
         self.name = name
