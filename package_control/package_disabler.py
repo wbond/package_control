@@ -434,7 +434,7 @@ class PackageDisabler:
         # packages can be disabled/installed and re-enabled without indexer restarting
         # for each one individually. Also we don't want to re-index while a syntax
         # package is being disabled for upgrade - just once after upgrade is finished.
-        if backup:
+        if backup and PackageDisabler.index_files is None:
             PackageDisabler.index_files = settings.get('index_files')
             settings.set('index_files', False)
 
