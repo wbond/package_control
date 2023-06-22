@@ -363,14 +363,6 @@ class PackageDisabler:
 
                 effected |= packages
 
-            save_list_setting(
-                settings,
-                preferences_filename(),
-                'ignored_packages',
-                ignored - effected,
-                ignored
-            )
-
             # always flush settings to disk
             # to make sure to also save updated `installed_packages`
             save_list_setting(
@@ -378,6 +370,14 @@ class PackageDisabler:
                 pc_settings_filename(),
                 'in_process_packages',
                 in_process - effected
+            )
+
+            save_list_setting(
+                settings,
+                preferences_filename(),
+                'ignored_packages',
+                ignored - effected,
+                ignored
             )
 
             # restore settings after installing missing packages or upgrades
