@@ -130,6 +130,14 @@ class PackageTaskRunner(PackageDisabler):
             An ``ActivityIndicator`` object to use for status information.
         """
 
+        if packages is not None:
+            if isinstance(packages, str):
+                packages = {packages}
+            elif not isinstance(packages, set):
+                if not isinstance(packages, (list, tuple)):
+                    raise TypeError("Argument 'packages' must be a string, list or set!")
+                packages = set(packages)
+
         tasks = self.create_package_tasks(
             actions=(self.INSTALL, self.OVERWRITE),
             include_packages=packages
@@ -183,10 +191,27 @@ class PackageTaskRunner(PackageDisabler):
             ``False``, if Package Control has been updated.
         """
 
+        if packages is not None:
+            if isinstance(packages, str):
+                packages = {packages}
+            elif not isinstance(packages, set):
+                if not isinstance(packages, (list, tuple)):
+                    raise TypeError("Argument 'packages' must be a string, list or set!")
+                packages = set(packages)
+
+        if ignore_packages is None:
+            ignore_packages = set()
+        elif isinstance(ignore_packages, str):
+            ignore_packages = {ignore_packages}
+        elif not isinstance(ignore_packages, set):
+            if not isinstance(ignore_packages, (list, tuple)):
+                raise TypeError("Argument 'ignore_packages' must be a string, list or set!")
+            ignore_packages = set(ignore_packages)
+
         tasks = self.create_package_tasks(
             actions=(self.PULL, self.UPGRADE),
             include_packages=packages,
-            ignore_packages=(ignore_packages or set()) | self.ignored_packages()  # don't upgrade disabled packages
+            ignore_packages=ignore_packages | self.ignored_packages()  # don't upgrade disabled packages
         )
         if tasks is False:
             message = 'There are no packages available for upgrade'
