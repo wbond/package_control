@@ -433,13 +433,24 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             found_packages=found_packages
         )
         if tasks:
-            self.run_install_tasks(tasks, package_kind='missing')
+            with ActivityIndicator('Installing missing packages...') as progress:
+                self.run_install_tasks(tasks, package_kind='missing', progress=progress)
 
         # Drop remaining missing packages, which seem no longer available upstream,
         # to avoid trying again and again each time ST starts.
         missing_packages = installed_packages - self.manager.list_packages()
         if missing_packages:
             self.manager.update_installed_packages(remove=missing_packages)
+            console_write('Dropped unavailable packages: ' + ', '.join(missing_packages))
+            show_message(
+                '''
+                The following packages are not available and have therefore been
+                removed from "installed_packages":
+
+                - %s
+                ''',
+                '\n- '.join(missing_packages)
+            )
 
     def remove_orphaned_packages(self, found_packages):
         """
