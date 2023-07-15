@@ -5,7 +5,10 @@ from threading import RLock
 
 import sublime
 
-from . import events
+# Relative import may not work here due to hard loading events
+# into global package_control (see bootstrap.py)!
+from package_control import events
+
 from .console_write import console_write
 from .package_io import package_file_exists, read_package_file
 from .settings import (

@@ -133,6 +133,7 @@ def _install_injectors():
 
     injector_code = R"""
         import os
+        import sys
         import zipfile
 
         import sublime_plugin
@@ -161,10 +162,18 @@ def _install_injectors():
             except (OSError, KeyError):
                 pass
 
+            # may be required before Package Control has been loaded
+            events = sys.modules.get('package_control.events')
+            if events is None:
+                events = __loader__.load_module("Package Control.package_control.events")
+                events.__name__ = 'package_control.events'
+                events.__package__ = 'package_control'
+                sys.modules['package_control.events'] = events
+
         elif os.path.exists(__pkg_path):
             from importlib.machinery import SourceFileLoader
 
-            __file_path = os.path.join(__pkg_path,  '__init__.py')
+            __file_path = os.path.join(__pkg_path, '__init__.py')
 
             __loader__ = SourceFileLoader('package_control', __file_path)
 
@@ -173,6 +182,14 @@ def _install_injectors():
                     __code = compile(__f.read(), '__init__.py', 'exec')
             except (OSError):
                 pass
+
+            # may be required before Package Control has been loaded
+            events = sys.modules.get('package_control.events')
+            if events is None:
+                events = SourceFileLoader('events', os.path.join(__pkg_path, 'events.py')).load_module()
+                events.__name__ = 'package_control.events'
+                events.__package__ = 'package_control'
+                sys.modules['package_control.events'] = events
 
             del globals()['SourceFileLoader']
 
@@ -191,6 +208,7 @@ def _install_injectors():
         del globals()['__data_path']
         del globals()['sublime_plugin']
         del globals()['zipfile']
+        del globals()['sys']
         del globals()['os']
 
         __data = {}
