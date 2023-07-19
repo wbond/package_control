@@ -444,8 +444,8 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             console_write('Dropped unavailable packages: ' + ', '.join(missing_packages))
             show_message(
                 '''
-                The following packages are not available and have therefore been
-                removed from "installed_packages":
+                The following packages are not available for this version of Sublime Text,
+                operating system or CPU architecture and have therefore not been installed:
 
                 - %s
                 ''',
