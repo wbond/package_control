@@ -123,14 +123,14 @@ class SemVer(namedtuple("_SemVer", 'major, minor, patch, prerelease, build')):
     """
 
     # Static class variables
-    _base_regex = r'''(?x)
+    _base_regex = r'''
         (?P<major>[0-9]+)
         \.(?P<minor>[0-9]+)
         \.(?P<patch>[0-9]+)
         (?:\-(?P<prerelease>(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?))?
         (?:\+(?P<build>(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?))?'''
-    _search_regex = re.compile(_base_regex)
-    _match_regex = re.compile('^%s$' % _base_regex)  # required because of $ anchor
+    _search_regex = re.compile(r'(?x)%s' % _base_regex)
+    _match_regex = re.compile(r'(?x)^%s$' % _base_regex)  # required because of $ anchor
 
     # "Constructor"
     def __new__(cls, *args, **kwargs):
