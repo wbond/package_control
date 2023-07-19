@@ -5,9 +5,13 @@ from threading import RLock
 
 import sublime
 
-# Relative import may not work here due to hard loading events
-# into global package_control (see bootstrap.py)!
-from package_control import events
+try:
+    # Relative import does not work here due to hard loading events
+    # into global package_control (see bootstrap.py)!
+    from package_control import events
+except ImportError:
+    # use relative import, if bootstrapping has not yet been completed
+    from . import events
 
 from .console_write import console_write
 from .package_io import package_file_exists, read_package_file
