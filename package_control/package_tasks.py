@@ -658,10 +658,13 @@ class PackageTaskRunner(PackageDisabler):
 
                 annotation = ''
                 if task.last_modified:
-                    annotation = datetime.strptime(
-                        task.last_modified,
-                        '%Y-%m-%d %H:%M:%S'
-                    ).strftime('Updated on %a %b %d, %Y')
+                    try:
+                        # strip time as it is not of interrest and to be permissive with repos,
+                        # which don't provide full timestamp.
+                        date, _ = task.last_modified.split(' ', 1)
+                        annotation = datetime.strptime(date, '%Y-%m-%d').strftime('Updated on %a %b %d, %Y')
+                    except ValueError:
+                        pass
 
                 items.append(sublime.QuickPanelItem(task.package_name, [description, final_line], annotation))
 
