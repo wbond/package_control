@@ -187,7 +187,7 @@ class GitHubClient(JSONApiClient):
             version, tag, tag_url = release
 
             if is_client:
-                timestamp = 0
+                timestamp = '1970-01-01 00:00:00'
             else:
                 tag_info = self.fetch_json(tag_url)
                 timestamp = tag_info['commit']['committer']['date'][0:19].replace('T', ' ')

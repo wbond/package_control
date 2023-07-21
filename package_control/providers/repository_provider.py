@@ -787,8 +787,9 @@ class RepositoryProvider(BaseRepositoryProvider):
                 # Extract a date from the newest release
                 date = '1970-01-01 00:00:00'
                 for release in info['releases']:
-                    if 'date' in release and release['date'] > date:
-                        date = release['date']
+                    release_date = release.get('date')
+                    if release_date and isinstance(release_date, str) and release_date > date:
+                        date = release_date
                 info['last_modified'] = date
 
             output[info['name']] = info
