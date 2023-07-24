@@ -22,6 +22,7 @@ from .settings import (
     save_list_setting
 )
 from .show_error import show_error
+from .sys_path import pc_cache_dir
 
 
 class PackageDisabler:
@@ -161,8 +162,6 @@ class PackageDisabler:
         <view_id>: "Packages/Text/Plain Text.tmLanguage"
     }
     """
-
-    index_files = None
 
     lock = RLock()
     restore_id = 0
@@ -441,9 +440,15 @@ class PackageDisabler:
         # packages can be disabled/installed and re-enabled without indexer restarting
         # for each one individually. Also we don't want to re-index while a syntax
         # package is being disabled for upgrade - just once after upgrade is finished.
-        if backup and PackageDisabler.index_files is None:
-            PackageDisabler.index_files = settings.get('index_files')
-            settings.set('index_files', False)
+        if backup:
+            try:
+                # note: uses persistent cookie to survive PC updates.
+                with open(os.path.join(pc_cache_dir(), 'backup.json'), 'x', encoding='utf-8') as fobj:
+                    json.dump({'index_files': settings.get('index_files')}, fobj)
+            except OSError:
+                pass
+            else:
+                settings.set('index_files', False)
 
         # Backup and reset global theme(s)
         for key, default_file in PackageDisabler.default_themes.items():
@@ -539,9 +544,21 @@ class PackageDisabler:
 
             try:
                 # restore indexing settings
-                if PackageDisabler.index_files is not None:
-                    settings.set('index_files', PackageDisabler.index_files)
-                    save_settings = True
+                fname = os.path.join(pc_cache_dir(), 'backup.json')
+                try:
+                    with open(fname, 'r', encoding='utf-8') as fobj:
+                        data = json.load(fobj)
+                        index_files = data.get('index_files')
+                        if isinstance(index_files, bool):
+                            settings.set('index_files', index_files)
+                            save_settings = True
+                except FileNotFoundError:
+                    pass
+                finally:
+                    try:
+                        os.remove(fname)
+                    except OSError:
+                        pass
 
                 # restore global theme
                 all_missing_theme_packages = set()
@@ -623,8 +640,6 @@ class PackageDisabler:
             finally:
                 if save_settings:
                     sublime.save_settings(preferences_filename())
-
-                PackageDisabler.index_files = None
 
                 PackageDisabler.color_scheme_packages = {}
                 PackageDisabler.theme_packages = {}
