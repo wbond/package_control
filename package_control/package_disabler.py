@@ -579,8 +579,8 @@ class PackageDisabler:
 
                            - %s
 
-                        As one of tem may contain the primary theme package,
-                        Sublime Text is configured to use the default theme.
+                        As one of them may contain the primary theme, Sublime Text is configured
+                        to use the default theme to prevent you ending up with a broken UI.
                         ''',
                         '\n   - '.join(sorted(all_missing_theme_packages, key=lambda s: s.lower()))
                     )
@@ -604,8 +604,8 @@ class PackageDisabler:
 
                            - %s
 
-                        As one of them may contain the primary color scheme,
-                        Sublime Text is configured to use the default color scheme.
+                        As one of them may contain the primary color scheme, Sublime Text is configured
+                        to use the default color scheme to prevent you ending up with a broken UI.
                         ''',
                         '\n   - '.join(sorted(all_missing_scheme_packages, key=lambda s: s.lower()))
                     )
