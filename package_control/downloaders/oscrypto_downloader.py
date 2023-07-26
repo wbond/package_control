@@ -36,10 +36,13 @@ if sys.version_info[:2] == (3, 8) and sys.platform == 'linux' and (
         'sublime_text' in sys.executable or
         'plugin_host' in sys.executable):
     install_dir = os.path.dirname(sys.executable)
-    use_openssl(
-        os.path.join(install_dir, 'libcrypto.so.1.1'),
-        os.path.join(install_dir, 'libssl.so.1.1')
-    )
+    try:
+        use_openssl(
+            os.path.join(install_dir, 'libcrypto.so.1.1'),
+            os.path.join(install_dir, 'libssl.so.1.1')
+        )
+    except RuntimeError:
+        pass  # runtime error may be raised, when reloading modules.
 
 from ..deps.oscrypto import tls  # noqa
 from ..deps.oscrypto import errors as oscrypto_errors  # noqa
