@@ -392,7 +392,7 @@ class PackageDisabler:
                 # re-enable packages, making errors less likely
                 PackageDisabler.restore_id += 1
                 sublime.set_timeout_async(functools.partial(
-                    PackageDisabler.restore_settings, PackageDisabler.restore_id), 1000)
+                    PackageDisabler.restore_settings, PackageDisabler.restore_id), 4000)
 
     @staticmethod
     def init_default_settings():
