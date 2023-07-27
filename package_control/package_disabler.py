@@ -443,12 +443,14 @@ class PackageDisabler:
         if backup:
             try:
                 # note: uses persistent cookie to survive PC updates.
-                with open(os.path.join(pc_cache_dir(), 'backup.json'), 'x', encoding='utf-8') as fobj:
-                    json.dump({'index_files': settings.get('index_files')}, fobj)
+                index_files = settings.get('index_files', True)
+                if index_files:
+                    with open(os.path.join(pc_cache_dir(), 'backup.json'), 'x', encoding='utf-8') as fobj:
+                        json.dump({'index_files': index_files}, fobj)
+                    settings.set('index_files', False)
+                    console_write('pausing indexer')
             except OSError:
                 pass
-            else:
-                settings.set('index_files', False)
 
         # Backup and reset global theme(s)
         for key, default_file in PackageDisabler.default_themes.items():
@@ -542,23 +544,25 @@ class PackageDisabler:
             settings = sublime.load_settings(preferences_filename())
             save_settings = False
 
+            backup_json = os.path.join(pc_cache_dir(), 'backup.json')
+
             try:
                 # restore indexing settings
-                fname = os.path.join(pc_cache_dir(), 'backup.json')
                 try:
-                    with open(fname, 'r', encoding='utf-8') as fobj:
-                        data = json.load(fobj)
-                        index_files = data.get('index_files')
-                        if isinstance(index_files, bool):
-                            settings.set('index_files', index_files)
+                    with open(backup_json, 'r', encoding='utf-8') as fobj:
+                        if json.load(fobj).get('index_files') is True:
+                            settings.set('index_files', True)
                             save_settings = True
+                            console_write('resuming indexer')
                 except FileNotFoundError:
                     pass
-                finally:
-                    try:
-                        os.remove(fname)
-                    except OSError:
-                        pass
+                except Exception as e:
+                    console_write('failed to resume indexer! %s', e)
+
+                try:
+                    os.remove(backup_json)
+                except OSError:
+                    pass
 
                 # restore global theme
                 all_missing_theme_packages = set()
