@@ -441,16 +441,16 @@ class PackageDisabler:
         # for each one individually. Also we don't want to re-index while a syntax
         # package is being disabled for upgrade - just once after upgrade is finished.
         if backup:
-            try:
-                # note: uses persistent cookie to survive PC updates.
-                index_files = settings.get('index_files', True)
-                if index_files:
+            index_files = settings.get('index_files', True)
+            if index_files:
+                try:
+                    # note: uses persistent cookie to survive PC updates.
                     with open(os.path.join(pc_cache_dir(), 'backup.json'), 'x', encoding='utf-8') as fobj:
                         json.dump({'index_files': index_files}, fobj)
                     settings.set('index_files', False)
                     console_write('pausing indexer')
-            except OSError:
-                pass
+                except OSError:
+                    pass
 
         # Backup and reset global theme(s)
         for key, default_file in PackageDisabler.default_themes.items():
