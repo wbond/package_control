@@ -2230,26 +2230,29 @@ class PackageManager:
             output = '\n\n%s\n%s\n' % (package_name, '-' * len(package_name)) + output
 
         def print_to_panel():
-            window = sublime.active_window()
-
-            views = window.views()
+            window = None
             view = None
-            for _view in views:
-                if _view.name() == 'Package Control Messages':
-                    view = _view
-                    break
 
-            if not view:
+            for _window in sublime.windows():
+                for _view in _window.views():
+                    if _view.name() == 'Package Control Messages':
+                        window = _window
+                        view = _view
+                        break
+
+            if view is None:
+                window = sublime.active_window()
+                if not window:
+                    window = sublime.windows()[0]
                 view = window.new_file()
+                window.set_view_index(view, 0, 0)
                 view.set_name('Package Control Messages')
                 view.set_scratch(True)
                 view.settings().set("word_wrap", True)
                 view.settings().set("auto_indent", False)
                 view.settings().set("tab_width", 2)
-            else:
-                view.set_read_only(False)
-                if window.active_view() != view:
-                    window.focus_view(view)
+                
+            view.set_read_only(False)
 
             def write(string):
                 view.run_command('insert', {'characters': string})
