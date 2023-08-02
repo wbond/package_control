@@ -2243,8 +2243,15 @@ class PackageManager:
             window = sublime.active_window()
             if not window:
                 window = sublime.windows()[0]
+
+            active_view = window.active_view()
+
             view = window.new_file()
             window.set_view_index(view, 0, 0)
+
+            if active_view:
+                window.focus_view(active_view)
+
             view.set_name('Package Control Messages')
             view.set_scratch(True)
             settings = view.settings()
