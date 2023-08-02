@@ -17,7 +17,7 @@ from urllib.parse import urlencode
 import sublime
 
 from . import __version__
-from . import library, pep440, sys_path, text
+from . import library, pep440, sys_path
 from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings, set_cache_under_settings
 from .clear_directory import clear_directory, delete_directory
 from .clients.client_exception import ClientException
@@ -2229,62 +2229,32 @@ class PackageManager:
         else:
             output = '\n\n%s\n%s\n' % (package_name, '-' * len(package_name)) + output
 
-        def print_to_panel():
-            window = None
-            view = None
+        window = None
+        view = None
 
-            for _window in sublime.windows():
-                for _view in _window.views():
-                    if _view.name() == 'Package Control Messages':
-                        window = _window
-                        view = _view
-                        break
+        for _window in sublime.windows():
+            for _view in _window.views():
+                if _view.name() == 'Package Control Messages':
+                    window = _window
+                    view = _view
+                    break
 
-            if view is None:
-                window = sublime.active_window()
-                if not window:
-                    window = sublime.windows()[0]
-                view = window.new_file()
-                window.set_view_index(view, 0, 0)
-                view.set_name('Package Control Messages')
-                view.set_scratch(True)
-                view.settings().set("word_wrap", True)
-                view.settings().set("auto_indent", False)
-                view.settings().set("tab_width", 2)
-                
-            view.set_read_only(False)
+        if view is None:
+            window = sublime.active_window()
+            if not window:
+                window = sublime.windows()[0]
+            view = window.new_file()
+            window.set_view_index(view, 0, 0)
+            view.set_name('Package Control Messages')
+            view.set_scratch(True)
+            settings = view.settings()
+            settings.set("auto_complete", False)
+            settings.set("auto_indent", False)
+            settings.set("gutter", False)
+            settings.set("tab_width", 2)
+            settings.set("word_wrap", True)
 
-            def write(string):
-                view.run_command('insert', {'characters': string})
-
-            old_sel = list(view.sel())
-            old_vpos = view.viewport_position()
-
-            size = view.size()
-            view.sel().clear()
-            view.sel().add(sublime.Region(size, size))
-
-            if not view.size():
-                write(text.format(
-                    '''
-                    Package Control Messages
-                    ========================
-                    '''
-                ))
-            write(output)
-
-            # Move caret to the new end of the file if it was previously
-            if sublime.Region(size, size) == old_sel[-1]:
-                old_sel[-1] = sublime.Region(view.size(), view.size())
-
-            view.sel().clear()
-            for reg in old_sel:
-                view.sel().add(reg)
-
-            view.set_viewport_position(old_vpos, False)
-            view.set_read_only(True)
-
-        sublime.set_timeout(print_to_panel, 1)
+        view.run_command('package_control_message', {'message': output})
 
     def record_usage(self, params):
         """
