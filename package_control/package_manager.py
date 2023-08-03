@@ -1449,7 +1449,7 @@ class PackageManager:
             )
             return True
 
-    def install_package(self, package_name):
+    def install_package(self, package_name, unattended=False):
         """
         Downloads and installs (or upgrades) a package
 
@@ -1467,6 +1467,9 @@ class PackageManager:
 
         :param package_name:
             The package to download and install
+
+        :param unattended:
+            If ``True`` suppress message dialogs and don't focus "Package Control Messages".
 
         :return: bool if the package was successfully installed or None
                  if the package needs to be cleaned up on the next restart
@@ -1743,7 +1746,7 @@ class PackageManager:
 
             new_version = release['version']
 
-            self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version)
+            self.print_messages(package_name, package_dir, is_upgrade, old_version, new_version, unattended)
 
             with open(package_metadata_file, 'w', encoding='utf-8') as fobj:
                 now = time.time()
@@ -2138,7 +2141,7 @@ class PackageManager:
             except ValueError:
                 continue
 
-    def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version):
+    def print_messages(self, package_name, package_dir, is_upgrade, old_version, new_version, unattended):
         """
         Prints out package install and upgrade messages
 
@@ -2160,6 +2163,9 @@ class PackageManager:
 
         :param new_version:
             The new (string) version of the package
+
+        :param unattended:
+            If ``True`` don't focus "Package Control Messages".
         """
 
         try:
@@ -2249,7 +2255,7 @@ class PackageManager:
             view = window.new_file()
             window.set_view_index(view, 0, 0)
 
-            if active_view:
+            if unattended and active_view:
                 window.focus_view(active_view)
 
             view.set_name('Package Control Messages')

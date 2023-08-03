@@ -124,7 +124,7 @@ class PackageTaskRunner(PackageDisabler):
             A list or set of unicode strings with package names to install.
 
         :param unattended:
-            If ``True`` suppress message dialogs.
+            If ``True`` suppress message dialogs and don't focus "Package Control Messages".
 
         :param progress:
             An ``ActivityIndicator`` object to use for status information.
@@ -167,7 +167,7 @@ class PackageTaskRunner(PackageDisabler):
                 show_message(message)
             return
 
-        return self.run_install_tasks(tasks, progress)
+        return self.run_install_tasks(tasks, progress, unattended)
 
     def upgrade_packages(self, packages=None, ignore_packages=None, unattended=False, progress=None):
         """
@@ -181,7 +181,7 @@ class PackageTaskRunner(PackageDisabler):
             A list or set of unicode strings with package names to exclude from updating.
 
         :param unattended:
-            If ``True`` suppress message dialogs.
+            If ``True`` suppress message dialogs and don't focus "Package Control Messages".
 
         :param progress:
             An ``ActivityIndicator`` object to use for status information.
@@ -238,7 +238,7 @@ class PackageTaskRunner(PackageDisabler):
                 show_message(message)
             return True
 
-        return self.run_upgrade_tasks(tasks, progress)
+        return self.run_upgrade_tasks(tasks, progress, unattended)
 
     def remove_packages(self, packages, progress=None, package_kind=''):
         """
@@ -312,12 +312,15 @@ class PackageTaskRunner(PackageDisabler):
             time.sleep(0.7)
             self.reenable_packages({self.REMOVE: packages - deferred})
 
-    def satisfy_packages(self, progress=None):
+    def satisfy_packages(self, progress=None, unattended=False):
         """
         Install missing and remove orphaned packages.
 
         :param progress:
             An ``ActivityIndicator`` object to use for status information.
+
+        :param unattended:
+            If ``True`` suppress message dialogs and don't focus "Package Control Messages".
         """
 
         installed_packages = self.manager.installed_packages()
@@ -331,7 +334,7 @@ class PackageTaskRunner(PackageDisabler):
         )
 
         if tasks:
-            self.run_install_tasks(tasks, progress, package_kind='missing')
+            self.run_install_tasks(tasks, progress, unattended, package_kind='missing')
 
         # find all managed orphaned packages
         orphaned_packages = set(filter(self.manager.is_managed, found_packages - installed_packages))
@@ -343,7 +346,7 @@ class PackageTaskRunner(PackageDisabler):
         if progress:
             progress.finish(message)
 
-    def run_install_tasks(self, tasks, progress=None, package_kind=''):
+    def run_install_tasks(self, tasks, progress=None, unattended=False, package_kind=''):
         """
         Execute specified package install tasks
 
@@ -352,6 +355,9 @@ class PackageTaskRunner(PackageDisabler):
 
         :param progress:
             An ``ActivityIndicator`` object to use for status information.
+
+        :param unattended:
+            If ``True`` suppress message dialogs and don't focus "Package Control Messages".
 
         :param package_kind:
             A unicode string with an additional package attribute.
@@ -382,7 +388,7 @@ class PackageTaskRunner(PackageDisabler):
             for task in tasks:
                 if progress:
                     progress.set_label('Installing {}package {}'.format(package_kind, task.package_name))
-                result = self.manager.install_package(task.package_name)
+                result = self.manager.install_package(task.package_name, unattended)
                 if result is True:
                     num_success += 1
                 # do not re-enable package if operation is deferred to next start
@@ -406,7 +412,7 @@ class PackageTaskRunner(PackageDisabler):
             time.sleep(0.7)
             self.reenable_packages({self.INSTALL: package_names})
 
-    def run_upgrade_tasks(self, tasks, progress=None):
+    def run_upgrade_tasks(self, tasks, progress=None, unattended=False):
         """
         Execute specified package update tasks
 
@@ -415,6 +421,9 @@ class PackageTaskRunner(PackageDisabler):
 
         :param progress:
             An ``ActivityIndicator`` object to use for status information.
+
+        :param unattended:
+            If ``True`` suppress message dialogs and don't focus "Package Control Messages".
 
         :return:
             ``True``, if upgrade was completed.
@@ -466,7 +475,7 @@ class PackageTaskRunner(PackageDisabler):
                 package = task.package_name
                 if progress:
                     progress.set_label('Upgrading package {}'.format(task.package_name))
-                result = self.manager.install_package(package)
+                result = self.manager.install_package(package, unattended)
                 if result is True:
                     num_success += 1
                 # do not re-enable package if operation is deferred to next start

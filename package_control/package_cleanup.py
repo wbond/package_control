@@ -251,7 +251,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                         package_name
                     )
 
-                elif not self.manager.install_package(package_name):
+                elif not self.manager.install_package(package_name, unattended=True):
                     create_empty_file(reinstall_file)
 
             # Convert unpacked managed package into unmanaged package,
@@ -319,7 +319,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                     for package_name in sorted(migrate_packages, key=lambda s: s.lower()):
                         try:
                             progress.set_label('Migrating package {}...'.format(package_name))
-                            result = self.manager.install_package(package_name)
+                            result = self.manager.install_package(package_name, unattended=True)
                             if result is True:
                                 num_success += 1
 
@@ -434,7 +434,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         )
         if tasks:
             with ActivityIndicator('Installing missing packages...') as progress:
-                self.run_install_tasks(tasks, package_kind='missing', progress=progress)
+                self.run_install_tasks(tasks, progress, unattended=True, package_kind='missing')
 
         # Drop remaining missing packages, which seem no longer available upstream,
         # to avoid trying again and again each time ST starts.
