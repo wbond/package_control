@@ -544,25 +544,9 @@ class PackageDisabler:
             settings = sublime.load_settings(preferences_filename())
             save_settings = False
 
-            backup_json = os.path.join(pc_cache_dir(), 'backup.json')
-
             try:
                 # restore indexing settings
-                try:
-                    with open(backup_json, 'r', encoding='utf-8') as fobj:
-                        if json.load(fobj).get('index_files') is True:
-                            settings.set('index_files', True)
-                            save_settings = True
-                            console_write('resuming indexer')
-                except FileNotFoundError:
-                    pass
-                except Exception as e:
-                    console_write('failed to resume indexer! %s', e)
-
-                try:
-                    os.remove(backup_json)
-                except OSError:
-                    pass
+                save_settings = PackageDisabler.resume_indexer(False)
 
                 # restore global theme
                 all_missing_theme_packages = set()
@@ -655,6 +639,32 @@ class PackageDisabler:
                 PackageDisabler.view_syntaxes = {}
 
                 PackageDisabler.restore_id = 0
+
+    @staticmethod
+    def resume_indexer(persist=True):
+        result = False
+        backup_json = os.path.join(pc_cache_dir(), 'backup.json')
+        try:
+            with open(backup_json, 'r', encoding='utf-8') as fobj:
+                if json.load(fobj).get('index_files') is True:
+                    settings_file = preferences_filename()
+                    settings = sublime.load_settings(settings_file)
+                    settings.set('index_files', True)
+                    if persist:
+                        sublime.save_settings(settings_file)
+                    console_write('resuming indexer')
+                    result = True
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            console_write('failed to resume indexer! %s', e)
+
+        try:
+            os.remove(backup_json)
+        except OSError:
+            pass
+
+        return result
 
 
 def resource_exists(path):

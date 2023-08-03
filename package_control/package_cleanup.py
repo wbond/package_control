@@ -105,6 +105,10 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         if self.manager.settings.get('auto_upgrade'):
             AutomaticUpgrader(self.manager).run()
 
+        # make sure to restore indexing state
+        # note: required after Package Control upgrade
+        self.resume_indexer()
+
         if self.failed_cleanup:
             show_error(
                 '''
