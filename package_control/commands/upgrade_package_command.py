@@ -5,7 +5,7 @@ import sublime_plugin
 
 from ..activity_indicator import ActivityIndicator
 from ..console_write import console_write
-from ..package_tasks import PackageTaskRunner
+from ..package_tasks import USE_QUICK_PANEL_ITEM, PackageTaskRunner
 from ..show_error import show_message
 
 
@@ -59,12 +59,19 @@ class UpgradePackageCommand(sublime_plugin.ApplicationCommand):
                     args=[[tasks[picked - 1]] if picked > 0 else tasks]
                 ).start()
 
-            items = [
-                sublime.QuickPanelItem(
+            items = upgrader.render_quick_panel_items(tasks)
+
+            if USE_QUICK_PANEL_ITEM:
+                items.insert(0, sublime.QuickPanelItem(
                     "Upgrade All Packages",
                     "Use this command to install all available upgrades."
-                )
-            ] + upgrader.render_quick_panel_items(tasks)
+                ))
+            else:
+                items.insert(0, [
+                    "Upgrade All Packages",
+                    "Use this command to install all available upgrades.",
+                    ""
+                ])
 
             sublime.active_window().show_quick_panel(
                 items,
