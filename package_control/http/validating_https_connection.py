@@ -90,7 +90,7 @@ try:
         if not hasattr(DebuggableHTTPConnection, '_set_hostport'):
 
             def _set_hostport(self, host, port):
-                (self.host, self.port) = self._get_hostport(self.host, self.port)
+                (self.host, self.port) = self._get_hostport(host, port)
                 self._validate_host(self.host)
 
         def _tunnel(self):
