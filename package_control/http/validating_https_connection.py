@@ -85,6 +85,14 @@ try:
                     return True
             return False
 
+        # Compatibility for python 3.3 vs 3.8
+        #   python 3.8 replaced _set_hostport() by _get_hostport()
+        if not hasattr(DebuggableHTTPConnection, '_set_hostport'):
+
+            def _set_hostport(self, host, port):
+                (self.host, self.port) = self._get_hostport(self.host, self.port)
+                self._validate_host(self.host)
+
         def _tunnel(self):
             """
             This custom _tunnel method allows us to read and print the debug
