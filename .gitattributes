@@ -8,3 +8,6 @@
 /dev/ export-ignore
 .travis.yml export-ignore
 tox.ini export-ignore
+
+# example files
+/example-*.json
