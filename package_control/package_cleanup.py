@@ -410,7 +410,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         with ActivityIndicator(message) as progress:
             for lib in missing_libraries:
-                progress.set_label('Installing library {}'.format(lib))
+                progress.set_label('Installing library {}'.format(lib.name))
                 if self.manager.install_library(lib):
                     self.updated_libraries = True
 
