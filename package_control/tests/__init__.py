@@ -1,44 +1,55 @@
 import threading
 import unittest
 
-from . import clients, distinfo, downloaders, providers, library, selectors, package_version
+from . import (
+    clients,
+    distinfo,
+    downloaders,
+    package_version,
+    pep440_specifier,
+    pep440_version,
+    pep508_marker,
+    providers,
+    selectors,
+)
 
 
 TEST_CLASSES = [
-    package_version.PackageVersionTests,
-    downloaders.ResolveUrlTests,
+    clients.BitBucketClientTests,
+    clients.GitHubClientTests,
+    clients.GitLabClientTests,
+    distinfo.DistinfoTests,
     downloaders.CurlDownloaderTests,
     downloaders.OscryptoDownloaderTests,
+    downloaders.ResolveUrlTests,
     downloaders.UrlLibDownloaderTests,
     downloaders.WgetDownloaderTests,
     downloaders.WinINetDownloaderTests,
-    clients.GitHubClientTests,
-    clients.GitLabClientTests,
-    clients.BitBucketClientTests,
-    providers.GitHubRepositoryProviderTests,
+    package_version.PackageVersionTests,
+    pep440_specifier.PEP440VersionSpecifierTests,
+    pep440_version.PEP440VersionTests,
+    pep508_marker.PEP508MarkerTests,
     providers.BitBucketRepositoryProviderTests,
+    providers.ChannelProviderTests,
+    providers.GitHubRepositoryProviderTests,
     providers.GitHubUserProviderTests,
     providers.GitLabRepositoryProviderTests,
     providers.GitLabUserProviderTests,
     providers.RepositoryProviderTests,
-    providers.ChannelProviderTests,
     selectors.PlatformSelectorTests,
     selectors.VersionSelectorTests,
-    distinfo.DistinfoTests,
-    library.LibraryTests
 ]
 
 
 class OutputPanel:
-
     def __init__(self, window):
-        self.panel = window.get_output_panel('package_control_tests')
-        self.panel.settings().set('word_wrap', True)
-        self.panel.settings().set('scroll_past_end', False)
-        window.run_command("show_panel", {"panel": 'output.package_control_tests'})
+        self.panel = window.get_output_panel("package_control_tests")
+        self.panel.settings().set("word_wrap", True)
+        self.panel.settings().set("scroll_past_end", False)
+        window.run_command("show_panel", {"panel": "output.package_control_tests"})
 
     def write(self, data):
-        self.panel.run_command('package_control_insert', {'string': data})
+        self.panel.run_command("package_control_insert", {"string": data})
 
     def get(self):
         pass
@@ -65,7 +76,7 @@ class TestRunner(threading.Thread):
         window, test_classes = self._args
 
         output = OutputPanel(window)
-        output.write('Running Package Control Tests\n\n')
+        output.write("Running Package Control Tests\n\n")
 
         if not isinstance(test_classes, list) and not isinstance(test_classes, tuple):
             test_classes = [test_classes]

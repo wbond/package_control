@@ -572,10 +572,10 @@ class DistInfoDir:
         if not version_specifier:
             return
 
-        specifiers = version_specifier.split(",")
-        for specifier_str in specifiers:
-            specifier = pep440.pep440_version_specifier(specifier_str)
-            if not specifier.check(python_version):
+        python_version = pep440.PEP440Version(python_version)
+
+        for specifier in version_specifier.split(","):
+            if not pep440.check_version(specifier, python_version):
                 raise EnvironmentError(
                     "The library %s is not compatible with Python %r", (metadata["name"], python_version)
                 )

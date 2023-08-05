@@ -56,8 +56,13 @@ def data_decorator(cls):
         func = getattr(cls, name)
         if hasattr(func, '_provider_method'):
             num = 1
-            for params in getattr(cls, func._provider_method)():
-                generate_test_func(name, func, num, params)
-                num += 1
+            if isinstance(func._provider_method, (list, tuple)):
+                for params in func._provider_method:
+                    generate_test_func(name, func, num, params)
+                    num += 1
+            else:
+                for params in getattr(cls, func._provider_method)():
+                    generate_test_func(name, func, num, params)
+                    num += 1
 
     return cls
