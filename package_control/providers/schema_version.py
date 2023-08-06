@@ -1,11 +1,10 @@
-from ..deps.semver import SemVer
+from ..pep440 import PEP440Version
 
 
-class SchemaVersion(SemVer):
+class SchemaVersion(PEP440Version):
     supported_versions = ('2.0', '3.0.0', '4.0.0')
 
-    @classmethod
-    def _parse(cls, ver):
+    def __init__(self, ver):
         """
         Custom version string parsing to maintain backward compatibility.
 
@@ -25,13 +24,10 @@ class SchemaVersion(SemVer):
         except ValueError:
             raise ValueError('the "schema_version" is not a valid number.')
 
-        if ver not in cls.supported_versions:
+        if ver not in self.supported_versions:
             raise ValueError(
                 'the "schema_version" is not recognized. Must be one of: %s or %s.'
-                % (', '.join(cls.supported_versions[:-1]), cls.supported_versions[-1])
+                % (', '.join(self.supported_versions[:-1]), self.supported_versions[-1])
             )
 
-        if ver.count('.') == 1:
-            ver += '.0'
-
-        return SemVer._parse(ver)
+        super().__init__(ver)
