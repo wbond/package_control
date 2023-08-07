@@ -196,7 +196,7 @@ class GitLabClient(JSONApiClient):
 
             output.append(self._make_download_info(user_name, repo_name, tag, str(version), timestamp))
 
-            num_releases += not version.prerelease
+            num_releases += version.is_final
             if max_releases > 0 and num_releases >= max_releases:
                 break
 

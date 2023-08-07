@@ -1,102 +1,56 @@
 import unittest
 
-from ..package_version import PackageVersion, SemVer
+from ..package_version import PackageVersion, PEP440Version
+from ._data_decorator import data_decorator, data
 
 
+@data_decorator
 class PackageVersionTests(unittest.TestCase):
-
-    def test_package_version_from_major(self):
-        self.assertEqual(
-            SemVer(1, 0, 0, None, None),
-            PackageVersion('1')
+    @data(
+        (
+            ("1.0.0", "1"),
+            ("1.0.0", "1.0"),
+            ("1.2.0", "1.2"),
+            ("1.0.0", "1.0.0"),
+            ("1.0.0", "1.0.0.0"),
+            ("1.2.3.4", "1.2.3.4"),
+            # pep440 compliant pre-releases
+            ("1.2.3-rc1", "1.2.3-rc1"),
+            # pep440 incompatible semver releases
+            ("1.2.3-dev", "1.2.3-development"),
+            ("1.2.3-pre", "1.2.3-prerelease"),
+            ("1.4.1-dev+foo", "1.4.1-foo"),
+            ("1.4.1-dev+anypre.5", "1.4.1-anypre.5"),
+            # convert datebased release to pep440 local version
+            ("0.0.1+2020.07.15.10.50.38", "2020.07.15.10.50.38"),
         )
+    )
+    def equal(self, a, b):
+        va = PEP440Version(a)
+        vb = PackageVersion(b)
+        self.assertEqual(va, vb)
 
-    def test_package_version_from_major_minor(self):
-        self.assertEqual(
-            SemVer(1, 2, 0, None, None),
-            PackageVersion('1.2')
+    @data(
+        (
+            ("1.0.0-rc10", "1.0.0-rc9"),
+            ("1.0.0-rc1", "1.0.0-beta29"),
+            ("1.0.0-dev20", "1.0.0-dev2"),
+            ("1.0.0-dev.200", "1.0.0-dev.20"),
+            ("1.0.0", "1.0.0-pre"),
+            ("1.0.0-rev1", "1.0.0"),
         )
+    )
+    def greater(self, a, b):
+        va = PEP440Version(a)
+        vb = PackageVersion(b)
+        self.assertGreater(va, vb)
 
-    def test_package_version_from_major_minor_patch(self):
-        self.assertEqual(
-            SemVer(1, 2, 3, None, None),
-            PackageVersion('1.2.3')
-        )
-
-    def test_package_version_from_major_minor_patch_pre(self):
-        self.assertEqual(
-            SemVer(1, 2, 3, 'pre', None),
-            PackageVersion('1.2.3-pre')
-        )
-
-    def test_package_version_from_major_minor_patch_rc1(self):
-        self.assertEqual(
-            SemVer(1, 2, 3, 'rc1', None),
-            PackageVersion('1.2.3-rc1')
-        )
-
-    def test_package_version_from_major_minor_patch_build(self):
-        self.assertEqual(
-            SemVer(1, 2, 3, None, '4'),
-            PackageVersion('1.2.3.4')
-        )
-
-    def test_package_version_from_timestamp(self):
-        self.assertEqual(
-            SemVer(0, 0, 1, None, '2020.07.15.10.50.38'),
-            PackageVersion('2020.07.15.10.50.38')
-        )
-
-    def test_package_version_from_semver(self):
-        self.assertEqual(
-            SemVer(1, 2, 3, None, None),
-            PackageVersion(SemVer(1, 2, 3, None, None))
-        )
-
-    def test_package_version_from_release(self):
-        self.assertEqual(
-            SemVer(1, 2, 3, None, None),
-            PackageVersion({
-                'version': '1.2.3',
-                'platforms': ['*'],
-                'sublime_text': '*',
-                'url': 'https://gitlab.com/packagecontrol-test/'
-                       'package_control-tester/-/archive/master/package_control-tester-master.zip'
-            })
-        )
-
-    def test_package_version_from_release_with_semver(self):
-        self.assertEqual(
-            SemVer(1, 2, 3, None, None),
-            PackageVersion({
-                'version': PackageVersion('1.2.3'),
-                'platforms': ['*'],
-                'sublime_text': '*',
-                'url': 'https://gitlab.com/packagecontrol-test/'
-                       'package_control-tester/-/archive/master/package_control-tester-master.zip'
-            })
-        )
-
-    def test_package_version_from_invalid_dict(self):
-        with self.assertRaises(TypeError) as cm:
-            PackageVersion({'foo': 'bar'})
-        self.assertEqual(
-            "{'foo': 'bar'} is not a package or library release",
-            str(cm.exception)
-        )
-
-    def test_package_version_from_invalid_number(self):
+    def test_invalid_number(self):
         with self.assertRaises(TypeError) as cm:
             PackageVersion(1.2)
-        self.assertEqual(
-            "1.2 is not a string",
-            str(cm.exception)
-        )
+        self.assertEqual("1.2 is not a string", str(cm.exception))
 
-    def test_package_version_from_invalid_string(self):
+    def test_invalid_string(self):
         with self.assertRaises(ValueError) as cm:
-            PackageVersion('foo')
-        self.assertEqual(
-            "'foo' is not a valid SemVer string",
-            str(cm.exception)
-        )
+            PackageVersion("foo")
+        self.assertEqual("'foo' is not a valid PEP440 version string", str(cm.exception))

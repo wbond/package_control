@@ -17,6 +17,9 @@ Instantiation for each object consists of only 2 main steps:
 2. convert match groups into nested tuple representation, as primary
    data storage and comparing key.
 
+The patterns include additional pre-release tag names
+(e.g: ``patch``, ``prerelease``, ``developmment``, ``test``)
+to maintain compatibility with various existing packages on packagecontrol.io
 """
 import re
 
@@ -186,7 +189,7 @@ class PEP440Version:
         (?P<release>[0-9]+(?:\.[0-9]+)*)                      # release segment
         (?P<pre>                                              # pre-release
             [-_.]?
-            (?P<pre_l>alpha|a|beta|b|preview|pre|c|rc)
+            (?P<pre_l>alpha|a|beta|b|prerelease|preview|pre|c|rc)
             [-_.]?
             (?P<pre_n>[0-9]+)?
         )?
@@ -195,14 +198,14 @@ class PEP440Version:
             |
             (?:
                 [-_.]?
-                (?P<post_l>post|rev|r)
+                (?P<post_l>patch|post|rev|r)
                 [-_.]?
                 (?P<post_n2>[0-9]+)?
             )
         )?
         (?P<dev>                                              # dev release
             [-_.]?
-            (?P<dev_l>dev)
+            (?P<dev_l>development|develop|devel|dev)
             [-_.]?
             (?P<dev_n>[0-9]+)?
         )?

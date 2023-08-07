@@ -408,7 +408,7 @@ class PackageManager:
             release for release in releases
             if is_compatible_platform(release['platforms'])
             and is_compatible_version(release['sublime_text'])
-            and (allow_prereleases or not PackageVersion(release['version']).prerelease)
+            and (allow_prereleases or PackageVersion(release['version']).is_final)
         ]
 
     def select_libraries(self, library_info):
@@ -2203,12 +2203,10 @@ class PackageManager:
                     )
 
         elif is_upgrade and old_version:
-            upgrade_messages = list(set(message_info.keys()) - set(['install']))
-            upgrade_messages = version_sort(upgrade_messages, reverse=True)
             old_version_cmp = PackageVersion(old_version)
             new_version_cmp = PackageVersion(new_version)
 
-            for version in upgrade_messages:
+            for version in version_sort(set(message_info) - {'install'}, reverse=True):
                 version_cmp = PackageVersion(version)
                 if version_cmp <= old_version_cmp:
                     break

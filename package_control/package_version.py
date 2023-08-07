@@ -1,55 +1,38 @@
 import re
 
-from .deps.semver import SemVer
 from .console_write import console_write
+from .pep440 import PEP440Version, PEP440InvalidVersionError
 
 
-class PackageVersion(SemVer):
+class PackageVersion(PEP440Version):
+    __slots__ = ["_str"]
 
-    _date_pattern = re.compile(r'^(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$')
-    _pre_semver_pattern = re.compile(r'^(\d+)(?:\.(\d+)(?:\.(\d+)(?:[T\.](\d+(\.\d+)*))?)?)?$')
+    _date_time_regex = re.compile(r"^\d{4}\.\d{2}\.\d{2}(?:\.\d{2}\.\d{2}\.\d{2})?$")
 
-    @classmethod
-    def _parse(cls, ver):
+    def __init__(self, ver):
         """
-        Converts a string version number into SemVer. If the version is based on
-        a date, converts to 0.0.1+yyyy.mm.dd.hh.mm.ss.
+        Initialize a ``PackageVersion`` instance.
+
+        The initializer acts as compatibility layer to convert legacy version schemes
+        into a ``PEP440Version``.
+
+        If the version is based on a date, converts to 0.0.1+yyyy.mm.dd.hh.mm.ss.
 
         :param ver:
             A string, dict with 'version' key, or a SemVer object
 
         :raises:
-            TypeError, if ver is not one of: str, dict with version, SemVer
+            TypeError, if ver is not a ``str``.
             ValueError, if ver is no valid version string
-
-        :return:
-            A list of 5 items representing a valid semantic version number
         """
-
-        # Allowing passing in a dict containing info about a package
-        if isinstance(ver, dict):
-            if 'version' not in ver:
-                raise TypeError("%s is not a package or library release" % ver)
-            ver = ver['version']
-
-        if isinstance(ver, SemVer):
-            return ver
 
         if not isinstance(ver, str):
             raise TypeError("%r is not a string" % ver)
 
-        # Trim v off of the front
-        if ver.startswith('v'):
-            ver = ver[1:]
-
-        # Match semver compatible strings
-        match = cls._match_regex.match(ver)
-        if match:
-            g = list(match.groups())
-            for i in range(3):
-                g[i] = int(g[i])
-
-            return g
+        # Store original version string to maintain backward compatibility
+        # with regards to not normalize it.
+        # The one and only use case is to keep existing CI tests working without change.
+        self._str = ver
 
         # We prepend 0 to all date-based version numbers so that developers
         # may switch to explicit versioning from GitHub/GitLab/BitBucket
@@ -61,23 +44,24 @@ class PackageVersion(SemVer):
         #
         # The result looks like:
         # 0.0.1+2020.07.15.10.50.38
-        match = cls._date_pattern.match(ver)
+        match = self._date_time_regex.match(ver)
         if match:
-            return [0, 0, 1, None, '.'.join(match.groups())]
+            ver = "0.0.1+" + ver
 
-        # This handles versions that were valid pre-semver with 1 to 4+ dotted
-        # groups, such as 1, 1.6, or 1.6.9.0
-        match = cls._pre_semver_pattern.match(ver)
-        if match:
-            return [
-                int(match.group(1) or 0),
-                int(match.group(2) or 0),
-                int(match.group(3) or 0),
-                None,
-                match.group(4)
-            ]
+        try:
+            super().__init__(ver)
+        except PEP440InvalidVersionError:
+            # maybe semver with incompatible pre-release tag
+            # if, so treat it as dev build with local version
+            if "-" in ver:
+                ver, pre = ver.split("-", 1)
+                if ver and pre:
+                    super().__init__(ver + "-dev+" + pre)
+                    return
+            raise
 
-        raise ValueError("'%s' is not a valid SemVer string" % ver)
+    def __str__(self):
+        return self._str
 
 
 def version_match_prefix(version, filter_prefix):
@@ -126,21 +110,25 @@ def version_sort(sortable, *fields, **kwargs):
     """
 
     def _version_sort_key(item):
-        result = PackageVersion(item)
-        if fields:
-            values = [result]
-            for field in fields:
-                values.append(item[field])
-            result = tuple(values)
-        return result
+        if isinstance(item, dict):
+            if "version" not in item:
+                raise TypeError("%s is not a package or library release" % item)
+            result = PackageVersion(item["version"])
+            if fields:
+                result = (result,)
+                for field in fields:
+                    result += (item[field],)
+            return result
+
+        return PackageVersion(item)
 
     try:
         return sorted(sortable, key=_version_sort_key, **kwargs)
-    except (ValueError) as e:
+    except ValueError as e:
         console_write(
-            '''
+            """
             Error sorting versions - %s
-            ''',
-            e
+            """,
+            e,
         )
         return []
