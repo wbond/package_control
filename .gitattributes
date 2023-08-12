@@ -10,4 +10,4 @@
 tox.ini export-ignore
 
 # example files
-/example-*.json
+/example-*.json export-ignore
