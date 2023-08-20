@@ -9,5 +9,8 @@
 .travis.yml export-ignore
 tox.ini export-ignore
 
+# unittests
+tests/ export-ignore
+
 # example files
 /example-*.json export-ignore
