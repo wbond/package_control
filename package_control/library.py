@@ -145,6 +145,10 @@ def convert_dependency(dependency_path, python_version, name, version, descripti
          - "st3"
          - "st3_{OS}"
          - "st3_{OS}_{ARCH}"
+         - "st4"
+         - "st4_{PY}"
+         - "st4_{PY}_{OS}"
+         - "st4_{PY}_{OS}_{ARCH}"
 
     :param python_version:
         A unicode string of "3.3" or "3.8"
@@ -162,28 +166,42 @@ def convert_dependency(dependency_path, python_version, name, version, descripti
         An optional unicode string of the homepage for the library
     """
 
-    ver = 'st3'
+    py = python_version.replace(".", "")
     plat = sublime.platform()
     arch = sublime.arch()
 
-    install_rel_paths = {
-        'all': 'all',
-        'ver': ver,
-        'plat': '%s_%s' % (ver, plat),
-        'arch': '%s_%s_%s' % (ver, plat, arch)
-    }
+    install_rel_paths = []
 
+    # include st4 dependencies on ST4, only
+    if int(sublime.version()) >= 4000:
+        install_rel_paths.append(('st4_arch', 'st4_py%s_%s_%s' % (py, plat, arch)))
+        install_rel_paths.append(('st4_plat', 'st4_py%s_%s' % (py, plat)))
+        install_rel_paths.append(('st4_py', 'st4_py%s' % py))
+        install_rel_paths.append(('st4', 'st4'))
+
+    # platform/arch specific st3 dependencies are most likely only compatible with python 3.3
+    if python_version == "3.3":
+        install_rel_paths.append(('st3_arch', 'st3_%s_%s' % (plat, arch)))
+        install_rel_paths.append(('st3_plat', 'st3_%s' % plat))
+
+    # commonly supported variants
+    install_rel_paths.append(('st3', 'st3'))
+    install_rel_paths.append(('all', 'all'))
+
+    # Find source paths
+    # 1. Begin with st4 and fallback to st3 dependencies.
+    # 2. Begin with most specific followed by more generic variants.
     src_dir = None
     plat_specific = False
-    for variant in ('arch', 'plat', 'ver', 'all'):
-        install_path = os.path.join(dependency_path, install_rel_paths[variant])
+    for variant, rel_path in install_rel_paths:
+        install_path = os.path.join(dependency_path, rel_path)
         if os.path.exists(install_path):
             src_dir = install_path
-            plat_specific = variant in ('arch', 'plat')
+            plat_specific = variant in ('st3_arch', 'st3_plat', 'st4_arch', 'st4_plat')
             break
 
     if not src_dir:
-        raise ValueError('Unrecognized source archive layout')
+        raise ValueError('Unrecognized or incompatible source archive layout')
 
     did_name = '%s-%s.dist-info' % (name, version)
     did = distinfo.DistInfoDir(src_dir, did_name)
