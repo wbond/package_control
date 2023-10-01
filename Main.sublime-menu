@@ -3,6 +3,7 @@
         "id": "tools",
         "children": [
             {
+                "caption": "Packages",
                 "id": "packages",
                 "children": [
                     {
