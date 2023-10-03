@@ -588,7 +588,7 @@
 										},
 										{
 											"type": "string",
-											"enum": ["linux", "osx", "windows"]
+											"enum": ["linux", "linux-arm64", "linux-x64", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64"]
 										}
 									]
 								},
