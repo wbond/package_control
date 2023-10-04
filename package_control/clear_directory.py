@@ -36,18 +36,21 @@ def clear_directory(directory, ignored_files=None):
     if sys_path.longpath(os.path.normcase(os.getcwd())).startswith(os.path.normcase(directory)):
         os.chdir(os.path.dirname(directory))
 
+    ignored_dirs = set()
     was_exception = False
+
     for root, dirs, files in os.walk(directory, topdown=False):
         try:
             for d in dirs:
-                os.rmdir(os.path.join(root, d))
+                path = os.path.join(root, d)
+                if path not in ignored_dirs:
+                    os.rmdir(path)
 
             for f in files:
                 path = os.path.join(root, f)
-                # Don't delete the metadata file, that way we have it
-                # when the reinstall happens, and the appropriate
-                # usage info can be sent back to the server
                 if ignored_files and path in ignored_files:
+                    # also ignore parent folder from being removed
+                    ignored_dirs.add(root)
                     continue
 
                 try:
