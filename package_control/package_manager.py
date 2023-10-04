@@ -1003,7 +1003,7 @@ class PackageManager:
 
         return sep.join(common) + sep if common else ''
 
-    def _extract_zip(self, name, zf, src_dir, dest_dir, extracted_dirs=None, extracted_files=None):
+    def _extract_zip(self, name, zf, src_dir, dest_dir, extracted_files=None):
         """
         Extracts a zip to a folder
 
@@ -1020,22 +1020,12 @@ class PackageManager:
         :param dest_dir:
             A unicode string of the destination directory
 
-        :param extracted_dirs:
-            A set of all of the dir paths extracted from the zip
-
         :param extracted_files:
             A set of all of the files paths extracted from the zip
 
         :return:
             A bool indication if the install should be retried
         """
-
-        def add_extracted_dirs(dir_):
-            while dir_ not in extracted_dirs:
-                extracted_dirs.add(dir_)
-                dir_ = os.path.dirname(dir_)
-                if dir_ == dest_dir:
-                    break
 
         is_win = os.name == 'nt'
 
@@ -1077,8 +1067,6 @@ class PackageManager:
                 )
 
             else:
-                if extracted_dirs is not None:
-                    add_extracted_dirs(parent)
                 if extracted_files is not None:
                     extracted_files.add(dest)
 
@@ -1620,16 +1608,13 @@ class PackageManager:
                 os.mkdir(package_dir)
 
             extracted_files = set()
-            extracted_dirs = set()
             should_retry = self._extract_zip(
                 package_name,
                 package_zip,
                 common_folder,
                 package_dir,
-                extracted_dirs,
                 extracted_files,
             )
-            extracted_paths = extracted_dirs | extracted_files
 
             package_zip.close()
             package_zip = None
@@ -1660,7 +1645,7 @@ class PackageManager:
             # upgrade, it should be cleaned out successfully then.
             # No need to handle symlink at this stage it was already removed
             # and we are not working with symlink here any more.
-            clear_directory(package_dir, extracted_paths)
+            clear_directory(package_dir, extracted_files)
 
             # Create .python-version file to opt-in to certain plugin_host.
             # It enables unmaintained packages/plugins to be opted-in to newer python version
