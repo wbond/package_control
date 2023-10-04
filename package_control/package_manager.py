@@ -1776,9 +1776,9 @@ class PackageManager:
                     return None
 
             if is_upgrade:
-                console_write('Upgraded %s to %s', (package_name, new_version))
+                console_write('Upgraded "%s" from %s to %s', (package_name, old_version, new_version))
             else:
-                console_write('Installed %s %s', (package_name, new_version))
+                console_write('Installed "%s" %s', (package_name, new_version))
 
             return True
 
