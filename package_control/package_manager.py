@@ -982,47 +982,38 @@ class PackageManager:
             a folder name is returned, it will end in "/".
         """
 
-        root_level_paths = []
-        last_path = None
-        for path in zf.namelist():
-            try:
-                if not isinstance(path, str):
-                    path = path.decode('utf-8', 'strict')
-            except (UnicodeDecodeError):
-                console_write(
-                    '''
-                    One or more of the zip file entries in "%s" is not
-                    encoded using UTF-8, aborting
-                    ''',
-                    name
-                )
-                return False
+        sep = '/'
+        curdir = '.'
+        unsafe = ('../', ':/', '..\\', ':\\')
 
-            last_path = path
+        split_paths = []
 
-            if path.find('/') in [len(path) - 1, -1]:
-                root_level_paths.append(path)
+        for info in zf.infolist():
+            path = info.filename
+
             # Make sure there are no paths that look like security vulnerabilities
-            if path[0] == '/' or path.find('../') != -1 or path.find('..\\') != -1:
+            if path[0] == '/' or any(p in path for p in unsafe):
                 console_write(
                     '''
-                    The zip file for "%s" contains files that traverse outside
-                    of the root and cannot be safely installed
+                    The archive for "%s" contains files that may traverse outside
+                    of package root and cannot be safely installed, aborting
                     ''',
                     name
                 )
                 return False
 
-        if last_path and len(root_level_paths) == 0:
-            root_level_paths.append(last_path[0:last_path.find('/') + 1])
+            split_paths.append(path.split(sep))
 
-        # If there is only a single directory at the top level, the file
-        # is most likely a zip from BitBucket or GitHub and we need
-        # to skip the top-level dir when extracting
-        if len(root_level_paths) == 1 and root_level_paths[0].endswith('/'):
-            return root_level_paths[0]
+        split_paths = [[c for c in s if c and c != curdir] for s in split_paths]
+        s1 = min(split_paths)
+        s2 = max(split_paths)
+        common = s1
+        for i, c in enumerate(s1):
+            if c != s2[i]:
+                common = s1[:i]
+                break
 
-        return ""
+        return sep.join(common) + sep if common else ''
 
     def _extract_zip(self, name, zf, dest_dir, extracted_dirs, extracted_files, common_folder):
         """
