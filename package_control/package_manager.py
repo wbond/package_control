@@ -689,13 +689,10 @@ class PackageManager:
         self._available_packages = packages
         self._available_libraries = libraries
 
-    def list_available_libraries(self, python_version):
+    def list_available_libraries(self):
         """
         Returns a master list of every available library from all sources that
         are compatible with the version of Python specified
-
-        :param python_version:
-            A unicode string of "3.3" or "3.8"
 
         :return:
             A dict in the format:
@@ -710,16 +707,7 @@ class PackageManager:
         if self._available_libraries is None:
             self.fetch_available()
 
-        filtered_libraries = {}
-        for name, info in self._available_libraries.items():
-            filtered_releases = [
-                release for release in info["releases"]
-                if python_version in release["python_versions"]
-            ]
-            if filtered_releases:
-                filtered_libraries[name] = info
-
-        return filtered_libraries
+        return self._available_libraries or {}
 
     def list_available_packages(self):
         """
@@ -1142,47 +1130,38 @@ class PackageManager:
 
         is_upgrade = installed_library is not None
 
-        available_libraries = self.list_available_libraries(lib.python_version)
-        try:
-            available_library = available_libraries[lib.name]
-        except (IndexError, KeyError):
-            if lib.name in self.settings.get('unavailable_libraries', []):
-                console_write(
+        release = None
+        available_version = None
+
+        available_library = self.list_available_libraries().get(lib.name)
+        if available_library:
+            for available_release in available_library['releases']:
+                if lib.python_version in available_release['python_versions']:
+                    # first found one is latest available
+                    release = available_release
+                    available_version = pep440.PEP440Version(release['version'])
+                    break
+
+        if available_version is None:
+            is_unavailable = lib.name in self.settings.get('unavailable_libraries', [])
+            if is_upgrade and is_unavailable:
+                message = '''
+                    The library "%s" is installed, but not available for python %s
+                    on this platform, or for this version of Sublime Text; leaving alone
                     '''
-                    The library "%s" is either not available on this platform,
-                    for Python %s, or for this version of Sublime Text
-                    ''',
-                    (lib.name, lib.python_version)
-                )
+            elif is_upgrade:
+                message = '''
+                    The library "%s" is installed, but not available for python %s; leaving alone
+                    '''
+            elif is_unavailable:
+                message = '''
+                    The library "%s" is not available for python %s on this platform,
+                    or this version of Sublime Text
+                    '''
             else:
-                console_write(
-                    'The library "%s" is not available for Python %s',
-                    (lib.name, lib.python_version)
-                )
-            return False
+                message = 'The library "%s" is not available for python %s'
 
-        try:
-            release = available_library['releases'][0]
-            available_version = pep440.PEP440Version(release['version'])
-        except (IndexError, KeyError):
-            if is_upgrade:
-                console_write(
-                    '''
-                    The library "%s" for Python %s is installed,
-                    but the latest available release
-                    could not be determined; leaving alone
-                    ''',
-                    (lib.name, lib.python_version)
-                )
-                return True
-
-            console_write(
-                '''
-                The latest available release of library "%s" for Python %s
-                could not be determined
-                ''',
-                (lib.name, lib.python_version)
-            )
+            console_write(message, (lib.name, lib.python_version))
             return False
 
         if is_upgrade:
@@ -1250,7 +1229,7 @@ class PackageManager:
             if should_retry:
                 return False
 
-            new_did_name = '%s-%s.dist-info' % (lib.name, release['version'])
+            new_did_name = '{}-{}.dist-info'.format(lib.name, available_version)
             temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
             if temp_did.has_wheel():
                 _, modified_ris = temp_did.verify_files()
@@ -1278,7 +1257,7 @@ class PackageManager:
                         tmp_library_dir,
                         lib.python_version,
                         lib.name,
-                        release['version'],
+                        available_version,
                         available_library.get('description'),
                         available_library.get('homepage')
                     )
@@ -1307,12 +1286,12 @@ class PackageManager:
 
             if is_upgrade:
                 console_write(
-                    'Upgraded library "%s" to %s for Python %s',
-                    (lib.name, release['version'], lib.python_version))
+                    'Upgraded library "%s" from %s to %s for Python %s',
+                    (lib.name, installed_version, available_version, lib.python_version))
             else:
                 console_write(
                     'Installed library "%s" %s for Python %s',
-                    (lib.name, release['version'], lib.python_version))
+                    (lib.name, available_version, lib.python_version))
 
             return True
 
