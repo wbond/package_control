@@ -1015,7 +1015,7 @@ class PackageManager:
 
         return sep.join(common) + sep if common else ''
 
-    def _extract_zip(self, name, zf, dest_dir, extracted_dirs, extracted_files, common_folder):
+    def _extract_zip(self, name, zf, src_dir, dest_dir, extracted_dirs, extracted_files):
         """
         Extracts a zip to a folder
 
@@ -1024,6 +1024,10 @@ class PackageManager:
 
         :param zf:
             A zipfile instance to extract
+
+        :param src_dir:
+            A unicode string of the source directory to extract.
+            If empty, all members are extracted.
 
         :param dest_dir:
             A unicode string of the destination directory
@@ -1034,87 +1038,63 @@ class PackageManager:
         :param extracted_files:
             A set of all of the files paths extracted from the zip
 
-        :param common_folder:
-            A unicode string of a common folder name
-
         :return:
             A bool indication if the install should be retried
         """
 
-        # Here we don't use .extractall() since it was having issues on OS X
-        should_retry = False
-        for info in zf.infolist():
-            path = info.filename
-            dest = path
+        def add_extracted_dirs(dir_):
+            while dir_ not in extracted_dirs:
+                extracted_dirs.add(dir_)
+                dir_ = os.path.dirname(dir_)
+                if dir_ == dest_dir:
+                    break
 
-            try:
-                if not isinstance(dest, str):
-                    dest = dest.decode('utf-8', 'strict')
-            except (UnicodeDecodeError):
+        is_win = os.name == 'nt'
+
+        # Here we don't use .extractall() since it was having issues on OS X
+        for info in zf.infolist():
+            source = info.filename
+
+            if source.endswith('/'):
+                continue
+
+            if is_win and any(c in source for c in ':*?"<>|'):
                 console_write(
                     '''
-                    One or more of the zip file entries in "%s" is not
-                    encoded using UTF-8, aborting
+                    Skipping file "%s" from archive for "%s" due to an invalid filename
                     ''',
-                    name
+                    (source, name)
                 )
-                return False
-
-            if os.name == 'nt':
-                regex = r':|\*|\?|"|<|>|\|'
-                if re.search(regex, dest) is not None:
-                    console_write(
-                        '''
-                        Skipping file from package named "%s" due to an
-                        invalid filename
-                        ''',
-                        name
-                    )
-                    continue
+                continue
 
             # If there was only a single directory in the package, we remove
             # that folder name from the paths as we extract entries
-            dest = sys_path.longpath(os.path.join(dest_dir, dest[len(common_folder):]))
+            dest = sys_path.longpath(os.path.join(dest_dir, source[len(src_dir):]))
+            parent = os.path.dirname(dest)
+            os.makedirs(parent, exist_ok=True)
 
-            def add_extracted_dirs(dir_):
-                while dir_ not in extracted_dirs:
-                    extracted_dirs.add(dir_)
-                    dir_ = os.path.dirname(dir_)
-                    if dir_ == dest_dir:
-                        break
+            try:
+                with zf.open(info) as fsrc, open(dest, 'wb') as fdst:
+                    shutil.copyfileobj(fsrc, fdst)
 
-            if path.endswith('/'):
-                os.makedirs(dest, exist_ok=True)
-                add_extracted_dirs(dest)
+            except IOError as e:
+                if e.errno == 5 or e.errno == 13:  # permission denied
+                    return True
+
+                console_write(
+                    '''
+                    Skipping file "%s" from archive for "%s" due to IO error: %s
+                    ''',
+                    (source, name, e)
+                )
+
             else:
-                parent_dir = os.path.dirname(dest)
-                os.makedirs(parent_dir, exist_ok=True)
-                add_extracted_dirs(parent_dir)
-                extracted_files.add(dest)
-                try:
-                    with open(dest, 'wb') as fobj:
-                        fobj.write(zf.read(path))
-                except (IOError) as e:
-                    if e.errno == 13:  # permission denied
-                        should_retry = True
-                        break
-                    console_write(
-                        '''
-                        Skipping file from package named "%s" due to an
-                        invalid filename
-                        ''',
-                        name
-                    )
+                if extracted_dirs is not None:
+                    add_extracted_dirs(parent)
+                if extracted_files is not None:
+                    extracted_files.add(dest)
 
-                except (UnicodeDecodeError):
-                    console_write(
-                        '''
-                        Skipping file from package named "%s" due to an
-                        invalid filename
-                        ''',
-                        name
-                    )
-        return should_retry
+        return False
 
     def install_libraries(self, libraries, fail_early=True):
         """
@@ -1273,10 +1253,10 @@ class PackageManager:
             should_retry = self._extract_zip(
                 lib.name,
                 library_zip,
+                common_folder,
                 tmp_library_dir,
                 extracted_dirs,
                 extracted_files,
-                common_folder
             )
 
             if should_retry:
@@ -1686,10 +1666,10 @@ class PackageManager:
             should_retry = self._extract_zip(
                 package_name,
                 package_zip,
+                common_folder,
                 package_dir,
                 extracted_dirs,
                 extracted_files,
-                common_folder
             )
             extracted_paths = extracted_dirs | extracted_files
 
