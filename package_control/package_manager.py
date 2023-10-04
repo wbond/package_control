@@ -1015,7 +1015,7 @@ class PackageManager:
 
         return sep.join(common) + sep if common else ''
 
-    def _extract_zip(self, name, zf, src_dir, dest_dir, extracted_dirs, extracted_files):
+    def _extract_zip(self, name, zf, src_dir, dest_dir, extracted_dirs=None, extracted_files=None):
         """
         Extracts a zip to a folder
 
@@ -1246,34 +1246,13 @@ class PackageManager:
                     fail_early=False
                 )
 
-            os.mkdir(tmp_library_dir)
-
-            extracted_files = set()
-            extracted_dirs = set()
-            should_retry = self._extract_zip(
-                lib.name,
-                library_zip,
-                common_folder,
-                tmp_library_dir,
-                extracted_dirs,
-                extracted_files,
-            )
-
+            should_retry = self._extract_zip(lib.name, library_zip, common_folder, tmp_library_dir)
             if should_retry:
                 return False
 
-            extracted_paths = extracted_files | extracted_dirs
-
-            library_zip.close()
-            library_zip = None
-
             new_did_name = '%s-%s.dist-info' % (lib.name, release['version'])
-            wheel_filename = new_did_name + '/WHEEL'
-            is_whl = wheel_filename in extracted_paths
-
-            if is_whl:
-                temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
-
+            temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
+            if temp_did.has_wheel():
                 _, modified_ris = temp_did.verify_files()
                 modified_paths = {mri.absolute_path for mri in modified_ris}
                 if modified_paths:

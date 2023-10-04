@@ -138,7 +138,7 @@ class DistInfoDir:
     operations required to read or write meta data of a library.
     """
 
-    __slots__ = ['install_root', 'dir_name', 'dir_path']
+    __slots__ = ['install_root', 'dir_name']
 
     def __init__(self, install_root, dist_info_dir):
         """
@@ -379,7 +379,7 @@ class DistInfoDir:
             An unicode string of the absolute path of the given file.
         """
 
-        return os.path.join(self.path, file_name)
+        return os.path.join(self.install_root, self.dir_name, file_name)
 
     def read_metadata(self):
         """
@@ -524,6 +524,15 @@ class DistInfoDir:
         contents = self.generate_record(package_dirs, package_files)
         with open(record_path, 'w', encoding='utf-8', newline='\n') as fobj:
             fobj.write(contents)
+
+    def has_wheel(self):
+        """
+        Check if .dist-info/WHEEL file exists
+
+        :returns:
+            `True`, if WHEEL file exists, `False` otherwise.
+        """
+        return os.path.isfile(self.abs_path('WHEEL'))
 
     def read_wheel(self):
         """

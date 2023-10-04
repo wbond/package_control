@@ -244,6 +244,7 @@ def longpath(path):
     1. replaces `/` by `\\` on Windows, even if the absolute path specified is
        already prefixed by \\\\?\\ or \\\\.\\ to make sure to avoid WinError 123
        when calling functions like ntpath.realpath().
+
     2. always prepends \\\\?\\ on Windows to enable long paths support.
 
     This is to workaround some shortcomings of python stdlib.
