@@ -1645,7 +1645,8 @@ class PackageManager:
             # upgrade, it should be cleaned out successfully then.
             # No need to handle symlink at this stage it was already removed
             # and we are not working with symlink here any more.
-            clear_directory(package_dir, extracted_files)
+            if unpack:
+                clear_directory(package_dir, extracted_files)
 
             # Create .python-version file to opt-in to certain plugin_host.
             # It enables unmaintained packages/plugins to be opted-in to newer python version
