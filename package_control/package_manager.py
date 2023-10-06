@@ -1132,20 +1132,20 @@ class PackageManager:
             is_unavailable = lib.name in self.settings.get('unavailable_libraries', [])
             if is_upgrade and is_unavailable:
                 message = '''
-                    The library "%s" is installed, but not available for python %s
+                    The library "%s" is installed, but not available for Python %s
                     on this platform, or for this version of Sublime Text; leaving alone
                     '''
             elif is_upgrade:
                 message = '''
-                    The library "%s" is installed, but not available for python %s; leaving alone
+                    The library "%s" is installed, but not available for Python %s; leaving alone
                     '''
             elif is_unavailable:
                 message = '''
-                    The library "%s" is not available for python %s on this platform,
+                    The library "%s" is not available for Python %s on this platform,
                     or this version of Sublime Text
                     '''
             else:
-                message = 'The library "%s" is not available for python %s'
+                message = 'The library "%s" is not available for Python %s'
 
             console_write(message, (lib.name, lib.python_version))
             return False
@@ -1350,7 +1350,7 @@ class PackageManager:
             # it again in the future.
             console_write(
                 '''
-                Failed to remove the library %s for Python %s -
+                Failed to remove the library "%s" for Python %s -
                 deferring until next start
                 ''',
                 (lib.name, lib.python_version)
@@ -1360,7 +1360,7 @@ class PackageManager:
         else:
             console_write(
                 '''
-                The orphaned library %s for Python %s has been removed
+                Removed orphaned library "%s" for Python %s
                 ''',
                 (lib.name, lib.python_version)
             )
@@ -1756,9 +1756,15 @@ class PackageManager:
                     return None
 
             if is_upgrade:
-                console_write('Upgraded "%s" from %s to %s', (package_name, old_version, new_version))
+                console_write(
+                    'Upgraded package "%s" from %s to %s',
+                    (package_name, old_version, new_version)
+                )
             else:
-                console_write('Installed "%s" %s', (package_name, new_version))
+                console_write(
+                    'Installed package "%s" %s',
+                    (package_name, new_version)
+                )
 
             return True
 
@@ -1976,9 +1982,9 @@ class PackageManager:
         delete_directory(get_package_cache_dir(package_name))
         delete_directory(get_package_module_cache_dir(package_name))
 
-        message = 'The package "%s" has been removed' % package_name
+        message = 'Removed package "%s"' % package_name
         if result is None:
-            message += ' and will be cleaned up on the next restart'
+            message += ' and scheduled clean up on next restart'
         console_write(message)
 
         return result
