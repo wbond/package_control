@@ -1621,15 +1621,16 @@ class PackageManager:
 
             # If upgrading failed, queue the package to upgrade upon next start
             if should_retry:
-                reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
-                create_empty_file(reinstall_file)
+                if unpack:
+                    reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
+                    create_empty_file(reinstall_file)
 
-                # Don't delete the metadata file, that way we have it
-                # when the reinstall happens, and the appropriate
-                # usage info can be sent back to the server.
-                # No need to handle symlink at this stage it was already removed
-                # and we are not working with symlink here any more.
-                clear_directory(package_dir, {reinstall_file, package_metadata_file})
+                    # Don't delete the metadata file, that way we have it
+                    # when the reinstall happens, and the appropriate
+                    # usage info can be sent back to the server.
+                    # No need to handle symlink at this stage it was already removed
+                    # and we are not working with symlink here any more.
+                    clear_directory(package_dir, {reinstall_file, package_metadata_file})
 
                 console_write(
                     '''
