@@ -1598,14 +1598,9 @@ class PackageManager:
                         )
                         return None
 
-                tmp_working_dir = os.path.join(tmp_dir, 'working')
-                os.mkdir(tmp_working_dir)
-                package_dir = tmp_working_dir
+                package_dir = os.path.join(tmp_dir, 'working')
 
             package_metadata_file = os.path.join(package_dir, 'package-metadata.json')
-
-            if not os.path.exists(package_dir):
-                os.mkdir(package_dir)
 
             extracted_files = set()
             should_retry = self._extract_zip(
