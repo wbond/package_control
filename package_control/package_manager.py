@@ -1450,12 +1450,12 @@ class PackageManager:
         package = packages[package_name]
         release = package['releases'][0]
 
-        unpacked_package_dir = get_package_dir(package_name)
-        package_path = get_installed_package_path(package_name)
-        package_filename = os.path.basename(package_path)
+        package_dir = get_package_dir(package_name)
+        package_file = get_installed_package_path(package_name)
+        package_filename = os.path.basename(package_file)
 
         tmp_dir = sys_path.longpath(tempfile.mkdtemp(''))
-        tmp_package_path = os.path.join(tmp_dir, package_filename)
+        tmp_package_file = os.path.join(tmp_dir, package_filename)
 
         # This is refers to the zipfile later on, so we define it here so we can
         # close the zip file if set during the finally clause
@@ -1568,8 +1568,6 @@ class PackageManager:
                 if not self.backup_package_dir(package_name):
                     return False
 
-                package_dir = unpacked_package_dir
-
             # Otherwise we go into a temp dir since we will be creating a
             # new .sublime-package file later
             else:
@@ -1584,10 +1582,10 @@ class PackageManager:
                     if not self.backup_package_dir(package_name):
                         return False
 
-                    if not delete_directory(unpacked_package_dir):
+                    if not delete_directory(package_dir):
                         # If deleting failed, queue the package to upgrade upon next start
                         # when it will be disabled
-                        reinstall_file = os.path.join(unpacked_package_dir, 'package-control.reinstall')
+                        reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
                         create_empty_file(reinstall_file)
                         console_write(
                             '''
@@ -1704,7 +1702,7 @@ class PackageManager:
             # we probably need to remove an old Installed Packages/{package_name].sublime-package
             if unpack:
                 try:
-                    os.remove(package_path)
+                    os.remove(package_file)
                 except (FileNotFoundError):
                     pass
                 except (OSError) as e:
@@ -1719,7 +1717,7 @@ class PackageManager:
             # folder, we need to create a .sublime-package file and install it
             else:
                 try:
-                    with zipfile.ZipFile(tmp_package_path, "w", compression=zipfile.ZIP_DEFLATED) as fobj:
+                    with zipfile.ZipFile(tmp_package_file, "w", compression=zipfile.ZIP_DEFLATED) as fobj:
                         for root, _, files in os.walk(package_dir):
                             for file in files:
                                 full_path = os.path.join(root, file)
@@ -1737,14 +1735,14 @@ class PackageManager:
 
                 try:
                     try:
-                        os.remove(package_path)
+                        os.remove(package_file)
                     except (FileNotFoundError):
                         pass
-                    shutil.move(tmp_package_path, package_path)
+                    shutil.move(tmp_package_file, package_file)
 
                 except (OSError):
                     try:
-                        shutil.move(tmp_package_path, package_path + '-new')
+                        shutil.move(tmp_package_file, package_file + '-new')
                     except (OSError):
                         pass
 
