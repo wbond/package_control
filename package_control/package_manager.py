@@ -150,18 +150,19 @@ class PackageManager:
         # Reduce the settings down to exclude channel info since that will
         # make the settings always different
         filtered_settings = self.settings.copy()
-        for key in ['repositories', 'channels', 'package_name_map', 'cache']:
+        for key in ('cache', 'package_name_map'):
             if key in filtered_settings:
                 del filtered_settings[key]
 
-        if filtered_settings != previous_settings and previous_settings != {}:
-            console_write(
-                '''
-                Settings change detected, clearing cache
-                '''
-            )
-            clear_cache()
-        set_cache('filtered_settings', filtered_settings)
+        if filtered_settings != previous_settings:
+            if previous_settings:
+                console_write(
+                    '''
+                    Settings change detected, clearing cache
+                    '''
+                )
+                clear_cache()
+            set_cache('filtered_settings', filtered_settings)
 
     def get_mapped_name(self, package_name):
         """:return: The name of the package after passing through mapping rules"""
@@ -452,7 +453,8 @@ class PackageManager:
 
         cache_ttl = self.settings.get('cache_length', 300)
         channels = self.settings.get('channels', [])
-        repositories = self.settings.get('repositories', [])
+        # create copy to prevent backlash to settings object due to being extended
+        repositories = self.settings.get('repositories', []).copy()
 
         # Update any old default channel URLs users have in their config
         found_default = False
