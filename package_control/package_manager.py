@@ -880,13 +880,10 @@ class PackageManager:
 
             return result
 
-    def find_required_libraries(self, ignore_package=None):
+    def find_required_libraries(self):
         """
         Find all of the libraries required by the installed packages,
         ignoring the specified package.
-
-        :param ignore_package:
-            The package to ignore when enumerating libraries
 
         :return:
             A set of library.Library() objects for the libraries required by
@@ -895,18 +892,17 @@ class PackageManager:
 
         output = set()
         for package in self.list_packages():
-            if package != ignore_package:
-                output |= self.get_libraries(package)
+            output |= self.get_libraries(package)
 
         output |= self.get_libraries('User')
         return output
 
-    def find_missing_libraries(self, ignore_package=None, required_libraries=None):
+    def find_missing_libraries(self, required_libraries=None):
         """
         Find missing libraries.
 
-        :param ignore_package:
-            The package to ignore when enumerating libraries
+        :param required_libraries:
+            All required libraries, for speed-up purposes.
 
         :return:
             A set of library.Library() objects for missing libraries
@@ -914,15 +910,15 @@ class PackageManager:
 
         installed_libraries = self.list_libraries()
         if required_libraries is None:
-            required_libraries = self.find_required_libraries(ignore_package)
+            required_libraries = self.find_required_libraries()
         return required_libraries - installed_libraries
 
-    def find_orphaned_libraries(self, ignore_package=None, required_libraries=None):
+    def find_orphaned_libraries(self, required_libraries=None):
         """
         Find orphaned libraries.
 
-        :param ignore_package:
-            The package to ignore when enumerating libraries
+        :param required_libraries:
+            All required libraries, for speed-up purposes.
 
         :return:
             A set of library.Library() objects for no longer needed libraries
@@ -930,7 +926,7 @@ class PackageManager:
 
         installed_libraries = self.list_libraries()
         if required_libraries is None:
-            required_libraries = self.find_required_libraries(ignore_package)
+            required_libraries = self.find_required_libraries()
         unmanaged_libraries = library.list_unmanaged()
         return installed_libraries - required_libraries - unmanaged_libraries
 
@@ -1302,14 +1298,10 @@ class PackageManager:
             # after we close it.
             sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
 
-    def cleanup_libraries(self, ignore_package=None, required_libraries=None):
+    def cleanup_libraries(self, required_libraries=None):
         """
         Remove all not needed libraries by the installed packages,
         ignoring the specified package.
-
-        :param ignore_package:
-            The package to ignore when enumerating libraries.
-            Not used when required_libraries is provided.
 
         :param required_libraries:
             All required libraries, for speed-up purposes.
@@ -1318,7 +1310,7 @@ class PackageManager:
             Boolean indicating the success of the removals.
         """
 
-        orphaned_libraries = self.find_orphaned_libraries(ignore_package, required_libraries)
+        orphaned_libraries = self.find_orphaned_libraries(required_libraries)
 
         error = False
         for lib in orphaned_libraries:
@@ -1904,7 +1896,7 @@ class PackageManager:
             })
 
             # Remove libraries that are no longer needed
-            self.cleanup_libraries(package_name)
+            self.cleanup_libraries()
 
         return result
 
