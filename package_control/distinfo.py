@@ -591,9 +591,12 @@ class DistInfoDir:
                     )
                 )
 
-    def verify_files(self):
+    def verify_files(self, missing_ok=False):
         """
         Returns two sets of paths
+
+        :param missing_ok:
+            If `True` treat missing files as unmodified.
 
         :return:
             A 2-element tuple:
@@ -608,7 +611,11 @@ class DistInfoDir:
             if ri.relative_path == self.dir_name + "/RECORD":
                 unmodified_paths.add(ri)
                 continue
-            if _verify_file(ri.absolute_path, ri.sha256, ri.size):
+            try:
+                ok = _verify_file(ri.absolute_path, ri.sha256, ri.size)
+            except FileNotFoundError:
+                ok = missing_ok
+            if ok:
                 unmodified_paths.add(ri)
             else:
                 modified_paths.add(ri)

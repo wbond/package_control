@@ -1163,12 +1163,15 @@ class PackageManager:
                     )
                 return True
 
-            _, modified_ris = installed_library.dist_info.verify_files()
+            _, modified_ris = installed_library.dist_info.verify_files(missing_ok=True)
             modified_paths = {mri.absolute_path for mri in modified_ris}
             if modified_paths:
                 console_write(
-                    'Unable to upgrade library "%s" because files on disk have been modified: "%s"',
-                    (lib.name, '", "'.join(sorted(modified_paths, key=lambda s: s.lower())))
+                    '''
+                    Unable to upgrade library "%s" because files on disk have been modified:
+                      %s
+                    ''',
+                    (lib.name, '\n  '.join(sorted(map(sys_path.shortpath, modified_paths), key=lambda s: s.lower())))
                 )
                 return False
 
@@ -1226,11 +1229,14 @@ class PackageManager:
                 modified_paths = {mri.absolute_path for mri in modified_ris}
                 if modified_paths:
                     console_write(
-                        'Unable to %s library "%s" because files in the archive have been modified: "%s"',
+                        '''
+                        Unable to %s library "%s" because files in the archive have been modified:
+                          %s
+                        ''',
                         (
                             'upgrade' if is_upgrade else 'install',
                             lib.name,
-                            '", "'.join(sorted(modified_paths, key=lambda s: s.lower()))
+                            '\n  '.join(sorted(map(sys_path.shortpath, modified_paths), key=lambda s: s.lower()))
                         )
                     )
                     return False
