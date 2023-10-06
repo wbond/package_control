@@ -1218,9 +1218,18 @@ class PackageManager:
             if should_retry:
                 return False
 
-            new_did_name = '{}-{}.dist-info'.format(lib.name, available_version)
-            temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
-            if temp_did.has_wheel():
+            # search '<name>-<version>.dist-info/RECORD' directory in archive
+            # be permissive with version part as it may have a different format as `available_version`
+            new_did_name = None
+            pattern = re.compile(r'({0.name}-\S+\.dist-info)/RECORD'.format(lib))
+            for i in library_zip.infolist():
+                match = pattern.match(i.filename)
+                if match:
+                    new_did_name = match.group(1)
+                    break
+
+            if new_did_name:
+                temp_did = library.distinfo.DistInfoDir(tmp_library_dir, new_did_name)
                 _, modified_ris = temp_did.verify_files()
                 modified_paths = {mri.absolute_path for mri in modified_ris}
                 if modified_paths:
