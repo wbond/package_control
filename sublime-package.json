@@ -413,7 +413,6 @@
 								"date": { "$ref": "#/definitions/ReleaseValues/date" }
 							},
 							"required": [
-								"sublime_text",
 								"url",
 								"version"
 							],
@@ -439,7 +438,6 @@
 										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
 									},
 									"required": [
-										"sublime_text",
 										"branch"
 									],
 									"defaultSnippets": [
@@ -462,7 +460,6 @@
 										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
 									},
 									"required": [
-										"sublime_text",
 										"tags"
 									],
 									"defaultSnippets": [
