@@ -19,11 +19,17 @@ from .schema_version import SchemaVersion
 
 
 class InvalidRepoFileException(ProviderException):
-
     def __init__(self, repo, reason_message):
         super().__init__(
-            'Repository %s does not appear to be a valid repository file because'
-            ' %s' % (repo.repo_url, reason_message))
+            'Repository {} does not appear to be a valid repository file because'
+            ' {}'.format(repo.repo_url, reason_message))
+
+
+class InvalidLibraryReleaseKeyError(ProviderException):
+    def __init__(self, repo, name, key):
+        super().__init__(
+            'Invalid or missing release-level key "{}" in library "{}"'
+            ' in repository "{}".'.format(key, name, repo))
 
 
 class JsonRepositoryProvider(BaseRepositoryProvider):
@@ -239,6 +245,16 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 'base', 'version', 'sublime_text', 'platforms', 'branch', 'tags', 'url', 'sha256'
             }
 
+        required_library_keys = {
+            'description', 'author', 'issues', 'releases'
+        }
+
+        copied_library_keys = ('name', 'description', 'author', 'issues')
+        copied_release_keys = ('date', 'version', 'sha256')
+        default_platforms = ['*']
+        default_python_versions = ['3.3']
+        default_sublime_text = '*'
+
         debug = self.settings.get('debug')
 
         clients = [
@@ -252,173 +268,158 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 'sources': [self.repo_url]
             }
 
-            for field in ('name', 'description', 'author', 'issues'):
+            for field in copied_library_keys:
                 field_value = library.get(field)
                 if field_value:
                     info[field] = field_value
 
             if 'name' not in info:
-                self.failed_sources[self.repo_url] = ProviderException(text.format(
-                    '''
-                    No "name" value for one of the libraries in the repository %s.
-                    ''',
-                    self.repo_url
-                ))
+                self.failed_sources[self.repo_url] = ProviderException(
+                    'No "name" value for one of libraries'
+                    ' in repository "{}".'.format(self.repo_url)
+                )
                 continue
 
             try:
                 unknown_keys = set(library) - allowed_library_keys
                 if unknown_keys:
-                    raise ProviderException(text.format(
-                        '''
-                        The "%s" key(s) in the library "%s" in the repository %s are not supported.
-                        ''',
-                        ('", "'.join(sorted(unknown_keys)), info['name'], self.repo_url)
-                    ))
+                    raise ProviderException(
+                        'The "{}" key(s) in library "{}" in repository {} are not supported.'.format(
+                            '", "'.join(sorted(unknown_keys)), info['name'],
+                            self.repo_url
+                        )
+                    )
 
                 releases = library.get('releases', [])
                 if releases and not isinstance(releases, list):
-                    raise ProviderException(text.format(
-                        '''
-                        The "releases" value is not an array for the library "%s" in the repository %s.
-                        ''',
-                        (info['name'], self.repo_url)
-                    ))
-
-                def assert_release_keys(download_info):
-                    for key in ('version', 'url', 'sublime_text', 'platforms', 'python_versions'):
-                        if key not in download_info:
-                            raise ProviderException(text.format(
-                                '''
-                                Missing "%s" key for one of the releases of the library "%s" in the repository %s.
-                                ''',
-                                (key, info['name'], self.repo_url)
-                            ))
+                    raise ProviderException(
+                        'The "releases" value is not an array for library "{}"'
+                        ' in repository {}.'.format(info['name'], self.repo_url)
+                    )
 
                 for release in releases:
                     download_info = {}
 
                     unknown_keys = set(release) - allowed_release_keys
                     if unknown_keys:
-                        raise ProviderException(text.format(
-                            '''
-                            The "%s" key(s) in one of the releases of the library "%s"
-                            in the repository %s are not supported.
-                            ''',
-                            ('", "'.join(sorted(unknown_keys)), info['name'], self.repo_url)
-                        ))
+                        raise ProviderException(
+                            'The "{}" key(s) in one of the releases of library "{}"'
+                            ' in repository {} are not supported.'.format(
+                                '", "'.join(sorted(unknown_keys)), info['name'], self.repo_url
+                            )
+                        )
 
-                    # Make sure that explicit fields are copied over
-                    for field in ('sublime_text', 'version', 'sha256'):
-                        value = release.get(field)
-                        if value:
-                            download_info[field] = value
-
-                    # Validate url
-                    value = release.get('url')
-                    if value:
-                        download_info['url'] = update_url(resolve_url(self.repo_url, value), debug)
+                    # Validate date and version
+                    for key in copied_release_keys:
+                        if key in release:
+                            value = release.get(key)
+                            if not value or not isinstance(value, str):
+                                raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                            download_info[key] = value
 
                     # Validate supported platforms
-                    value = release.get('platforms', ['*'])
-                    if not isinstance(value, list):
+                    key = 'platforms'
+                    value = release.get(key, default_platforms)
+                    if isinstance(value, str):
                         value = [value]
-                    download_info['platforms'] = value
+                    elif not isinstance(value, list):
+                        raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                    download_info[key] = value
 
                     # Validate supported python_versions
-                    if self.schema_version.major < 4:
-                        # Assume python 3.3 for backward compatibility with older schemes.
-                        # Note: ST2 with python 2.6 are no longer supported
-                        download_info['python_versions'] = ['3.3']
-                    else:
-                        value = release.get('python_versions')
-                        if value:
-                            if not isinstance(value, list):
-                                value = [value]
-                            download_info['python_versions'] = value
+                    key = 'python_versions'
+                    value = release.get(key, default_python_versions)
+                    if isinstance(value, str):
+                        value = [value]
+                    elif not isinstance(value, list):
+                        raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                    download_info[key] = value
 
+                    # Validate supported ST version
+                    key = 'sublime_text'
+                    value = release.get(key, default_sublime_text)
+                    if not isinstance(value, str):
+                        raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                    download_info[key] = value
+
+                    # Validate url
+                    # if present, it is an explicit or resolved release
+                    url = release.get('url')
+                    if url:
+                        if 'version' not in download_info:
+                            raise ProviderException(
+                                'Missing "version" key in release with explicit "url" of library "{}"'
+                                ' in repository "%s".'.format(info['name'], self.repo_url)
+                            )
+
+                        download_info['url'] = update_url(resolve_url(self.repo_url, url), debug)
+                        is_http = urlparse(download_info['url']).scheme == 'http'
+                        if is_http and 'sha256' not in download_info:
+                            raise ProviderException(
+                                'No "sha256" key for the non-secure "url" value in one of the releases'
+                                ' of the library "{}" in repository {}.'.format(info['name'], self.repo_url)
+                            )
+
+                        info['releases'].append(download_info)
+                        continue
+
+                    # Resolve release template using `base` and `branch` or `tags` keys
+
+                    base = release.get('base')
+                    if not base:
+                        raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], 'base')
+
+                    base_url = resolve_url(self.repo_url, base)
+                    downloads = None
+
+                    # Evaluate and resolve "tags" and "branch" release templates
                     tags = release.get('tags')
                     branch = release.get('branch')
 
-                    if tags or branch:
-                        base = None
-                        if 'base' in release:
-                            base = release['base']
+                    if tags:
+                        extra = None
+                        if tags is not True:
+                            extra = tags
+                        for client in clients:
+                            downloads = client.download_info_from_tags(base_url, extra)
+                            if downloads is not None:
+                                break
 
-                        if not base:
-                            raise ProviderException(text.format(
-                                '''
-                                Missing release-level "base" key for one of the releases of the
-                                library "%s" in the repository %s.
-                                ''',
-                                (info['name'], self.repo_url)
-                            ))
+                    elif branch:
+                        for client in clients:
+                            downloads = client.download_info_from_branch(base_url, branch)
+                            if downloads is not None:
+                                break
+                    else:
+                        raise ProviderException(
+                            'Missing "branch", "tags" or "url" key in release of library "{}"'
+                            ' in repository "%s".'.format(info['name'], self.repo_url)
+                        )
 
-                        base_url = resolve_url(self.repo_url, base)
-                        downloads = None
+                    if downloads is None:
+                        raise ProviderException(
+                            'Invalid "base" value "{}" for one of the releases of library "{}"'
+                            ' in repository "{}".'.format(base, info['name'], self.repo_url)
+                        )
 
-                        if tags:
-                            extra = None
-                            if tags is not True:
-                                extra = tags
-                            for client in clients:
-                                downloads = client.download_info_from_tags(base_url, extra)
-                                if downloads is not None:
-                                    break
-                        else:
-                            for client in clients:
-                                downloads = client.download_info_from_branch(base_url, branch)
-                                if downloads is not None:
-                                    break
+                    if downloads is False:
+                        raise ProviderException(
+                            'No valid semver tags found at "{}" for library "{}"'
+                            ' in repository "{}".'.format(base, info['name'], self.repo_url)
+                        )
 
-                        if downloads is None:
-                            raise ProviderException(text.format(
-                                '''
-                                Invalid "base" value "%s" for one of the releases of the
-                                library "%s" in the repository %s.
-                                ''',
-                                (base, info['name'], self.repo_url)
-                            ))
-
-                        if downloads is False:
-                            raise ProviderException(text.format(
-                                '''
-                                No valid semver tags found at %s for the
-                                library "%s" in the repository %s.
-                                ''',
-                                (base, info['name'], self.repo_url)
-                            ))
-
-                        for download in downloads:
-                            del download['date']
-                            new_download = download_info.copy()
-                            new_download.update(download)
-                            assert_release_keys(new_download)
-                            info['releases'].append(new_download)
-
-                    elif 'url' in download_info:
-                        is_http = urlparse(download_info['url']).scheme == 'http'
-                        if is_http and 'sha256' not in download_info:
-                            raise ProviderException(text.format(
-                                '''
-                                No "sha256" key for the non-secure "url" value in one of the
-                                releases of the library "%s" in the repository %s.
-                                ''',
-                                (info['name'], self.repo_url)
-                            ))
-
-                        assert_release_keys(download_info)
-                        info['releases'].append(download_info)
+                    for download in downloads:
+                        new_download = download_info.copy()
+                        new_download.update(download)
+                        info['releases'].append(new_download)
 
                 # check required library keys
-                for key in ('author', 'releases', 'issues', 'description'):
-                    if key not in info:
-                        raise ProviderException(text.format(
-                            '''
-                            No "%s" key for the library "%s" in the repository %s.
-                            ''',
-                            (key, info['name'], self.repo_url)
-                        ))
+                for key in required_library_keys:
+                    if not info.get(key):
+                        raise ProviderException(
+                            'Missing or invalid "{}" key for library "{}"'
+                            ' in repository "{}".'.format(key, info['name'], self.repo_url)
+                        )
 
                 info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
 

@@ -212,9 +212,6 @@
 								"date": { "$ref": "#/definitions/ReleaseValues/date" }
 							},
 							"required": [
-								"sublime_text",
-								"platforms",
-								"python_versions",
 								"url",
 								"version"
 							],
@@ -241,10 +238,7 @@
 									},
 									"required": [
 										"base",
-										"branch",
-										"sublime_text",
-										"platforms",
-										"python_versions"
+										"branch"
 									],
 									"defaultSnippets": [
 										{
@@ -267,10 +261,7 @@
 									},
 									"required": [
 										"base",
-										"tags",
-										"sublime_text",
-										"platforms",
-										"python_versions",
+										"tags"
 									],
 									"defaultSnippets": [
 										{
