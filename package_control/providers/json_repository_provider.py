@@ -317,6 +317,15 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                                 raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
                             download_info[key] = value
 
+                    # Validate libraries
+                    # the key can be used to specify dependencies, upstream via repositories
+                    key = 'libraries' if self.schema_version.major >= 4 else 'dependencies'
+                    value = release.get(key, [])
+                    if value:
+                        if not isinstance(value, list):
+                            raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                        download_info['libraries'] = value
+
                     # Validate supported platforms
                     key = 'platforms'
                     value = release.get(key, default_platforms)
