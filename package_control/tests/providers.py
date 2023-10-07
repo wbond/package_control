@@ -7,7 +7,7 @@ from ..providers.github_repository_provider import GitHubRepositoryProvider
 from ..providers.github_user_provider import GitHubUserProvider
 from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
 from ..providers.gitlab_user_provider import GitLabUserProvider
-from ..providers.repository_provider import RepositoryProvider
+from ..providers.json_repository_provider import JsonRepositoryProvider
 
 from ._config import (
     BB_PASS,
@@ -598,7 +598,7 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
         self.assertEqual([], list(provider.get_broken_libraries()))
 
 
-class RepositoryProviderTests(unittest.TestCase):
+class JsonRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
     def settings(self):
@@ -623,35 +623,35 @@ class RepositoryProviderTests(unittest.TestCase):
         }
 
     def test_get_packages_10(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json',
             self.settings()
         )
         self.assertEqual([], list(provider.get_packages()))
 
     def test_get_libraries_10(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json',
             self.settings()
         )
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_packages_12(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json',
             self.settings()
         )
         self.assertEqual([], list(provider.get_packages()))
 
     def test_get_libraries_12(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json',
             self.settings()
         )
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_packages_20_explicit(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json',
             self.settings()
         )
@@ -715,14 +715,14 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_libraries_20(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-explicit.json',
             self.settings()
         )
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_packages_20_github(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-2.0-github_details.json',
             self.settings()
         )
@@ -788,7 +788,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_20_bitbucket(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json'
             '/master/repository-2.0-bitbucket_details.json',
             self.settings()
@@ -850,7 +850,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_300_explicit(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json',
             self.settings()
         )
@@ -915,7 +915,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_libraries_300_explicit(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json',
             self.settings()
         )
@@ -994,7 +994,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_300_github(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json'
             '/master/repository-3.0.0-github_releases.json',
             self.settings()
@@ -1184,7 +1184,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_300_gitlab(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json'
             '/master/repository-3.0.0-gitlab_releases.json',
             self.settings()
@@ -1328,7 +1328,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_300_bitbucket(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json'
             '/master/repository-3.0.0-bitbucket_releases.json',
             self.settings()
@@ -1454,7 +1454,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_libraries_400_explicit(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json',
             self.settings()
         )
@@ -1511,7 +1511,7 @@ class RepositoryProviderTests(unittest.TestCase):
         )
 
     def test_get_packages_400_explicit(self):
-        provider = RepositoryProvider(
+        provider = JsonRepositoryProvider(
             'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json',
             self.settings()
         )

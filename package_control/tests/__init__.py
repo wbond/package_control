@@ -35,7 +35,7 @@ TEST_CLASSES = [
     providers.GitHubUserProviderTests,
     providers.GitLabRepositoryProviderTests,
     providers.GitLabUserProviderTests,
-    providers.RepositoryProviderTests,
+    providers.JsonRepositoryProviderTests,
     selectors.PlatformSelectorTests,
     selectors.VersionSelectorTests,
 ]

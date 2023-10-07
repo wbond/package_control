@@ -26,7 +26,7 @@ class InvalidRepoFileException(ProviderException):
             ' %s' % (repo.repo_url, reason_message))
 
 
-class RepositoryProvider(BaseRepositoryProvider):
+class JsonRepositoryProvider(BaseRepositoryProvider):
     """
     Generic repository downloader that fetches package info
 
