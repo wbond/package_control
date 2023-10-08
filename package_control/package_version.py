@@ -27,7 +27,7 @@ class PackageVersion(PEP440Version):
         """
 
         if not isinstance(ver, str):
-            raise TypeError("%r is not a string" % ver)
+            raise TypeError("{!r} is not a string".format(ver))
 
         # Store original version string to maintain backward compatibility
         # with regards to not normalize it.
