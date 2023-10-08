@@ -432,23 +432,32 @@
 	// that are supplementary, or missing from Sublime Text.
 	"libraries": [
 		{
-			// Each library should have a name, description,
-			// author, issues URL and a list of releases. Each release needs a
-			// version and url or base and tags plus sublime_text keys. The
-			// platforms key is optionally and defaults to *. If the URL is not
-			// over SSL, there needs to be a sha256 key containing the sha256
-			// hash of the package file.
+			// Each library must have a name, description, author, issues URL
+			// and a list of releases.
+			// Each release needs a version and url or base and tags keys.
+			// The sublime_text, platforms and python_versions keys are optional
+			// and default to '*', ['*'] and ['3.3'].
+			// If the URL is not over SSL, there needs to be a sha256 key
+			// containing the sha256 hash of the package file.
 			"name": "bz2",
 			"description": "Python bz2 module",
 			"author": "wbond",
 			"issues": "https://github.com/codexns/sublime-bz2/issues",
 			"releases": [
 				{
+					// A minimal release for a legecy dependency
+					// provided as ordinary repository.
+					"base": "https://github.com/codexns/sublime-bz2",
+					"tags": true
+				},
+				{
+					// A verbose release for the same legacy dependency.
+					// provided as ordinary repository.
 					"base": "https://github.com/codexns/sublime-bz2",
 					"tags": true,
-					"sublime_text": "*",
 					"platforms": ["*"],
-					"python_versions": ["3.3", "3.8"]
+					"python_versions": ["3.3"],
+					"sublime_text": "*"
 				}
 			]
 		},
@@ -459,11 +468,12 @@
 			"issues": "https://github.com/codexns/sublime-ssl-linux/issues",
 			"releases": [
 				{
+					// A legacy python 3.3 dependency for linux,
+					// provided as explicit download asset
+					// secured by sha256 hash as being shipped via HTTP.
 					"version": "1.0.0",
 					"url": "http://packagecontrol.io/ssl-linux.sublime-package",
-					"sublime_text": "*",
 					"platforms": ["linux"],
-					"python_versions": ["3.3", "3.8"],
 					"sha256": "d12a2ca2843b3c06a834652e9827a29f88872bb31bd64230775f3dbe12e0ebd4"
 				}
 			]
@@ -475,12 +485,75 @@
 			"issues": "https://github.com/codexns/sublime-ssl-windows/issues",
 			"releases": [
 				{
+					// A legacy python 3.3 dependency for ST2 on Windows,
+					// provided as explicit download asset
+					// secured by sha256 hash as being shipped via HTTP.
+					// Note: ST2 is no longer supported by PC4.0
 					"version": "1.0.0",
 					"url": "http://packagecontrol.io/ssl-windows.sublime-package",
 					"sublime_text": "<3000",
 					"platforms": ["windows"],
-					"python_versions": ["3.3", "3.8"],
 					"sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
+				}
+			]
+		},
+
+		// Libraries can point to standard WHEEL files.
+		// An explicit platform-specific release key is needed for each download asset.
+		{
+			"name": "coverage",
+			"author": "nedbatchelder",
+			"description": "coverage.py - http://coverage.readthedocs.org/en/latest/",
+			"homepage": "https://pypi.org/project/coverage/",
+			"issues": "https://github.com/nedbat/coveragepy/issues",
+			"releases": [
+				{
+					"platforms": ["windows-x64"],
+					"python_versions": ["3.8"],
+					"version": "7.3.2",
+					"url": "https://files.pythonhosted.org/packages/9f/95/436887935a32fcead76c9f60b61f3fcd8940d4129bdbc50e2988e037a664/coverage-7.3.2-cp38-cp38-win_amd64.whl"
+				},
+				{
+					"platforms": ["linux-x64"],
+					"python_versions": ["3.8"],
+					"version": "7.3.2",
+					"url": "https://files.pythonhosted.org/packages/8d/1a/e4d0775502fae6ce2c2dd3692a66aff3b18e89757567e35680b9c63d89c5/coverage-7.3.2-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+				},
+				{
+					"platforms": ["osx-x64"],
+					"python_versions": ["3.8"],
+					"version": "7.3.2",
+					"url": "https://files.pythonhosted.org/packages/a0/a6/9deeff0c49d865cd1c5ae5efc9442ff234f9b0e9d15cb4a9cda58ec255cc/coverage-7.3.2-cp38-cp38-macosx_10_9_x86_64.whl"
+				},
+				{
+					"platforms": ["linux-x86"],
+					"python_versions": ["3.3"],
+					"version": "4.3.4",
+					"url": "https://files.pythonhosted.org/packages/c1/cd/a35e25680822d400e2a32d1eddd017087a9cef78e3fd5dc29541d8051a58/coverage-4.3.4-cp33-cp33m-manylinux1_i686.whl"
+				},
+				{
+					"platforms": ["linux-x64"],
+					"python_versions": ["3.3"],
+					"version": "4.3.4",
+					"url": "https://files.pythonhosted.org/packages/8a/0f/5221822805edf3fc13e85c278de6451a5c08d0fd67e2c86e67e48b683a20/coverage-4.3.4-cp33-cp33m-manylinux1_x86_64.whl"
+				},
+				{
+					"platforms": ["osx-x64"],
+					"python_versions": ["3.3"],
+					"version": "4.3.4",
+					"url": "https://files.pythonhosted.org/packages/ac/dc/3e2d996c440a1a589f3323e806cf96d3c64650579483c3798ef2ea34b51a/coverage-4.3.4-cp33-cp33m-macosx_10_10_x86_64.whl"
+				},
+				{
+					"platforms": ["windows-x86"],
+					"python_versions": ["3.3"],
+					"version": "4.2",
+					"url": "https://files.pythonhosted.org/packages/a0/34/1185348cc5c541bbdf107438f0f0ea9df5d9a4233a974e9228b6ee815489/coverage-4.2-cp33-cp33m-win32.whl"
+				},
+				{
+					"platforms": ["windows-x64"],
+					"python_versions": ["3.3"],
+					"version": "4.2",
+					"url": "https://files.pythonhosted.org/packages/b1/55/02815cb8abb091033abb979ebde5122bb33b85c5987dede9ccd019033d19/coverage-4.2-cp33-cp33m-win_amd64.whl"
 				}
 			]
 		}
