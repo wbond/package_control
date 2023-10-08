@@ -134,7 +134,7 @@
 								"name",
 								"description",
 								"author",
-								"homepage",
+								"issues",
 								"releases"
 							]
 						},
@@ -294,6 +294,7 @@
 								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
 								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
 								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+								"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
 								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
 								"releases": { "$ref": "#/definitions/ResolvedPackageReleasesList" }
 							},
@@ -301,7 +302,6 @@
 								"name",
 								"description",
 								"author",
-								"homepage",
 								"releases"
 							]
 						},
@@ -339,6 +339,7 @@
 										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
 										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
 										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
 										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
 										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
 									},
@@ -367,6 +368,7 @@
 										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
 										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
 										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
 										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
 										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
 									},
@@ -374,7 +376,6 @@
 										"name",
 										"description",
 										"author",
-										"issues",
 										"releases"
 									],
 									"defaultSnippets": [
@@ -407,7 +408,6 @@
 								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
 								"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" },
 								"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
-								"sha256": { "$ref": "#/definitions/ReleaseValues/sha256" },
 								"url": { "$ref": "#/definitions/ReleaseValues/url" },
 								"version": { "$ref": "#/definitions/ReleaseValues/version" },
 								"date": { "$ref": "#/definitions/ReleaseValues/date" }
@@ -529,6 +529,11 @@
 								},
 								"uniqueItems": true
 							},
+							"LastModifiedValue": {
+								"type": "string",
+								"markdownDescription": "```json\n\"last_modified\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp the package/library has been modified in the format of `YYYY-MM-DD hh:mm:ss`.",
+								"pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+							},
 							"PreviousNamesValue": {
 								"type": "array",
 								"markdownDescription": "A list of names previously used by the package/library. It is required to automatically rename old packages on clients when upgrading packages.",
@@ -647,7 +652,7 @@
 								"linux": { "$ref": "#/definitions/SublimeTextSelectors" },
 								"osx": { "$ref": "#/definitions/SublimeTextSelectors" },
 								"windows": { "$ref": "#/definitions/SublimeTextSelectors" }
-							},
+							}
 						},
 						"SublimeTextSelectors": {
 							"type": "object",
@@ -658,7 +663,7 @@
 									"type": "array",
 									"markdownDescription": "List of libraries to install for given platform and Sublime Text build.\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
 									"items": {
-										"type": "string",
+										"type": "string"
 									},
 									"additionalItems": false,
 									"uniqueItems": true
