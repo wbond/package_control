@@ -1069,7 +1069,7 @@ class PackageManager:
 
             else:
                 if extracted_files is not None:
-                    extracted_files.add(dest)
+                    extracted_files.add(os.path.normcase(dest))
 
         return False
 

@@ -47,7 +47,7 @@ def clear_directory(directory, ignored_files=None):
                     os.rmdir(path)
 
             for f in files:
-                path = os.path.join(root, f)
+                path = os.path.normcase(os.path.join(root, f))
                 if ignored_files and path in ignored_files:
                     # also ignore parent folder from being removed
                     ignored_dirs.add(root)
