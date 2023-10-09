@@ -1053,7 +1053,10 @@ class PackageManager:
                 with zf.open(info) as fsrc, open(dest, 'wb') as fdst:
                     shutil.copyfileobj(fsrc, fdst)
 
-            except IOError as e:
+                # restore file mode
+                os.chmod(dest, info.external_attr >> 16)
+
+            except OSError as e:
                 if e.errno == 5 or e.errno == 13:  # permission denied
                     return True
 
