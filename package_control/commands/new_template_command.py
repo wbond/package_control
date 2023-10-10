@@ -19,7 +19,7 @@ class NewChannelJsonCommand(sublime_plugin.WindowCommand):
         template = reformat(
             """
             {
-            \t"\\$schema": "sublime://packagecontrol.io/schemas/channel/4.0.0",
+            \t"\\$schema": "sublime://packagecontrol.io/schemas/channel",
             \t"schema_version": "4.0.0",
             \t"repositories": [
             \t\t"$0"
@@ -40,7 +40,7 @@ class NewRepositoryJsonCommand(sublime_plugin.WindowCommand):
         template = reformat(
             """
             {
-            \t"\\$schema": "sublime://packagecontrol.io/schemas/repository/4.0.0",
+            \t"\\$schema": "sublime://packagecontrol.io/schemas/repository",
             \t"schema_version": "4.0.0",
             \t"packages": [
             \t\t$0

@@ -3,7 +3,7 @@
 	// COMMENTS ARE NOT ALLOWED IN JSON
 
 	// Used by LSP and LSP-json to provide linting and completions.
-	"$schema": "sublime://packagecontrol.io/schemas/channel/4.0.0",
+	"$schema": "sublime://packagecontrol.io/schemas/channel",
 
 	"schema_version": "4.0.0",
 
