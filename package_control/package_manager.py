@@ -9,6 +9,7 @@ import datetime
 import tempfile
 # To prevent import errors in thread with datetime
 import locale  # noqa
+from stat import S_IXUSR
 
 try:
     # Python 3
@@ -52,6 +53,9 @@ OLD_DEFAULT_CHANNELS = set([
     'https://sublime.wbond.net/channel.json',
     'https://sublime.wbond.net/repositories.json'
 ])
+
+
+ZIP_UNIX_SYSTEM = 3
 
 
 class PackageManager():
@@ -1393,6 +1397,11 @@ class PackageManager():
                             ''',
                             package_name
                         )
+                    else:
+                        # Apply executable permissions
+                        if (info.create_system == ZIP_UNIX_SYSTEM
+                                and (info.external_attr >> 16) & S_IXUSR):
+                            os.chmod(dest, os.stat(dest).st_mode | S_IXUSR)
 
             package_zip.close()
             package_zip = None
