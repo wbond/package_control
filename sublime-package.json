@@ -200,7 +200,7 @@
 							"items": {
 								"type": "string",
 								"markdownDescription": "```json\n\"https://domain.com/repository.json\",\n\"./subdir/repository.json\"\n```\n\nURL or URI of a repository.\n\nRelative paths are resolved using the owning directory of this repository.",
-								"pattern": "^(?:https?://|\\./).+"
+								"pattern": "^(?:https?://|\\./).+\\.json$"
 							},
 							"additionalItems": false,
 							"uniqueItems": true
@@ -463,7 +463,7 @@
 							},
 							"platforms": {
 								"type": ["string", "array"],
-								"markdownDescription": "A list of platforms, supported by the package/dependency release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx\", \"windows\"]\n```",
+								"markdownDescription": "A list of platforms, supported by the package/dependency release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx-arm64\", \"windows-x64\"]\n```",
 								"default": ["*"],
 								"items": {
 									"oneOf": [
@@ -540,7 +540,7 @@
 							"items": {
 								"type": "string",
 								"markdownDescription": "```json\n\"https://domain.com/repository.json\",\n\"./subdir/repository.json\"\n```\n\nURL or URI of a repository.\n\nRelative paths are resolved using the owning directory of this repository.",
-								"pattern": "^(?:https?://|\\./).+"
+								"pattern": "^(?:https?://|\\./).+\\.json$"
 							},
 							"additionalItems": false,
 							"uniqueItems": true
@@ -1013,7 +1013,7 @@
 							},
 							"platforms": {
 								"type": ["string", "array"],
-								"markdownDescription": "A list of platforms, supported by the package/dependency release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx\", \"windows\"]\n```",
+								"markdownDescription": "A list of platforms, supported by the package/dependency release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx-arm64\", \"windows-x64\"]\n```",
 								"default": ["*"],
 								"items": {
 									"oneOf": [
@@ -1110,7 +1110,7 @@
 							"items": {
 								"type": "string",
 								"markdownDescription": "```json\n\"https://domain.com/repository.json\",\n\"./subdir/repository.json\"\n```\n\nURL or URI of a repository.\n\nRelative paths are resolved using the owning directory of this repository.",
-								"pattern": "^(?:https?://|\\./).+"
+								"pattern": "^(?:https?://|\\./).+\\.json$"
 							},
 							"additionalItems": false,
 							"uniqueItems": true
@@ -1581,7 +1581,7 @@
 							},
 							"platforms": {
 								"type": ["string", "array"],
-								"markdownDescription": "A list of platforms, supported by the package/library release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx\", \"windows\"]\n```",
+								"markdownDescription": "A list of platforms, supported by the package/library release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx-arm64\", \"windows-x64\"]\n```",
 								"default": ["*"],
 								"items": {
 									"oneOf": [
