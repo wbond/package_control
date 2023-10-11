@@ -131,7 +131,8 @@ def delete_directory(directory, ignore_errors=True):
                     os.unlink(directory)
                 return True
             except OSError:
-                pass
+                if not ignore_errors:
+                    raise
 
         elif clear_directory(directory, ignore_errors=ignore_errors):
             try:
