@@ -196,10 +196,13 @@ def python_libs_cache_path(python_version):
     global __python_libs_cache_path
 
     if not __python_libs_cache_path:
-        __python_libs_cache_path = os.path.join(
-            cache_path(), '__pycache__', 'install', 'Data', 'Lib')
+        __python_libs_cache_path = {
+            "3.3": None,    # bytecode cache not supported
+            "3.8": os.path.join(
+                cache_path(), '__pycache__', 'install', 'Data', 'Lib', "python38")
+        }
 
-    return str(__python_libs_cache_path)
+    return str(__python_libs_cache_path[python_version])
 
 
 def python_packages_cache_path():

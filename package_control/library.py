@@ -307,9 +307,19 @@ def remove(installed_library):
         if os.path.isdir(abs_path):
             delete_directory(abs_path, ignore_errors=False)
 
+            # remove bytecode cache
+            if cache_dir:
+                delete_directory(os.path.join(cache_dir, rel_path))
 
         elif os.path.isfile(abs_path):
             os.remove(abs_path)
+
+            # remove bytecode cache
+            if cache_dir and abs_path.endswith(".py"):
+                try:
+                    os.remove(os.path.join(cache_dir, rel_path[:-3] + cache_ext))
+                except OSError:
+                    pass
 
     # remove .dist-info directory
     abs_path = os.path.join(dist_info.install_root, dist_info.dir_name)
