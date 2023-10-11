@@ -5,10 +5,10 @@ import sublime
 
 from . import sys_path
 from . import distinfo
+from .clear_directory import delete_directory
 
 
 class Library:
-
     __slots__ = ['name', 'python_version']
 
     def __init__(self, name, python_version):
@@ -268,7 +268,7 @@ def install(dist_info, new_install_root):
         # shutil.move() will nest folders if the destination exists already
         if os.path.isdir(src_path):
             if os.path.exists(dest_path):
-                shutil.rmtree(dest_path)
+                delete_directory(dest_path, ignore_errors=False)
             dest_path = dest_parent
         shutil.move(src_path, dest_path)
 
@@ -291,6 +291,11 @@ def remove(installed_library):
     if not dist_info.exists():
         raise distinfo.DistInfoNotFoundError()
 
+    # Bytecode cache directory and extension
+    python_version = installed_library.python_version
+    cache_dir = sys_path.python_libs_cache_path(python_version)
+    cache_ext = ".cpython-{}.opt-1.pyc".format(python_version.replace(".", ""))
+
     for rel_path in dist_info.top_level_paths():
         # Remove the .dist-info dir last so we have info for clean-up in case
         # we hit an error along the way
@@ -299,14 +304,13 @@ def remove(installed_library):
 
         abs_path = os.path.join(dist_info.install_root, rel_path)
 
-        if not os.path.exists(abs_path):
-            continue
-
         if os.path.isdir(abs_path):
-            shutil.rmtree(abs_path)
-        else:
-            os.unlink(abs_path)
+            delete_directory(abs_path, ignore_errors=False)
 
+
+        elif os.path.isfile(abs_path):
+            os.remove(abs_path)
+
+    # remove .dist-info directory
     abs_path = os.path.join(dist_info.install_root, dist_info.dir_name)
-    if os.path.exists(abs_path):
-        shutil.rmtree(abs_path)
+    delete_directory(abs_path, ignore_errors=False)

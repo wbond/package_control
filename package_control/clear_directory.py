@@ -2,6 +2,9 @@ import os
 import stat
 import sys
 
+from datetime import datetime
+from hashlib import sha1
+
 from . import sys_path
 
 IS_WIN = sys.platform == 'win32'
@@ -18,7 +21,7 @@ def is_symlink(path):
     return os.path.islink(path)
 
 
-def clear_directory(directory, ignored_files=None):
+def clear_directory(directory, ignored_files=None, ignore_errors=True):
     """
     Tries to delete all files and folders from a directory
 
@@ -28,6 +31,10 @@ def clear_directory(directory, ignored_files=None):
     :param ignored_files:
         An set of paths to ignore while deleting files
 
+    :param ignore_errors:
+        If ``True`` don't raise exceptions if intermediate operation fails,
+        just return boolean result after all.
+
     :return:
         If all of the files and folders were successfully deleted
     """
@@ -35,6 +42,16 @@ def clear_directory(directory, ignored_files=None):
     # make sure not to lock directory by current working directory
     if sys_path.longpath(os.path.normcase(os.getcwd())).startswith(os.path.normcase(directory)):
         os.chdir(os.path.dirname(directory))
+
+    # use timestamp as session id, in case library is installed/removed
+    # multiple times to avoid naming conflicts, when moving to trash.
+    session_id = str(datetime.now())
+
+    # Especially on Windows, files may be locked and therefore can't be removed,
+    # while loaded. They can however be renamed, thus moving them to trash directory is
+    # possible in order to simulate deletion for the sense of managing packages/libraries.
+    trash_dir = sys_path.trash_path()
+    os.makedirs(trash_dir, exist_ok=True)
 
     ignored_dirs = set()
     was_exception = False
@@ -60,20 +77,23 @@ def clear_directory(directory, ignored_files=None):
                         except EnvironmentError:
                             pass
                     os.remove(path)
-                except OSError:
-                    # try to rename file to reduce chance that
-                    # file is in use on next start
-                    if not path.endswith('.package-control-old'):
-                        os.rename(path, path + '.package-control-old')
-                    raise
 
-        except (OSError, IOError):
+                except OSError:
+                    trash_path = os.path.join(
+                        trash_dir,
+                        sha1((session_id + path).encode('utf-8')).hexdigest().lower()
+                    )
+                    os.rename(path, trash_path)
+
+        except OSError:
+            if not ignore_errors:
+                raise
             was_exception = True
 
     return not was_exception
 
 
-def delete_directory(directory):
+def delete_directory(directory, ignore_errors=True):
     """
     Clear and delete a directory tree beginning with the deepest nested files.
 
@@ -87,12 +107,19 @@ def delete_directory(directory):
     If the folder is a symlink, the symlink is removed and not the contents
     of symlinked folder.
 
-    :noted:
+    If a file can't be removed due to being locked, it is moved to trash folder,
+    which is located in ST's data directory ``$DATA/Trash``.
+
+    :note:
         1. Implementation uses python 3.3 compatible ``is_symlink()`` function.
         2. It is not expected to find symlinked sub-directories.
 
     :param directory:
         The normalized absolute path to the folder to be deleted or unlinked
+
+    :param ignore_errors:
+        If ``True`` don't raise exceptions if intermediate operation fails,
+        just return boolean result after all.
     """
 
     if os.path.isdir(directory):
@@ -106,11 +133,12 @@ def delete_directory(directory):
             except OSError:
                 pass
 
-        elif clear_directory(directory):
+        elif clear_directory(directory, ignore_errors=ignore_errors):
             try:
                 os.rmdir(directory)
                 return True
             except OSError:
-                pass
+                if not ignore_errors:
+                    raise
 
     return False

@@ -77,7 +77,7 @@ __cache_path = None
 __package_control_cache_path = None
 __python_libs_cache_path = None
 __python_packages_cache_path = None
-
+__trash_path = os.path.join(__data_path, "Trash")
 __user_config_path = os.path.join(__packages_path, 'User')
 
 
@@ -174,7 +174,18 @@ def packages_path():
     return str(__packages_path)
 
 
-def python_libs_cache_path():
+def trash_path():
+    """
+    Returns the ST trash directory
+
+    :return:
+        A string of ST's trash directory
+    """
+
+    return str(__trash_path)
+
+
+def python_libs_cache_path(python_version):
     """
     Returns the libraries' module cache directory
 
