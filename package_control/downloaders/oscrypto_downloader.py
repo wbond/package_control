@@ -171,7 +171,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
                 if code == 304:
                     return self.cache_result('get', url, code, resp_headers, b'')
 
-                if code == 301:
+                if code == 301 or code == 302:
                     location = resp_headers.get('location')
                     if not isinstance(location, str):
                         raise OscryptoDownloaderException('Missing or duplicate Location HTTP header')
