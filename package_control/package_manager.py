@@ -1519,6 +1519,8 @@ class PackageManager:
                     if python_version_raw:
                         python_version = python_version_raw
 
+            original_python_version = python_version
+
             # Try to read .python-version from existing unpacked package directory to respect local
             # opt-in to certain plugin_host and to install correct libraries.
             try:
@@ -1680,12 +1682,17 @@ class PackageManager:
                 metadata = {
                     "name": package_name,
                     "version": new_version,
-                    "install_time": install_time,
                     "sublime_text": release['sublime_text'],
                     "platforms": release['platforms'],
+                    "python_version": original_python_version,
                     "url": package['homepage'],
-                    "description": packages[package_name]['description'],
-                    'libraries': release.get('libraries', [])
+                    "issues": package['issues'],
+                    "author": package['author'],
+                    "description": package['description'],
+                    "labels": package['labels'],
+                    "libraries": release.get('libraries', []),
+                    "install_time": install_time,
+                    "release_time": release['date'],
                 }
                 if is_upgrade:
                     metadata['upgrade_time'] = now
