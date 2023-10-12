@@ -110,6 +110,10 @@ class BitBucketRepositoryProvider(BaseRepositoryProvider):
             if not downloads:
                 raise GitProviderDownloadInfoException(self)
 
+            for download in downloads:
+                download['sublime_text'] = '*'
+                download['platforms'] = ['*']
+
             name = repo_info['name']
             details = {
                 'name': name,

@@ -343,16 +343,12 @@ class GitHubClient(JSONApiClient):
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
-              `platforms` - list with `['*']` to indicate all platforms are supported
-              `sublime_text` - sublime text version specifier (wildcard)
         """
 
         return {
             'url': 'https://codeload.github.com/%s/zip/%s' % (user_repo, ref_name),
             'version': version,
-            'date': timestamp,
-            'platforms': ['*'],
-            'sublime_text': '*'
+            'date': timestamp
         }
 
     def _api_url(self, user_repo, suffix=''):

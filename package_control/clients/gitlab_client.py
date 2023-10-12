@@ -352,17 +352,13 @@ class GitLabClient(JSONApiClient):
               `version` - the version number of the download
               `url` - the download URL of a zip file of the package
               `date` - the ISO-8601 timestamp string when the version was published
-              `platforms` - list with `['*']` to indicate all platforms are supported
-              `sublime_text` - sublime text version specifier (wildcard)
         """
 
         return {
             'url': 'https://gitlab.com/%s/%s/-/archive/%s/%s-%s.zip' % (
                 user_name, repo_name, ref_name, repo_name, ref_name),
             'version': version,
-            'date': timestamp,
-            'platforms': ['*'],
-            'sublime_text': '*'
+            'date': timestamp
         }
 
     def _api_url(self, project_id, suffix=''):
