@@ -238,7 +238,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         if self.schema_version.major >= 4:
             allowed_library_keys = {
-                'name', 'description', 'author', 'issues', 'releases'
+                'name', 'description', 'author', 'homepage', 'issues', 'releases'
             }
             allowed_release_keys = {  # todo: remove 'branch'
                 'base', 'version', 'sublime_text', 'platforms', 'python_versions', 'branch', 'tags', 'url', 'sha256'
@@ -255,7 +255,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
             'description', 'author', 'issues', 'releases'
         }
 
-        copied_library_keys = ('name', 'description', 'author', 'issues')
+        copied_library_keys = ('name', 'description', 'author', 'homepage', 'issues')
         copied_release_keys = ('date', 'version', 'sha256')
         default_platforms = ['*']
         default_python_versions = ['3.3']

@@ -561,13 +561,7 @@
 								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
 								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
 								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
-								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
 								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
-								"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
-								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
-								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
-								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
-								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
 								"load_order": { "$ref": "#/definitions/InfoValues/LoadOrderValue" },
 								"releases": { "$ref": "#/definitions/ResolvedDependencyReleasesList" }
 							},
@@ -576,6 +570,7 @@
 								"description",
 								"author",
 								"issues",
+								"load_order",
 								"releases"
 							]
 						},
@@ -604,13 +599,7 @@
 								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
 								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
 								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
-								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
 								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
-								"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
-								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
-								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
-								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
-								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
 								"load_order": { "$ref": "#/definitions/InfoValues/LoadOrderValue" },
 								"releases": { "$ref": "#/definitions/DependencyTemplateReleasesList" }
 							},
@@ -619,6 +608,7 @@
 								"description",
 								"author",
 								"issues",
+								"load_order",
 								"releases"
 							],
 							"defaultSnippets": [
@@ -1133,11 +1123,6 @@
 								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
 								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
 								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
-								"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
-								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
-								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
-								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
-								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
 								"releases": { "$ref": "#/definitions/ResolvedLibraryReleasesList" }
 							},
 							"required": [
@@ -1175,11 +1160,6 @@
 								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
 								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
 								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
-								"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
-								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
-								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
-								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
-								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
 								"releases": { "$ref": "#/definitions/LibraryTemplateReleasesList" }
 							},
 							"required": [
