@@ -315,14 +315,6 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                             )
                         )
 
-                    # Validate date and version
-                    for key in copied_release_keys:
-                        if key in release:
-                            value = release.get(key)
-                            if not value or not isinstance(value, str):
-                                raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
-                            download_info[key] = value
-
                     # Validate libraries
                     # the key can be used to specify dependencies, upstream via repositories
                     key = 'libraries' if self.schema_version.major >= 4 else 'dependencies'
@@ -361,6 +353,13 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                     # if present, it is an explicit or resolved release
                     url = release.get('url')
                     if url:
+                        for key in copied_release_keys:
+                            if key in release:
+                                value = release[key]
+                                if not value or not isinstance(value, str):
+                                    raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                                download_info[key] = value
+
                         if 'version' not in download_info:
                             raise ProviderException(
                                 'Missing "version" key in release with explicit "url" of library "{}"'
@@ -424,9 +423,8 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         )
 
                     for download in downloads:
-                        new_download = download_info.copy()
-                        new_download.update(download)
-                        info['releases'].append(new_download)
+                        download.update(download_info)
+                        info['releases'].append(download)
 
                 # check required library keys
                 for key in required_library_keys:
@@ -603,14 +601,6 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 for release in releases:
                     download_info = {}
 
-                    # Validate date and version
-                    for key in copied_release_keys:
-                        if key in release:
-                            value = release.get(key)
-                            if not value or not isinstance(value, str):
-                                raise InvalidPackageReleaseKeyError(self.repo_url, info['name'], key)
-                            download_info[key] = value
-
                     # Validate libraries
                     # the key can be used to specify dependencies, upstream via repositories
                     key = 'libraries' if self.schema_version.major >= 4 else 'dependencies'
@@ -657,6 +647,14 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         # if present, it is an explicit or resolved release
                         url = release.get('url')
                         if url:
+                            # Validate date and version
+                            for key in copied_release_keys:
+                                if key in release:
+                                    value = release[key]
+                                    if not value or not isinstance(value, str):
+                                        raise InvalidPackageReleaseKeyError(self.repo_url, info['name'], key)
+                                    download_info[key] = value
+
                             if 'version' not in download_info:
                                 raise ProviderException(
                                     'Missing "version" key in release with explicit "url" of package "{}"'
@@ -717,9 +715,8 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                             )
 
                         for download in downloads:
-                            new_download = download_info.copy()
-                            new_download.update(download)
-                            info['releases'].append(new_download)
+                            download.update(download_info)
+                            info['releases'].append(download)
 
                     elif self.schema_version.major == 2:
                         # missing key indicates ST2 release; no longer supported
@@ -735,6 +732,13 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         # if present, it is an explicit or resolved release
                         url = release.get('url')
                         if url:
+                            for key in copied_release_keys:
+                                if key in release:
+                                    value = release[key]
+                                    if not value or not isinstance(value, str):
+                                        raise InvalidPackageReleaseKeyError(self.repo_url, info['name'], key)
+                                    download_info[key] = value
+
                             if 'version' not in download_info:
                                 raise ProviderException(
                                     'Missing "version" key in release with explicit "url" of package "{}"'
@@ -773,9 +777,8 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                             )
 
                         for download in downloads:
-                            new_download = download_info.copy()
-                            new_download.update(download)
-                            info['releases'].append(new_download)
+                            download.update(download_info)
+                            info['releases'].append(download)
 
                 # check required package keys
                 for key in required_package_keys:
