@@ -60,6 +60,10 @@
         "command": "list_unmanaged_packages"
     },
     {
+        "caption": "Package Control: Show Package Report",
+        "command": "show_package_report"
+    },
+    {
         "caption": "Package Control: Remove Channel",
         "command": "remove_channel"
     },
