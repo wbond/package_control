@@ -7,6 +7,36 @@ from . import sys_path
 from . import distinfo
 from .clear_directory import delete_directory
 
+# Most legacy dependency are simply re-packed python packages.
+# Some of them had been given different names, which would cause issues, when
+# installing them directly from pypi.org. They are therefore translated, using
+# the following name map. This way legacy and maybe unmaintained packages
+# which still request old dependencies are pointed to the new ones,
+# which should reduce friction when moving on to python 3.8 onwards.
+DEPENDENCY_NAME_MAP = {
+    "bs4": "beautifulsoup4",
+    "python-docx": "docx",
+    "python-jinja2": "Jinja2",
+    "python-markdown": "Markdown",
+    "python-pywin32": "pywin32",
+    "python-six": "six",
+    "python-toml": "toml",
+    "ruamel-yaml": "ruamel.yaml",
+}
+
+
+def translate_name(dependency_name):
+    """
+    Translate old dependency name to real pypi library name
+
+    :param dependency_name:
+        Legacy Sublime Text dependency name
+
+    :returns:
+        PyPI complient library name.
+    """
+    return DEPENDENCY_NAME_MAP.get(dependency_name, dependency_name)
+
 
 class Library:
     __slots__ = ['name', 'python_version']
@@ -165,6 +195,9 @@ def convert_dependency(dependency_path, python_version, name, version, descripti
     :param url:
         An optional unicode string of the homepage for the library
     """
+
+    # convert legacy dependency names to official pypi package names
+    name = translate_name(name)
 
     py = python_version.replace(".", "")
     plat = sublime.platform()

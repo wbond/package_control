@@ -4,7 +4,7 @@ import threading
 import time
 import traceback
 
-from . import sys_path, text, __version__
+from . import library, sys_path, text, __version__
 from .activity_indicator import ActivityIndicator
 from .automatic_upgrader import AutomaticUpgrader
 from .clear_directory import clear_directory, delete_directory
@@ -95,6 +95,8 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         in_process = None
         orphaned_ignored_packages = None
         removed_packages = None
+
+        self.remove_legacy_libraries()
 
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
@@ -458,6 +460,17 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 ''',
                 '\n- '.join(missing_packages)
             )
+
+    def remove_legacy_libraries(self):
+        """
+        Rename .dist-info directory
+
+        Prevent corruptions when satisfying libraries due to name translations
+        """
+
+        for lib in library.list_all():
+            if lib.name in library.DEPENDENCY_NAME_MAP:
+                library.remove(lib)
 
     def remove_orphaned_packages(self, found_packages):
         """

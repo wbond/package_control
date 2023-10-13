@@ -237,7 +237,7 @@ class PackageManager:
         if not names:
             return set()
 
-        return set(library.Library(name, python_version) for name in names)
+        return set(library.Library(library.translate_name(name), python_version) for name in names)
 
     def get_python_version(self, package_name):
         """
@@ -523,6 +523,11 @@ class PackageManager:
                         try:
                             filtered_libraries = {}
                             for name, info in provider.get_libraries(repo):
+                                # Convert legacy dependency names to official pypi package names.
+                                # This is required for forward compatibility with upcomming changes
+                                # in scheme 4.0.0. Do it here to apply only on client side.
+                                name = info['name'] = library.translate_name(name)
+
                                 info['releases'] = self.select_releases(name, info['releases'])
                                 if info['releases']:
                                     filtered_libraries[name] = info
@@ -652,6 +657,11 @@ class PackageManager:
             repository_libraries = {}
             unavailable_libraries = []
             for name, info in provider.get_libraries():
+                # Convert legacy dependency names to official pypi package names.
+                # This is required for forward compatibility with upcomming changes
+                # in scheme 4.0.0. Do it here to apply only on client side.
+                name = info['name'] = library.translate_name(name)
+
                 info['releases'] = self.select_releases(name, info['releases'])
                 if info['releases']:
                     repository_libraries[name] = info
@@ -1221,7 +1231,7 @@ class PackageManager:
 
             if library_names:
                 self.install_libraries(
-                    (library.Library(name, lib.python_version) for name in library_names),
+                    (library.Library(library.translate_name(name), lib.python_version) for name in library_names),
                     fail_early=False
                 )
 
@@ -1558,7 +1568,7 @@ class PackageManager:
 
             if library_names:
                 self.install_libraries(
-                    (library.Library(name, python_version) for name in library_names),
+                    (library.Library(library.translate_name(name), python_version) for name in library_names),
                     fail_early=False
                 )
 
