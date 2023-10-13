@@ -256,6 +256,9 @@ class PackageManager:
             if python_version in sys_path.lib_paths():
                 return python_version
 
+        if package_name.lower() == "user" and self.settings['version'] > 4000:
+            return "3.8"
+
         return "3.3"
 
     def get_version(self, package_name):
