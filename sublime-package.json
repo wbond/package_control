@@ -290,7 +290,6 @@
 									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
 									"additionalProperties": false,
 									"properties": {
-										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
 										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
 										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
 										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
@@ -786,7 +785,6 @@
 									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
 									"additionalProperties": false,
 									"properties": {
-										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
 										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
 										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
 										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
@@ -798,7 +796,7 @@
 										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
 										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
 										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
-										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesListWithBase" }
 									},
 									"required": [
 										"name",
@@ -822,6 +820,18 @@
 								"oneOf": [
 									{"$ref": "#/definitions/PackageReleaseArtefact"},
 									{"$ref": "#/definitions/PackageReleaseTemplate"}
+								]
+							}
+						},
+						"PackageTemplateReleasesListWithBase": {
+							"type": "array",
+							"markdownDescription": "A list of package release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/PackageReleaseArtefact"},
+									{"$ref": "#/definitions/PackageReleaseTemplateWithBase"}
 								]
 							}
 						},
@@ -886,6 +896,56 @@
 										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
 									},
 									"required": [
+										"sublime_text",
+										"tags"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								}
+							]
+						},
+						"PackageReleaseTemplateWithBase": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"base",
+										"sublime_text",
+										"branch"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"base",
 										"sublime_text",
 										"tags"
 									],
@@ -1348,7 +1408,6 @@
 									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
 									"additionalProperties": false,
 									"properties": {
-										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
 										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
 										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
 										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
@@ -1360,7 +1419,7 @@
 										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
 										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
 										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
-										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesListWithBase" }
 									},
 									"required": [
 										"name",
@@ -1385,6 +1444,18 @@
 								"oneOf": [
 									{"$ref": "#/definitions/PackageReleaseArtefact"},
 									{"$ref": "#/definitions/PackageReleaseTemplate"}
+								]
+							}
+						},
+						"PackageTemplateReleasesListWithBase": {
+							"type": "array",
+							"markdownDescription": "A list of package release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/PackageReleaseArtefact"},
+									{"$ref": "#/definitions/PackageReleaseTemplateWithBase"}
 								]
 							}
 						},
@@ -1450,6 +1521,56 @@
 										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
 									},
 									"required": [
+										"tags"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								}
+							]
+						},
+						"PackageReleaseTemplateWithBase": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"branch"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
 										"tags"
 									],
 									"defaultSnippets": [
