@@ -28,6 +28,7 @@ DEPENDENCY_NAME_MAP = {
     "python-six": "six",
     "python-toml": "toml",
     "ruamel-yaml": "ruamel.yaml",
+    "serial": "pyserial",
 }
 
 
