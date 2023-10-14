@@ -10,7 +10,7 @@ from .clear_directory import delete_directory
 # 3rd-party libraries, which are part of stdlib as of certain python version
 BUILTIN_38_LIBRARIES = {
     "3.3": {},
-    "3.8": {"pathlib", "typing"}
+    "3.8": {"enum", "pathlib", "typing"}
 }
 
 # Most legacy dependency are simply re-packed python packages.
