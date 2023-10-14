@@ -237,7 +237,13 @@ class PackageManager:
         if not names:
             return set()
 
-        return set(library.Library(library.translate_name(name), python_version) for name in names)
+        builtin = library.builtin_libraries(python_version)
+
+        return set(
+            library.Library(library.translate_name(name), python_version)
+            for name in names
+            if name not in builtin
+        )
 
     def get_python_version(self, package_name):
         """
@@ -1230,8 +1236,13 @@ class PackageManager:
                 library_names = self.select_libraries(lib_info)
 
             if library_names:
+                builtin = library.builtin_libraries(lib.python_version)
                 self.install_libraries(
-                    (library.Library(library.translate_name(name), lib.python_version) for name in library_names),
+                    (
+                        library.Library(library.translate_name(name), lib.python_version)
+                        for name in library_names
+                        if name not in builtin
+                    ),
                     fail_early=False
                 )
 
@@ -1567,8 +1578,13 @@ class PackageManager:
                 library_names = self.select_libraries(lib_info)
 
             if library_names:
+                builtin = library.builtin_libraries(python_version)
                 self.install_libraries(
-                    (library.Library(library.translate_name(name), python_version) for name in library_names),
+                    (
+                        library.Library(library.translate_name(name), python_version)
+                        for name in library_names
+                        if name not in builtin
+                    ),
                     fail_early=False
                 )
 

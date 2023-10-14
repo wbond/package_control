@@ -7,6 +7,12 @@ from . import sys_path
 from . import distinfo
 from .clear_directory import delete_directory
 
+# 3rd-party libraries, which are part of stdlib as of certain python version
+BUILTIN_38_LIBRARIES = {
+    "3.3": {},
+    "3.8": {"pathlib", "typing"}
+}
+
 # Most legacy dependency are simply re-packed python packages.
 # Some of them had been given different names, which would cause issues, when
 # installing them directly from pypi.org. They are therefore translated, using
@@ -23,6 +29,19 @@ DEPENDENCY_NAME_MAP = {
     "python-toml": "toml",
     "ruamel-yaml": "ruamel.yaml",
 }
+
+
+def builtin_libraries(python_version):
+    """
+    Determine built-in library names, which were 3rd-party libraries before
+
+    :param python_version:
+        The python version to return built-in libraries for
+
+    :returns:
+        A set of library names.
+    """
+    return BUILTIN_38_LIBRARIES.get(python_version, set())
 
 
 def translate_name(dependency_name):
