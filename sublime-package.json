@@ -377,7 +377,7 @@
 								"type": "string",
 								"format": "uri-reference",
 								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or dependency from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
-								"pattern": "(?:https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+|\\.\\.?/.*)"
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"NameValue": {
 								"type": "string",
@@ -390,7 +390,7 @@
 							"LoadOrderValue": {
 								"type": "string",
 								"markdownDescription": "A string of two digits defining load order of the depencency.",
-								"pattern": "[0-9][0-9]"
+								"pattern": "^[0-9][0-9]$"
 							},
 							"AuthorValue": {
 								"type": ["string", "array"],
@@ -437,7 +437,7 @@
 							"LastModifiedValue": {
 								"type": "string",
 								"markdownDescription": "```json\n\"last_modified\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp the package/library has been modified in the format of `YYYY-MM-DD hh:mm:ss`.",
-								"pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
 							},
 							"PreviousNamesValue": {
 								"type": "array",
@@ -453,12 +453,12 @@
 							"date": {
 								"type": "string",
 								"markdownDescription": "```json\n\"date\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp of the package/dependency release in the format of `YYYY-MM-DD hh:mm:ss`.",
-								"pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
 							},
 							"details": {
 								"type": "string",
 								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
-								"pattern": "https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+"
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"platforms": {
 								"type": ["string", "array"],
@@ -472,7 +472,7 @@
 										},
 										{
 											"type": "string",
-											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x86", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x86"]
+											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x32", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x32"]
 										}
 									]
 								},
@@ -483,7 +483,7 @@
 								"type": "string",
 								"markdownDescription": "```json\n\"sublime_text\": \"*\"\n```\n\nSublime Text build selector\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
 								"default": "*",
-								"pattern": "(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})"
+								"pattern": "^(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})$"
 							},
 							"url": {
 								"type": "string",
@@ -493,7 +493,7 @@
 							"version": {
 								"type": "string",
 								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
-								"pattern": "(?:\\d+(?:\\.\\d+)*)(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?"
+								"pattern": "^(?:\\d+(?:\\.\\d+){2})(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
 							}
 						}
 					}
@@ -643,7 +643,8 @@
 							},
 							"required": [
 								"url",
-								"version"
+								"version",
+								"sublime_text"
 							],
 							"defaultSnippets": [
 								{
@@ -667,7 +668,9 @@
 									},
 									"required": [
 										"base",
-										"branch"
+										"branch",
+										"platforms",
+										"sublime_text"
 									],
 									"defaultSnippets": [
 										{
@@ -689,7 +692,9 @@
 									},
 									"required": [
 										"base",
-										"tags"
+										"tags",
+										"platforms",
+										"sublime_text"
 									],
 									"defaultSnippets": [
 										{
@@ -849,9 +854,9 @@
 								"date": { "$ref": "#/definitions/ReleaseValues/date" }
 							},
 							"required": [
-								"sublime_text",
 								"url",
-								"version"
+								"version",
+								"sublime_text"
 							],
 							"defaultSnippets": [
 								{
@@ -874,8 +879,8 @@
 										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
 									},
 									"required": [
-										"sublime_text",
-										"branch"
+										"branch",
+										"sublime_text"
 									],
 									"defaultSnippets": [
 										{
@@ -896,8 +901,8 @@
 										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
 									},
 									"required": [
-										"sublime_text",
-										"tags"
+										"tags",
+										"sublime_text"
 									],
 									"defaultSnippets": [
 										{
@@ -923,8 +928,8 @@
 									},
 									"required": [
 										"base",
-										"sublime_text",
-										"branch"
+										"branch",
+										"sublime_text"
 									],
 									"defaultSnippets": [
 										{
@@ -946,8 +951,8 @@
 									},
 									"required": [
 										"base",
-										"sublime_text",
-										"tags"
+										"tags",
+										"sublime_text"
 									],
 									"defaultSnippets": [
 										{
@@ -964,7 +969,7 @@
 								"type": "string",
 								"format": "uri-reference",
 								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or dependency from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
-								"pattern": "(?:https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+|\\.\\.?/.*)"
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"NameValue": {
 								"type": "string",
@@ -977,7 +982,7 @@
 							"LoadOrderValue": {
 								"type": "string",
 								"markdownDescription": "A string of two digits defining load order of the depencency.",
-								"pattern": "[0-9][0-9]"
+								"pattern": "^[0-9][0-9]$"
 							},
 							"AuthorValue": {
 								"type": ["string", "array"],
@@ -1024,7 +1029,7 @@
 							"LastModifiedValue": {
 								"type": "string",
 								"markdownDescription": "```json\n\"last_modified\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp the package/library has been modified in the format of `YYYY-MM-DD hh:mm:ss`.",
-								"pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
 							},
 							"PreviousNamesValue": {
 								"type": "array",
@@ -1040,7 +1045,7 @@
 							"base": {
 								"type": "string",
 								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
-								"pattern": "https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+"
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"branch": {
 								"type": ["boolean", "string"],
@@ -1050,7 +1055,7 @@
 							"date": {
 								"type": "string",
 								"markdownDescription": "```json\n\"date\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp of the package/dependency release in the format of `YYYY-MM-DD hh:mm:ss`.",
-								"pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
 							},
 							"dependencies": {
 								"type": "array",
@@ -1073,7 +1078,7 @@
 										},
 										{
 											"type": "string",
-											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x86", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x86"]
+											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x32", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x32"]
 										}
 									]
 								},
@@ -1084,7 +1089,7 @@
 								"type": "string",
 								"markdownDescription": "```json\n\"sublime_text\": \"*\"\n```\n\nSublime Text build selector\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
 								"default": "*",
-								"pattern": "(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})"
+								"pattern": "^(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})$"
 							},
 							"sha256": {
 								"type": "string",
@@ -1104,7 +1109,7 @@
 							"version": {
 								"type": "string",
 								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
-								"pattern": "(?:\\d+(?:\\.\\d+)*)(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?"
+								"pattern": "^(?:\\d+(?:\\.\\d+){2})(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
 							}
 						}
 					}
@@ -1588,7 +1593,7 @@
 								"type": "string",
 								"format": "uri-reference",
 								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or library from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
-								"pattern": "(?:https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+|\\.\\.?/.*)"
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"NameValue": {
 								"type": "string",
@@ -1643,7 +1648,7 @@
 							"LastModifiedValue": {
 								"type": "string",
 								"markdownDescription": "```json\n\"last_modified\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp the package/library has been modified in the format of `YYYY-MM-DD hh:mm:ss`.",
-								"pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
 							},
 							"PreviousNamesValue": {
 								"type": "array",
@@ -1659,7 +1664,7 @@
 							"base": {
 								"type": "string",
 								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
-								"pattern": "https?://(?:bitbucket\\.org|github\\.com|gitlab\\.com)/[^/#?]+/[^/#?]+"
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"branch": {
 								"type": ["boolean", "string"],
@@ -1669,7 +1674,7 @@
 							"date": {
 								"type": "string",
 								"markdownDescription": "```json\n\"date\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp of the package/library release in the format of `YYYY-MM-DD hh:mm:ss`.",
-								"pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
 							},
 							"libraries": {
 								"type": "array",
@@ -1692,7 +1697,7 @@
 										},
 										{
 											"type": "string",
-											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x86", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x86"]
+											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x32", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x32"]
 										}
 									]
 								},
@@ -1714,7 +1719,7 @@
 								"type": "string",
 								"markdownDescription": "```json\n\"sublime_text\": \"*\"\n```\n\nSublime Text build selector\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
 								"default": "*",
-								"pattern": "(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})"
+								"pattern": "^(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})$"
 							},
 							"sha256": {
 								"type": "string",
@@ -1734,7 +1739,7 @@
 							"version": {
 								"type": "string",
 								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
-								"pattern": "(?:\\d+(?:\\.\\d+)*)(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?"
+								"pattern": "^(?:\\d+(?:\\.\\d+){2})(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
 							}
 						}
 					}
