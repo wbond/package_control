@@ -1281,6 +1281,30 @@
 							"oneOf": [
 								{
 									"type": "object",
+									"markdownDescription": "A release template, which uses given `asset` specification to collect available releases from `base` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"asset": { "$ref": "#/definitions/ReleaseValues/asset" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"asset"
+									],
+									"defaultSnippets": [
+										{
+											"label": "release based release template with download asset",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.whl}\",\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
 									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` url.",
 									"additionalProperties": false,
 									"properties": {
@@ -1298,7 +1322,7 @@
 									"defaultSnippets": [
 										{
 											"label": "tag based release template",
-											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\",\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
 										}
 									]
 								},
@@ -1321,7 +1345,7 @@
 									"defaultSnippets": [
 										{
 											"label": "branch based release template",
-											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\",\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
 										}
 									]
 								}
@@ -1493,6 +1517,29 @@
 							"oneOf": [
 								{
 									"type": "object",
+									"markdownDescription": "A release template, which uses given `asset` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"asset": { "$ref": "#/definitions/ReleaseValues/asset" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"asset"
+									],
+									"defaultSnippets": [
+										{
+											"label": "release based release template with download asset",
+											"bodyText": "{\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.sublime-package}\",\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
 									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
 									"additionalProperties": false,
 									"properties": {
@@ -1509,7 +1556,7 @@
 									"defaultSnippets": [
 										{
 											"label": "tag based release template",
-											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+											"bodyText": "{\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
 										}
 									]
 								},
@@ -1531,7 +1578,7 @@
 									"defaultSnippets": [
 										{
 											"label": "branch based release template",
-											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+											"bodyText": "{\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
 										}
 									]
 								}
@@ -1539,6 +1586,30 @@
 						},
 						"PackageReleaseTemplateWithBase": {
 							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `asset` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"asset": { "$ref": "#/definitions/ReleaseValues/asset" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"asset"
+									],
+									"defaultSnippets": [
+										{
+											"label": "release based release template with download asset",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.sublime-package}\",\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
 								{
 									"type": "object",
 									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
@@ -1661,6 +1732,10 @@
 							}
 						},
 						"ReleaseValues": {
+							"asset": {
+								"type": "string",
+								"markdownDescription": "```jsonc\n\"asset\": \"FileName-*.*.*-${platform}.sublime-package\"\n```\n\nA pattern to describe the display name of a download asset associated with a Bitbucket/GitHub/GitLab release.\n\nThe pattern supports fnmatch like placeholders as well as variable expansion.\n\n> If `\"asset\"` is present `\"tags\"` key is required only to specify a tag prefix.\n\n---\n\n### Globs\n\n- `*` : any number of characters\n- `?` : single character placeholder\n\n---\n\n### Variables\n\nVariable are expanded with information from owning release specification.\n\nNew release specifications are created for each combination of expanded variables.\n\n---\n\n### `${platform}`\n\n\n\nA platform-arch string as given in `\"platforms\"` list of owning release specification.\n\nA separate explicit release is evaluated for each platform.\n\nIf `\"platforms\": ['*']` is specified, variable is set to `\"any\"`.\n\n---\n\n### `${py_version}`\n\n\n\nMajor and minor part of required python version without period.\n\nOne of `\"33\"`, `\"38\"` or any other valid python version supported by ST.\n\n> Note: This variable is only useful for libraries.\n\n---\n\n### `${st_build}`\n\n\n\nValue of `\"sublime_text\"` key of owning release specification stripped by operators.\n\n```\n\"*\"            => \"any\"\n\">=4107\"       => \"4107\"\n\"<4107\"        => \"4107\"\n\"4107 - 4126\"  => \"4107\"\n```\n\n---\n\n### `${version}`\n\n\n\nResolved SemVer / PEP440 without tag prefix  \n(e.g.: tag = st4107-1.0.5 => version 1.0.5)\n\n"
+							},
 							"base": {
 								"type": "string",
 								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",

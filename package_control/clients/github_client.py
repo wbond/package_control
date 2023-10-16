@@ -131,6 +131,161 @@ class GitHubClient(JSONApiClient):
 
         return [self._make_download_info(user_repo, branch, version, timestamp)]
 
+    def download_info_from_releases(self, url, asset_templates, tag_prefix=None):
+        """
+        Retrieve information about downloading a package
+
+        :param url:
+            The URL of the repository, in one of the forms:
+              https://github.com/{user}/{repo}
+              https://github.com/{user}/{repo}/releases
+            Grabs the info from the newest tag(s) that is a valid semver version.
+
+        :param tag_prefix:
+            If the URL is a tags URL, only match tags that have this prefix.
+            If tag_prefix is None, match only tags without prefix.
+
+        :param asset_templates:
+            A list of tuples of asset template and download_info.
+
+            [
+                (
+                    "Name-${version}-st${st_build}-*-x??.sublime",
+                    {
+                        "platforms": ["windows-x64"],
+                        "python_versions": ["3.3", "3.8"],
+                        "sublime_text": ">=4107"
+                    }
+                )
+            ]
+
+            Supported globs:
+
+              * : any number of characters
+              ? : single character placeholder
+
+            Supported variables are:
+
+              ${platform}
+                A platform-arch string as given in "platforms" list.
+                A separate explicit release is evaluated for each platform.
+                If "platforms": ['*'] is specified, variable is set to "any".
+
+              ${py_version}
+                Major and minor part of required python version without period.
+                One of "33", "38" or any other valid python version supported by ST.
+
+              ${st_build}
+                Value of "st_specifier" stripped by leading operator
+                  "*"            => "any"
+                  ">=4107"       => "4107"
+                  "<4107"        => "4107"
+                  "4107 - 4126"  => "4107"
+
+              ${version}
+                Resolved semver without tag prefix
+                (e.g.: tag st4107-1.0.5 => version 1.0.5)
+
+                Note: is not replaced by this method, but by the ``ClientProvider``.
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            ``None`` if no match, ``False`` if no commit, or a list of dicts with the
+            following keys:
+
+              - `version` - the version number of the download
+              - `url` - the download URL of a zip file of the package
+              - `date` - the ISO-8601 timestamp string when the version was published
+              - `platforms` - list of unicode strings with compatible platforms
+              - `python_versions` - list of compatible python versions
+              - `sublime_text` - sublime text version specifier
+
+            Example:
+
+            ```py
+            [
+                {
+                  "url": "https://server.com/file.zip",
+                  "version": "1.0.0",
+                  "date": "2023-10-21 12:00:00",
+                  "platforms": ["windows-x64"],
+                  "python_versions": ["3.8"],
+                  "sublime_text": ">=4107"
+                },
+                ...
+            ]
+            ```
+        """
+
+        match = re.match(r'https?://github\.com/([^/#?]+/[^/#?]+)(?:/releases)?/?$', url)
+        if not match:
+            return None
+
+        def _get_releases(user_repo, tag_prefix=None, page_size=1000):
+            used_versions = set()
+            for page in range(10):
+                query_string = urlencode({'page': page * page_size, 'per_page': page_size})
+                api_url = self._api_url(user_repo, '/releases?%s' % query_string)
+                releases = self.fetch_json(api_url)
+
+                for release in releases:
+                    if release['draft']:
+                        continue
+                    version = version_match_prefix(release['tag_name'], tag_prefix)
+                    if not version or version in used_versions:
+                        continue
+
+                    used_versions.add(version)
+
+                    yield (
+                        version,
+                        release['published_at'][0:19].replace('T', ' '),
+                        [
+                            ((a['label'], a['browser_download_url']))
+                            for a in release['assets']
+                            if a['state'] == 'uploaded'
+                        ]
+                    )
+
+                if len(releases) < page_size:
+                    return
+
+        user_repo = match.group(1)
+        max_releases = self.settings.get('max_releases', 0)
+        num_releases = 0
+
+        asset_templates = self._expand_asset_variables(asset_templates)
+
+        output = []
+        for release in _get_releases(user_repo, tag_prefix):
+            version, timestamp, assets = release
+
+            version_string = str(version)
+
+            for pattern, selectors in asset_templates:
+                pattern = pattern.replace('${version}', version_string)
+                pattern = pattern.replace('.', r'\.')
+                pattern = pattern.replace('*', r'.*?')
+                pattern = pattern.replace('?', r'.')
+                regex = re.compile(pattern)
+
+                for asset_name, asset_url in assets:
+                    if not regex.match(asset_name):
+                        continue
+
+                    info = {'url': asset_url, 'version': version_string, 'date': timestamp}
+                    info.update(selectors)
+                    output.append(info)
+
+            num_releases += version.is_final
+            if max_releases > 0 and num_releases >= max_releases:
+                break
+
+        return output
+
     def download_info_from_tags(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package

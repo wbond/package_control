@@ -424,6 +424,154 @@
 					"sublime_text": "*"
 				}
 			]
+		},
+
+		// Packages can be deployed as pre-compiled zip archives or sublime-package
+		// files via BitBucket/GitHub/GitLab releases, by specifying "asset" key,
+		// to describe a pattern of display name of download assets.
+
+		// Minimal GitHub Release With Asset
+		//   A package compatible with all Sublime Text versions and platforms.
+		{
+			"name": "A File Icon",
+			"details": "https://github.com/SublimeText/AFileIcon",
+			"releases": [
+				{
+					"asset": "A File Icon.sublime-package"
+				}
+			]
+		},
+
+		// Minimal GitHub Release With Asset
+		//   A package compatible with all Sublime Text versions and platforms.
+		//   If only a single asset is shipped per release, globs can be used
+		//   to fetch files of any name.
+		{
+			"name": "A File Icon",
+			"details": "https://github.com/SublimeText/AFileIcon",
+			"releases": [
+				{
+					"asset": "*.sublime-package"
+				}
+			]
+		},
+
+		// Minimal GitHub Release With Sublime Text Specific Assets
+		//   A package with individual assets for various Sublime Text versions
+		//   Note: A release specification for each asset is required.
+		{
+			"details": "https://github.com/SublimeText/Less",
+			"releases": [
+				{
+					"asset": "Less-${version}-st${st_build}.sublime-package",
+					"sublime_text": "4107 - 4148"
+				},
+				{
+					"asset": "Less-${version}-st${st_build}.sublime-package",
+					"sublime_text": ">=4149"
+				}
+			]
+		},
+
+		// The following package specification is identical to the one above,
+		// but uses globs and explicit ST build numbers instead of variables.
+		{
+			"details": "https://github.com/SublimeText/Less",
+			"releases": [
+				{
+					"asset": "Less-*.*.*-st4107.sublime-package",
+					"sublime_text": "4107 - 4148"
+				},
+				{
+					"asset": "Less-*.*.*-st4149.sublime-package",
+					"sublime_text": ">=4149"
+				}
+			]
+		},
+
+		// Minimal GitHub Release With Platform Specific Assets
+		//   A package compatible with all Sublime Text versions and arm64/x64 platforms.
+		//   Each release provides assets named by platform.
+		//   Note: "platforms" must explicitly list each supported platform.
+		{
+			"details": "https://github.com/SublimeText/PackageWithAsset",
+			"releases": [
+				{
+					"asset": "FileName-${platform}.sublime-package",
+					"platforms": ["linux-arm64", "linux-x64", "osx-arm64", "osx-x64", "windows-x64"]
+				}
+			]
+		},
+
+		// Minimal GitHub Release With Platform Specific Assets
+		//   If names of download assets are not covered by provided variable expansion,
+		//   an explicit release specification can be declared for each platform.
+		{
+			"details": "https://github.com/SublimeText/PackageWithAsset",
+			"releases": [
+				{
+					"asset": "FileName-linux-aarch64.sublime-package",
+					"platforms": ["linux-arm64"]
+				},
+				{
+					"asset": "FileName-linux-amd64.sublime-package",
+					"platforms": ["linux-x64"]
+				},
+				{
+					"asset": "FileName-macosx-amd64.sublime-package",
+					"platforms": ["osx-arm64"]
+				},
+				{
+					"asset": "FileName-macosx-arm64.sublime-package",
+					"platforms": ["osx-arm64"]
+				},
+				{
+					"asset": "FileName-win-amd64.sublime-package",
+					"platforms": ["windows-x64"]
+				}
+			]
+		},
+
+		// Advanced GitHub Release With Platform Specific Assets
+		//
+		// Package meta data are resolved using "details", which are overridden by
+		// explicit information. If "details" is absent, each release must specify
+		// a "base" url. In this and other aspects, release based packages behave
+		// the same as tag based packages.
+
+		{
+			"name": "Package With Asset",
+			"description": "A library with custom download assets",
+			"author": "Jon Doe",
+			"releases": [
+				{
+					// An asset associated with the release is specified by asset key.
+					//
+					// Supported globs:
+					//  * : any number of characters
+					//  ? : single character placeholder
+					//
+					// Variable expansion is applied to support platform specific assets:
+					//   ${platform}
+					//     A platform-arch string as given in "platforms" list.
+					//     A separate explicit release is evaluated for each platform.
+					//     If "platforms": ['*'] is specified, variable is set to "any".
+					//   ${st_build}
+					//     Value of "sublime_text" stripped by leading operator
+					//       "*"            => "any"
+					//       ">=4107"       => "4107"
+					//       "<4107"        => "4107"
+					//       "4107 - 4126"  => "4107"
+					//   ${version}
+					//     Resolved semver without tag prefix
+					//     (e.g.: tag st4107-1.0.5 => version 1.0.5)
+					"base": "https://github.com/SublimeText/PackageWithAsset",
+					"asset": "Package.With.Asset-${version}-st${st_build}-${platform}.sublime-package",
+					"platforms": ["windows-x64", "linux-x64", "osx-x64"],
+					"sublime_text": ">=4107",
+					"tags": "st4107-"
+				}
+			]
 		}
 	],
 
@@ -554,6 +702,57 @@
 					"python_versions": ["3.3"],
 					"version": "4.2.0",
 					"url": "https://files.pythonhosted.org/packages/b1/55/02815cb8abb091033abb979ebde5122bb33b85c5987dede9ccd019033d19/coverage-4.2-cp33-cp33m-win_amd64.whl"
+				}
+			]
+		},
+
+		// Legacy dependencies can use download assets to ship platform specific archives.
+		// Download size for dependencies can be reduced this way, as only compatible
+		// binaries need to be downloaded, instead of all.
+		// Note: Legacy dependency format is fully supported also for st4_py38,
+		//       but it is recommended to ship dependencies as wheels.
+		{
+			"name": "typing",
+			"description": "\"typing\" module as a Package Control dependency",
+			"author": "FichteFoll",
+			"issues": "https://github.com/packagecontrol/typing/issues",
+			"releases": [
+				{
+					// Note: ST2 is no longer supported
+					"base": "https://github.com/packagecontrol/typing",
+					"asset": "typing-${version}-st2.zip",
+					"sublime_text": "<3000"
+				},
+				{
+					// An asset associated with the release is specified by asset key.
+					//
+					// Supported globs:
+					//  * : any number of characters
+					//  ? : single character placeholder
+					//
+					// Variable expansion is applied to support platform specific assets:
+					//   ${platform}
+					//     A platform-arch string as given in "platforms" list.
+					//     A separate explicit release is evaluated for each platform.
+					//     If "platforms": ['*'] is specified, variable is set to "any".
+					//   ${py_version}
+					//     Major and minor part of required python version without period.
+					//     One of "33", "38" or any other valid python version supported by ST.
+					//   ${st_build}
+					//     Value of "sublime_text" stripped by leading operator
+					//       "*"            => "any"
+					//       ">=4107"       => "4107"
+					//       "<4107"        => "4107"
+					//       "4107 - 4126"  => "4107"
+					//   ${version}
+					//     Resolved semver without tag prefix
+					//     (e.g.: tag st4107-1.0.5 => version 1.0.5)
+					//
+					// Note: Assets are valid only for tag-based releases.
+					"base": "https://github.com/packagecontrol/typing",
+					"asset": "typing-${version}-st3.zip",
+					"sublime_text": ">=3000",
+					"python_versions": ["3.3"]
 				}
 			]
 		}

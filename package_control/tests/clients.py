@@ -5,6 +5,7 @@ from ..clients.github_client import GitHubClient
 from ..clients.gitlab_client import GitLabClient
 from ..clients.bitbucket_client import BitBucketClient
 from ..http_cache import HttpCache
+from ._data_decorator import data_decorator, data
 
 from ._config import (
     BB_PASS,
@@ -20,6 +21,7 @@ from ._config import (
 )
 
 
+@data_decorator
 class GitHubClientTests(unittest.TestCase):
     maxDiff = None
 
@@ -288,7 +290,117 @@ class GitHubClientTests(unittest.TestCase):
             )
         )
 
+    @data(
+        (
+            (
+                # url
+                'https://github.com/packagecontrol-test/package_control-tester',
+                # asset_templates
+                [
+                    # asset name pattern, { selectors  }
+                    ('package_control-tester.sublime-package', {}),
+                ],
+                # tag prefix
+                None,
+                # results (note: test repo's don't provide release assests to test against, unfortunatelly)
+                [
+                    # {
+                    #     'date': '2014-11-12 15:52:35',
+                    #     'version': '1.0.1',
+                    #     'url': 'https://github.com/packagecontrol-test/package_control-tester/'
+                    #            'downloads/releases/1.0.1/package_control-tester.sublime-package'
+                    # },
+                    # {
+                    #     'date': '2014-11-12 15:14:23',
+                    #     'version': '1.0.1-beta',
+                    #     'url': 'https://github.com/packagecontrol-test/package_control-tester/'
+                    #            'downloads/releases/1.0.1-beta/package_control-tester.sublime-package'
+                    # },
+                    # {
+                    #     'date': '2014-11-12 15:14:13',
+                    #     'version': '1.0.0',
+                    #     'url': 'https://github.com/packagecontrol-test/package_control-tester/'
+                    #            'downloads/releases/1.0.0/package_control-tester.sublime-package'
+                    # },
+                    # {
+                    #     'date': '2014-11-12 02:02:22',
+                    #     'version': '0.9.0',
+                    #     'url': 'https://github.com/packagecontrol-test/package_control-tester/'
+                    #            'downloads/releases/0.9.0/package_control-tester.sublime-package'
+                    # }
+                ]
+            ),
+            (
+                'https://github.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-st4???.sublime-package',
+                        {'sublime_text': '>=4107'}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://github.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-st${st_build}.sublime-package',
+                        {'sublime_text': '>=4107'}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://github.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-${platform}.sublime-package',
+                        {'platforms': ['*']}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://github.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-${platform}.sublime-package',
+                        {'platforms': ['windows-x64', 'linux-x64']}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://github.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-win-amd64.sublime-package',
+                        {'platforms': ['windows-x64']}
+                    ),
+                    (
+                        'package_control-tester-win-arm64.sublime-package',
+                        {'platforms': ['windows-arm64']}
+                    ),
+                    (
+                        'package_control-tester-linux-aarch64.sublime-package',
+                        {'platforms': ['linux-arm64']}
+                    ),
+                ],
+                None,
+                []
+            ),
+        )
+    )
+    def download_info_from_releases(self, url, asset_templates, tag_prefix, result):
+        client = GitHubClient(self.github_settings())
+        self.assertEqual(result, client.download_info_from_releases(url, asset_templates, tag_prefix))
 
+
+@data_decorator
 class GitLabClientTests(unittest.TestCase):
     maxDiff = None
 
@@ -540,6 +652,98 @@ class GitLabClientTests(unittest.TestCase):
             )
         )
 
+    @data(
+        (
+            (
+                # url
+                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                # asset_templates
+                [
+                    # asset name pattern, { selectors  }
+                    ('package_control-tester.sublime-package', {}),
+                ],
+                # tag prefix
+                None,
+                # results (note: test repo's don't provide release assests to test against, unfortunatelly)
+                [
+                    # {
+                    #     'date': '2020-07-15 10:50:38',
+                    #     'version': '1.0.1',
+                    #     'url':
+                    #         'https://gitlab.com/packagecontrol-test/package_control-tester'
+                    #         '/-/releases/1.0.1/downloads/package_control-tester.sublime-package'
+                    # }
+                ]
+            ),
+            (
+                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-st4???.sublime-package',
+                        {'sublime_text': '>=4107'}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-st${st_build}.sublime-package',
+                        {'sublime_text': '>=4107'}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-${platform}.sublime-package',
+                        {'platforms': ['*']}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-${platform}.sublime-package',
+                        {'platforms': ['windows-x64', 'linux-x64']}
+                    ),
+                ],
+                None,
+                []
+            ),
+            (
+                'https://gitlab.com/packagecontrol-test/package_control-tester',
+                [
+                    (
+                        'package_control-tester-win-amd64.sublime-package',
+                        {'platforms': ['windows-x64']}
+                    ),
+                    (
+                        'package_control-tester-win-arm64.sublime-package',
+                        {'platforms': ['windows-arm64']}
+                    ),
+                    (
+                        'package_control-tester-linux-aarch64.sublime-package',
+                        {'platforms': ['linux-arm64']}
+                    ),
+                ],
+                None,
+                []
+            ),
+        )
+    )
+    def download_info_from_releases(self, url, asset_templates, tag_prefix, result):
+        client = GitLabClient(self.gitlab_settings())
+        self.assertEqual(result, client.download_info_from_releases(url, asset_templates, tag_prefix))
+
 
 class BitBucketClientTests(unittest.TestCase):
     maxDiff = None
@@ -789,3 +993,24 @@ class BitBucketClientTests(unittest.TestCase):
             ],
             client.download_info_from_tags('https://bitbucket.org/wbond/package_control-tester', 'win-')
         )
+
+    @data(
+        (
+            (
+                # url
+                'https://bitbucket.org/wbond/package_control-tester',
+                # asset_templates
+                [
+                    # asset name pattern, { selectors  }
+                    ('package_control-tester.sublime-package', {}),
+                ],
+                # tag prefix
+                None,
+                # results (note: not supported by BitBucket Client)
+                None,
+            )
+        )
+    )
+    def download_info_from_releases(self, url, asset_templates, tag_prefix, result):
+        client = BitBucketClient(self.bitbucket_settings())
+        self.assertEqual(result, client.download_info_from_releases(url, asset_templates, tag_prefix))

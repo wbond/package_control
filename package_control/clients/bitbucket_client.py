@@ -146,6 +146,18 @@ class BitBucketClient(JSONApiClient):
 
         return [self._make_download_info(user_repo, branch, version, timestamp)]
 
+    def download_info_from_releases(self, url, asset_templates, tag_prefix=None):
+        """
+        BitBucket doesn't support releases in ways GitHub/Gitlab do.
+
+        It supports download assets, but those are not bound to tags or releases.
+
+        Version information could be extracted from file names,
+        but that's not how PC evaluates download assets, currently.
+        """
+
+        return None
+
     def download_info_from_tags(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package
