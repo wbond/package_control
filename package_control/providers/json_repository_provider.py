@@ -16,6 +16,14 @@ from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import ProviderException
 from .schema_version import SchemaVersion
 
+try:
+    # running within ST
+    from ..selectors import is_compatible_platform, is_compatible_version
+    IS_ST = True
+except ImportError:
+    # running on CLI or server
+    IS_ST = False
+
 
 class InvalidRepoFileException(ProviderException):
     def __init__(self, repo, reason_message):
@@ -251,10 +259,6 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 'base', 'version', 'sublime_text', 'platforms', 'branch', 'tags', 'url', 'sha256'
             }
 
-        required_library_keys = {
-            'description', 'author', 'issues', 'releases'
-        }
-
         copied_library_keys = ('name', 'description', 'author', 'homepage', 'issues')
         copied_release_keys = ('date', 'version', 'sha256')
         default_platforms = ['*']
@@ -331,6 +335,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         value = [value]
                     elif not isinstance(value, list):
                         raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                    # ignore incompatible release (avoid downloading/evaluating further information)
+                    if IS_ST and not is_compatible_platform(value):
+                        continue
                     download_info[key] = value
 
                     # Validate supported python_versions
@@ -347,6 +354,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                     value = release.get(key, default_sublime_text)
                     if not isinstance(value, str):
                         raise InvalidLibraryReleaseKeyError(self.repo_url, info['name'], key)
+                    # ignore incompatible release (avoid downloading/evaluating further information)
+                    if IS_ST and not is_compatible_version(value):
+                        continue
                     download_info[key] = value
 
                     # Validate url
@@ -427,12 +437,16 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         info['releases'].append(download)
 
                 # check required library keys
-                for key in required_library_keys:
+                for key in ('description', 'author', 'issues'):
                     if not info.get(key):
                         raise ProviderException(
                             'Missing or invalid "{}" key for library "{}"'
                             ' in repository "{}".'.format(key, info['name'], self.repo_url)
                         )
+
+                # Empty releases means package is unavailable on current platform or for version of ST
+                if not info['releases']:
+                    continue
 
                 info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
 
@@ -493,8 +507,6 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         if not self.fetch():
             return
-
-        required_package_keys = {'author', 'releases'}
 
         copied_package_keys = (
             'name',
@@ -574,14 +586,19 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 continue
 
             try:
+                if not info.get('author'):
+                    raise ProviderException(
+                        'Missing or invalid "author" key for package "{}"'
+                        ' in repository "{}".'.format(info['name'], self.repo_url)
+                    )
+
                 # evaluate releases
 
                 releases = package.get('releases')
 
-                if self.schema_version.major == 2:
-                    # If no releases info was specified, also grab the download info from GH or BB
-                    if not releases and details:
-                        releases = [{'details': details}]
+                # If no releases info was specified, also grab the download info from GH or BB
+                if self.schema_version.major == 2 and not releases and details:
+                    releases = [{'details': details}]
 
                 if not releases:
                     raise ProviderException(
@@ -617,6 +634,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         value = [value]
                     elif not isinstance(value, list):
                         raise InvalidPackageReleaseKeyError(self.repo_url, info['name'], key)
+                    # ignore incompatible release (avoid downloading/evaluating further information)
+                    if IS_ST and not is_compatible_platform(value):
+                        continue
                     download_info[key] = value
 
                     # Validate supported python_versions
@@ -641,6 +661,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         value = release.get(key, default_sublime_text)
                         if not isinstance(value, str):
                             raise InvalidPackageReleaseKeyError(self.repo_url, info['name'], key)
+                        # ignore incompatible release (avoid downloading/evaluating further information)
+                        if IS_ST and not is_compatible_version(value):
+                            continue
                         download_info[key] = value
 
                         # Validate url
@@ -726,6 +749,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                             continue
                         if not isinstance(value, str):
                             raise InvalidPackageReleaseKeyError(self.repo_url, info['name'], key)
+                        # ignore incompatible release (avoid downloading/evaluating further information)
+                        if IS_ST and not is_compatible_version(value):
+                            continue
                         download_info[key] = value
 
                         # Validate url
@@ -780,13 +806,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                             download.update(download_info)
                             info['releases'].append(download)
 
-                # check required package keys
-                for key in required_package_keys:
-                    if not info.get(key):
-                        raise ProviderException(
-                            'Missing or invalid "{}" key for package "{}"'
-                            ' in repository "{}".'.format(key, info['name'], self.repo_url)
-                        )
+                # Empty releases means package is unavailable on current platform or for version of ST
+                if not info['releases']:
+                    continue
 
                 info['releases'] = version_sort(info['releases'], 'platforms', reverse=True)
 
