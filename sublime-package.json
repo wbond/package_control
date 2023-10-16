@@ -493,7 +493,7 @@
 							"version": {
 								"type": "string",
 								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
-								"pattern": "^(?:\\d+(?:\\.\\d+){2})(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
+								"pattern": "^v?\\d+(?:\\.\\d+){2}(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
 							}
 						}
 					}
@@ -1109,7 +1109,7 @@
 							"version": {
 								"type": "string",
 								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
-								"pattern": "^(?:\\d+(?:\\.\\d+){2})(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
+								"pattern": "^v?\\d+(?:\\.\\d+){2}(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
 							}
 						}
 					}
@@ -1739,7 +1739,7 @@
 							"version": {
 								"type": "string",
 								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
-								"pattern": "^(?:\\d+(?:\\.\\d+){2})(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
+								"pattern": "^v?\\d+(?:\\.\\d+){2}(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
 							}
 						}
 					}
