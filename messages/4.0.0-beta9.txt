@@ -1,0 +1,174 @@
+Version 4.0.0-beta9 Release Notes (2023/10/28)
+
+  N O T I C E
+  ===========
+
+  Libraries / Wheels
+  ------------------
+
+  This release includes various fixes and improvements related with installing,
+  upgrading or removing libraries.
+
+  - fix library upgrade failing due to DLLs being locked on Windows OS.
+  - fix libraries in *.whl format not being recognized / installed.
+  - ...
+
+  Note: requirements.txt is still not supported.
+
+
+  Legacy Dependencies
+  -------------------
+
+  Legacy dependencies may now also contain following folders for
+  ST4 / python specific code paths:
+
+    - "st4"                   = install only on ST4
+    - "st4_{PY}"              = ... and given python version
+    - "st4_{PY}_{OS}"         = ... and given OS
+    - "st4_{PY}_{OS}_{ARCH}"  = ... and given architecture
+
+  If both "st3" and "st4" folders are present, the latter one is preferred on ST4
+  and ignored on ST3.
+
+  Platform/arch specific ST3 dependencies are restricted to python 3.3 as those
+  are assumed to contain compiled libraries.
+
+  Note:
+
+  requires "python_versions": ["3.3", "3.8"] selector in repository.json
+  for Package Control to take python- and platform-specific releases into account.
+
+
+  Legacy Dependency Name Mapping
+  ------------------------------
+
+  A name mapping for the following legacy dependencies is introduced, when resolving
+  requirements or installing libraries to
+
+  1. avoid naming conflicts with their official names on PyPI
+  2. keep old unmaintained packages depending on those compatible,
+     even if libraries are renamed or directly shipped from PyPI.
+
+    bs4             | beautifulsoup4
+    python-docx     | docx
+    python-jinja2   | Jinja2
+    python-markdown | Markdown
+    python-pywin32  | pywin32
+    python-six      | six
+    python-toml     | toml
+    ruamel-yaml     | ruamel.yaml
+    serial          | pyserial
+
+
+  Resolving builtin libraries
+  ---------------------------
+
+  No more error messages about unavailable libraries are displayed for those, which
+  have been added to standard library as of python 3.8, if they are requested by
+  plugins, which were designed for python 3.3 but are forced to run on 3.8
+
+  Effected libraries are: enum, pathlib, typing
+
+
+  PEP 440
+  -------
+
+  With this release Package Control switches from SemVer to PEP440 version scheme
+  for packages and libraries in a relaxed backwards compatible way.
+
+  Reasons:
+
+  1. Ensure compatibility with libraries (aka.: normal python packages)
+  2. Better and correct sorting of pre-releases
+
+     §1 SemVer:  1.0.0-dev > 1.0.0-beta (bad)
+        PEP440:  1.0.0-dev < 1.0.0-beta (ok)
+
+     §2 SemVer:  1.0.0-beta9 > 1.0.0-beta10 (bad)
+        PEP440:  1.0.0-beta9 < 1.0.0-beta10 (ok)
+
+  Consequences:
+
+  1. <Major>.<Minor>.<Patch> is still a valid version and is recommended to be used.
+  2. Package Control does not shorten version strings from 1.0.0-alpha.1 to 1.0.0a1
+  3. Only PEP440 compatible pre-release names such as `alpha`, `beta`, `rc` or `dev`
+     are allowed. Anything unrecognized is automatically categorized as `dev` build.
+
+
+  GitHub/GitLab releases
+  ----------------------
+
+  Packages and libraries can be shipped via download assets associated
+  with GitHub/GitLab releases.
+
+  This way packages, which are deployed via pre-build *.sublime-package files, don't
+  need to maintain their own repository.json anymore. Instead the download asset
+  can be declared in default channel as followes:
+
+  {
+    "$schema": "sublime://packagecontrol.io/schemas/repository",
+    "schema_version": "4.0.0",
+    "packages": [
+      {
+        "name": "A File Icon",
+        "details": "https://github.com/SublimeText/AFileIcon",
+        "releases": [
+          {
+            "asset": "A File Icon.sublime-package"
+          }
+        ]
+      },
+    ],
+    "libraries": [
+      {
+        "name": "typing",
+        "description": "\"typing\" module as a Package Control dependency",
+        "author": "FichteFoll",
+        "issues": "https://github.com/packagecontrol/typing/issues",
+        "releases": [
+          {
+            "base": "https://github.com/packagecontrol/typing",
+            "asset": "typing-${version}-st2.zip",
+            "sublime_text": "<3000"
+          },
+          {
+            "base": "https://github.com/packagecontrol/typing",
+            "asset": "typing-${version}-st3.zip",
+            "sublime_text": ">=3000",
+            "python_versions": ["3.3"]
+          }
+        ]
+      }
+    ]
+  }
+
+
+  Relax repository scheme
+  -----------------------
+
+  Most release keys such as "sublime_text", "platforms" and "python_versions"
+  are now optional using sane defaults if not present.
+
+  Defaults:
+
+    "platforms": ["*"]
+    "python_versions": ["3.3"]
+    "sublime_text": "*"
+
+  As a result following package definition is now valid:
+
+  {
+    "$schema": "sublime://packagecontrol.io/schemas/repository",
+    "schema_version": "4.0.0",
+    "packages": [
+      {
+        "name": "A File Icon",
+        "details": "https://github.com/SublimeText/AFileIcon",
+        "releases": [
+          {
+            "tags": true
+          }
+        ]
+      }
+    ]
+  }
