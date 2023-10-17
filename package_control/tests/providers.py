@@ -8,6 +8,7 @@ from ..providers.github_user_provider import GitHubUserProvider
 from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
 from ..providers.gitlab_user_provider import GitLabUserProvider
 from ..providers.json_repository_provider import JsonRepositoryProvider
+from ..providers import json_repository_provider
 
 from ._config import (
     BB_PASS,
@@ -21,6 +22,10 @@ from ._config import (
     LAST_COMMIT_VERSION,
     USER_AGENT,
 )
+
+# prevent optimizations when running tests those
+# filter out required results for platform independent tests.
+json_repository_provider.IS_ST = False
 
 
 class GitHubRepositoryProviderTests(unittest.TestCase):
