@@ -244,6 +244,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         if not self.fetch():
             return
 
+        if not self.repo_info:
+            return
+
         if self.schema_version.major >= 4:
             allowed_library_keys = {
                 'name', 'description', 'author', 'homepage', 'issues', 'releases'
@@ -272,7 +275,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         ]
 
         output = {}
-        for library in self.repo_info['libraries']:
+        for library in self.repo_info.get('libraries', []):
             info = {
                 'releases': [],
                 'sources': [self.repo_url]
@@ -508,6 +511,9 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         if not self.fetch():
             return
 
+        if not self.repo_info:
+            return
+
         copied_package_keys = (
             'name',
             'description',
@@ -532,7 +538,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         ]
 
         output = {}
-        for package in self.repo_info['packages']:
+        for package in self.repo_info.get('packages', []):
             info = {
                 'releases': [],
                 'sources': [self.repo_url]
