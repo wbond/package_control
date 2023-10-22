@@ -526,7 +526,7 @@
 					"url": "https://files.pythonhosted.org/packages/a0/a6/9deeff0c49d865cd1c5ae5efc9442ff234f9b0e9d15cb4a9cda58ec255cc/coverage-7.3.2-cp38-cp38-macosx_10_9_x86_64.whl"
 				},
 				{
-					"platforms": ["linux-x86"],
+					"platforms": ["linux-x32"],
 					"python_versions": ["3.3"],
 					"version": "4.3.4",
 					"url": "https://files.pythonhosted.org/packages/c1/cd/a35e25680822d400e2a32d1eddd017087a9cef78e3fd5dc29541d8051a58/coverage-4.3.4-cp33-cp33m-manylinux1_i686.whl"
@@ -544,15 +544,15 @@
 					"url": "https://files.pythonhosted.org/packages/ac/dc/3e2d996c440a1a589f3323e806cf96d3c64650579483c3798ef2ea34b51a/coverage-4.3.4-cp33-cp33m-macosx_10_10_x86_64.whl"
 				},
 				{
-					"platforms": ["windows-x86"],
+					"platforms": ["windows-x32"],
 					"python_versions": ["3.3"],
-					"version": "4.2",
+					"version": "4.2.0",
 					"url": "https://files.pythonhosted.org/packages/a0/34/1185348cc5c541bbdf107438f0f0ea9df5d9a4233a974e9228b6ee815489/coverage-4.2-cp33-cp33m-win32.whl"
 				},
 				{
 					"platforms": ["windows-x64"],
 					"python_versions": ["3.3"],
-					"version": "4.2",
+					"version": "4.2.0",
 					"url": "https://files.pythonhosted.org/packages/b1/55/02815cb8abb091033abb979ebde5122bb33b85c5987dede9ccd019033d19/coverage-4.2-cp33-cp33m-win_amd64.whl"
 				}
 			]
