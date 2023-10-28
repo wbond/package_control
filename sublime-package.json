@@ -1664,7 +1664,7 @@
 								"type": "string",
 								"format": "uri-reference",
 								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or library from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
-								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+								"pattern": "^((https://bitbucket\\.org/[^/#?]+|\\.\\.?)/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|(https://github\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|(https://gitlab\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"NameValue": {
 								"type": "string",
@@ -1739,7 +1739,7 @@
 							"base": {
 								"type": "string",
 								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
-								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+								"pattern": "^((https://bitbucket\\.org/[^/#?]+|\\.\\.?)/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|(https://github\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|(https://gitlab\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
 							},
 							"branch": {
 								"type": ["boolean", "string"],
