@@ -1284,7 +1284,7 @@
 									"markdownDescription": "A release template, which uses given `asset` specification to collect available releases from `base` url.",
 									"additionalProperties": false,
 									"properties": {
-										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"base": { "$ref": "#/definitions/ReleaseValues/library_asset_base" },
 										"asset": { "$ref": "#/definitions/ReleaseValues/asset" },
 										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
 										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
@@ -1740,6 +1740,11 @@
 								"type": "string",
 								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
 								"pattern": "^((https://bitbucket\\.org/[^/#?]+|\\.\\.?)/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|(https://github\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|(https://gitlab\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+							},
+							"library_asset_base": {
+								"type": "string",
+								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
+								"pattern": "^((https://bitbucket\\.org/[^/#?]+|\\.\\.?)/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|(https://github\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|(https://gitlab\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?|https://pypi.org/project/[^/#?]*(/[^/#?]*)?/?)$"
 							},
 							"branch": {
 								"type": ["boolean", "string"],

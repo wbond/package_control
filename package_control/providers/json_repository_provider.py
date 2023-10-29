@@ -8,6 +8,7 @@ from ..clients.bitbucket_client import BitBucketClient
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.gitlab_client import GitLabClient
+from ..clients.pypi_client import PyPiClient
 from ..console_write import console_write
 from ..download_manager import http_get, resolve_url, resolve_urls, update_url
 from ..downloaders.downloader_exception import DownloaderException
@@ -273,7 +274,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         debug = self.settings.get('debug')
 
         clients = [
-            Client(self.settings) for Client in (GitHubClient, GitLabClient, BitBucketClient)
+            Client(self.settings) for Client in (GitHubClient, GitLabClient, BitBucketClient, PyPiClient)
         ]
 
         output = {}

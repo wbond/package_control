@@ -706,6 +706,54 @@
 			]
 		},
 
+		// Latest wheel files can be fetched directly from PyPI,
+		// using their official package URL,
+		// even in a mix with releases in legacy dependency format.
+		{
+			"name": "coverage",
+			"description": "coverage.py - http://coverage.readthedocs.org/en/latest/",
+			"author": "wbond",
+			"issues": "https://github.com/codexns/sublime-coverage/issues",
+			"releases": [
+				{
+					"base": "https://github.com/codexns/sublime-coverage",
+					"platforms": ["*"],
+					"python_versions": ["3.3"],
+					"tags": true
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp38-cp38-win_amd64.whl",
+					"platforms": ["windows-x64"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp38-cp38-manylinux_2_17_aarch64*.whl",
+					"platforms": ["linux-arm64"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp38-cp38-manylinux_2_5_x86_64*.whl",
+					"platforms": ["linux-x64"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp38-cp38-macosx_11_0_arm64.whl",
+					"platforms": ["osx-arm64"],
+					"python_versions": ["3.8"]
+				},
+				{	// fixed versions is specified by URL.
+					"base": "https://pypi.org/project/coverage/7.0.3",
+					"asset": "coverage-*-cp38-cp38-macosx_10_9_x86_64.whl",
+					"platforms": ["osx-x64"],
+					"python_versions": ["3.8"]
+				}
+			]
+		},
+
 		// Legacy dependencies can use download assets to ship platform specific archives.
 		// Download size for dependencies can be reduced this way, as only compatible
 		// binaries need to be downloaded, instead of all.
