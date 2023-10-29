@@ -279,6 +279,7 @@ class GitHubClient(JSONApiClient):
                     info = {'url': asset_url, 'version': version_string, 'date': timestamp}
                     info.update(selectors)
                     output.append(info)
+                    break
 
             num_releases += version.is_final
             if max_releases > 0 and num_releases >= max_releases:
