@@ -11,9 +11,26 @@ class HttpCache:
     """
 
     def __init__(self, ttl):
+        """
+        Constructs a new instance.
+
+        :param ttl:
+            The number of seconds a cache entry should be valid for
+        """
+        self.ttl = int(ttl)
         self.base_path = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         os.makedirs(self.base_path, exist_ok=True)
-        self.clear(int(ttl))
+
+    def __del__(self):
+        """
+        Delete an existing instance.
+
+        Remove outdated cache files, when cache object is deleted.
+        All files which have been accessed by deleted instance keep untouched.
+        """
+
+        if self.ttl > 0:
+            self.clear(self.ttl)
 
     def clear(self, ttl):
         """
