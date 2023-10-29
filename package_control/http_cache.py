@@ -46,9 +46,18 @@ class HttpCache:
             The (binary) cached value, or False
         """
         try:
+            content = None
             cache_file = os.path.join(self.base_path, key)
             with open(cache_file, 'rb') as fobj:
-                return fobj.read()
+                content = fobj.read()
+
+            # update filetime to prevent unmodified cache files
+            # from being deleted, if they are frequently accessed.
+            now = time.time()
+            os.utime(cache_file, (now, now))
+
+            return content
+
         except FileNotFoundError:
             return False
 
