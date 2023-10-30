@@ -199,6 +199,9 @@ def resolve_url(root_url, url):
         A generator of resolved URLs
     """
 
+    if not url:
+        return url
+
     scheme_match = re.match(r'(https?:)//', root_url, re.I)
     if scheme_match is None:
         root_dir = os.path.dirname(root_url)
