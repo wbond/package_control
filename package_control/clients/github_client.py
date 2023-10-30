@@ -268,8 +268,8 @@ class GitHubClient(JSONApiClient):
             for pattern, selectors in asset_templates:
                 pattern = pattern.replace('${version}', version_string)
                 pattern = pattern.replace('.', r'\.')
-                pattern = pattern.replace('*', r'.*?')
                 pattern = pattern.replace('?', r'.')
+                pattern = pattern.replace('*', r'.*?')
                 regex = re.compile(pattern)
 
                 for asset_name, asset_url in assets:
