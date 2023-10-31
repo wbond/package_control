@@ -253,19 +253,23 @@ class GitHubClient(JSONApiClient):
                 if len(releases) < page_size:
                     return
 
-        user_repo = match.group(1)
-        max_releases = self.settings.get('max_releases', 0)
-        num_releases = 0
-
         asset_templates = self._expand_asset_variables(asset_templates)
 
+        user_repo = match.group(1)
+        max_releases = self.settings.get('max_releases', 0)
+        num_releases = [0] * len(asset_templates)
+
         output = []
+
         for release in _get_releases(user_repo, tag_prefix):
             version, timestamp, assets = release
 
             version_string = str(version)
 
-            for pattern, selectors in asset_templates:
+            for idx, (pattern, selectors) in enumerate(asset_templates):
+                if max_releases > 0 and num_releases[idx] >= max_releases:
+                    continue
+
                 pattern = pattern.replace('${version}', version_string)
                 pattern = pattern.replace('.', r'\.')
                 pattern = pattern.replace('?', r'.')
@@ -279,10 +283,10 @@ class GitHubClient(JSONApiClient):
                     info = {'url': asset_url, 'version': version_string, 'date': timestamp}
                     info.update(selectors)
                     output.append(info)
+                    num_releases[idx] += version.is_final
                     break
 
-            num_releases += version.is_final
-            if max_releases > 0 and num_releases >= max_releases:
+            if max_releases > 0 and min(num_releases) >= max_releases:
                 break
 
         return output
