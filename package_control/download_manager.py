@@ -169,6 +169,8 @@ def resolve_urls(root_url, uris):
         root_dir = ''
 
     for url in uris:
+        if not url:
+            continue
         if url.startswith('//'):
             if scheme_match is not None:
                 url = scheme_match.group(1) + url
