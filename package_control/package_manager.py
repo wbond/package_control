@@ -2198,15 +2198,16 @@ class PackageManager:
 
         if not output:
             return
-        else:
-            output = '\n\n%s\n%s\n' % (package_name, '-' * len(package_name)) + output
+
+        output = "\n\n{}\n{}\n{}".format(package_name, '-' * len(package_name), output)
 
         window = None
         view = None
+        view_name = 'Package Control Messages'
 
         for _window in sublime.windows():
             for _view in _window.views():
-                if _view.name() == 'Package Control Messages':
+                if _view.name() == view_name:
                     window = _window
                     view = _view
                     break
@@ -2224,15 +2225,28 @@ class PackageManager:
             if unattended and active_view:
                 window.focus_view(active_view)
 
-            view.set_name('Package Control Messages')
+            view.set_name(view_name)
             view.set_scratch(True)
             settings = view.settings()
-            settings.set("auto_complete", False)
-            settings.set("auto_indent", False)
-            settings.set("gutter", False)
-            settings.set("tab_width", 2)
-            settings.set("word_wrap", True)
+            settings.set('auto_complete', False)
+            settings.set('auto_indent', False)
+            settings.set('gutter', False)
+            settings.set('tab_width', 2)
+            settings.set('word_wrap', True)
 
+        # As 'package_control_message' command is not available during
+        # Package Control upgrade, fallback to built-in commands to insert message
+        if package_name == 'Package Control':
+            output = "{}\n{}\n{}".format(view_name, '=' * len(view_name), output)
+            view.run_command('move_to', {'to': 'eof'})
+            view.run_command('move_to', {'to': 'bof', 'extend': True})
+            view.set_read_only(False)
+            view.run_command('insert', {'characters': output})
+            view.set_read_only(True)
+            view.run_command('move_to', {'to': 'bof'})
+            return
+
+        # append message to view without touching scroll position or selection
         view.run_command('package_control_message', {'message': output})
 
     def record_usage(self, params):
