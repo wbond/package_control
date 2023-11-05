@@ -2267,11 +2267,6 @@ class PackageManager:
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
 
-        # For Python 2, we need to explicitly encoding the params
-        for param in params:
-            if isinstance(params[param], str):
-                params[param] = params[param].encode('utf-8')
-
         url = self.settings.get('submit_url', '') + '?' + urlencode(params)
 
         try:
