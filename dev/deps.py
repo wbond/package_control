@@ -29,7 +29,7 @@ def run():
 
     try:
         print("Staging CI dependencies")
-        _stage_requirements(deps_dir, os.path.join(PACKAGE_ROOT, 'dev', 'requires'))
+        _stage_requirements(deps_dir, os.path.join(PACKAGE_ROOT, 'dev', 'requirements.txt'))
         print()
 
     except (Exception):
