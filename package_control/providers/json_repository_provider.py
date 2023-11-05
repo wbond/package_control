@@ -381,7 +381,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         if 'version' not in download_info:
                             raise ProviderException(
                                 'Missing "version" key in release with explicit "url" of library "{}"'
-                                ' in repository "%s".'.format(info['name'], self.repo_url)
+                                ' in repository "{}".'.format(info['name'], self.repo_url)
                             )
 
                         download_info['url'] = update_url(resolve_url(self.repo_url, url), debug)
@@ -435,7 +435,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                     else:
                         raise ProviderException(
                             'Missing "branch", "tags" or "url" key in release of library "{}"'
-                            ' in repository "%s".'.format(info['name'], self.repo_url)
+                            ' in repository "{}".'.format(info['name'], self.repo_url)
                         )
 
                     if downloads is None:
@@ -711,7 +711,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                             if 'version' not in download_info:
                                 raise ProviderException(
                                     'Missing "version" key in release with explicit "url" of package "{}"'
-                                    ' in repository "%s".'.format(info['name'], self.repo_url)
+                                    ' in repository "{}".'.format(info['name'], self.repo_url)
                                 )
 
                             download_info['url'] = update_url(resolve_url(self.repo_url, url), debug)
@@ -763,7 +763,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         else:
                             raise ProviderException(
                                 'Missing "branch", "tags" or "url" key in release of package "{}"'
-                                ' in repository "%s".'.format(info['name'], self.repo_url)
+                                ' in repository "{}".'.format(info['name'], self.repo_url)
                             )
 
                         if downloads is None:
@@ -809,7 +809,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                             if 'version' not in download_info:
                                 raise ProviderException(
                                     'Missing "version" key in release with explicit "url" of package "{}"'
-                                    ' in repository "%s".'.format(info['name'], self.repo_url)
+                                    ' in repository "{}".'.format(info['name'], self.repo_url)
                                 )
 
                             download_info['url'] = update_url(resolve_url(self.repo_url, url), debug)
