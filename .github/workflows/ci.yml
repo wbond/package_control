@@ -3,8 +3,8 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build-38:
-    name: Python 3.8.7 on ${{ matrix.os }} ${{ matrix.arch }}
+  test-all-38:
+    name: Python 3.8 on ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,23 +21,23 @@ jobs:
           - os: ubuntu-20.04
             arch: x86
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.8.7'
+          python-version: '3.8'
           architecture: ${{ matrix.arch }}
       - name: Install dependencies
-        run: python dev/deps.py
+        run: pip install -U flake8 pytest
       - name: Run linter
-        run: python dev/lint.py
+        run: flake8
       - name: Run tests
-        run: python dev/tests.py
+        run: pytest
         env:
           GH_PASS: ${{ secrets.GH_PASS }}
           GL_PASS: ${{ secrets.GL_PASS }}
           BB_PASS: ${{ secrets.BB_PASS }}
 
-  # build-linux-33:
+  # test-linux-33:
   #   name: Python 3.3.7 on ubuntu-18.04 x64
   #   runs-on: ubuntu-18.04
   #   steps:
@@ -57,7 +57,7 @@ jobs:
   #         GL_PASS: ${{ secrets.GL_PASS }}
   #         BB_PASS: ${{ secrets.BB_PASS }}
 
-  # build-mac-33:
+  # test-mac-33:
   #   name: Python 3.3.7 on macos-11 x64
   #   runs-on: macos-11
   #   steps:
@@ -84,7 +84,7 @@ jobs:
   #         GL_PASS: ${{ secrets.GL_PASS }}
   #         BB_PASS: ${{ secrets.BB_PASS }}
 
-  build-windows-33:
+  test-windows-33:
     name: Python 3.3.5 on windows-2019 ${{ matrix.arch }}
     runs-on: windows-2019
     strategy:

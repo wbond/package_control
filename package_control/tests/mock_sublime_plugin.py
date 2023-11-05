@@ -1,3 +1,2 @@
-
 class ZipImporter:
-	pass
+    pass
