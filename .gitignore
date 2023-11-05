@@ -1,5 +1,6 @@
 # development dependencies
 dev/.lint-deps/
+.venv*/
 
 # linter cache
 .mypy_cache/
