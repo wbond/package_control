@@ -5,11 +5,11 @@ from ..package_tasks import PackageTaskRunner
 from .existing_packages_command import ExistingPackagesCommand
 
 
-class RemovePackageCommand(ExistingPackagesCommand):
+class RevertPackageCommand(ExistingPackagesCommand):
 
     """
     A command that presents a list of installed packages, allowing the user to
-    select one to remove
+    select one to revert
     """
 
     def action(self):
@@ -17,14 +17,14 @@ class RemovePackageCommand(ExistingPackagesCommand):
         Build a strng to describe the action taken on selected package.
         """
 
-        return "remove"
+        return "revert to"
 
     def no_packages_error(self):
         """
         Return the error message to display if no packages are availablw.
         """
 
-        return "There are no packages that can be removed"
+        return "There are no built-in package overrides that can be reverted"
 
     def list_packages(self, manager):
         """
@@ -39,7 +39,7 @@ class RemovePackageCommand(ExistingPackagesCommand):
 
         return (
             manager.list_packages()
-            - manager.list_default_packages()
+            & manager.list_default_packages()
             - manager.predefined_packages()
         )
 

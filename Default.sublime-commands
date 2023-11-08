@@ -68,6 +68,10 @@
         "command": "remove_repository"
     },
     {
+        "caption": "Package Control: Revert Built-in Package",
+        "command": "revert_package"
+    },
+    {
         "caption": "Package Control: Satisfy Libraries",
         "command": "satisfy_libraries"
     },

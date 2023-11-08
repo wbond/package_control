@@ -768,7 +768,7 @@ class PackageManager:
             Only list packages that are not inside of .sublime-package files
 
         :return:
-            A set of all installed, non-default, non-library, package names
+            A set of all installed or overridden default package names
         """
 
         packages = set(list_sublime_package_dirs(sys_path.packages_path()))
@@ -776,8 +776,7 @@ class PackageManager:
             packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
         if ignored_packages:
             packages -= ignored_packages
-        packages -= set(list_sublime_package_files(sys_path.default_packages_path()))
-        packages -= {'Binary', 'Default', 'Text', 'User'}
+        packages -= {'User'}
         return packages
 
     def list_default_packages(self):
@@ -789,7 +788,7 @@ class PackageManager:
         """
 
         packages = set(list_sublime_package_files(sys_path.default_packages_path()))
-        packages -= {'Binary', 'Default', 'Text', 'User'}
+        packages -= {'User'}
         return packages
 
     def list_all_packages(self):
@@ -803,7 +802,7 @@ class PackageManager:
         packages = set(list_sublime_package_dirs(sys_path.packages_path()))
         packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
         packages |= set(list_sublime_package_files(sys_path.default_packages_path()))
-        packages -= {'Binary', 'Default', 'Text', 'User'}
+        packages -= {'User'}
         return packages
 
     def predefined_packages(self):

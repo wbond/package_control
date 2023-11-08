@@ -21,6 +21,7 @@ from .remove_channel_command import RemoveChannelCommand
 from .remove_package_command import RemovePackageCommand
 from .remove_packages_command import RemovePackagesCommand
 from .remove_repository_command import RemoveRepositoryCommand
+from .revert_package_command import RevertPackageCommand
 from .satisfy_libraries_command import SatisfyLibrariesCommand
 from .satisfy_packages_command import SatisfyPackagesCommand
 from .upgrade_all_packages_command import UpgradeAllPackagesCommand
@@ -52,6 +53,7 @@ __all__ = [
     'RemovePackageCommand',
     'RemovePackagesCommand',
     'RemoveRepositoryCommand',
+    'RevertPackageCommand',
     'SatisfyLibrariesCommand',
     'SatisfyPackagesCommand',
     'UpgradeAllPackagesCommand',

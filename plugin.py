@@ -225,6 +225,7 @@ for suffix in (
     '.commands.remove_package_command',
     '.commands.remove_packages_command',
     '.commands.remove_repository_command',
+    '.commands.revert_package_command',
     '.commands.upgrade_all_packages_command',
     '.commands.upgrade_package_command',
     '.commands.satisfy_libraries_command',

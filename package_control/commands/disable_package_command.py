@@ -36,7 +36,9 @@ class DisablePackageCommand(ExistingPackagesCommand):
         """
 
         return sorted(
-            manager.list_all_packages() - PackageDisabler.ignored_packages() - {'Package Control'},
+            manager.list_all_packages()
+            - PackageDisabler.ignored_packages()
+            - {'Binary', 'Default', 'Package Control', 'Text'},
             key=lambda s: s.lower()
         )
 
