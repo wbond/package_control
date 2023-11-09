@@ -29,10 +29,13 @@ class PackageVersion(PEP440Version):
         if not isinstance(ver, str):
             raise TypeError("{!r} is not a string".format(ver))
 
-        # Store original version string to maintain backward compatibility
+        # Store original version string with `v` trimmed to maintain backward compatibility
         # with regards to not normalize it.
         # The one and only use case is to keep existing CI tests working without change.
-        self._str = ver
+        if ver[0] == 'v':
+            self._str = ver[1:]
+        else:
+            self._str = ver
 
         # We prepend 0 to all date-based version numbers so that developers
         # may switch to explicit versioning from GitHub/GitLab/BitBucket
