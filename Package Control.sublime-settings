@@ -159,7 +159,7 @@
 
 	// This should NOT contain the name of the remote or branch - that will
 	// be automatically determined.
-	"git_update_command": ["pull", "--ff", "--commit"],
+	"git_update_command": ["pull", "--ff-only", "--quiet"],
 
 	// Custom path(s) to "hg" binary for when it can't be automatically
 	// found on the system and a package includes a .hg metadata directory.
