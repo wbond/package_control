@@ -1516,12 +1516,19 @@ class PackageManager:
 
             # By default, ST prefers .sublime-package files since this allows
             # overriding files in the Packages/{package_name}/ folder.
-            # If the package maintainer doesn't want a .sublime-package
-            try:
-                package_zip.getinfo(common_folder + '.no-sublime-package')
-                unpack = True
-            except (KeyError):
-                unpack = False
+            #
+            # Exceptions:
+            # 1. `Packages/Default` must not be overridden completely,
+            #    to prevent core functionality breaking.
+            # 2. Package maintainer wants it being installed as unpacked folder
+            #    by adding a .no-sublime-package ile
+            unpack = package_name.lower() == 'default'
+            if not unpack:
+                try:
+                    package_zip.getinfo(common_folder + '.no-sublime-package')
+                    unpack = True
+                except (KeyError):
+                    unpack = False
 
             python_version = "3.3"
             supported_python_versions = set(sys_path.lib_paths().keys())
