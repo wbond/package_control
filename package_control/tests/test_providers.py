@@ -40,25 +40,25 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
             self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
 
         return {
-            'debug': DEBUG,
-            'cache': HttpCache(604800),
-            'cache_length': 604800,
-            'user_agent': USER_AGENT,
-            'http_basic_auth': {
-                'api.github.com': [GH_USER, GH_PASS],
-                'raw.githubusercontent.com': [GH_USER, GH_PASS],
+            "debug": DEBUG,
+            "cache": HttpCache(604800),
+            "cache_length": 604800,
+            "user_agent": USER_AGENT,
+            "http_basic_auth": {
+                "api.github.com": [GH_USER, GH_PASS],
+                "raw.githubusercontent.com": [GH_USER, GH_PASS],
             }
         }
 
     @data(
         (
-            ('https://github.com/packagecontrol-test/package_control-tester', True),
-            ('https://github.com/packagecontrol-test/package_control-tester/', True),
-            ('https://github.com/packagecontrol-test/package_control-tester/tree/master', True),
-            ('https://github.com/packagecontrol-test', False),
-            ('https://github,com/packagecontrol-test/package_control-tester', False),
-            ('https://gitlab.com/packagecontrol-test/package_control-tester', False),
-            ('https://bitbucket.org/wbond/package_control-tester', False)
+            ("https://github.com/packagecontrol-test/package_control-tester", True),
+            ("https://github.com/packagecontrol-test/package_control-tester/", True),
+            ("https://github.com/packagecontrol-test/package_control-tester/tree/master", True),
+            ("https://github.com/packagecontrol-test", False),
+            ("https://github,com/packagecontrol-test/package_control-tester", False),
+            ("https://gitlab.com/packagecontrol-test/package_control-tester", False),
+            ("https://bitbucket.org/wbond/package_control-tester", False)
         )
     )
     def match_url(self, url, result):
@@ -66,51 +66,51 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
 
     def test_get_libraries(self):
         provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
+            "https://github.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_broken_libraries(self):
         provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
+            "https://github.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
         provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
+            "https://github.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual(
             [(
-                'package_control-tester',
+                "package_control-tester",
                 {
-                    'name': 'package_control-tester',
-                    'description': 'A test of Package Control upgrade messages with '
-                                   'explicit versions, but date-based releases.',
-                    'homepage': 'https://github.com/packagecontrol-test/package_control-tester',
-                    'author': 'packagecontrol-test',
-                    'readme': 'https://raw.githubusercontent.com/packagecontrol-test'
-                              '/package_control-tester/master/readme.md',
-                    'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
-                    'donate': None,
-                    'buy': None,
-                    'sources': ['https://github.com/packagecontrol-test/package_control-tester'],
-                    'labels': [],
-                    'previous_names': [],
-                    'releases': [
+                    "name": "package_control-tester",
+                    "description": "A test of Package Control upgrade messages with "
+                                   "explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol-test/package_control-tester",
+                    "author": "packagecontrol-test",
+                    "readme": "https://raw.githubusercontent.com/packagecontrol-test"
+                              "/package_control-tester/master/readme.md",
+                    "issues": "https://github.com/packagecontrol-test/package_control-tester/issues",
+                    "donate": None,
+                    "buy": None,
+                    "sources": ["https://github.com/packagecontrol-test/package_control-tester"],
+                    "labels": [],
+                    "previous_names": [],
+                    "releases": [
                         {
-                            'date': LAST_COMMIT_TIMESTAMP,
-                            'version': LAST_COMMIT_VERSION,
-                            'url': 'https://codeload.github.com/packagecontrol-test'
-                                   '/package_control-tester/zip/master',
-                            'sublime_text': '*',
-                            'platforms': ['*']
+                            "date": LAST_COMMIT_TIMESTAMP,
+                            "version": LAST_COMMIT_VERSION,
+                            "url": "https://codeload.github.com/packagecontrol-test"
+                                   "/package_control-tester/zip/master",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
                         }
                     ],
-                    'last_modified': LAST_COMMIT_TIMESTAMP
+                    "last_modified": LAST_COMMIT_TIMESTAMP
                 }
             )],
             list(provider.get_packages())
@@ -118,25 +118,25 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
 
     def test_get_broken_packages(self):
         provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
+            "https://github.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_broken_packages()))
 
     def test_get_renamed_packages(self):
         provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
+            "https://github.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual({}, provider.get_renamed_packages())
 
     def test_get_sources(self):
         provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
+            "https://github.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual(
-            ['https://github.com/packagecontrol-test/package_control-tester'],
+            ["https://github.com/packagecontrol-test/package_control-tester"],
             provider.get_sources()
         )
 
@@ -150,83 +150,83 @@ class GitHubUserProviderTests(unittest.TestCase):
             self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
 
         return {
-            'debug': DEBUG,
-            'cache': HttpCache(604800),
-            'cache_length': 604800,
-            'user_agent': USER_AGENT,
-            'http_basic_auth': {
-                'api.github.com': [GH_USER, GH_PASS],
-                'raw.githubusercontent.com': [GH_USER, GH_PASS],
+            "debug": DEBUG,
+            "cache": HttpCache(604800),
+            "cache_length": 604800,
+            "user_agent": USER_AGENT,
+            "http_basic_auth": {
+                "api.github.com": [GH_USER, GH_PASS],
+                "raw.githubusercontent.com": [GH_USER, GH_PASS],
             }
         }
 
     @data(
         (
-            ('https://github.com/packagecontrol-test', True),
-            ('https://github.com/packagecontrol-test/', True),
-            ('https://github,com/packagecontrol-test', False),
-            ('https://github.com/packagecontrol-test/package_control-tester', False),
-            ('https://github.com/packagecontrol-test/package_control-tester/tree/master', False),
-            ('https://bitbucket.org/packagecontrol-test', False),
+            ("https://github.com/packagecontrol-test", True),
+            ("https://github.com/packagecontrol-test/", True),
+            ("https://github,com/packagecontrol-test", False),
+            ("https://github.com/packagecontrol-test/package_control-tester", False),
+            ("https://github.com/packagecontrol-test/package_control-tester/tree/master", False),
+            ("https://bitbucket.org/packagecontrol-test", False),
         )
     )
     def match_url(self, url, result):
         self.assertEqual(result, GitHubUserProvider.match_url(url))
 
     def test_get_libraries(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        provider = GitHubUserProvider("https://github.com/packagecontrol-test", self.settings())
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_broken_libraries(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        provider = GitHubUserProvider("https://github.com/packagecontrol-test", self.settings())
         self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        provider = GitHubUserProvider("https://github.com/packagecontrol-test", self.settings())
         self.assertEqual(
             [(
-                'package_control-tester',
+                "package_control-tester",
                 {
-                    'name': 'package_control-tester',
-                    'description': 'A test of Package Control upgrade messages with '
-                                   'explicit versions, but date-based releases.',
-                    'homepage': 'https://github.com/packagecontrol-test/package_control-tester',
-                    'author': 'packagecontrol-test',
-                    'readme': 'https://raw.githubusercontent.com/packagecontrol-test'
-                              '/package_control-tester/master/readme.md',
-                    'issues': 'https://github.com/packagecontrol-test/package_control-tester/issues',
-                    'donate': None,
-                    'buy': None,
-                    'sources': ['https://github.com/packagecontrol-test'],
-                    'labels': [],
-                    'previous_names': [],
-                    'releases': [
+                    "name": "package_control-tester",
+                    "description": "A test of Package Control upgrade messages with "
+                                   "explicit versions, but date-based releases.",
+                    "homepage": "https://github.com/packagecontrol-test/package_control-tester",
+                    "author": "packagecontrol-test",
+                    "readme": "https://raw.githubusercontent.com/packagecontrol-test"
+                              "/package_control-tester/master/readme.md",
+                    "issues": "https://github.com/packagecontrol-test/package_control-tester/issues",
+                    "donate": None,
+                    "buy": None,
+                    "sources": ["https://github.com/packagecontrol-test"],
+                    "labels": [],
+                    "previous_names": [],
+                    "releases": [
                         {
-                            'date': LAST_COMMIT_TIMESTAMP,
-                            'version': LAST_COMMIT_VERSION,
-                            'url': 'https://codeload.github.com/packagecontrol-test'
-                                   '/package_control-tester/zip/master',
-                            'sublime_text': '*',
-                            'platforms': ['*']
+                            "date": LAST_COMMIT_TIMESTAMP,
+                            "version": LAST_COMMIT_VERSION,
+                            "url": "https://codeload.github.com/packagecontrol-test"
+                                   "/package_control-tester/zip/master",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
                         }
                     ],
-                    'last_modified': LAST_COMMIT_TIMESTAMP
+                    "last_modified": LAST_COMMIT_TIMESTAMP
                 }
             )],
             list(provider.get_packages())
         )
 
     def test_get_broken_packages(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        provider = GitHubUserProvider("https://github.com/packagecontrol-test", self.settings())
         self.assertEqual([], list(provider.get_broken_packages()))
 
     def test_get_renamed_packages(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        provider = GitHubUserProvider("https://github.com/packagecontrol-test", self.settings())
         self.assertEqual({}, provider.get_renamed_packages())
 
     def test_get_sources(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
-        self.assertEqual(['https://github.com/packagecontrol-test'], provider.get_sources())
+        provider = GitHubUserProvider("https://github.com/packagecontrol-test", self.settings())
+        self.assertEqual(["https://github.com/packagecontrol-test"], provider.get_sources())
 
 
 @data_decorator
@@ -238,24 +238,24 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
             self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
 
         return {
-            'debug': DEBUG,
-            'cache': HttpCache(604800),
-            'cache_length': 604800,
-            'user_agent': USER_AGENT,
-            'http_basic_auth': {
-                'gitlab.com': [GL_USER, GL_PASS]
+            "debug": DEBUG,
+            "cache": HttpCache(604800),
+            "cache_length": 604800,
+            "user_agent": USER_AGENT,
+            "http_basic_auth": {
+                "gitlab.com": [GL_USER, GL_PASS]
             }
         }
 
     @data(
         (
-            ('https://gitlab.com/packagecontrol-test/package_control-tester', True),
-            ('https://gitlab.com/packagecontrol-test/package_control-tester/', True),
-            ('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master', True),
-            ('https://gitlab.com/packagecontrol-test', False),
-            ('https://gitlab,com/packagecontrol-test/package_control-tester', False),
-            ('https://github.com/packagecontrol-test/package_control-tester', False),
-            ('https://bitbucket.org/wbond/package_control-tester', False)
+            ("https://gitlab.com/packagecontrol-test/package_control-tester", True),
+            ("https://gitlab.com/packagecontrol-test/package_control-tester/", True),
+            ("https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master", True),
+            ("https://gitlab.com/packagecontrol-test", False),
+            ("https://gitlab,com/packagecontrol-test/package_control-tester", False),
+            ("https://github.com/packagecontrol-test/package_control-tester", False),
+            ("https://bitbucket.org/wbond/package_control-tester", False)
         )
     )
     def match_url(self, url, result):
@@ -263,52 +263,52 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
 
     def test_get_libraries(self):
         provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            "https://gitlab.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_broken_libraries(self):
         provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            "https://gitlab.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
         provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            "https://gitlab.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual(
             [(
-                'package_control-tester',
+                "package_control-tester",
                 {
-                    'name': 'package_control-tester',
-                    'description': 'A test of Package Control upgrade messages with '
-                                   'explicit versions, but date-based releases.',
-                    'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
-                    'author': 'packagecontrol-test',
-                    'readme': 'https://gitlab.com/packagecontrol-test/'
-                              'package_control-tester/-/raw/master/readme.md',
-                    'issues': None,
-                    'donate': None,
-                    'buy': None,
-                    'sources': ['https://gitlab.com/packagecontrol-test/package_control-tester'],
-                    'labels': [],
-                    'previous_names': [],
-                    'releases': [
+                    "name": "package_control-tester",
+                    "description": "A test of Package Control upgrade messages with "
+                                   "explicit versions, but date-based releases.",
+                    "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                    "author": "packagecontrol-test",
+                    "readme": "https://gitlab.com/packagecontrol-test/"
+                              "package_control-tester/-/raw/master/readme.md",
+                    "issues": None,
+                    "donate": None,
+                    "buy": None,
+                    "sources": ["https://gitlab.com/packagecontrol-test/package_control-tester"],
+                    "labels": [],
+                    "previous_names": [],
+                    "releases": [
                         {
-                            'date': '2020-07-15 10:50:38',
-                            'version': '2020.07.15.10.50.38',
-                            'url': 'https://gitlab.com/packagecontrol-test/'
-                                   'package_control-tester/-/archive/master/'
-                                   'package_control-tester-master.zip',
-                            'sublime_text': '*',
-                            'platforms': ['*']
+                            "date": "2020-07-15 10:50:38",
+                            "version": "2020.07.15.10.50.38",
+                            "url": "https://gitlab.com/packagecontrol-test/"
+                                   "package_control-tester/-/archive/master/"
+                                   "package_control-tester-master.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
                         }
                     ],
-                    'last_modified': '2020-07-15 10:50:38'
+                    "last_modified": "2020-07-15 10:50:38"
                 }
             )],
             list(provider.get_packages())
@@ -316,25 +316,25 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
 
     def test_get_broken_packages(self):
         provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            "https://gitlab.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_broken_packages()))
 
     def test_get_renamed_packages(self):
         provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            "https://gitlab.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual({}, provider.get_renamed_packages())
 
     def test_get_sources(self):
         provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            "https://gitlab.com/packagecontrol-test/package_control-tester",
             self.settings()
         )
         self.assertEqual(
-            ['https://gitlab.com/packagecontrol-test/package_control-tester'],
+            ["https://gitlab.com/packagecontrol-test/package_control-tester"],
             provider.get_sources()
         )
 
@@ -348,80 +348,80 @@ class GitLabUserProviderTests(unittest.TestCase):
             self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
 
         return {
-            'debug': DEBUG,
-            'cache': HttpCache(604800),
-            'cache_length': 604800,
-            'user_agent': USER_AGENT,
-            'http_basic_auth': {
-                'gitlab.com': [GL_USER, GL_PASS]
+            "debug": DEBUG,
+            "cache": HttpCache(604800),
+            "cache_length": 604800,
+            "user_agent": USER_AGENT,
+            "http_basic_auth": {
+                "gitlab.com": [GL_USER, GL_PASS]
             }
         }
 
     @data(
         (
-            ('https://gitlab.com/packagecontrol-test', True),
-            ('https://gitlab.com/packagecontrol-test/', True),
-            ('https://gitlab,com/packagecontrol-test', False),
-            ('https://gitlab.com/packagecontrol-test/package_control-tester', False),
-            ('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master', False),
-            ('https://bitbucket.org/packagecontrol-test', False),
+            ("https://gitlab.com/packagecontrol-test", True),
+            ("https://gitlab.com/packagecontrol-test/", True),
+            ("https://gitlab,com/packagecontrol-test", False),
+            ("https://gitlab.com/packagecontrol-test/package_control-tester", False),
+            ("https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master", False),
+            ("https://bitbucket.org/packagecontrol-test", False),
         )
     )
     def match_url(self, url, result):
         self.assertEqual(result, GitLabUserProvider.match_url(url))
 
     def test_get_libraries(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        provider = GitLabUserProvider("https://gitlab.com/packagecontrol-test", self.settings())
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_broken_libraries(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        provider = GitLabUserProvider("https://gitlab.com/packagecontrol-test", self.settings())
         self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        provider = GitLabUserProvider("https://gitlab.com/packagecontrol-test", self.settings())
         self.assertEqual(
             [(
-                'package_control-tester',
+                "package_control-tester",
                 {
-                    'name': 'package_control-tester',
-                    'description': 'A test of Package Control upgrade messages with '
-                                   'explicit versions, but date-based releases.',
-                    'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
-                    'author': 'packagecontrol-test',
-                    'readme': 'https://gitlab.com/packagecontrol-test/'
-                              'package_control-tester/-/raw/master/readme.md',
-                    'issues': None,
-                    'donate': None,
-                    'buy': None,
-                    'sources': ['https://gitlab.com/packagecontrol-test'],
-                    'labels': [],
-                    'previous_names': [],
-                    'releases': [{
-                        'sublime_text': '*',
-                        'date': '2020-07-15 10:50:38',
-                        'version': '2020.07.15.10.50.38',
-                        'platforms': ['*'],
-                        'url': 'https://gitlab.com/packagecontrol-test/'
-                        'package_control-tester/-/archive/master/package_control-tester-master.zip'
+                    "name": "package_control-tester",
+                    "description": "A test of Package Control upgrade messages with "
+                                   "explicit versions, but date-based releases.",
+                    "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                    "author": "packagecontrol-test",
+                    "readme": "https://gitlab.com/packagecontrol-test/"
+                              "package_control-tester/-/raw/master/readme.md",
+                    "issues": None,
+                    "donate": None,
+                    "buy": None,
+                    "sources": ["https://gitlab.com/packagecontrol-test"],
+                    "labels": [],
+                    "previous_names": [],
+                    "releases": [{
+                        "sublime_text": "*",
+                        "date": "2020-07-15 10:50:38",
+                        "version": "2020.07.15.10.50.38",
+                        "platforms": ["*"],
+                        "url": "https://gitlab.com/packagecontrol-test/"
+                        "package_control-tester/-/archive/master/package_control-tester-master.zip"
                     }],
-                    'last_modified': '2020-07-15 10:50:38'
+                    "last_modified": "2020-07-15 10:50:38"
                 }
             )],
             list(provider.get_packages())
         )
 
     def test_get_broken_packages(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        provider = GitLabUserProvider("https://gitlab.com/packagecontrol-test", self.settings())
         self.assertEqual([], list(provider.get_broken_packages()))
 
     def test_get_renamed_packages(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        provider = GitLabUserProvider("https://gitlab.com/packagecontrol-test", self.settings())
         self.assertEqual({}, provider.get_renamed_packages())
 
     def test_get_sources(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
-        self.assertEqual(['https://gitlab.com/packagecontrol-test'], provider.get_sources())
+        provider = GitLabUserProvider("https://gitlab.com/packagecontrol-test", self.settings())
+        self.assertEqual(["https://gitlab.com/packagecontrol-test"], provider.get_sources())
 
 
 @data_decorator
@@ -433,24 +433,24 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
             self.skipTest("BitBucket app password for %s not set via env var BB_PASS" % BB_USER)
 
         return {
-            'debug': DEBUG,
-            'cache': HttpCache(604800),
-            'cache_length': 604800,
-            'user_agent': USER_AGENT,
-            'http_basic_auth': {
-                'api.bitbucket.org': [BB_USER, BB_PASS]
+            "debug": DEBUG,
+            "cache": HttpCache(604800),
+            "cache_length": 604800,
+            "user_agent": USER_AGENT,
+            "http_basic_auth": {
+                "api.bitbucket.org": [BB_USER, BB_PASS]
             }
         }
 
     @data(
         (
-            ('https://bitbucket.org/wbond/package_control-tester', True),
-            ('https://bitbucket.org/wbond/package_control-tester/', True),
-            ('https://bitbucket.org/wbond/package_control-tester/src/master', True),
-            ('https://bitbucket.org/wbond', False),
-            ('https://bitbucket,org/wbond/package_control-tester', False),
-            ('https://github.com/wbond/package_control-tester', False),
-            ('https://gitlab.com/wbond/package_control-tester', False)
+            ("https://bitbucket.org/wbond/package_control-tester", True),
+            ("https://bitbucket.org/wbond/package_control-tester/", True),
+            ("https://bitbucket.org/wbond/package_control-tester/src/master", True),
+            ("https://bitbucket.org/wbond", False),
+            ("https://bitbucket,org/wbond/package_control-tester", False),
+            ("https://github.com/wbond/package_control-tester", False),
+            ("https://gitlab.com/wbond/package_control-tester", False)
         )
     )
     def match_url(self, url, result):
@@ -458,49 +458,49 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
 
     def test_get_libraries(self):
         provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
+            "https://bitbucket.org/wbond/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_libraries()))
 
     def test_get_broken_libraries(self):
         provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
+            "https://bitbucket.org/wbond/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
         provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
+            "https://bitbucket.org/wbond/package_control-tester",
             self.settings()
         )
         self.assertEqual(
             [(
-                'package_control-tester',
+                "package_control-tester",
                 {
-                    'name': 'package_control-tester',
-                    'description': 'A test of Package Control upgrade messages with '
-                                   'explicit versions, but date-based releases.',
-                    'homepage': 'https://bitbucket.org/wbond/package_control-tester',
-                    'author': 'wbond',
-                    'readme': 'https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md',
-                    'issues': 'https://bitbucket.org/wbond/package_control-tester/issues',
-                    'donate': None,
-                    'buy': None,
-                    'sources': ['https://bitbucket.org/wbond/package_control-tester'],
-                    'labels': [],
-                    'previous_names': [],
-                    'releases': [
+                    "name": "package_control-tester",
+                    "description": "A test of Package Control upgrade messages with "
+                                   "explicit versions, but date-based releases.",
+                    "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                    "author": "wbond",
+                    "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                    "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                    "donate": None,
+                    "buy": None,
+                    "sources": ["https://bitbucket.org/wbond/package_control-tester"],
+                    "labels": [],
+                    "previous_names": [],
+                    "releases": [
                         {
-                            'date': LAST_COMMIT_TIMESTAMP,
-                            'version': LAST_COMMIT_VERSION,
-                            'url': 'https://bitbucket.org/wbond/package_control-tester/get/master.zip',
-                            'sublime_text': '*',
-                            'platforms': ['*']
+                            "date": LAST_COMMIT_TIMESTAMP,
+                            "version": LAST_COMMIT_VERSION,
+                            "url": "https://bitbucket.org/wbond/package_control-tester/get/master.zip",
+                            "sublime_text": "*",
+                            "platforms": ["*"]
                         }
                     ],
-                    'last_modified': LAST_COMMIT_TIMESTAMP
+                    "last_modified": LAST_COMMIT_TIMESTAMP
                 }
             )],
             list(provider.get_packages())
@@ -508,25 +508,25 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
 
     def test_get_broken_packages(self):
         provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
+            "https://bitbucket.org/wbond/package_control-tester",
             self.settings()
         )
         self.assertEqual([], list(provider.get_broken_packages()))
 
     def test_get_renamed_packages(self):
         provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
+            "https://bitbucket.org/wbond/package_control-tester",
             self.settings()
         )
         self.assertEqual({}, provider.get_renamed_packages())
 
     def test_get_sources(self):
         provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
+            "https://bitbucket.org/wbond/package_control-tester",
             self.settings()
         )
         self.assertEqual(
-            ['https://bitbucket.org/wbond/package_control-tester'],
+            ["https://bitbucket.org/wbond/package_control-tester"],
             provider.get_sources()
         )
 
@@ -544,15 +544,15 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             self.skipTest("BitBucket app password for %s not set via env var BB_PASS" % BB_USER)
 
         return {
-            'debug': DEBUG,
-            'cache': HttpCache(604800),
-            'cache_length': 604800,
-            'user_agent': USER_AGENT,
-            'http_basic_auth': {
-                'api.github.com': [GH_USER, GH_PASS],
-                'raw.githubusercontent.com': [GH_USER, GH_PASS],
-                'gitlab.com': [GL_USER, GL_PASS],
-                'api.bitbucket.org': [BB_USER, BB_PASS],
+            "debug": DEBUG,
+            "cache": HttpCache(604800),
+            "cache_length": 604800,
+            "user_agent": USER_AGENT,
+            "http_basic_auth": {
+                "api.github.com": [GH_USER, GH_PASS],
+                "raw.githubusercontent.com": [GH_USER, GH_PASS],
+                "gitlab.com": [GL_USER, GL_PASS],
+                "api.bitbucket.org": [BB_USER, BB_PASS],
             }
         }
 
@@ -560,40 +560,40 @@ class JsonRepositoryProviderTests(unittest.TestCase):
         (
             (
                 # test_case name
-                '10',
+                "10",
                 # repository url
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-1.0.json',
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-1.0.json",
                 # expected result
                 []  # libraries not supported
             ),
             (
-                '12',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-1.2.json',
+                "12",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-1.2.json",
                 []  # libraries not supported
             ),
             (
-                '20_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-2.0-explicit.json',
+                "20_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-2.0-explicit.json",
                 []  # libraries not supported
             ),
             (
-                '300_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-explicit.json',
+                "300_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-explicit.json",
                 [
                     (
-                        'bz2',
+                        "bz2",
                         {
                             "name": "bz2",
                             "author": "wbond",
                             "description": "Python bz2 module",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-explicit.json'
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -607,15 +607,15 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'ssl-linux',
+                        "ssl-linux",
                         {
                             "name": "ssl-linux",
                             "description": "Python _ssl module for Linux",
                             "author": "wbond",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-explicit.json'
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -630,15 +630,15 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'ssl-windows',
+                        "ssl-windows",
                         {
                             "name": "ssl-windows",
                             "description": "Python _ssl module for Sublime Text 2 on Windows",
                             "author": "wbond",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-explicit.json'
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -655,19 +655,19 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '400_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json',
+                "400_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json",
                 [
                     (
-                        'bz2',
+                        "bz2",
                         {
                             "name": "bz2",
                             "author": "wbond",
                             "description": "Python bz2 module",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-4.0.0-explicit.json'
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-4.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -681,15 +681,15 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'ssl-linux',
+                        "ssl-linux",
                         {
                             "name": "ssl-linux",
                             "description": "Python _ssl module for Linux",
                             "author": "wbond",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-4.0.0-explicit.json'
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-4.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -703,7 +703,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             ]
                         }
                     ),
-                    # Note: 'ssl-windows' is expected to not be present because of missing python_versions!
+                    # Note: "ssl-windows" is expected to not be present because of missing python_versions!
                 ]
             )
         ),
@@ -717,25 +717,25 @@ class JsonRepositoryProviderTests(unittest.TestCase):
         (
             (
                 # test_case name
-                '10',
+                "10",
                 # repository url
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-1.0.json',
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-1.0.json",
                 # expected result
                 []  # no longer supported by PC4.0+, empty results
             ),
             (
-                '12',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-1.2.json',
+                "12",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-1.2.json",
                 []  # no longer supported by PC4.0+, empty results
             ),
             (
-                '20_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-2.0-explicit.json',
+                "20_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-2.0-explicit.json",
                 [(
-                    'package_control-tester-2.0',
+                    "package_control-tester-2.0",
                     {
                         "name": "package_control-tester-2.0",
                         "author": "packagecontrol",
@@ -749,8 +749,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            'https://raw.githubusercontent.com/wbond/package_control-json'
-                            '/master/repository-2.0-explicit.json'
+                            "https://raw.githubusercontent.com/wbond/package_control-json"
+                            "/master/repository-2.0-explicit.json"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
                         "releases": [
@@ -791,11 +791,11 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 )]
             ),
             (
-                '20_github_details',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-2.0-github_details.json',
+                "20_github_details",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-2.0-github_details.json",
                 [(
-                    'package_control-tester-2.0-gh',
+                    "package_control-tester-2.0-gh",
                     {
                         "name": "package_control-tester-2.0-gh",
                         "author": "packagecontrol-test",
@@ -810,8 +810,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            'https://raw.githubusercontent.com/wbond/package_control-json'
-                            '/master/repository-2.0-github_details.json',
+                            "https://raw.githubusercontent.com/wbond/package_control-json"
+                            "/master/repository-2.0-github_details.json",
                             "https://github.com/packagecontrol-test/package_control-tester"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
@@ -853,11 +853,11 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 )]
             ),
             (
-                '20_bitbucket_details',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-2.0-bitbucket_details.json',
+                "20_bitbucket_details",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-2.0-bitbucket_details.json",
                 [(
-                    'package_control-tester-2.0-bb',
+                    "package_control-tester-2.0-bb",
                     {
                         "name": "package_control-tester-2.0-bb",
                         "author": "wbond",
@@ -871,8 +871,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            'https://raw.githubusercontent.com/wbond/package_control-json'
-                            '/master/repository-2.0-bitbucket_details.json',
+                            "https://raw.githubusercontent.com/wbond/package_control-json"
+                            "/master/repository-2.0-bitbucket_details.json",
                             "https://bitbucket.org/wbond/package_control-tester"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
@@ -910,10 +910,10 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 )]
             ),
             (
-                '300_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json',
+                "300_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json",
                 [(
-                    'package_control-tester-3.0.0',
+                    "package_control-tester-3.0.0",
                     {
                         "name": "package_control-tester-3.0.0",
                         "author": ["packagecontrol", "wbond"],
@@ -927,8 +927,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            'https://raw.githubusercontent.com/wbond/package_control-json'
-                            '/master/repository-3.0.0-explicit.json'
+                            "https://raw.githubusercontent.com/wbond/package_control-json"
+                            "/master/repository-3.0.0-explicit.json"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
                         "releases": [
@@ -970,12 +970,12 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 )]
             ),
             (
-                '300_github',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-github_releases.json',
+                "300_github",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-github_releases.json",
                 [
                     (
-                        'package_control-tester-3.0.0-gh-tags',
+                        "package_control-tester-3.0.0-gh-tags",
                         {
                             "name": "package_control-tester-3.0.0-gh-tags",
                             "author": "packagecontrol-test",
@@ -990,8 +990,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-github_releases.json',
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-github_releases.json",
                                 "https://github.com/packagecontrol-test/package_control-tester"
                             ],
                             "last_modified": "2014-11-12 15:52:35",
@@ -1032,7 +1032,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-gh-tags_base',
+                        "package_control-tester-3.0.0-gh-tags_base",
                         {
                             "name": "package_control-tester-3.0.0-gh-tags_base",
                             "author": "packagecontrol",
@@ -1046,8 +1046,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-github_releases.json'
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-github_releases.json"
                             ],
                             "last_modified": "2014-11-12 15:52:35",
                             "releases": [
@@ -1087,7 +1087,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-gh-tags_prefix',
+                        "package_control-tester-3.0.0-gh-tags_prefix",
                         {
                             "name": "package_control-tester-3.0.0-gh-tags_prefix",
                             "author": "packagecontrol-test",
@@ -1102,8 +1102,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-github_releases.json',
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-github_releases.json",
                                 "https://github.com/packagecontrol-test/package_control-tester"
                             ],
                             "last_modified": "2014-11-28 20:54:15",
@@ -1120,7 +1120,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-gh-branch',
+                        "package_control-tester-3.0.0-gh-branch",
                         {
                             "name": "package_control-tester-3.0.0-gh-branch",
                             "author": "packagecontrol-test",
@@ -1135,8 +1135,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-github_releases.json',
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-github_releases.json",
                                 "https://github.com/packagecontrol-test/package_control-tester"
                             ],
                             "last_modified": LAST_COMMIT_TIMESTAMP,
@@ -1155,37 +1155,37 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300_gitlab',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-gitlab_releases.json',
+                "300_gitlab",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-gitlab_releases.json",
                 [
                     (
-                        'package_control-tester-3.0.0-gl-tags',
+                        "package_control-tester-3.0.0-gl-tags",
                         {
                             "name": "package_control-tester-3.0.0-gl-tags",
-                            'author': 'packagecontrol-test',
-                            'description': 'A test of Package Control upgrade messages with '
-                                           'explicit versions, but date-based releases.',
-                            'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
-                            'readme': 'https://gitlab.com/packagecontrol-test/'
-                                      'package_control-tester/-/raw/master/readme.md',
-                            'issues': None,
-                            'donate': None,
-                            'buy': None,
-                            'sources': [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-gitlab_releases.json',
-                                'https://gitlab.com/packagecontrol-test/package_control-tester'
+                            "author": "packagecontrol-test",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "readme": "https://gitlab.com/packagecontrol-test/"
+                                      "package_control-tester/-/raw/master/readme.md",
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-gitlab_releases.json",
+                                "https://gitlab.com/packagecontrol-test/package_control-tester"
                             ],
-                            'labels': [],
-                            'previous_names': [],
-                            'last_modified': '2020-07-15 10:50:38',
-                            'releases': [
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
                                 {
                                     "version": "1.0.1",
-                                    'date': '2020-07-15 10:50:38',
-                                    'url': 'https://gitlab.com/packagecontrol-test/'
-                                           'package_control-tester/-/archive/1.0.1/package_control-tester-1.0.1.zip',
+                                    "date": "2020-07-15 10:50:38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/1.0.1/package_control-tester-1.0.1.zip",
                                     "sublime_text": "*",
                                     "platforms": ["*"]
                                 }
@@ -1193,30 +1193,30 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-gl-tags_base',
+                        "package_control-tester-3.0.0-gl-tags_base",
                         {
                             "name": "package_control-tester-3.0.0-gl-tags_base",
-                            'author': 'packagecontrol',
-                            'description': 'A test of Package Control upgrade messages with '
-                                           'explicit versions, but date-based releases.',
-                            'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
-                            'readme': None,
-                            'issues': None,
-                            'donate': None,
-                            'buy': None,
-                            'sources': [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-gitlab_releases.json'
+                            "author": "packagecontrol",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "readme": None,
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-gitlab_releases.json"
                             ],
-                            'labels': [],
-                            'previous_names': [],
-                            'last_modified': '2020-07-15 10:50:38',
-                            'releases': [
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
                                 {
                                     "version": "1.0.1",
-                                    'date': '2020-07-15 10:50:38',
-                                    'url': 'https://gitlab.com/packagecontrol-test/'
-                                           'package_control-tester/-/archive/1.0.1/package_control-tester-1.0.1.zip',
+                                    "date": "2020-07-15 10:50:38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/1.0.1/package_control-tester-1.0.1.zip",
                                     "sublime_text": "*",
                                     "platforms": ["*"]
                                 }
@@ -1224,33 +1224,33 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-gl-tags_prefix',
+                        "package_control-tester-3.0.0-gl-tags_prefix",
                         {
                             "name": "package_control-tester-3.0.0-gl-tags_prefix",
-                            'author': 'packagecontrol-test',
-                            'description': 'A test of Package Control upgrade messages with '
-                                           'explicit versions, but date-based releases.',
-                            'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
-                            'readme': 'https://gitlab.com/packagecontrol-test/'
-                                      'package_control-tester/-/raw/master/readme.md',
-                            'issues': None,
-                            'donate': None,
-                            'buy': None,
-                            'sources': [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-gitlab_releases.json',
-                                'https://gitlab.com/packagecontrol-test/package_control-tester'
+                            "author": "packagecontrol-test",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "readme": "https://gitlab.com/packagecontrol-test/"
+                                      "package_control-tester/-/raw/master/readme.md",
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-gitlab_releases.json",
+                                "https://gitlab.com/packagecontrol-test/package_control-tester"
                             ],
-                            'labels': [],
-                            'previous_names': [],
-                            'last_modified': '2020-07-15 10:50:38',
-                            'releases': [
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
                                 {
                                     "version": "1.0.1",
-                                    'date': '2020-07-15 10:50:38',
-                                    'url': 'https://gitlab.com/packagecontrol-test/'
-                                           'package_control-tester/-/archive/win-1.0.1/'
-                                           'package_control-tester-win-1.0.1.zip',
+                                    "date": "2020-07-15 10:50:38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/win-1.0.1/"
+                                           "package_control-tester-win-1.0.1.zip",
                                     "sublime_text": "<3000",
                                     "platforms": ["windows"]
                                 }
@@ -1258,35 +1258,35 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-gl-branch',
+                        "package_control-tester-3.0.0-gl-branch",
                         {
-                            'name': 'package_control-tester-3.0.0-gl-branch',
-                            'description': 'A test of Package Control upgrade messages with '
-                                           'explicit versions, but date-based releases.',
-                            'homepage': 'https://gitlab.com/packagecontrol-test/package_control-tester',
-                            'author': 'packagecontrol-test',
-                            'readme': 'https://gitlab.com/packagecontrol-test/'
-                                      'package_control-tester/-/raw/master/readme.md',
-                            'issues': None,
-                            'donate': None,
-                            'buy': None,
-                            'sources': [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-gitlab_releases.json',
-                                'https://gitlab.com/packagecontrol-test/package_control-tester'
+                            "name": "package_control-tester-3.0.0-gl-branch",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "author": "packagecontrol-test",
+                            "readme": "https://gitlab.com/packagecontrol-test/"
+                                      "package_control-tester/-/raw/master/readme.md",
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-gitlab_releases.json",
+                                "https://gitlab.com/packagecontrol-test/package_control-tester"
                             ],
-                            'labels': [],
-                            'previous_names': [],
-                            'last_modified': '2020-07-15 10:50:38',
-                            'releases': [
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
                                 {
-                                    'date': '2020-07-15 10:50:38',
-                                    'version': '2020.07.15.10.50.38',
-                                    'url': 'https://gitlab.com/packagecontrol-test/'
-                                           'package_control-tester/-/archive/master/'
-                                           'package_control-tester-master.zip',
-                                    'sublime_text': '*',
-                                    'platforms': ['*']
+                                    "date": "2020-07-15 10:50:38",
+                                    "version": "2020.07.15.10.50.38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/master/"
+                                           "package_control-tester-master.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
                                 }
                             ]
                         }
@@ -1294,12 +1294,12 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300_bitbucket',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-bitbucket_releases.json',
+                "300_bitbucket",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-bitbucket_releases.json",
                 [
                     (
-                        'package_control-tester-3.0.0-bb-tags',
+                        "package_control-tester-3.0.0-bb-tags",
                         {
                             "name": "package_control-tester-3.0.0-bb-tags",
                             "author": "wbond",
@@ -1313,8 +1313,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-bitbucket_releases.json',
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-bitbucket_releases.json",
                                 "https://bitbucket.org/wbond/package_control-tester"
                             ],
                             "last_modified": "2014-11-12 15:52:35",
@@ -1351,7 +1351,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-bb-tags_prefix',
+                        "package_control-tester-3.0.0-bb-tags_prefix",
                         {
                             "name": "package_control-tester-3.0.0-bb-tags_prefix",
                             "author": "wbond",
@@ -1365,8 +1365,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-bitbucket_releases.json',
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-bitbucket_releases.json",
                                 "https://bitbucket.org/wbond/package_control-tester"
                             ],
                             "last_modified": "2014-11-28 20:54:15",
@@ -1382,7 +1382,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     ),
                     (
-                        'package_control-tester-3.0.0-bb-branch',
+                        "package_control-tester-3.0.0-bb-branch",
                         {
                             "name": "package_control-tester-3.0.0-bb-branch",
                             "author": "wbond",
@@ -1396,8 +1396,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                'https://raw.githubusercontent.com/wbond/package_control-json'
-                                '/master/repository-3.0.0-bitbucket_releases.json',
+                                "https://raw.githubusercontent.com/wbond/package_control-json"
+                                "/master/repository-3.0.0-bitbucket_releases.json",
                                 "https://bitbucket.org/wbond/package_control-tester"
                             ],
                             "last_modified": LAST_COMMIT_TIMESTAMP,
@@ -1415,10 +1415,10 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '400_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json',
+                "400_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json",
                 [(
-                    'package_control-tester-4.0.0',
+                    "package_control-tester-4.0.0",
                     {
                         "name": "package_control-tester-4.0.0",
                         "author": ["packagecontrol", "wbond"],
@@ -1432,8 +1432,8 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            'https://raw.githubusercontent.com/wbond/package_control-json'
-                            '/master/repository-4.0.0-explicit.json'
+                            "https://raw.githubusercontent.com/wbond/package_control-json"
+                            "/master/repository-4.0.0-explicit.json"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
                         "releases": [
@@ -1487,18 +1487,18 @@ class ChannelProviderTests(unittest.TestCase):
 
     def settings(self):
         return {
-            'debug': DEBUG,
-            'cache': HttpCache(604800),
-            'cache_length': 604800,
-            'user_agent': USER_AGENT,
-            'http_basic_auth': {
-                'raw.githubusercontent.com': [GH_USER, GH_PASS],
+            "debug": DEBUG,
+            "cache": HttpCache(604800),
+            "cache_length": 604800,
+            "user_agent": USER_AGENT,
+            "http_basic_auth": {
+                "raw.githubusercontent.com": [GH_USER, GH_PASS],
             }
         }
 
     def test_get_packages_12(self):
         provider = ChannelProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
+            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
             self.settings()
         )
         self.assertRaises(
@@ -1511,7 +1511,7 @@ class ChannelProviderTests(unittest.TestCase):
 
     def test_get_renamed_packages_12(self):
         provider = ChannelProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
+            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
             self.settings()
         )
         self.assertRaises(
@@ -1521,7 +1521,7 @@ class ChannelProviderTests(unittest.TestCase):
 
     def test_get_repositories_12(self):
         provider = ChannelProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
+            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
             self.settings()
         )
         self.assertRaises(
@@ -1531,7 +1531,7 @@ class ChannelProviderTests(unittest.TestCase):
 
     def test_get_sources_12(self):
         provider = ChannelProvider(
-            'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json',
+            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
             self.settings()
         )
         self.assertRaises(
@@ -1542,14 +1542,14 @@ class ChannelProviderTests(unittest.TestCase):
     @data(
         (
             (
-                '300_repository_300_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/channel-3.0.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-explicit.json',
+                "300_repository_300_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/channel-3.0.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-explicit.json",
                 [
                     (
-                        'bz2',
+                        "bz2",
                         {
                             "name": "bz2",
                             "author": "wbond",
@@ -1568,7 +1568,7 @@ class ChannelProviderTests(unittest.TestCase):
                         },
                     ),
                     (
-                        'ssl-linux',
+                        "ssl-linux",
                         {
                             "name": "ssl-linux",
                             "description": "Python _ssl module for Linux",
@@ -1587,7 +1587,7 @@ class ChannelProviderTests(unittest.TestCase):
                         },
                     ),
                     (
-                        'ssl-windows',
+                        "ssl-windows",
                         {
                             "name": "ssl-windows",
                             "description": "Python _ssl module for Sublime Text 2 on Windows",
@@ -1618,9 +1618,9 @@ class ChannelProviderTests(unittest.TestCase):
     @data(
         (
             (
-                '20_repository_10_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json',
+                "20_repository_10_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
                 [
                     (
                         "package_control-tester-1.0",
@@ -1668,10 +1668,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '20_repository_12_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-1.2.json',
+                "20_repository_12_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-1.2.json",
                 [
                     (
                         "package_control-tester-1.2",
@@ -1719,10 +1719,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '20_repository_20_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-2.0-explicit.json',
+                "20_repository_20_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-2.0-explicit.json",
                 [
                     (
                         "package_control-tester-2.0",
@@ -1778,10 +1778,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '20_bitbucket_details',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-2.0-bitbucket_details.json',
+                "20_bitbucket_details",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-2.0-bitbucket_details.json",
                 [
                     (
                         "package_control-tester-2.0-bb",
@@ -1833,10 +1833,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '20_github_details',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-2.0-github_details.json',
+                "20_github_details",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-2.0-github_details.json",
                 [
                     (
                         "package_control-tester-2.0-gh",
@@ -1893,10 +1893,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300_repository_300_explicit',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-explicit.json',
+                "300_repository_300_explicit",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-explicit.json",
                 [
                     (
                         "package_control-tester-3.0.0",
@@ -1953,10 +1953,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300_bitbucket_tags',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-bitbucket_releases.json',
+                "300_bitbucket_tags",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-bitbucket_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-bb-tags",
@@ -2061,10 +2061,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300_github_tags',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-github_releases.json',
+                "300_github_tags",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-github_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-gh-tags",
@@ -2229,10 +2229,10 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300_gitlab_tags',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
-                'https://raw.githubusercontent.com/wbond/package_control-json'
-                '/master/repository-3.0.0-gitlab_releases.json',
+                "300_gitlab_tags",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
+                "https://raw.githubusercontent.com/wbond/package_control-json"
+                "/master/repository-3.0.0-gitlab_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-gl-tags",
@@ -2368,13 +2368,13 @@ class ChannelProviderTests(unittest.TestCase):
     @data(
         (
             (
-                '20',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
+                "20",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
                 {}
             ),
             (
-                '300',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
+                "300",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
                 {}
             )
         ),
@@ -2387,8 +2387,8 @@ class ChannelProviderTests(unittest.TestCase):
     @data(
         (
             (
-                '20',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
+                "20",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
                 [
                     "https://raw.githubusercontent.com/wbond/package_control-json"
                     "/master/repository-1.0.json",
@@ -2403,8 +2403,8 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
+                "300",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
                 [
                     "https://raw.githubusercontent.com/wbond/package_control-json"
                     "/master/repository-3.0.0-explicit.json",
@@ -2426,8 +2426,8 @@ class ChannelProviderTests(unittest.TestCase):
     @data(
         (
             (
-                '20',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json',
+                "20",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
                 [
                     "https://raw.githubusercontent.com/wbond/package_control-json"
                     "/master/repository-1.0.json",
@@ -2442,8 +2442,8 @@ class ChannelProviderTests(unittest.TestCase):
                 ]
             ),
             (
-                '300',
-                'https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json',
+                "300",
+                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
                 [
                     "https://raw.githubusercontent.com/wbond/package_control-json"
                     "/master/repository-3.0.0-explicit.json",
