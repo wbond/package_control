@@ -42,15 +42,19 @@ class HttpCache:
 
         ttl = int(ttl)
 
-        for filename in os.listdir(self.base_path):
-            path = os.path.join(self.base_path, filename)
-            # There should not be any folders in the cache dir, but we
-            # ignore to prevent an exception
-            if os.path.isdir(path):
-                continue
-            mtime = os.stat(path).st_mtime
-            if mtime < time.time() - ttl:
-                os.unlink(path)
+        try:
+            for filename in os.listdir(self.base_path):
+                path = os.path.join(self.base_path, filename)
+                # There should not be any folders in the cache dir, but we
+                # ignore to prevent an exception
+                if os.path.isdir(path):
+                    continue
+                mtime = os.stat(path).st_mtime
+                if mtime < time.time() - ttl:
+                    os.unlink(path)
+
+        except FileNotFoundError:
+            pass
 
     def get(self, key):
         """
