@@ -9,6 +9,7 @@ from ..providers.gitlab_repository_provider import GitLabRepositoryProvider
 from ..providers.gitlab_user_provider import GitLabUserProvider
 from ..providers.json_repository_provider import JsonRepositoryProvider
 from ..providers import json_repository_provider
+from ._data_decorator import data_decorator, data
 
 from ._config import (
     BB_PASS,
@@ -28,10 +29,11 @@ from ._config import (
 json_repository_provider.IS_ST = False
 
 
+@data_decorator
 class GitHubRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
-    def github_settings(self):
+    def settings(self):
         if not GH_PASS:
             self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
 
@@ -46,42 +48,38 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
             }
         }
 
-    def test_match_url(self):
-        self.assertEqual(
-            True,
-            GitHubRepositoryProvider.match_url('https://github.com/packagecontrol-test/package_control-tester')
+    @data(
+        (
+            ('https://github.com/packagecontrol-test/package_control-tester', True),
+            ('https://github.com/packagecontrol-test/package_control-tester/', True),
+            ('https://github.com/packagecontrol-test/package_control-tester/tree/master', True),
+            ('https://github.com/packagecontrol-test', False),
+            ('https://github,com/packagecontrol-test/package_control-tester', False),
+            ('https://gitlab.com/packagecontrol-test/package_control-tester', False),
+            ('https://bitbucket.org/wbond/package_control-tester', False)
         )
-        self.assertEqual(
-            True,
-            GitHubRepositoryProvider.match_url('https://github.com/packagecontrol-test/package_control-tester/')
+    )
+    def match_url(self, url, result):
+        self.assertEqual(result, GitHubRepositoryProvider.match_url(url))
+
+    def test_get_libraries(self):
+        provider = GitHubRepositoryProvider(
+            'https://github.com/packagecontrol-test/package_control-tester',
+            self.settings()
         )
-        self.assertEqual(
-            True,
-            GitHubRepositoryProvider.match_url(
-                'https://github.com/packagecontrol-test/package_control-tester/tree/master'
-            )
+        self.assertEqual([], list(provider.get_libraries()))
+
+    def test_get_broken_libraries(self):
+        provider = GitHubRepositoryProvider(
+            'https://github.com/packagecontrol-test/package_control-tester',
+            self.settings()
         )
-        self.assertEqual(
-            False,
-            GitHubRepositoryProvider.match_url('https://github.com/packagecontrol-test')
-        )
-        self.assertEqual(
-            False,
-            GitHubRepositoryProvider.match_url('https://github,com/packagecontrol-test/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            GitHubRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            GitHubRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester')
-        )
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
         provider = GitHubRepositoryProvider(
             'https://github.com/packagecontrol-test/package_control-tester',
-            self.github_settings()
+            self.settings()
         )
         self.assertEqual(
             [(
@@ -116,49 +114,36 @@ class GitHubRepositoryProviderTests(unittest.TestCase):
             list(provider.get_packages())
         )
 
+    def test_get_broken_packages(self):
+        provider = GitHubRepositoryProvider(
+            'https://github.com/packagecontrol-test/package_control-tester',
+            self.settings()
+        )
+        self.assertEqual([], list(provider.get_broken_packages()))
+
+    def test_get_renamed_packages(self):
+        provider = GitHubRepositoryProvider(
+            'https://github.com/packagecontrol-test/package_control-tester',
+            self.settings()
+        )
+        self.assertEqual({}, provider.get_renamed_packages())
+
     def test_get_sources(self):
         provider = GitHubRepositoryProvider(
             'https://github.com/packagecontrol-test/package_control-tester',
-            self.github_settings()
+            self.settings()
         )
         self.assertEqual(
             ['https://github.com/packagecontrol-test/package_control-tester'],
             provider.get_sources()
         )
 
-    def test_get_renamed_packages(self):
-        provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
-            self.github_settings()
-        )
-        self.assertEqual({}, provider.get_renamed_packages())
 
-    def test_get_broken_packages(self):
-        provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
-            self.github_settings()
-        )
-        self.assertEqual([], list(provider.get_broken_packages()))
-
-    def test_get_libraries(self):
-        provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
-            self.github_settings()
-        )
-        self.assertEqual([], list(provider.get_libraries()))
-
-    def test_get_broken_libraries(self):
-        provider = GitHubRepositoryProvider(
-            'https://github.com/packagecontrol-test/package_control-tester',
-            self.github_settings()
-        )
-        self.assertEqual([], list(provider.get_broken_libraries()))
-
-
+@data_decorator
 class GitHubUserProviderTests(unittest.TestCase):
     maxDiff = None
 
-    def github_settings(self):
+    def settings(self):
         if not GH_PASS:
             self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
 
@@ -173,34 +158,29 @@ class GitHubUserProviderTests(unittest.TestCase):
             }
         }
 
-    def test_match_url(self):
-        self.assertEqual(
-            True,
-            GitHubUserProvider.match_url('https://github.com/packagecontrol-test')
+    @data(
+        (
+            ('https://github.com/packagecontrol-test', True),
+            ('https://github.com/packagecontrol-test/', True),
+            ('https://github,com/packagecontrol-test', False),
+            ('https://github.com/packagecontrol-test/package_control-tester', False),
+            ('https://github.com/packagecontrol-test/package_control-tester/tree/master', False),
+            ('https://bitbucket.org/packagecontrol-test', False),
         )
-        self.assertEqual(
-            True,
-            GitHubUserProvider.match_url('https://github.com/packagecontrol-test/')
-        )
-        self.assertEqual(
-            False,
-            GitHubUserProvider.match_url('https://github,com/packagecontrol-test')
-        )
-        self.assertEqual(
-            False,
-            GitHubUserProvider.match_url('https://github.com/packagecontrol-test/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            GitHubUserProvider.match_url('https://github.com/packagecontrol-test/package_control-tester/tree/master')
-        )
-        self.assertEqual(
-            False,
-            GitHubUserProvider.match_url('https://bitbucket.org/packagecontrol-test')
-        )
+    )
+    def match_url(self, url, result):
+        self.assertEqual(result, GitHubUserProvider.match_url(url))
+
+    def test_get_libraries(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        self.assertEqual([], list(provider.get_libraries()))
+
+    def test_get_broken_libraries(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
         self.assertEqual(
             [(
                 'package_control-tester',
@@ -234,31 +214,24 @@ class GitHubUserProviderTests(unittest.TestCase):
             list(provider.get_packages())
         )
 
-    def test_get_sources(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        self.assertEqual(['https://github.com/packagecontrol-test'], provider.get_sources())
-
-    def test_get_renamed_packages(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        self.assertEqual({}, provider.get_renamed_packages())
-
     def test_get_broken_packages(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
         self.assertEqual([], list(provider.get_broken_packages()))
 
-    def test_get_libraries(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        self.assertEqual([], list(provider.get_libraries()))
+    def test_get_renamed_packages(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        self.assertEqual({}, provider.get_renamed_packages())
 
-    def test_get_broken_libraries(self):
-        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.github_settings())
-        self.assertEqual([], list(provider.get_broken_libraries()))
+    def test_get_sources(self):
+        provider = GitHubUserProvider('https://github.com/packagecontrol-test', self.settings())
+        self.assertEqual(['https://github.com/packagecontrol-test'], provider.get_sources())
 
 
+@data_decorator
 class GitLabRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
-    def gitlab_settings(self):
+    def settings(self):
         if not GL_PASS:
             self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
 
@@ -272,42 +245,38 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
             }
         }
 
-    def test_match_url(self):
-        self.assertEqual(
-            True,
-            GitLabRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester')
+    @data(
+        (
+            ('https://gitlab.com/packagecontrol-test/package_control-tester', True),
+            ('https://gitlab.com/packagecontrol-test/package_control-tester/', True),
+            ('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master', True),
+            ('https://gitlab.com/packagecontrol-test', False),
+            ('https://gitlab,com/packagecontrol-test/package_control-tester', False),
+            ('https://github.com/packagecontrol-test/package_control-tester', False),
+            ('https://bitbucket.org/wbond/package_control-tester', False)
         )
-        self.assertEqual(
-            True,
-            GitLabRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester/')
+    )
+    def match_url(self, url, result):
+        self.assertEqual(result, GitLabRepositoryProvider.match_url(url))
+
+    def test_get_libraries(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.settings()
         )
-        self.assertEqual(
-            True,
-            GitLabRepositoryProvider.match_url(
-                'https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master'
-            )
+        self.assertEqual([], list(provider.get_libraries()))
+
+    def test_get_broken_libraries(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.settings()
         )
-        self.assertEqual(
-            False,
-            GitLabRepositoryProvider.match_url('https://gitlab.com/packagecontrol-test')
-        )
-        self.assertEqual(
-            False,
-            GitLabRepositoryProvider.match_url('https://gitlab,com/packagecontrol-test/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            GitLabRepositoryProvider.match_url('https://github.com/packagecontrol-test/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            GitLabRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester')
-        )
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
         provider = GitLabRepositoryProvider(
             'https://gitlab.com/packagecontrol-test/package_control-tester',
-            self.gitlab_settings()
+            self.settings()
         )
         self.assertEqual(
             [(
@@ -343,49 +312,36 @@ class GitLabRepositoryProviderTests(unittest.TestCase):
             list(provider.get_packages())
         )
 
+    def test_get_broken_packages(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.settings()
+        )
+        self.assertEqual([], list(provider.get_broken_packages()))
+
+    def test_get_renamed_packages(self):
+        provider = GitLabRepositoryProvider(
+            'https://gitlab.com/packagecontrol-test/package_control-tester',
+            self.settings()
+        )
+        self.assertEqual({}, provider.get_renamed_packages())
+
     def test_get_sources(self):
         provider = GitLabRepositoryProvider(
             'https://gitlab.com/packagecontrol-test/package_control-tester',
-            self.gitlab_settings()
+            self.settings()
         )
         self.assertEqual(
             ['https://gitlab.com/packagecontrol-test/package_control-tester'],
             provider.get_sources()
         )
 
-    def test_get_renamed_packages(self):
-        provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
-            self.gitlab_settings()
-        )
-        self.assertEqual({}, provider.get_renamed_packages())
 
-    def test_get_broken_packages(self):
-        provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
-            self.gitlab_settings()
-        )
-        self.assertEqual([], list(provider.get_broken_packages()))
-
-    def test_get_libraries(self):
-        provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
-            self.gitlab_settings()
-        )
-        self.assertEqual([], list(provider.get_libraries()))
-
-    def test_get_broken_libraries(self):
-        provider = GitLabRepositoryProvider(
-            'https://gitlab.com/packagecontrol-test/package_control-tester',
-            self.gitlab_settings()
-        )
-        self.assertEqual([], list(provider.get_broken_libraries()))
-
-
+@data_decorator
 class GitLabUserProviderTests(unittest.TestCase):
     maxDiff = None
 
-    def gitlab_settings(self):
+    def settings(self):
         if not GL_PASS:
             self.skipTest("GitLab personal access token for %s not set via env var GL_PASS" % GL_USER)
 
@@ -399,34 +355,29 @@ class GitLabUserProviderTests(unittest.TestCase):
             }
         }
 
-    def test_match_url(self):
-        self.assertEqual(
-            True,
-            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test')
+    @data(
+        (
+            ('https://gitlab.com/packagecontrol-test', True),
+            ('https://gitlab.com/packagecontrol-test/', True),
+            ('https://gitlab,com/packagecontrol-test', False),
+            ('https://gitlab.com/packagecontrol-test/package_control-tester', False),
+            ('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master', False),
+            ('https://bitbucket.org/packagecontrol-test', False),
         )
-        self.assertEqual(
-            True,
-            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test/')
-        )
-        self.assertEqual(
-            False,
-            GitLabUserProvider.match_url('https://gitlab,com/packagecontrol-test')
-        )
-        self.assertEqual(
-            False,
-            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            GitLabUserProvider.match_url('https://gitlab.com/packagecontrol-test/package_control-tester/-/tree/master')
-        )
-        self.assertEqual(
-            False,
-            GitLabUserProvider.match_url('https://bitbucket.org/packagecontrol-test')
-        )
+    )
+    def match_url(self, url, result):
+        self.assertEqual(result, GitLabUserProvider.match_url(url))
+
+    def test_get_libraries(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        self.assertEqual([], list(provider.get_libraries()))
+
+    def test_get_broken_libraries(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
         self.assertEqual(
             [(
                 'package_control-tester',
@@ -458,31 +409,24 @@ class GitLabUserProviderTests(unittest.TestCase):
             list(provider.get_packages())
         )
 
-    def test_get_sources(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        self.assertEqual(['https://gitlab.com/packagecontrol-test'], provider.get_sources())
-
-    def test_get_renamed_packages(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        self.assertEqual({}, provider.get_renamed_packages())
-
     def test_get_broken_packages(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
         self.assertEqual([], list(provider.get_broken_packages()))
 
-    def test_get_libraries(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        self.assertEqual([], list(provider.get_libraries()))
+    def test_get_renamed_packages(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        self.assertEqual({}, provider.get_renamed_packages())
 
-    def test_get_broken_libraries(self):
-        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.gitlab_settings())
-        self.assertEqual([], list(provider.get_broken_libraries()))
+    def test_get_sources(self):
+        provider = GitLabUserProvider('https://gitlab.com/packagecontrol-test', self.settings())
+        self.assertEqual(['https://gitlab.com/packagecontrol-test'], provider.get_sources())
 
 
+@data_decorator
 class BitBucketRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
-    def bitbucket_settings(self):
+    def settings(self):
         if not BB_PASS:
             self.skipTest("BitBucket app password for %s not set via env var BB_PASS" % BB_USER)
 
@@ -496,42 +440,38 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
             }
         }
 
-    def test_match_url(self):
-        self.assertEqual(
-            True,
-            BitBucketRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester')
+    @data(
+        (
+            ('https://bitbucket.org/wbond/package_control-tester', True),
+            ('https://bitbucket.org/wbond/package_control-tester/', True),
+            ('https://bitbucket.org/wbond/package_control-tester/src/master', True),
+            ('https://bitbucket.org/wbond', False),
+            ('https://bitbucket,org/wbond/package_control-tester', False),
+            ('https://github.com/wbond/package_control-tester', False),
+            ('https://gitlab.com/wbond/package_control-tester', False)
         )
-        self.assertEqual(
-            True,
-            BitBucketRepositoryProvider.match_url('https://bitbucket.org/wbond/package_control-tester/')
+    )
+    def match_url(self, url, result):
+        self.assertEqual(result, BitBucketRepositoryProvider.match_url(url))
+
+    def test_get_libraries(self):
+        provider = BitBucketRepositoryProvider(
+            'https://bitbucket.org/wbond/package_control-tester',
+            self.settings()
         )
-        self.assertEqual(
-            True,
-            BitBucketRepositoryProvider.match_url(
-                'https://bitbucket.org/wbond/package_control-tester/src/master'
-            )
+        self.assertEqual([], list(provider.get_libraries()))
+
+    def test_get_broken_libraries(self):
+        provider = BitBucketRepositoryProvider(
+            'https://bitbucket.org/wbond/package_control-tester',
+            self.settings()
         )
-        self.assertEqual(
-            False,
-            BitBucketRepositoryProvider.match_url('https://bitbucket.org/wbond')
-        )
-        self.assertEqual(
-            False,
-            BitBucketRepositoryProvider.match_url('https://bitbucket,org/wbond/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            BitBucketRepositoryProvider.match_url('https://github.com/wbond/package_control-tester')
-        )
-        self.assertEqual(
-            False,
-            BitBucketRepositoryProvider.match_url('https://gitlab.com/wbond/package_control-tester')
-        )
+        self.assertEqual([], list(provider.get_broken_libraries()))
 
     def test_get_packages(self):
         provider = BitBucketRepositoryProvider(
             'https://bitbucket.org/wbond/package_control-tester',
-            self.bitbucket_settings()
+            self.settings()
         )
         self.assertEqual(
             [(
@@ -564,45 +504,32 @@ class BitBucketRepositoryProviderTests(unittest.TestCase):
             list(provider.get_packages())
         )
 
+    def test_get_broken_packages(self):
+        provider = BitBucketRepositoryProvider(
+            'https://bitbucket.org/wbond/package_control-tester',
+            self.settings()
+        )
+        self.assertEqual([], list(provider.get_broken_packages()))
+
+    def test_get_renamed_packages(self):
+        provider = BitBucketRepositoryProvider(
+            'https://bitbucket.org/wbond/package_control-tester',
+            self.settings()
+        )
+        self.assertEqual({}, provider.get_renamed_packages())
+
     def test_get_sources(self):
         provider = BitBucketRepositoryProvider(
             'https://bitbucket.org/wbond/package_control-tester',
-            self.bitbucket_settings()
+            self.settings()
         )
         self.assertEqual(
             ['https://bitbucket.org/wbond/package_control-tester'],
             provider.get_sources()
         )
 
-    def test_get_renamed_packages(self):
-        provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
-            self.bitbucket_settings()
-        )
-        self.assertEqual({}, provider.get_renamed_packages())
 
-    def test_get_broken_packages(self):
-        provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
-            self.bitbucket_settings()
-        )
-        self.assertEqual([], list(provider.get_broken_packages()))
-
-    def test_get_libraries(self):
-        provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
-            self.bitbucket_settings()
-        )
-        self.assertEqual([], list(provider.get_libraries()))
-
-    def test_get_broken_libraries(self):
-        provider = BitBucketRepositoryProvider(
-            'https://bitbucket.org/wbond/package_control-tester',
-            self.bitbucket_settings()
-        )
-        self.assertEqual([], list(provider.get_broken_libraries()))
-
-
+@data_decorator
 class JsonRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
