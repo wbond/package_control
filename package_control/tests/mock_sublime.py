@@ -4,41 +4,46 @@ import shutil
 import sys
 import tempfile
 
+_ST_DIR = None
 
-_TEMP_DIR = None
 
+def _st_dir():
+    global _ST_DIR
 
-def _temp_dir():
-    global _TEMP_DIR
+    if _ST_DIR is None:
+        _ST_DIR = os.environ.get("ST_DIR")
+        if _ST_DIR:
+            _ST_DIR = os.path.abspath(os.path.expanduser(os.path.expandvars(_ST_DIR)))
+        else:
+            _ST_DIR = tempfile.mkdtemp(prefix="package_control-tests")
 
-    if _TEMP_DIR is None:
-        _TEMP_DIR = tempfile.mkdtemp('')
-        os.mkdir(os.path.join(_TEMP_DIR, 'Data'))
-        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Cache'))
-        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Installed Packages'))
-        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Packages'))
-        os.mkdir(os.path.join(_TEMP_DIR, 'Data', 'Packages', 'User'))
-        os.mkdir(os.path.join(_TEMP_DIR, 'Packages'))
+        os.makedirs(_ST_DIR, exist_ok=True)
+        os.mkdir(os.path.join(_ST_DIR, 'Data'))
+        os.mkdir(os.path.join(_ST_DIR, 'Data', 'Cache'))
+        os.mkdir(os.path.join(_ST_DIR, 'Data', 'Installed Packages'))
+        os.mkdir(os.path.join(_ST_DIR, 'Data', 'Packages'))
+        os.mkdir(os.path.join(_ST_DIR, 'Data', 'Packages', 'User'))
+        os.mkdir(os.path.join(_ST_DIR, 'Packages'))
 
-    return _TEMP_DIR
+    return _ST_DIR
 
 
 def cache_path():
-    return os.path.join(_temp_dir(), 'Data', 'Cache')
+    return os.path.join(_st_dir(), 'Data', 'Cache')
 
 
 def installed_packages_path():
-    return os.path.join(_temp_dir(), 'Data', 'Installed Packages')
+    return os.path.join(_st_dir(), 'Data', 'Installed Packages')
 
 
 def packages_path():
-    return os.path.join(_temp_dir(), 'Data', 'Packages')
+    return os.path.join(_st_dir(), 'Data', 'Packages')
 
 
 def executable_path():
     if sys.platform == 'win32':
-        return os.path.join(_temp_dir(), 'sublime_text.exe')
-    return os.path.join(_temp_dir(), 'sublime_text')
+        return os.path.join(_st_dir(), 'sublime_text.exe')
+    return os.path.join(_st_dir(), 'sublime_text')
 
 
 def arch():
@@ -58,8 +63,8 @@ def version():
 
 
 def _cleanup_temp_dir():
-    if _TEMP_DIR:
-        shutil.rmtree(_TEMP_DIR)
+    if _ST_DIR:
+        shutil.rmtree(_ST_DIR)
 
 
 atexit.register(_cleanup_temp_dir)

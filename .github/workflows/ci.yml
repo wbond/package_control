@@ -33,6 +33,7 @@ jobs:
       - name: Run tests
         run: pytest
         env:
+          ST_DIR: ~/sublime_text
           GH_PASS: ${{ secrets.GH_PASS }}
           GL_PASS: ${{ secrets.GL_PASS }}
           BB_PASS: ${{ secrets.BB_PASS }}
@@ -53,6 +54,7 @@ jobs:
   #     - name: Run tests
   #       run: python dev/tests.py
   #       env:
+  #         ST_DIR: ~/sublime_text
   #         GH_PASS: ${{ secrets.GH_PASS }}
   #         GL_PASS: ${{ secrets.GL_PASS }}
   #         BB_PASS: ${{ secrets.BB_PASS }}
@@ -80,6 +82,7 @@ jobs:
   #     - name: Run tests
   #       run: python dev/tests.py
   #       env:
+  #         ST_DIR: ~/sublime_text
   #         GH_PASS: ${{ secrets.GH_PASS }}
   #         GL_PASS: ${{ secrets.GL_PASS }}
   #         BB_PASS: ${{ secrets.BB_PASS }}
@@ -112,6 +115,7 @@ jobs:
       - name: Run tests
         run: python dev/tests.py
         env:
+          ST_DIR: ~/sublime_text
           GH_PASS: ${{ secrets.GH_PASS }}
           GL_PASS: ${{ secrets.GL_PASS }}
           BB_PASS: ${{ secrets.BB_PASS }}
