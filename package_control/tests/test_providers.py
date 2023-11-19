@@ -26,6 +26,9 @@ from ._config import (
     USER_AGENT,
 )
 
+# URL to repository with test data (channels, repositories)
+TEST_REPOSITORY_URL = "https://raw.githubusercontent.com/wbond/package_control-json/master/"
+
 # prevent optimizations when running tests those
 # filter out required results for platform independent tests.
 json_repository_provider.IS_ST = False
@@ -562,27 +565,23 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 # test_case name
                 "10",
                 # repository url
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-1.0.json",
+                TEST_REPOSITORY_URL + "repository-1.0.json",
                 # expected result
                 []  # libraries not supported
             ),
             (
                 "12",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-1.2.json",
+                TEST_REPOSITORY_URL + "repository-1.2.json",
                 []  # libraries not supported
             ),
             (
                 "20_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-2.0-explicit.json",
+                TEST_REPOSITORY_URL + "repository-2.0-explicit.json",
                 []  # libraries not supported
             ),
             (
                 "300_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-explicit.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json",
                 [
                     (
                         "bz2",
@@ -592,8 +591,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "description": "Python bz2 module",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-explicit.json"
+                                TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -614,8 +612,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "author": "wbond",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-explicit.json"
+                                TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -637,8 +634,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "author": "wbond",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-explicit.json"
+                                TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -656,7 +652,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "400_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json",
+                TEST_REPOSITORY_URL + "repository-4.0.0-explicit.json",
                 [
                     (
                         "bz2",
@@ -666,8 +662,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "description": "Python bz2 module",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-4.0.0-explicit.json"
+                                TEST_REPOSITORY_URL + "repository-4.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -688,8 +683,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "author": "wbond",
                             "issues": "https://github.com/wbond/package_control/issues",
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-4.0.0-explicit.json"
+                                TEST_REPOSITORY_URL + "repository-4.0.0-explicit.json"
                             ],
                             "releases": [
                                 {
@@ -719,21 +713,18 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 # test_case name
                 "10",
                 # repository url
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-1.0.json",
+                TEST_REPOSITORY_URL + "repository-1.0.json",
                 # expected result
                 []  # no longer supported by PC4.0+, empty results
             ),
             (
                 "12",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-1.2.json",
+                TEST_REPOSITORY_URL + "repository-1.2.json",
                 []  # no longer supported by PC4.0+, empty results
             ),
             (
                 "20_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-2.0-explicit.json",
+                TEST_REPOSITORY_URL + "repository-2.0-explicit.json",
                 [(
                     "package_control-tester-2.0",
                     {
@@ -749,8 +740,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            "https://raw.githubusercontent.com/wbond/package_control-json"
-                            "/master/repository-2.0-explicit.json"
+                            TEST_REPOSITORY_URL + "repository-2.0-explicit.json"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
                         "releases": [
@@ -792,8 +782,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "20_github_details",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-2.0-github_details.json",
+                TEST_REPOSITORY_URL + "repository-2.0-github_details.json",
                 [(
                     "package_control-tester-2.0-gh",
                     {
@@ -810,8 +799,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            "https://raw.githubusercontent.com/wbond/package_control-json"
-                            "/master/repository-2.0-github_details.json",
+                            TEST_REPOSITORY_URL + "repository-2.0-github_details.json",
                             "https://github.com/packagecontrol-test/package_control-tester"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
@@ -854,8 +842,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "20_bitbucket_details",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-2.0-bitbucket_details.json",
+                TEST_REPOSITORY_URL + "repository-2.0-bitbucket_details.json",
                 [(
                     "package_control-tester-2.0-bb",
                     {
@@ -871,8 +858,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            "https://raw.githubusercontent.com/wbond/package_control-json"
-                            "/master/repository-2.0-bitbucket_details.json",
+                            TEST_REPOSITORY_URL + "repository-2.0-bitbucket_details.json",
                             "https://bitbucket.org/wbond/package_control-tester"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
@@ -911,7 +897,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "300_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-3.0.0-explicit.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json",
                 [(
                     "package_control-tester-3.0.0",
                     {
@@ -927,8 +913,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            "https://raw.githubusercontent.com/wbond/package_control-json"
-                            "/master/repository-3.0.0-explicit.json"
+                            TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
                         "releases": [
@@ -971,8 +956,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "300_github",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-github_releases.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-gh-tags",
@@ -990,8 +974,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-github_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json",
                                 "https://github.com/packagecontrol-test/package_control-tester"
                             ],
                             "last_modified": "2014-11-12 15:52:35",
@@ -1046,8 +1029,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-github_releases.json"
+                                TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json"
                             ],
                             "last_modified": "2014-11-12 15:52:35",
                             "releases": [
@@ -1102,8 +1084,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-github_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json",
                                 "https://github.com/packagecontrol-test/package_control-tester"
                             ],
                             "last_modified": "2014-11-28 20:54:15",
@@ -1135,8 +1116,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-github_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json",
                                 "https://github.com/packagecontrol-test/package_control-tester"
                             ],
                             "last_modified": LAST_COMMIT_TIMESTAMP,
@@ -1156,8 +1136,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "300_gitlab",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-gitlab_releases.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-gl-tags",
@@ -1173,8 +1152,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "donate": None,
                             "buy": None,
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-gitlab_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json",
                                 "https://gitlab.com/packagecontrol-test/package_control-tester"
                             ],
                             "labels": [],
@@ -1205,8 +1183,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "donate": None,
                             "buy": None,
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-gitlab_releases.json"
+                                TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json"
                             ],
                             "labels": [],
                             "previous_names": [],
@@ -1237,8 +1214,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "donate": None,
                             "buy": None,
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-gitlab_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json",
                                 "https://gitlab.com/packagecontrol-test/package_control-tester"
                             ],
                             "labels": [],
@@ -1271,8 +1247,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "donate": None,
                             "buy": None,
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-gitlab_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json",
                                 "https://gitlab.com/packagecontrol-test/package_control-tester"
                             ],
                             "labels": [],
@@ -1295,8 +1270,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "300_bitbucket",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-bitbucket_releases.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-bitbucket_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-bb-tags",
@@ -1313,8 +1287,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-bitbucket_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-bitbucket_releases.json",
                                 "https://bitbucket.org/wbond/package_control-tester"
                             ],
                             "last_modified": "2014-11-12 15:52:35",
@@ -1365,8 +1338,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-bitbucket_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-bitbucket_releases.json",
                                 "https://bitbucket.org/wbond/package_control-tester"
                             ],
                             "last_modified": "2014-11-28 20:54:15",
@@ -1396,8 +1368,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             "previous_names": [],
                             "labels": [],
                             "sources": [
-                                "https://raw.githubusercontent.com/wbond/package_control-json"
-                                "/master/repository-3.0.0-bitbucket_releases.json",
+                                TEST_REPOSITORY_URL + "repository-3.0.0-bitbucket_releases.json",
                                 "https://bitbucket.org/wbond/package_control-tester"
                             ],
                             "last_modified": LAST_COMMIT_TIMESTAMP,
@@ -1416,7 +1387,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "400_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-4.0.0-explicit.json",
+                TEST_REPOSITORY_URL + "repository-4.0.0-explicit.json",
                 [(
                     "package_control-tester-4.0.0",
                     {
@@ -1432,8 +1403,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         "previous_names": [],
                         "labels": [],
                         "sources": [
-                            "https://raw.githubusercontent.com/wbond/package_control-json"
-                            "/master/repository-4.0.0-explicit.json"
+                            TEST_REPOSITORY_URL + "repository-4.0.0-explicit.json"
                         ],
                         "last_modified": "2014-11-12 15:52:35",
                         "releases": [
@@ -1497,43 +1467,31 @@ class ChannelProviderTests(unittest.TestCase):
         }
 
     def test_get_packages_12(self):
-        provider = ChannelProvider(
-            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
-            self.settings()
-        )
+        provider = ChannelProvider(TEST_REPOSITORY_URL + "channel-1.2.json", self.settings())
         self.assertRaises(
             InvalidChannelFileException,
             list,
             provider.get_packages(
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.2.json"
+                TEST_REPOSITORY_URL + "repository-1.2.json"
             )
         )
 
     def test_get_renamed_packages_12(self):
-        provider = ChannelProvider(
-            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
-            self.settings()
-        )
+        provider = ChannelProvider(TEST_REPOSITORY_URL + "channel-1.2.json", self.settings())
         self.assertRaises(
             InvalidChannelFileException,
             provider.get_renamed_packages
         )
 
     def test_get_repositories_12(self):
-        provider = ChannelProvider(
-            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
-            self.settings()
-        )
+        provider = ChannelProvider(TEST_REPOSITORY_URL + "channel-1.2.json", self.settings())
         self.assertRaises(
             InvalidChannelFileException,
             provider.get_repositories
         )
 
     def test_get_sources_12(self):
-        provider = ChannelProvider(
-            "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-1.2.json",
-            self.settings()
-        )
+        provider = ChannelProvider(TEST_REPOSITORY_URL + "channel-1.2.json", self.settings())
         self.assertRaises(
             InvalidChannelFileException,
             provider.get_sources
@@ -1543,10 +1501,8 @@ class ChannelProviderTests(unittest.TestCase):
         (
             (
                 "300_repository_300_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/channel-3.0.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-explicit.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json",
                 [
                     (
                         "bz2",
@@ -1619,8 +1575,8 @@ class ChannelProviderTests(unittest.TestCase):
         (
             (
                 "20_repository_10_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/repository-1.0.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
+                TEST_REPOSITORY_URL + "repository-1.0.json",
                 [
                     (
                         "package_control-tester-1.0",
@@ -1669,9 +1625,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "20_repository_12_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-1.2.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
+                TEST_REPOSITORY_URL + "repository-1.2.json",
                 [
                     (
                         "package_control-tester-1.2",
@@ -1720,9 +1675,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "20_repository_20_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-2.0-explicit.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
+                TEST_REPOSITORY_URL + "repository-2.0-explicit.json",
                 [
                     (
                         "package_control-tester-2.0",
@@ -1779,9 +1733,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "20_bitbucket_details",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-2.0-bitbucket_details.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
+                TEST_REPOSITORY_URL + "repository-2.0-bitbucket_details.json",
                 [
                     (
                         "package_control-tester-2.0-bb",
@@ -1834,9 +1787,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "20_github_details",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-2.0-github_details.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
+                TEST_REPOSITORY_URL + "repository-2.0-github_details.json",
                 [
                     (
                         "package_control-tester-2.0-gh",
@@ -1894,9 +1846,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "300_repository_300_explicit",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-explicit.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json",
                 [
                     (
                         "package_control-tester-3.0.0",
@@ -1954,9 +1905,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "300_bitbucket_tags",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-bitbucket_releases.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-bitbucket_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-bb-tags",
@@ -2062,9 +2012,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "300_github_tags",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-github_releases.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-gh-tags",
@@ -2230,9 +2179,8 @@ class ChannelProviderTests(unittest.TestCase):
             ),
             (
                 "300_gitlab_tags",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
-                "https://raw.githubusercontent.com/wbond/package_control-json"
-                "/master/repository-3.0.0-gitlab_releases.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json",
                 [
                     (
                         "package_control-tester-3.0.0-gl-tags",
@@ -2369,12 +2317,12 @@ class ChannelProviderTests(unittest.TestCase):
         (
             (
                 "20",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
                 {}
             ),
             (
                 "300",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
                 {}
             )
         ),
@@ -2388,32 +2336,23 @@ class ChannelProviderTests(unittest.TestCase):
         (
             (
                 "20",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
                 [
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-1.0.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-1.2.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-2.0-explicit.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-2.0-github_details.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-2.0-bitbucket_details.json"
+                    TEST_REPOSITORY_URL + "repository-1.0.json",
+                    TEST_REPOSITORY_URL + "repository-1.2.json",
+                    TEST_REPOSITORY_URL + "repository-2.0-explicit.json",
+                    TEST_REPOSITORY_URL + "repository-2.0-github_details.json",
+                    TEST_REPOSITORY_URL + "repository-2.0-bitbucket_details.json"
                 ]
             ),
             (
                 "300",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
                 [
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-explicit.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-github_releases.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-gitlab_releases.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-bitbucket_releases.json"
+                    TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json",
+                    TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json",
+                    TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json",
+                    TEST_REPOSITORY_URL + "repository-3.0.0-bitbucket_releases.json"
                 ]
             )
         ),
@@ -2427,32 +2366,23 @@ class ChannelProviderTests(unittest.TestCase):
         (
             (
                 "20",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-2.0.json",
+                TEST_REPOSITORY_URL + "channel-2.0.json",
                 [
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-1.0.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-1.2.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-2.0-explicit.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-2.0-github_details.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-2.0-bitbucket_details.json"
+                    TEST_REPOSITORY_URL + "repository-1.0.json",
+                    TEST_REPOSITORY_URL + "repository-1.2.json",
+                    TEST_REPOSITORY_URL + "repository-2.0-explicit.json",
+                    TEST_REPOSITORY_URL + "repository-2.0-github_details.json",
+                    TEST_REPOSITORY_URL + "repository-2.0-bitbucket_details.json"
                 ]
             ),
             (
                 "300",
-                "https://raw.githubusercontent.com/wbond/package_control-json/master/channel-3.0.0.json",
+                TEST_REPOSITORY_URL + "channel-3.0.0.json",
                 [
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-explicit.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-github_releases.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-gitlab_releases.json",
-                    "https://raw.githubusercontent.com/wbond/package_control-json"
-                    "/master/repository-3.0.0-bitbucket_releases.json"
+                    TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json",
+                    TEST_REPOSITORY_URL + "repository-3.0.0-github_releases.json",
+                    TEST_REPOSITORY_URL + "repository-3.0.0-gitlab_releases.json",
+                    TEST_REPOSITORY_URL + "repository-3.0.0-bitbucket_releases.json"
                 ]
             )
         ),
