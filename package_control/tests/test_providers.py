@@ -697,7 +697,28 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             ]
                         }
                     ),
-                    # Note: "ssl-windows" is expected to not be present because of missing python_versions!
+                    (
+                        "ssl-windows",
+                        {
+                            "name": "ssl-windows",
+                            "description": "Python _ssl module for Sublime Text 2 on Windows",
+                            "author": "wbond",
+                            "issues": "https://github.com/wbond/package_control/issues",
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-explicit.json"
+                            ],
+                            "releases": [
+                                {
+                                    "version": "1.0.0",
+                                    "url": "http://packagecontrol.io/ssl-windows.sublime-package",
+                                    "sublime_text": "<3000",
+                                    "platforms": ["windows"],
+                                    "python_versions": ["3.3"],
+                                    "sha256": "efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea"
+                                }
+                            ]
+                        }
+                    )
                 ]
             )
         ),
