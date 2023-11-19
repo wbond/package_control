@@ -54,3 +54,7 @@ class PackageVersionTests(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             PackageVersion("foo")
         self.assertEqual("'foo' is not a valid PEP440 version string", str(cm.exception))
+
+    def test_strip_v_prefix(self):
+        va = PackageVersion("v2020.07.15.10.50.38")
+        self.assertEqual(str(va), "2020.07.15.10.50.38")
