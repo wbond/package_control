@@ -1,3 +1,5 @@
+# flake8: noqa: E501
+
 import unittest
 
 from ..http_cache import HttpCache
