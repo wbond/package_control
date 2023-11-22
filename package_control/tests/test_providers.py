@@ -538,7 +538,7 @@ class GitLabUserProviderTests(unittest.TestCase):
 class JsonRepositoryProviderTests(unittest.TestCase):
     maxDiff = None
 
-    def settings(self):
+    def settings(self, extra=None):
         if not GH_PASS:
             self.skipTest("GitHub personal access token for %s not set via env var GH_PASS" % GH_USER)
         if not GL_PASS:
@@ -546,7 +546,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
         if not BB_PASS:
             self.skipTest("BitBucket app password for %s not set via env var BB_PASS" % BB_USER)
 
-        return {
+        settings = {
             "debug": DEBUG,
             "cache": HttpCache(604800),
             "cache_length": 604800,
@@ -558,12 +558,18 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                 "api.bitbucket.org": [BB_USER, BB_PASS],
             }
         }
+        if extra:
+            settings.update(extra)
+
+        return settings
 
     @data(
         (
             (
                 # test_case name
                 "10",
+                # extra settings
+                None,
                 # repository url
                 TEST_REPOSITORY_URL + "repository-1.0.json",
                 # expected result
@@ -571,16 +577,19 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "12",
+                None,
                 TEST_REPOSITORY_URL + "repository-1.2.json",
                 []  # libraries not supported
             ),
             (
                 "20_explicit",
+                None,
                 TEST_REPOSITORY_URL + "repository-2.0-explicit.json",
                 []  # libraries not supported
             ),
             (
                 "300_explicit",
+                None,
                 TEST_REPOSITORY_URL + "repository-3.0.0-explicit.json",
                 [
                     (
@@ -652,6 +661,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
             ),
             (
                 "400_explicit",
+                None,
                 TEST_REPOSITORY_URL + "repository-4.0.0-explicit.json",
                 [
                     (
@@ -720,12 +730,218 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         }
                     )
                 ]
+            ),
+            (
+                "400_pypi_releases",
+                {"max_releases": 2},
+                TEST_REPOSITORY_URL + "repository-4.0.0-pypi_releases.json",
+                [
+                    (
+                        "coverage",
+                        {
+                            "name": "coverage",
+                            "description": "The code coverage tool for Python",
+                            "author": "Ned Batchelder",
+                            "issues": "https://github.com/nedbat/coveragepy/issues",
+                            "releases": [
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/9f/95/436887935a32fcead76c9f60b61f3fcd8940d4129bdbc50e2988e037a664"
+                                           "/coverage-7.3.2-cp38-cp38-win_amd64.whl",
+                                    "version": "7.3.2",
+                                    "date": "2023-10-02 18:21:16",
+                                    "sha256": "88ed2c30a49ea81ea3b7f172e0269c182a44c236eb394718f976239892c0a27a",
+                                    "platforms": ["windows-x64"],
+                                    "python_versions": ["3.8"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/b1/6c/f3a0aaa1af42a950086713a1569e9992740babf822c606251f6e0c71f088"
+                                           "/coverage-7.3.2-cp38-cp38-win32.whl",
+                                    "version": "7.3.2",
+                                    "date": "2023-10-02 18:21:14",
+                                    "sha256": "307adb8bd3abe389a471e649038a71b4eb13bfd6b7dd9a129fa856f5c695cf92",
+                                    "platforms": ["windows-x32"],
+                                    "python_versions": ["3.8"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/a0/a6/9deeff0c49d865cd1c5ae5efc9442ff234f9b0e9d15cb4a9cda58ec255cc"
+                                           "/coverage-7.3.2-cp38-cp38-macosx_10_9_x86_64.whl",
+                                    "version": "7.3.2",
+                                    "date": "2023-10-02 18:20:57",
+                                    "sha256": "f94b734214ea6a36fe16e96a70d941af80ff3bfd716c141300d95ebc85339738",
+                                    "platforms": ["osx-x64"],
+                                    "python_versions": ["3.8"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/00/d8/5f69c3f146053edd13782355d004e57afce7824b7f8820fcb764e6ae8fac"
+                                           "/coverage-7.3.2-cp38-cp38-macosx_11_0_arm64.whl",
+                                    "version": "7.3.2",
+                                    "date": "2023-10-02 18:20:59",
+                                    "sha256": "af3d828d2c1cbae52d34bdbb22fcd94d1ce715d95f1a012354a75e5913f1bda2",
+                                    "platforms": ["osx-arm64"],
+                                    "python_versions": ["3.8"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/8d/1a/e4d0775502fae6ce2c2dd3692a66aff3b18e89757567e35680b9c63d89c5"
+                                           "/coverage-7.3.2-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                                    "version": "7.3.2",
+                                    "date": "2023-10-02 18:21:06",
+                                    "sha256": "d8f17966e861ff97305e0801134e69db33b143bbfb36436efb9cfff6ec7b2fd9",
+                                    "platforms": ["linux-x64"],
+                                    "python_versions": ["3.8"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/48/c1/b6c03b1a0aa07dd145d650b6e5107dab59a2e0c99b31184f37d49b3fd840"
+                                           "/coverage-7.3.2-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl",
+                                    "version": "7.3.2",
+                                    "date": "2023-10-02 18:21:04",
+                                    "sha256": "c9eacf273e885b02a0273bb3a2170f30e2d53a6d53b72dbe02d6701b5296101c",
+                                    "platforms": ["linux-x32"],
+                                    "python_versions": ["3.8"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/ab/82/9d5243dc4795d736b31f8e05e33c13741244e1e9bfbde7b3908141e27036"
+                                           "/coverage-7.3.2-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+                                    "version": "7.3.2",
+                                    "date": "2023-10-02 18:21:02",
+                                    "sha256": "630b13e3036e13c7adc480ca42fa7afc2a5d938081d28e20903cf7fd687872e2",
+                                    "platforms": ["linux-arm64"],
+                                    "python_versions": ["3.8"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/3b/2f/c641609b79e292a4a29375c4af0cf8156c36a0613000513b05eb1a838a59"
+                                           "/coverage-4.5.4-cp33-cp33m-macosx_10_10_x86_64.whl",
+                                    "version": "4.5.4",
+                                    "date": "2019-07-29 15:29:28",
+                                    "sha256": "6b62544bb68106e3f00b21c8930e83e584fdca005d4fffd29bb39fb3ffa03cb5",
+                                    "platforms": ["osx-x64"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/15/0d/468dc25311a5f7cb08b6364f1da8ac27e69e145b1eaf95d47a98141b895c"
+                                           "/coverage-4.5.3-cp33-cp33m-macosx_10_10_x86_64.whl",
+                                    "version": "4.5.3",
+                                    "date": "2019-03-10 15:16:49",
+                                    "sha256": "c968a6aa7e0b56ecbd28531ddf439c2ec103610d3e2bf3b75b813304f8cb7723",
+                                    "platforms": ["osx-x64"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/ce/e5/7d0c5440de5ba0075b304478d6309b16cb4681063050b192d8d9398aa7f0"
+                                           "/coverage-4.5.1-cp33-cp33m-manylinux1_x86_64.whl",
+                                    "version": "4.5.1",
+                                    "date": "2018-02-10 20:39:36",
+                                    "sha256": "5a13ea7911ff5e1796b6d5e4fbbf6952381a611209b736d48e675c2756f3f74e",
+                                    "platforms": ["linux-x64"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/fa/fb/f058805db61a6ac8cce5121c5a8a1841239af1b69fac59cbd8d7bfbf8015"
+                                           "/coverage-4.5.1-cp33-cp33m-manylinux1_i686.whl",
+                                    "version": "4.5.1",
+                                    "date": "2018-02-10 20:39:35",
+                                    "sha256": "701cd6093d63e6b8ad7009d8a92425428bc4d6e7ab8d75efbb665c806c1d79ba",
+                                    "platforms": ["linux-x32"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/0b/4e/2085ca2269788daf683f7561ad37f09c325e70d0fe85aa2ada3fcd8c0c6b"
+                                           "/coverage-4.5-cp33-cp33m-manylinux1_x86_64.whl",
+                                    "version": "4.5",
+                                    "date": "2018-02-03 22:16:13",
+                                    "sha256": "0f2315c793b1360f80a9119fff76efb7b4e5ab5062651dff515e681719f29689",
+                                    "platforms": ["linux-x64"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/a7/2d/d20247c1aae6829c64f1ffd3353424228b412eab6157fa622437a396d011"
+                                           "/coverage-4.5-cp33-cp33m-manylinux1_i686.whl",
+                                    "version": "4.5",
+                                    "date": "2018-02-03 22:16:10",
+                                    "sha256": "2890cb40464686c0c1dccc1223664bbc34d85af053bc5dbcd71ea13959e264f2",
+                                    "platforms": ["linux-x32"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/b1/55/02815cb8abb091033abb979ebde5122bb33b85c5987dede9ccd019033d19"
+                                           "/coverage-4.2-cp33-cp33m-win_amd64.whl",
+                                    "version": "4.2",
+                                    "date": "2016-07-26 21:09:17",
+                                    "sha256": "bd4eba631f07cae8cdb9c55c144f165649e6701b962f9d604b4e00cf8802406c",
+                                    "platforms": ["windows-x64"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/a0/34/1185348cc5c541bbdf107438f0f0ea9df5d9a4233a974e9228b6ee815489"
+                                           "/coverage-4.2-cp33-cp33m-win32.whl",
+                                    "version": "4.2",
+                                    "date": "2016-07-26 21:09:13",
+                                    "sha256": "38e87c46d364b8b3ac4d161586707345b7bc7b16855be1751345fc91be702ff7",
+                                    "platforms": ["windows-x32"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/0c/a1/8c4580eee7f09dcf0bac9ceeca7db1abaca856333fae24aac8f54f94b1c9"
+                                           "/coverage-4.1-cp33-cp33m-win_amd64.whl",
+                                    "version": "4.1",
+                                    "date": "2016-05-21 15:13:24",
+                                    "sha256": "a4eb2ca4ecf2c1ec02492302c8755d182ae81f81e392f8a513be13f212af0b14",
+                                    "platforms": ["windows-x64"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                },
+                                {
+                                    "url": "https://files.pythonhosted.org/packages"
+                                           "/b6/ce/8bb7745039931ef0412bd903af6584f47ece266f39364d550a18f0f60fca"
+                                           "/coverage-4.1-cp33-cp33m-win32.whl",
+                                    "version": "4.1",
+                                    "date": "2016-05-21 15:13:17",
+                                    "sha256": "a6a092bf2ab7d5dbce2a249e6aa23ea2e2181dc89f575cc9b17341a89e479312",
+                                    "platforms": ["windows-x32"],
+                                    "python_versions": ["3.3"],
+                                    "sublime_text": "*"
+                                }
+                            ],
+                            "sources": [TEST_REPOSITORY_URL + "repository-4.0.0-pypi_releases.json"]
+                        }
+                    )
+                ]
             )
         ),
         first_param_name_suffix=True
     )
-    def get_libraries(self, url, result):
-        provider = JsonRepositoryProvider(url, self.settings())
+    def get_libraries(self, extra_settings, url, result):
+        provider = JsonRepositoryProvider(url, self.settings(extra_settings))
         self.assertEqual(result, list(provider.get_libraries()))
 
     @data(
