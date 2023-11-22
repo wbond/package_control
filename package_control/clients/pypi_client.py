@@ -201,7 +201,7 @@ class PyPiClient(JSONApiClient):
 
         # get latest compatible release for each asset template
         output = []
-        for version in reversed(version_sort(releases)):
+        for version in version_sort(releases, reverse=True):
             # we don"t want beta releases!
             if not PEP440Version(version).is_final:
                 continue
