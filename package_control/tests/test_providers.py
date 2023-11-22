@@ -1680,7 +1680,438 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                         ]
                     }
                 )]
-            )
+            ),
+            (
+                "400_github",
+                TEST_REPOSITORY_URL + "repository-4.0.0-github_releases.json",
+                [
+                    (
+                        "package_control-tester-4.0.0-gh-tags",
+                        {
+                            "name": "package_control-tester-4.0.0-gh-tags",
+                            "author": "packagecontrol-test",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://github.com/packagecontrol-test/package_control-tester",
+                            "issues": "https://github.com/packagecontrol-test/package_control-tester/issues",
+                            "donate": None,
+                            "buy": None,
+                            "readme": "https://raw.githubusercontent.com/packagecontrol-test"
+                                      "/package_control-tester/master/readme.md",
+                            "previous_names": [],
+                            "labels": [],
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-github_releases.json",
+                                "https://github.com/packagecontrol-test/package_control-tester"
+                            ],
+                            "last_modified": "2014-11-12 15:52:35",
+                            "releases": [
+                                {
+                                    "version": "1.0.1",
+                                    "date": "2014-11-12 15:52:35",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/1.0.1",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "1.0.1-beta",
+                                    "date": "2014-11-12 15:14:23",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/1.0.1-beta",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "1.0.0",
+                                    "date": "2014-11-12 15:14:13",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/1.0.0",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "0.9.0",
+                                    "date": "2014-11-12 02:02:22",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/0.9.0",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-gh-tags_base",
+                        {
+                            "name": "package_control-tester-4.0.0-gh-tags_base",
+                            "author": "packagecontrol",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://github.com/packagecontrol-test/package_control-tester",
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "readme": None,
+                            "previous_names": [],
+                            "labels": [],
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-github_releases.json"
+                            ],
+                            "last_modified": "2014-11-12 15:52:35",
+                            "releases": [
+                                {
+                                    "version": "1.0.1",
+                                    "date": "2014-11-12 15:52:35",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/1.0.1",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "1.0.1-beta",
+                                    "date": "2014-11-12 15:14:23",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/1.0.1-beta",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "1.0.0",
+                                    "date": "2014-11-12 15:14:13",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/1.0.0",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "0.9.0",
+                                    "date": "2014-11-12 02:02:22",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/0.9.0",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-gh-tags_prefix",
+                        {
+                            "name": "package_control-tester-4.0.0-gh-tags_prefix",
+                            "author": "packagecontrol-test",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://github.com/packagecontrol-test/package_control-tester",
+                            "issues": "https://github.com/packagecontrol-test/package_control-tester/issues",
+                            "donate": None,
+                            "buy": None,
+                            "readme": "https://raw.githubusercontent.com/packagecontrol-test"
+                                      "/package_control-tester/master/readme.md",
+                            "previous_names": [],
+                            "labels": [],
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-github_releases.json",
+                                "https://github.com/packagecontrol-test/package_control-tester"
+                            ],
+                            "last_modified": "2014-11-28 20:54:15",
+                            "releases": [
+                                {
+                                    "version": "1.0.2",
+                                    "date": "2014-11-28 20:54:15",
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/win-1.0.2",
+                                    "sublime_text": "<3000",
+                                    "platforms": ["windows"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-gh-branch",
+                        {
+                            "name": "package_control-tester-4.0.0-gh-branch",
+                            "author": "packagecontrol-test",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://github.com/packagecontrol-test/package_control-tester",
+                            "issues": "https://github.com/packagecontrol-test/package_control-tester/issues",
+                            "donate": None,
+                            "buy": None,
+                            "readme": "https://raw.githubusercontent.com/packagecontrol-test"
+                                      "/package_control-tester/master/readme.md",
+                            "previous_names": [],
+                            "labels": [],
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-github_releases.json",
+                                "https://github.com/packagecontrol-test/package_control-tester"
+                            ],
+                            "last_modified": LAST_COMMIT_TIMESTAMP,
+                            "releases": [
+                                {
+                                    "version": LAST_COMMIT_VERSION,
+                                    "date": LAST_COMMIT_TIMESTAMP,
+                                    "url": "https://codeload.github.com/packagecontrol-test"
+                                           "/package_control-tester/zip/master",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    )
+                ]
+            ),
+            (
+                "400_gitlab",
+                TEST_REPOSITORY_URL + "repository-4.0.0-gitlab_releases.json",
+                [
+                    (
+                        "package_control-tester-4.0.0-gl-tags",
+                        {
+                            "name": "package_control-tester-4.0.0-gl-tags",
+                            "author": "packagecontrol-test",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "readme": "https://gitlab.com/packagecontrol-test/"
+                                      "package_control-tester/-/raw/master/readme.md",
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-gitlab_releases.json",
+                                "https://gitlab.com/packagecontrol-test/package_control-tester"
+                            ],
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
+                                {
+                                    "version": "1.0.1",
+                                    "date": "2020-07-15 10:50:38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/1.0.1/package_control-tester-1.0.1.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-gl-tags_base",
+                        {
+                            "name": "package_control-tester-4.0.0-gl-tags_base",
+                            "author": "packagecontrol",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "readme": None,
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-gitlab_releases.json"
+                            ],
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
+                                {
+                                    "version": "1.0.1",
+                                    "date": "2020-07-15 10:50:38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/1.0.1/package_control-tester-1.0.1.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-gl-tags_prefix",
+                        {
+                            "name": "package_control-tester-4.0.0-gl-tags_prefix",
+                            "author": "packagecontrol-test",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "readme": "https://gitlab.com/packagecontrol-test/"
+                                      "package_control-tester/-/raw/master/readme.md",
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-gitlab_releases.json",
+                                "https://gitlab.com/packagecontrol-test/package_control-tester"
+                            ],
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
+                                {
+                                    "version": "1.0.1",
+                                    "date": "2020-07-15 10:50:38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/win-1.0.1/"
+                                           "package_control-tester-win-1.0.1.zip",
+                                    "sublime_text": "<3000",
+                                    "platforms": ["windows"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-gl-branch",
+                        {
+                            "name": "package_control-tester-4.0.0-gl-branch",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://gitlab.com/packagecontrol-test/package_control-tester",
+                            "author": "packagecontrol-test",
+                            "readme": "https://gitlab.com/packagecontrol-test/"
+                                      "package_control-tester/-/raw/master/readme.md",
+                            "issues": None,
+                            "donate": None,
+                            "buy": None,
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-gitlab_releases.json",
+                                "https://gitlab.com/packagecontrol-test/package_control-tester"
+                            ],
+                            "labels": [],
+                            "previous_names": [],
+                            "last_modified": "2020-07-15 10:50:38",
+                            "releases": [
+                                {
+                                    "date": "2020-07-15 10:50:38",
+                                    "version": "2020.07.15.10.50.38",
+                                    "url": "https://gitlab.com/packagecontrol-test/"
+                                           "package_control-tester/-/archive/master/"
+                                           "package_control-tester-master.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    )
+                ]
+            ),
+            (
+                "400_bitbucket",
+                TEST_REPOSITORY_URL + "repository-4.0.0-bitbucket_releases.json",
+                [
+                    (
+                        "package_control-tester-4.0.0-bb-tags",
+                        {
+                            "name": "package_control-tester-4.0.0-bb-tags",
+                            "author": "wbond",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                            "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                            "donate": None,
+                            "buy": None,
+                            "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                            "previous_names": [],
+                            "labels": [],
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-bitbucket_releases.json",
+                                "https://bitbucket.org/wbond/package_control-tester"
+                            ],
+                            "last_modified": "2014-11-12 15:52:35",
+                            "releases": [
+                                {
+                                    "version": "1.0.1",
+                                    "date": "2014-11-12 15:52:35",
+                                    "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.1.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "1.0.1-beta",
+                                    "date": "2014-11-12 15:14:23",
+                                    "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.1-beta.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "1.0.0",
+                                    "date": "2014-11-12 15:14:13",
+                                    "url": "https://bitbucket.org/wbond/package_control-tester/get/1.0.0.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                },
+                                {
+                                    "version": "0.9.0",
+                                    "date": "2014-11-12 02:02:22",
+                                    "url": "https://bitbucket.org/wbond/package_control-tester/get/0.9.0.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-bb-tags_prefix",
+                        {
+                            "name": "package_control-tester-4.0.0-bb-tags_prefix",
+                            "author": "wbond",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                            "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                            "donate": None,
+                            "buy": None,
+                            "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                            "previous_names": [],
+                            "labels": [],
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-bitbucket_releases.json",
+                                "https://bitbucket.org/wbond/package_control-tester"
+                            ],
+                            "last_modified": "2014-11-28 20:54:15",
+                            "releases": [
+                                {
+                                    "version": "1.0.2",
+                                    "date": "2014-11-28 20:54:15",
+                                    "url": "https://bitbucket.org/wbond/package_control-tester/get/win-1.0.2.zip",
+                                    "sublime_text": "<3000",
+                                    "platforms": ["windows"]
+                                }
+                            ]
+                        }
+                    ),
+                    (
+                        "package_control-tester-4.0.0-bb-branch",
+                        {
+                            "name": "package_control-tester-4.0.0-bb-branch",
+                            "author": "wbond",
+                            "description": "A test of Package Control upgrade messages with "
+                                           "explicit versions, but date-based releases.",
+                            "homepage": "https://bitbucket.org/wbond/package_control-tester",
+                            "issues": "https://bitbucket.org/wbond/package_control-tester/issues",
+                            "donate": None,
+                            "buy": None,
+                            "readme": "https://bitbucket.org/wbond/package_control-tester/raw/master/readme.md",
+                            "previous_names": [],
+                            "labels": [],
+                            "sources": [
+                                TEST_REPOSITORY_URL + "repository-4.0.0-bitbucket_releases.json",
+                                "https://bitbucket.org/wbond/package_control-tester"
+                            ],
+                            "last_modified": LAST_COMMIT_TIMESTAMP,
+                            "releases": [
+                                {
+                                    "version": LAST_COMMIT_VERSION,
+                                    "date": LAST_COMMIT_TIMESTAMP,
+                                    "url": "https://bitbucket.org/wbond/package_control-tester/get/master.zip",
+                                    "sublime_text": "*",
+                                    "platforms": ["*"]
+                                }
+                            ]
+                        }
+                    )
+                ]
+            ),
         ),
         first_param_name_suffix=True
     )
