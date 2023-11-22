@@ -2,6 +2,7 @@ import re
 
 from ..pep440 import PEP440Version
 from ..pep440 import PEP440VersionSpecifier
+from ..package_version import version_sort
 
 from .json_api_client import JSONApiClient
 
@@ -162,10 +163,9 @@ class PyPiClient(JSONApiClient):
         """
 
         pypi_url = "https://pypi.org/pypi/{}/{}/json".format(name, version)
-        info = self.fetch_json(pypi_url)
+        assets = self.fetch_json(pypi_url)["urls"]
 
         asset_templates = self._expand_asset_variables(asset_templates)
-        assets = info["urls"]
 
         output = []
         for pattern, selectors in asset_templates:
@@ -192,21 +192,21 @@ class PyPiClient(JSONApiClient):
         """
 
         pypi_url = "https://pypi.org/pypi/{}/json".format(name)
-        info = self.fetch_json(pypi_url)
+        releases = self.fetch_json(pypi_url)["releases"]
 
         asset_templates = self._expand_asset_variables(asset_templates)
 
         max_releases = self.settings.get("max_releases", 0)
         num_releases = [0] * len(asset_templates)
 
-        output = []
-
         # get latest compatible release for each asset template
-        for version, assets in reversed(info["releases"].items()):
+        output = []
+        for version in reversed(version_sort(releases)):
             # we don"t want beta releases!
             if not PEP440Version(version).is_final:
                 continue
 
+            assets = releases[version]
             for idx, (pattern, selectors) in enumerate(asset_templates):
                 if max_releases > 0 and num_releases[idx] >= max_releases:
                     continue
@@ -215,6 +215,7 @@ class PyPiClient(JSONApiClient):
                     continue
                 output.append(info)
                 num_releases[idx] += 1
+
             if max_releases > 0 and min(num_releases) >= max_releases:
                 break
 

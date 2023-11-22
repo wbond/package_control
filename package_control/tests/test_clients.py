@@ -1217,7 +1217,9 @@ class PyPiClientTests(unittest.TestCase):
         (
             (
                 # name
-                "01",
+                "py33_pinned_01",
+                # settings
+                None,
                 # url
                 "https://pypi.org/project/coverage/4.0",
                 # asset_templates
@@ -1263,7 +1265,8 @@ class PyPiClientTests(unittest.TestCase):
                 ]
             ),
             (
-                "02",
+                "py33_pinned_02",
+                None,
                 "https://pypi.org/project/coverage/4.0",
                 [
                     (
@@ -1305,7 +1308,8 @@ class PyPiClientTests(unittest.TestCase):
                 ]
             ),
             (
-                "03",
+                "py33_pinned_03",
+                None,
                 "https://pypi.org/project/coverage/4.0",
                 [
                     (
@@ -1346,9 +1350,52 @@ class PyPiClientTests(unittest.TestCase):
                     }
                 ]
             ),
+            (
+                "py33_latest",
+                {"max_releases": 1},
+                "https://pypi.org/project/coverage",
+                [
+                    (
+                        "coverage-${version}-cp${py_version}-*-macosx_*_x86_64.whl",
+                        {
+                            "platforms": ["osx-x64"],
+                            "python_versions": ["3.3"]
+                        }
+                    ),
+                    (
+                        "coverage-${version}-cp${py_version}-*-win_amd64.whl",
+                        {
+                            "platforms": ["windows-x64"],
+                            "python_versions": ["3.3"]
+                        }
+                    )
+                ],
+                [
+                    {
+                        "date": "2019-07-29 15:29:28",
+                        "version": "4.5.4",
+                        "url": "https://files.pythonhosted.org/packages"
+                               "/3b/2f/c641609b79e292a4a29375c4af0cf8156c36a0613000513b05eb1a838a59"
+                               "/coverage-4.5.4-cp33-cp33m-macosx_10_10_x86_64.whl",
+                        "sha256": "6b62544bb68106e3f00b21c8930e83e584fdca005d4fffd29bb39fb3ffa03cb5",
+                        "platforms": ["osx-x64"],
+                        "python_versions": ["3.3"],
+                    },
+                    {
+                        "date": "2016-07-26 21:09:17",
+                        "version": "4.2",
+                        "url": "https://files.pythonhosted.org/packages"
+                               "/b1/55/02815cb8abb091033abb979ebde5122bb33b85c5987dede9ccd019033d19"
+                               "/coverage-4.2-cp33-cp33m-win_amd64.whl",
+                        "sha256": "bd4eba631f07cae8cdb9c55c144f165649e6701b962f9d604b4e00cf8802406c",
+                        "platforms": ["windows-x64"],
+                        "python_versions": ["3.3"],
+                    }
+                ]
+            ),
         ),
         first_param_name_suffix=True
     )
-    def download_info_from_releases(self, url, asset_templates, result):
-        client = PyPiClient(self.settings())
+    def download_info_from_releases(self, extra_settings, url, asset_templates, result):
+        client = PyPiClient(self.settings(extra_settings))
         self.assertEqual(result, client.download_info_from_releases(url, asset_templates))
