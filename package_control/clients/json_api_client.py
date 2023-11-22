@@ -157,10 +157,11 @@ class JSONApiClient:
                     yield (pattern, selectors)
                     continue
 
-                for platform in selectors[key]:
+                for value in selectors[key]:
                     new_selectors = selectors.copy()
-                    new_selectors[key] = [platform]
-                    yield (pattern.replace(var, platform), new_selectors)
+                    new_selectors[key] = [value]
+                    # remove `.` from python versions; n.r. for platforms
+                    yield (pattern.replace(var, value.replace('.', '')), new_selectors)
 
             return None
 
