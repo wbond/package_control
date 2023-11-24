@@ -1214,37 +1214,6 @@ class PackageManager:
             if common_folder is False:
                 return False
 
-            library_names = release.get('libraries')
-            if not library_names:
-                # If libraries were not in the channel, try the package
-                try:
-                    lib_info_json = library_zip.read(common_folder + 'dependencies.json')
-                    lib_info = json.loads(lib_info_json.decode('utf-8'))
-                except (KeyError):
-                    lib_info = {}
-                except (ValueError):
-                    console_write(
-                        '''
-                        Failed to parse the dependencies.json of
-                        library "%s" for Python %s
-                        ''',
-                        (lib.name, lib.python_version)
-                    )
-                    return False
-
-                library_names = self.select_libraries(lib_info)
-
-            if library_names:
-                builtin = library.builtin_libraries(lib.python_version)
-                self.install_libraries(
-                    (
-                        library.Library(library.translate_name(name), lib.python_version)
-                        for name in library_names
-                        if name not in builtin
-                    ),
-                    fail_early=False
-                )
-
             should_retry = self._extract_zip(lib.name, library_zip, common_folder, tmp_library_dir)
             if should_retry:
                 return False
