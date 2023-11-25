@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 import json
 # To prevent import errors in thread with datetime
 import locale  # noqa
@@ -951,9 +952,16 @@ class PackageManager:
         unmanaged_libraries = library.list_unmanaged()
         return installed_libraries - required_libraries - unmanaged_libraries
 
-    def _download_zip_file(self, name, url):
+    def _download_zip_file(self, name, url, sha256=None):
         try:
-            return zipfile.ZipFile(BytesIO(http_get(url, self.settings, '')))
+            content = http_get(url, self.settings, '')
+            if sha256:
+                content_hash = hashlib.sha256(content).hexdigest()
+                if content_hash.lower() != sha256.lower():
+                    console_write('Rejected download for "%s" due to checksum mismatch!', name)
+                    return False
+
+            return zipfile.ZipFile(BytesIO(content))
 
         except DownloaderException as e:
             console_write(
@@ -1206,7 +1214,7 @@ class PackageManager:
         library_zip = None
 
         try:
-            library_zip = self._download_zip_file(lib.name, release['url'])
+            library_zip = self._download_zip_file(lib.name, release['url'], release.get("sha256"))
             if library_zip is False:
                 return False
 
@@ -1475,7 +1483,7 @@ class PackageManager:
             old_version = old_metadata.get('version')
             is_upgrade = old_version is not None
 
-            package_zip = self._download_zip_file(package_name, release['url'])
+            package_zip = self._download_zip_file(package_name, release['url'], release.get("sha256"))
             if package_zip is False:
                 return False
 
