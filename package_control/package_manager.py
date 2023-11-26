@@ -81,6 +81,7 @@ class PackageManager:
 
         self._available_packages = None
         self._available_libraries = None
+        self.session_time = datetime.datetime.now()
 
         self.settings = {}
         settings = sublime.load_settings(pc_settings_filename())
@@ -1987,16 +1988,30 @@ class PackageManager:
         if can_delete_file:
             try:
                 os.remove(package_file)
-            except (OSError, IOError) as e:
-                if self.settings.get('debug'):
-                    console_write(
-                        '''
-                        Unable to remove package "%s" -
-                        deferring until next start: %s
-                        ''',
-                        (package_name, e)
+            except OSError:
+                try:
+                    trash_path = sys_path.trash_path()
+                    os.makedirs(trash_path, exist_ok=True)
+                    # Try to move file to "Trash" directory.
+                    # Required for e.g. Sublime Merge to unload the package and unlock the file.
+                    # Note: Locked files on Windows OS can still be renamed.
+                    trash_path = os.path.join(
+                        trash_path,
+                        hashlib.sha1(
+                            (str(self.session_time) + package_file).encode('utf-8')
+                        ).hexdigest().lower()
                     )
-                result = None
+                    os.rename(package_file, trash_path)
+                except OSError as e:
+                    if self.settings.get('debug'):
+                        console_write(
+                            '''
+                            Unable to remove package "%s" -
+                            deferring until next start: %s
+                            ''',
+                            (package_name, e)
+                        )
+                    result = None
 
         if can_delete_dir:
             if not self.backup_package_dir(package_name):
@@ -2041,7 +2056,7 @@ class PackageManager:
             return True
 
         backup_dir = os.path.join(
-            sys_path.data_path(), 'Backup', datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+            sys_path.data_path(), 'Backup', self.session_time.strftime('%Y%m%d%H%M%S')
         )
         package_backup_dir = os.path.join(backup_dir, package_name)
 
