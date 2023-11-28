@@ -26,7 +26,7 @@ class BaseRepositoryProvider:
     """
 
     __slots__ = [
-        'broken_libriaries'
+        'broken_libriaries',
         'broken_packages',
         'failed_sources',
         'libraries',
