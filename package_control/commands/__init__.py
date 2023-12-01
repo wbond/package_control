@@ -1,5 +1,6 @@
 from .add_channel_command import AddChannelCommand
 from .add_repository_command import AddRepositoryCommand
+from .clear_package_cache_command import ClearPackageCacheCommand
 from .create_package_command import CreatePackageCommand
 from .disable_package_command import DisablePackageCommand
 from .disable_packages_command import DisablePackagesCommand
@@ -32,6 +33,7 @@ from .upgrade_packages_command import UpgradePackagesCommand
 __all__ = [
     'AddChannelCommand',
     'AddRepositoryCommand',
+    'ClearPackageCacheCommand',
     'CreatePackageCommand',
     'DisablePackageCommand',
     'DisablePackagesCommand',

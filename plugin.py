@@ -209,6 +209,7 @@ for suffix in (
 
     '.commands.add_channel_command',
     '.commands.add_repository_command',
+    '.commands.clear_package_cache_command',
     '.commands.create_package_command',
     '.commands.disable_package_command',
     '.commands.disable_packages_command',

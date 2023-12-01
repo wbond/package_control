@@ -28,6 +28,10 @@
         "command": "upgrade_packages"
     },
     {
+        "caption": "Package Control: Clear Cache Directory",
+        "command": "clear_package_cache"
+    },
+    {
         "caption": "Package Control: Create Package File",
         "command": "create_package"
     },
