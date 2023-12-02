@@ -1,65 +1,46 @@
-Version 4.0.0-beta1 Release Notes (2023/06/10)
+Version 4.0.0 Release Notes
+===========================
 
-  N O T I C E
-  ===========
 
-  Requires at least ST3143 (1.0).
+Major Changes
+-------------
 
-  Main focus lies on stability and python 3.8 support.
+- Requires at least ST3143 (1.0)
 
-  Dependencies
-  ------------
+- drops support for python 2.x
 
-  Dependencies are now called libraries.
+- adds support for python 3.8
+
+- Package and library version scheme changed from SemVer to PEP440
+  for better pre-release handling and compatibility with python packages.
+
+  Note: Package versions should still follow SemVer like `<major>.<minor>.<micro>`
+
+- Dependencies are now called libraries.
 
   They are installed to Data/Libs as ordinary python packages.
 
   Existing managed dependencies are automatically converted.
 
-  Channel/repository scheme v1.0 is no longer supported.
+  Can install python wheels (*.whl)
 
-  A channel/repository scheme v4.0.0 is introduced, which allows to specify
-  supported python_versions.
+- Channel/repository scheme v1.0 and v1.2 are no longer supported
+  as they contain only packages for no longer supported ST2.
 
-  {
-    "$schema": "sublime://packagecontrol.io/schemas/repository/4.0.0",
-    "libraries": [
-      {
-        "name": "JohnsLibrary",
-        "description": "A classic ST library",
-        "author": "John Doe",
-        "releases": [
-          {
-            "base": "https://gitlab.com/johns/library",
-            "platforms": ["*"],
-            "python_versions": ["3.3", "3.8"],
-            "sublime_text": "*",
-            "tags": true
-          },
-          {
-            "version": "1.0.0",
-            "date": "2023-02-18 20:12:41",
-            "url": "https://gitlab.com/johns/library-1.0.0.whl",
-            "platforms": ["*"],
-            "python_versions": ["3.3", "3.8"],
-            "sublime_text": "*"
-          }
-        ]
-      }
-    ]
-  }
+- New channel/repository scheme v4.0.0 is introduced,
+  which allows to specify supported `python_versions`.
 
-  Download artefacts specified via "url" key can also be .whl files.
   Parsing and installing "requirements.txt" is however not yet supported.
 
   For working examples checkout example-channel.json and example-repository.json
-  of Package Control Github repository.
+  from Package Control Github repository.
 
-  Package Devs
-  ------------
 
-  packagecontrol.io does not yet support the new 4.0.0 scheme and thus doesn't ship
-  python 3.8 dependencies/libraries.
+Note for Package Devs
+---------------------
+
+  packagecontrol.io does not yet support the new 4.0.0 scheme
+  and thus doesn't ship python 3.8 dependencies/libraries.
 
   Therefore do not upgrade repositories to 4.0.0 scheme,
   which are included in default channel.
@@ -67,15 +48,21 @@ Version 4.0.0-beta1 Release Notes (2023/06/10)
   You can however create your own 4.0.0 repository and
   add it via 'Package Control: Add Repository'.
 
+  Metadata for python 3.8 compatible libraries are maintained at
 
-  C H A N G E L O G
-  =================
+    https://github.com/packagecontrol/channel
 
-  Features
-  --------
+  and shipped via
 
-  - python 3.8 libraries
-  - support dependencies.json in libraries the same way as packages do
+    https://packagecontrol.github.io/channel/channel_v4.json
+
+  so all packages can already migrate to python 3.8
+
+
+New features include:
+---------------------
+
+  - support for python 3.8 dependencies (now called libraries)
   - add openssl 3.0 support via asn1crypto 1.5.1 and oscrypto 1.3.0
   - prune backups older than 14 days (#145)
   - provide all relevant operations via ApplicationCommands (#1071)
@@ -85,12 +72,14 @@ Version 4.0.0-beta1 Release Notes (2023/06/10)
     + Advanced Upgrade Packages (upgrade_packages)
     + Advanced Remove Packages (remove_packages)
   - allow relative paths in channel.json and repository.json (#1329)
-  - hidde (auto-generated?) packages via `.hidden-sublime-package` file (#1429)
+  - hide (auto-generated?) packages via `.hidden-sublime-package` file (#1429)
   - support for cooperate_packages (#1406, #1633)
-  - intellisense support for for channel.json/repository.json via jsonschemas
+  - IntelliSense support for for channel.json/repository.json via jsonschemas
+  - support for asset based Github/Gitlab releases (#1484)
 
-  Bugfixes
-  --------
+
+Bug fixes include:
+------------------
 
   - abort package operation if backup fails (#1000)
   - fix long path support on Windows (#1020)
@@ -103,7 +92,7 @@ Version 4.0.0-beta1 Release Notes (2023/06/10)
   - fix manual package upgrades converting unmanaged packages to managed ones (#1272)
   - fix libraries not being upgraded by auto upgrader
   - fix prompt for ST restart before all operations are completed
-  - fix SSL_CERT_FILE environmanet variable being ignored
+  - fix SSL_CERT_FILE environment variable being ignored
   - fix repositories of channels without cache not being downloaded (#1354, #1601)
   - fix QuickPanelItem parse errors in URLs (#1580)
   - fix unavailable libraries being reported as successfully installed (#1605)

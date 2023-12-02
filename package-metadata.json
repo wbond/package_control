@@ -1,7 +1,8 @@
 {
-	"version": "4.0.0-beta10",
-	"url": "https://packagecontrol.io",
+	"name": "Package Control",
+	"version": "4.0.0",
 	"description": "A full-featured package manager",
+	"platforms": ["*"],
 	"sublime_text": ">=3143",
-	"platforms": ["*"]
+	"url": "https://packagecontrol.io"
 }
