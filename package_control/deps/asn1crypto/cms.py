@@ -729,6 +729,12 @@ class RecipientKeyIdentifier(Sequence):
         ('other', OtherKeyAttribute, {'optional': True}),
     ]
 
+    def _setup(self):
+        super(RecipientKeyIdentifier, self)._setup()
+        # This creates a backwards compatible shim for an
+        # incorrect format field name that was in old versions
+        self._field_map['subjectKeyIdentifier'] = self._field_map['subject_key_identifier']
+
 
 class KeyAgreementRecipientIdentifier(Choice):
     _alternatives = [
@@ -929,20 +935,19 @@ class CompressedData(Sequence):
         return self._decompressed
 
 
-class RecipientKeyIdentifier(Sequence):
-    _fields = [
-        ('subjectKeyIdentifier', OctetString),
-        ('date', GeneralizedTime, {'optional': True}),
-        ('other', OtherKeyAttribute, {'optional': True}),
-    ]
-
-
 class SMIMEEncryptionKeyPreference(Choice):
     _alternatives = [
         ('issuer_and_serial_number', IssuerAndSerialNumber, {'implicit': 0}),
-        ('recipientKeyId', RecipientKeyIdentifier, {'implicit': 1}),
-        ('subjectAltKeyIdentifier', PublicKeyInfo, {'implicit': 2}),
+        ('recipient_key_id', RecipientKeyIdentifier, {'implicit': 1}),
+        ('subject_alt_key_identifier', PublicKeyInfo, {'implicit': 2}),
     ]
+
+    def _setup(self):
+        super(SMIMEEncryptionKeyPreference, self)._setup()
+        # This creates backwards compatible shims for two
+        # incorrect format alternative names that were in old versions
+        self._name_map['recipientKeyId'] = self._name_map['recipient_key_id']
+        self._name_map['subjectAltKeyIdentifier'] = self._name_map['subject_alt_key_identifier']
 
 
 class SMIMEEncryptionKeyPreferences(SetOf):

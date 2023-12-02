@@ -27,7 +27,7 @@ import unicodedata
 from ._errors import unwrap
 from ._iri import iri_to_uri, uri_to_iri
 from ._ordereddict import OrderedDict
-from ._types import type_name, str_cls, bytes_to_list
+from ._types import type_name, str_cls, byte_cls, bytes_to_list
 from .algos import AlgorithmIdentifier, AnyAlgorithmIdentifier, DigestAlgorithm, SignedDigestAlgorithm
 from .core import (
     Any,
@@ -708,7 +708,13 @@ class NameTypeAndValue(Sequence):
         """
 
         if self._prepped is None:
-            self._prepped = self._ldap_string_prep(self['value'].native)
+            native = self['value'].native
+            if isinstance(native, str_cls):
+                self._prepped = self._ldap_string_prep(native)
+            else:
+                if isinstance(native, byte_cls):
+                    native = ' ' + native.decode('cp1252') + ' '
+                self._prepped = native
         return self._prepped
 
     def __ne__(self, other):
@@ -1015,15 +1021,27 @@ class Name(Choice):
 
         for attribute_name, attribute_value in name_dict.items():
             attribute_name = NameType.map(attribute_name)
-            if attribute_name == 'email_address':
-                value = EmailAddress(attribute_value)
-            elif attribute_name == 'domain_component':
-                value = DNSName(attribute_value)
+            attribute_class = NameTypeAndValue._oid_specs.get(attribute_name)
+            if not attribute_class:
+                raise ValueError(unwrap(
+                    '''
+                    No encoding specification found for %s
+                    ''',
+                    attribute_name
+                ))
+
+            if isinstance(attribute_value, attribute_class):
+                value = attribute_value
+
+            elif attribute_class is not DirectoryString:
+                value = attribute_class(attribute_value)
+
             elif attribute_name in set(['dn_qualifier', 'country_name', 'serial_number']):
                 value = DirectoryString(
                     name='printable_string',
                     value=PrintableString(attribute_value)
                 )
+
             else:
                 value = DirectoryString(
                     name=encoding_name,

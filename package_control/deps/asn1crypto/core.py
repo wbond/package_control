@@ -166,6 +166,15 @@ def load(encoded_data, strict=False):
     return Asn1Value.load(encoded_data, strict=strict)
 
 
+def unpickle_helper(asn1crypto_cls, der_bytes):
+    """
+    Helper function to integrate with pickle.
+
+    Note that this must be an importable top-level function.
+    """
+    return asn1crypto_cls.load(der_bytes)
+
+
 class Asn1Value(object):
     """
     The basis of all ASN.1 values
@@ -480,6 +489,12 @@ class Asn1Value(object):
         """
 
         return self.__repr__()
+
+    def __reduce__(self):
+        """
+        Permits pickling Asn1Value objects using their DER representation.
+        """
+        return unpickle_helper, (self.__class__, self.dump())
 
     def _new_instance(self):
         """
@@ -3413,6 +3428,17 @@ class Sequence(Asn1Value):
                     if key in value:
                         self.__setitem__(key, value[key])
                         unused_keys.remove(key)
+
+                # This handles the situation where there is field name
+                # mapping going on due to a field be renamed. Normally
+                # the keys are checked against the primary field list.
+                # If there are still keys left over, check to see if they
+                # are mapped via checking the _field_map.
+                if len(unused_keys):
+                    for key in list(unused_keys):
+                        if key in self._field_map:
+                            self.__setitem__(key, value[key])
+                            unused_keys.remove(key)
 
                 if len(unused_keys):
                     raise ValueError(unwrap(

@@ -245,17 +245,29 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
         '1.2.840.10040.4.3': 'sha1_dsa',
         '1.3.14.3.2.13': 'sha1_dsa',
         '1.3.14.3.2.27': 'sha1_dsa',
+        # Source: NIST CSOR Algorithm Registrations
         '2.16.840.1.101.3.4.3.1': 'sha224_dsa',
         '2.16.840.1.101.3.4.3.2': 'sha256_dsa',
+        '2.16.840.1.101.3.4.3.3': 'sha384_dsa',
+        '2.16.840.1.101.3.4.3.4': 'sha512_dsa',
         '1.2.840.10045.4.1': 'sha1_ecdsa',
         '1.2.840.10045.4.3.1': 'sha224_ecdsa',
         '1.2.840.10045.4.3.2': 'sha256_ecdsa',
         '1.2.840.10045.4.3.3': 'sha384_ecdsa',
         '1.2.840.10045.4.3.4': 'sha512_ecdsa',
+        # Source: NIST CSOR Algorithm Registrations
+        '2.16.840.1.101.3.4.3.5': 'sha3_224_dsa',
+        '2.16.840.1.101.3.4.3.6': 'sha3_256_dsa',
+        '2.16.840.1.101.3.4.3.7': 'sha3_384_dsa',
+        '2.16.840.1.101.3.4.3.8': 'sha3_512_dsa',
         '2.16.840.1.101.3.4.3.9': 'sha3_224_ecdsa',
         '2.16.840.1.101.3.4.3.10': 'sha3_256_ecdsa',
         '2.16.840.1.101.3.4.3.11': 'sha3_384_ecdsa',
         '2.16.840.1.101.3.4.3.12': 'sha3_512_ecdsa',
+        '2.16.840.1.101.3.4.3.13': 'sha3_224_rsa',
+        '2.16.840.1.101.3.4.3.14': 'sha3_256_rsa',
+        '2.16.840.1.101.3.4.3.15': 'sha3_384_rsa',
+        '2.16.840.1.101.3.4.3.16': 'sha3_512_rsa',
         # For when the digest is specified elsewhere in a Sequence
         '1.2.840.113549.1.1.1': 'rsassa_pkcs1v15',
         '1.2.840.10040.4.1': 'dsa',
@@ -263,6 +275,16 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
         # RFC 8410 -- https://tools.ietf.org/html/rfc8410
         '1.3.101.112': 'ed25519',
         '1.3.101.113': 'ed448',
+        # Source: BSI TR-03111 V-2
+        '0.4.0.127.0.7.1.1.4.1.1': 'sha1_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.2': 'sha224_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.3': 'sha256_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.4': 'sha384_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.5': 'sha512_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.8': 'sha3_224_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.9': 'sha3_256_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.10': 'sha3_384_ecdsa_plain',
+        '0.4.0.127.0.7.1.1.4.1.11': 'sha3_512_ecdsa_plain',
     }
 
     _reverse_map = {
@@ -281,16 +303,36 @@ class SignedDigestAlgorithmId(ObjectIdentifier):
         'sha256_dsa': '2.16.840.1.101.3.4.3.2',
         'sha256_ecdsa': '1.2.840.10045.4.3.2',
         'sha256_rsa': '1.2.840.113549.1.1.11',
+        'sha384_dsa': '2.16.840.1.101.3.4.3.3',
         'sha384_ecdsa': '1.2.840.10045.4.3.3',
         'sha384_rsa': '1.2.840.113549.1.1.12',
+        'sha512_dsa': '2.16.840.1.101.3.4.3.4',
         'sha512_ecdsa': '1.2.840.10045.4.3.4',
         'sha512_rsa': '1.2.840.113549.1.1.13',
+        # Source: NIST CSOR Algorithm Registrations
+        'sha3_224_dsa': '2.16.840.1.101.3.4.3.5',
+        'sha3_256_dsa': '2.16.840.1.101.3.4.3.6',
+        'sha3_384_dsa': '2.16.840.1.101.3.4.3.7',
+        'sha3_512_dsa': '2.16.840.1.101.3.4.3.8',
         'sha3_224_ecdsa': '2.16.840.1.101.3.4.3.9',
         'sha3_256_ecdsa': '2.16.840.1.101.3.4.3.10',
         'sha3_384_ecdsa': '2.16.840.1.101.3.4.3.11',
         'sha3_512_ecdsa': '2.16.840.1.101.3.4.3.12',
+        'sha3_224_rsa': '2.16.840.1.101.3.4.3.13',
+        'sha3_256_rsa': '2.16.840.1.101.3.4.3.14',
+        'sha3_384_rsa': '2.16.840.1.101.3.4.3.15',
+        'sha3_512_rsa': '2.16.840.1.101.3.4.3.16',
         'ed25519': '1.3.101.112',
         'ed448': '1.3.101.113',
+        'sha1_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.1',
+        'sha224_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.2',
+        'sha256_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.3',
+        'sha384_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.4',
+        'sha512_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.5',
+        'sha3_224_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.8',
+        'sha3_256_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.9',
+        'sha3_384_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.10',
+        'sha3_512_ecdsa_plain': '0.4.0.127.0.7.1.1.4.1.11',
     }
 
 
@@ -303,6 +345,47 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
     _oid_pair = ('algorithm', 'parameters')
     _oid_specs = {
         'rsassa_pss': RSASSAPSSParams,
+    }
+
+    _algo_map = {
+        'md2_rsa': 'md2',
+        'md5_rsa': 'md5',
+        'sha1_rsa': 'sha1',
+        'sha224_rsa': 'sha224',
+        'sha256_rsa': 'sha256',
+        'sha384_rsa': 'sha384',
+        'sha512_rsa': 'sha512',
+        'sha1_dsa': 'sha1',
+        'sha224_dsa': 'sha224',
+        'sha256_dsa': 'sha256',
+        'sha384_dsa': 'sha384',
+        'sha512_dsa': 'sha512',
+        'sha1_ecdsa': 'sha1',
+        'sha1_ecdsa_plain': 'sha1',
+        'sha224_ecdsa': 'sha224',
+        'sha256_ecdsa': 'sha256',
+        'sha384_ecdsa': 'sha384',
+        'sha512_ecdsa': 'sha512',
+        'sha224_ecdsa_plain': 'sha224',
+        'sha256_ecdsa_plain': 'sha256',
+        'sha384_ecdsa_plain': 'sha384',
+        'sha512_ecdsa_plain': 'sha512',
+        'sha3_224_dsa': 'sha3_224',
+        'sha3_256_dsa': 'sha3_256',
+        'sha3_384_dsa': 'sha3_384',
+        'sha3_512_dsa': 'sha3_512',
+        'sha3_224_ecdsa': 'sha3_224',
+        'sha3_256_ecdsa': 'sha3_256',
+        'sha3_384_ecdsa': 'sha3_384',
+        'sha3_512_ecdsa': 'sha3_512',
+        'sha3_224_ecdsa_plain': 'sha3_224',
+        'sha3_256_ecdsa_plain': 'sha3_256',
+        'sha3_384_ecdsa_plain': 'sha3_384',
+        'sha3_512_ecdsa_plain': 'sha3_512',
+        'sha3_224_rsa': 'sha3_224',
+        'sha3_256_rsa': 'sha3_256',
+        'sha3_384_rsa': 'sha3_384',
+        'sha3_512_rsa': 'sha3_512',
     }
 
     @property
@@ -323,11 +406,21 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
             'sha256_rsa': 'rsassa_pkcs1v15',
             'sha384_rsa': 'rsassa_pkcs1v15',
             'sha512_rsa': 'rsassa_pkcs1v15',
+            'sha3_224_rsa': 'rsassa_pkcs1v15',
+            'sha3_256_rsa': 'rsassa_pkcs1v15',
+            'sha3_384_rsa': 'rsassa_pkcs1v15',
+            'sha3_512_rsa': 'rsassa_pkcs1v15',
             'rsassa_pkcs1v15': 'rsassa_pkcs1v15',
             'rsassa_pss': 'rsassa_pss',
             'sha1_dsa': 'dsa',
             'sha224_dsa': 'dsa',
             'sha256_dsa': 'dsa',
+            'sha384_dsa': 'dsa',
+            'sha512_dsa': 'dsa',
+            'sha3_224_dsa': 'dsa',
+            'sha3_256_dsa': 'dsa',
+            'sha3_384_dsa': 'dsa',
+            'sha3_512_dsa': 'dsa',
             'dsa': 'dsa',
             'sha1_ecdsa': 'ecdsa',
             'sha224_ecdsa': 'ecdsa',
@@ -338,6 +431,15 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
             'sha3_256_ecdsa': 'ecdsa',
             'sha3_384_ecdsa': 'ecdsa',
             'sha3_512_ecdsa': 'ecdsa',
+            'sha1_ecdsa_plain': 'ecdsa',
+            'sha224_ecdsa_plain': 'ecdsa',
+            'sha256_ecdsa_plain': 'ecdsa',
+            'sha384_ecdsa_plain': 'ecdsa',
+            'sha512_ecdsa_plain': 'ecdsa',
+            'sha3_224_ecdsa_plain': 'ecdsa',
+            'sha3_256_ecdsa_plain': 'ecdsa',
+            'sha3_384_ecdsa_plain': 'ecdsa',
+            'sha3_512_ecdsa_plain': 'ecdsa',
             'ecdsa': 'ecdsa',
             'ed25519': 'ed25519',
             'ed448': 'ed448',
@@ -361,31 +463,52 @@ class SignedDigestAlgorithm(_ForceNullParameters, Sequence):
         """
 
         algorithm = self['algorithm'].native
-
-        algo_map = {
-            'md2_rsa': 'md2',
-            'md5_rsa': 'md5',
-            'sha1_rsa': 'sha1',
-            'sha224_rsa': 'sha224',
-            'sha256_rsa': 'sha256',
-            'sha384_rsa': 'sha384',
-            'sha512_rsa': 'sha512',
-            'sha1_dsa': 'sha1',
-            'sha224_dsa': 'sha224',
-            'sha256_dsa': 'sha256',
-            'sha1_ecdsa': 'sha1',
-            'sha224_ecdsa': 'sha224',
-            'sha256_ecdsa': 'sha256',
-            'sha384_ecdsa': 'sha384',
-            'sha512_ecdsa': 'sha512',
-            'ed25519': 'sha512',
-            'ed448': 'shake256',
-        }
-        if algorithm in algo_map:
-            return algo_map[algorithm]
+        if algorithm in self._algo_map:
+            return self._algo_map[algorithm]
 
         if algorithm == 'rsassa_pss':
             return self['parameters']['hash_algorithm']['algorithm'].native
+
+        if algorithm == 'ed25519' or algorithm == 'ed448':
+            raise ValueError(unwrap(
+                '''
+                Hash algorithm not known for %s - use .cms_hash_algorithm for CMS purposes.
+                More info at https://github.com/wbond/asn1crypto/pull/230.
+                ''',
+                algorithm
+            ))
+
+        raise ValueError(unwrap(
+            '''
+            Hash algorithm not known for %s
+            ''',
+            algorithm
+        ))
+
+    @property
+    def cms_hash_algo(self):
+        """
+        The hash algorithm for CMS hashing
+
+        :return:
+            A unicode string of "md2", "md5", "sha1", "sha224", "sha256",
+            "sha384", "sha512", "sha512_224", "sha512_256" or "shake256"
+        """
+
+        algorithm = self['algorithm'].native
+
+        if algorithm in self._algo_map:
+            return self._algo_map[algorithm]
+
+        if algorithm == 'rsassa_pss':
+            return self['parameters']['hash_algorithm']['algorithm'].native
+
+        cms_algo_map = {
+            'ed25519': 'sha512',
+            'ed448': 'shake256',
+        }
+        if algorithm in cms_algo_map:
+            return cms_algo_map[algorithm]
 
         raise ValueError(unwrap(
             '''
