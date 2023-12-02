@@ -7,7 +7,7 @@ import socket as socket_
 import select
 import numbers
 
-from ._libssl import libssl, LibsslConst
+from ._libssl import error_code_version_info, libssl, LibsslConst
 from ._libcrypto import libcrypto, libcrypto_version_info, handle_openssl_error, peek_openssl_error
 from .. import _backend_config
 from .._asn1 import Certificate as Asn1Certificate
@@ -554,7 +554,7 @@ class TLSSocket(object):
                     if info == dh_key_info_1 or info == dh_key_info_2 or info == dh_key_info_3:
                         raise_dh_params()
 
-                    if libcrypto_version_info < (1, 1):
+                    if error_code_version_info < (1, 1):
                         unknown_protocol_info = (
                             LibsslConst.ERR_LIB_SSL,
                             LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
@@ -580,23 +580,16 @@ class TLSSocket(object):
                     if info == tls_version_info_error:
                         raise_protocol_version()
 
+                    # There are multiple functions that can result in a handshake failure,
+                    # but our custom handshake parsing code figures out what really happened,
+                    # and what is more, OpenSSL 3 got rid of function codes. Because of this,
+                    # we skip checking the function code.
                     handshake_error_info = (
                         LibsslConst.ERR_LIB_SSL,
-                        LibsslConst.SSL_F_SSL23_GET_SERVER_HELLO,
                         LibsslConst.SSL_R_SSLV3_ALERT_HANDSHAKE_FAILURE
                     )
-                    # OpenSSL 3.0 no longer has func codes, so this can be confused
-                    # with the following handler which needs to check for client auth
-                    if libcrypto_version_info < (3, ) and info == handshake_error_info:
-                        raise_handshake()
 
-                    handshake_failure_info = (
-                        LibsslConst.ERR_LIB_SSL,
-                        LibsslConst.SSL_F_SSL3_READ_BYTES,
-                        LibsslConst.SSL_R_SSLV3_ALERT_HANDSHAKE_FAILURE
-                    )
-                    handshake_failure_info = _homogenize_openssl3_error(handshake_failure_info)
-                    if info == handshake_failure_info:
+                    if (info[0], info[2]) == handshake_error_info:
                         saw_client_auth = False
                         for record_type, _, record_data in parse_tls_records(handshake_server_bytes):
                             if record_type != b'\x16':
@@ -609,7 +602,7 @@ class TLSSocket(object):
                             raise_client_auth()
                         raise_handshake()
 
-                    if libcrypto_version_info < (1, 1):
+                    if error_code_version_info < (1, 1):
                         cert_verify_failed_info = (
                             LibsslConst.ERR_LIB_SSL,
                             LibsslConst.SSL_F_SSL3_GET_SERVER_CERTIFICATE,
@@ -780,7 +773,7 @@ class TLSSocket(object):
                 sent = self._socket.send(to_write)
             except (socket_.error) as e:
                 # Handle ECONNRESET and EPIPE
-                if e.errno == 104 or e.errno == 32:
+                if e.errno == 104 or e.errno == 54 or e.errno == 32:
                     raise_disconnect = True
                 # Handle EPROTOTYPE. Newer versions of macOS will return this
                 # if we try to call send() while the socket is being torn down

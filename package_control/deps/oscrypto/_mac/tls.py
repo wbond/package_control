@@ -29,6 +29,7 @@ from .._ffi import (
     new,
     null,
     pointer_set,
+    sizeof,
     struct,
     struct_bytes,
     unwrap,
@@ -633,8 +634,8 @@ class TLSSocket(object):
 
             supported_ciphers = deref(supported_ciphers_pointer)
 
-            cipher_buffer = buffer_from_bytes(supported_ciphers * 4)
-            supported_cipher_suites_pointer = cast(Security, 'uint32_t *', cipher_buffer)
+            cipher_buffer = buffer_from_bytes(supported_ciphers * sizeof(Security, 'SSLCipherSuite'))
+            supported_cipher_suites_pointer = cast(Security, 'SSLCipherSuite *', cipher_buffer)
             result = Security.SSLGetSupportedCiphers(
                 session_context,
                 supported_cipher_suites_pointer,
@@ -645,7 +646,7 @@ class TLSSocket(object):
             supported_ciphers = deref(supported_ciphers_pointer)
             supported_cipher_suites = array_from_pointer(
                 Security,
-                'uint32_t',
+                'SSLCipherSuite',
                 supported_cipher_suites_pointer,
                 supported_ciphers
             )
@@ -658,9 +659,9 @@ class TLSSocket(object):
                     good_ciphers.append(supported_cipher_suite)
 
             num_good_ciphers = len(good_ciphers)
-            good_ciphers_array = new(Security, 'uint32_t[]', num_good_ciphers)
+            good_ciphers_array = new(Security, 'SSLCipherSuite[]', num_good_ciphers)
             array_set(good_ciphers_array, good_ciphers)
-            good_ciphers_pointer = cast(Security, 'uint32_t *', good_ciphers_array)
+            good_ciphers_pointer = cast(Security, 'SSLCipherSuite *', good_ciphers_array)
             result = Security.SSLSetEnabledCiphers(
                 session_context,
                 good_ciphers_pointer,

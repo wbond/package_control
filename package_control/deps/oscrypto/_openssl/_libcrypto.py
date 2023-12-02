@@ -44,9 +44,11 @@ libcrypto.OPENSSL_config(null())
 # like PKCS12
 libcrypto_legacy_support = True
 if libcrypto_version_info >= (3, ):
-    if libcrypto.OSSL_PROVIDER_available(null(), "legacy".encode("ascii")):
-        libcrypto.OSSL_PROVIDER_load(null(), "legacy".encode("ascii"))
-    else:
+
+    libcrypto.OSSL_PROVIDER_load(null(), "legacy".encode("ascii"))
+    libcrypto.OSSL_PROVIDER_load(null(), "default".encode("ascii"))
+
+    if libcrypto.OSSL_PROVIDER_available(null(), "legacy".encode("ascii")) == 0:
         libcrypto_legacy_support = False
 
 

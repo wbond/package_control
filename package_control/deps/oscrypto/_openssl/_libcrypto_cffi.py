@@ -37,13 +37,13 @@ except (AttributeError):
 
 is_libressl = 'LibreSSL' in version_string
 
-version_match = re.search('\\b(\\d\\.\\d\\.\\d[a-z]*)\\b', version_string)
+version_match = re.search('\\b(\\d+\\.\\d+\\.\\d+[a-z]*)\\b', version_string)
 if not version_match:
-    version_match = re.search('(?<=LibreSSL )(\\d\\.\\d(\\.\\d)?)\\b', version_string)
+    version_match = re.search('(?<=LibreSSL )(\\d+\\.\\d+(\\.\\d+)?)\\b', version_string)
 if not version_match:
     raise LibraryNotFoundError('Error detecting the version of libcrypto')
 version = version_match.group(1)
-version_parts = re.sub('(\\d)([a-z]+)', '\\1.\\2', version).split('.')
+version_parts = re.sub('(\\d+)([a-z]+)', '\\1.\\2', version).split('.')
 version_info = tuple(int(part) if part.isdigit() else part for part in version_parts)
 
 # LibreSSL is compatible with libcrypto from OpenSSL 1.0.1

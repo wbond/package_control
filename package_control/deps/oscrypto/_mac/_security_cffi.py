@@ -22,6 +22,17 @@ if version_info < (10, 7):
     raise OSError('Only OS X 10.7 and newer are supported, not %s.%s' % (version_info[0], version_info[1]))
 
 ffi = FFI()
+
+# It appears SSLCipherSuite is uint16_t on ARM64, but uint32_t on X86_64
+if platform.machine() == 'arm64':
+    ffi.cdef("""
+        typedef uint16_t SSLCipherSuite;
+    """)
+else:
+    ffi.cdef("""
+        typedef uint32_t SSLCipherSuite;
+    """)
+
 ffi.cdef("""
     typedef bool Boolean;
     typedef long CFIndex;
@@ -38,7 +49,6 @@ ffi.cdef("""
     typedef uint32_t CSSM_KEYUSE;
     typedef uint32_t CSSM_CERT_TYPE;
     typedef uint32_t SSLProtocol;
-    typedef uint32_t SSLCipherSuite;
     typedef uint32_t SecTrustResultType;
 
     typedef void *CFTypeRef;
@@ -103,6 +113,7 @@ ffi.cdef("""
     SecTransformRef SecSignTransformCreate(SecKeyRef key, CFErrorRef *error);
     SecCertificateRef SecCertificateCreateWithData(CFAllocatorRef allocator, CFDataRef data);
     OSStatus SecCertificateCopyPublicKey(SecCertificateRef certificate, SecKeyRef *key);
+    SecKeyRef SecCertificateCopyKey(SecCertificateRef certificate);
     CFStringRef SecCopyErrorMessageString(OSStatus status, void *reserved);
     OSStatus SecTrustCopyAnchorCertificates(CFArrayRef *anchors);
     CFDataRef SecCertificateCopyData(SecCertificateRef certificate);
