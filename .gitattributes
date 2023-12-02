@@ -1,0 +1,16 @@
+# git
+.github/ export-ignore
+.git export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+
+# development utilities
+/dev/ export-ignore
+.travis.yml export-ignore
+tox.ini export-ignore
+
+# unittests
+tests/ export-ignore
+
+# example files
+/example-*.json export-ignore

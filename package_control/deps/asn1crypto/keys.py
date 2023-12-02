@@ -666,6 +666,11 @@ class PrivateKeyAlgorithmId(ObjectIdentifier):
         '1.2.840.10040.4.1': 'dsa',
         # https://tools.ietf.org/html/rfc3279#page-13
         '1.2.840.10045.2.1': 'ec',
+        # https://tools.ietf.org/html/rfc8410#section-9
+        '1.3.101.110': 'x25519',
+        '1.3.101.111': 'x448',
+        '1.3.101.112': 'ed25519',
+        '1.3.101.113': 'ed448',
     }
 
 
@@ -707,6 +712,12 @@ class PrivateKeyInfo(Sequence):
             'rsassa_pss': RSAPrivateKey,
             'dsa': Integer,
             'ec': ECPrivateKey,
+            # These should be treated as opaque octet strings according
+            # to RFC 8410
+            'x25519': OctetString,
+            'x448': OctetString,
+            'ed25519': OctetString,
+            'ed448': OctetString,
         }[algorithm]
 
     _spec_callbacks = {
@@ -741,7 +752,7 @@ class PrivateKeyInfo(Sequence):
                 type_name(private_key)
             ))
 
-        if algorithm == 'rsa':
+        if algorithm == 'rsa' or algorithm == 'rsassa_pss':
             if not isinstance(private_key, RSAPrivateKey):
                 private_key = RSAPrivateKey.load(private_key)
             params = Null()
@@ -882,7 +893,7 @@ class PrivateKeyInfo(Sequence):
     def algorithm(self):
         """
         :return:
-            A unicode string of "rsa", "dsa" or "ec"
+            A unicode string of "rsa", "rsassa_pss", "dsa" or "ec"
         """
 
         if self._algorithm is None:
@@ -897,7 +908,7 @@ class PrivateKeyInfo(Sequence):
         """
 
         if self._bit_size is None:
-            if self.algorithm == 'rsa':
+            if self.algorithm == 'rsa' or self.algorithm == 'rsassa_pss':
                 prime = self['private_key'].parsed['modulus'].native
             elif self.algorithm == 'dsa':
                 prime = self['private_key_algorithm']['parameters']['p'].native
@@ -1017,6 +1028,11 @@ class PublicKeyAlgorithmId(ObjectIdentifier):
         '1.2.840.10045.2.1': 'ec',
         # https://tools.ietf.org/html/rfc3279#page-10
         '1.2.840.10046.2.1': 'dh',
+        # https://tools.ietf.org/html/rfc8410#section-9
+        '1.3.101.110': 'x25519',
+        '1.3.101.111': 'x448',
+        '1.3.101.112': 'ed25519',
+        '1.3.101.113': 'ed448',
     }
 
 
@@ -1063,6 +1079,12 @@ class PublicKeyInfo(Sequence):
             # decompose the byte string into the constituent X and Y coords
             'ec': (ECPointBitString, None),
             'dh': Integer,
+            # These should be treated as opaque bit strings according
+            # to RFC 8410, and need not even be valid ASN.1
+            'x25519': (OctetBitString, None),
+            'x448': (OctetBitString, None),
+            'ed25519': (OctetBitString, None),
+            'ed448': (OctetBitString, None),
         }[algorithm]
 
     _spec_callbacks = {
@@ -1098,7 +1120,7 @@ class PublicKeyInfo(Sequence):
                 type_name(public_key)
             ))
 
-        if algorithm != 'rsa':
+        if algorithm != 'rsa' and algorithm != 'rsassa_pss':
             raise ValueError(unwrap(
                 '''
                 algorithm must "rsa", not %s
@@ -1200,7 +1222,7 @@ class PublicKeyInfo(Sequence):
     def algorithm(self):
         """
         :return:
-            A unicode string of "rsa", "dsa" or "ec"
+            A unicode string of "rsa", "rsassa_pss", "dsa" or "ec"
         """
 
         if self._algorithm is None:
@@ -1218,7 +1240,7 @@ class PublicKeyInfo(Sequence):
             if self.algorithm == 'ec':
                 self._bit_size = int(((len(self['public_key'].native) - 1) / 2) * 8)
             else:
-                if self.algorithm == 'rsa':
+                if self.algorithm == 'rsa' or self.algorithm == 'rsassa_pss':
                     prime = self['public_key'].parsed['modulus'].native
                 elif self.algorithm == 'dsa':
                     prime = self['algorithm']['parameters']['p'].native

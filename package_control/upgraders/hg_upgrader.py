@@ -29,7 +29,7 @@ class HgUpgrader(VcsUpgrader):
 
         if not binary:
             show_error(
-                u'''
+                '''
                 Unable to find %s.
 
                 Please set the "hg_binary" setting by accessing the
@@ -58,7 +58,11 @@ class HgUpgrader(VcsUpgrader):
         args = [binary]
         args.extend(self.update_command)
         args.append('default')
-        self.execute(args, self.working_copy, meaningful_output=True)
+        result = self.execute(args, self.working_copy, meaningful_output=True)
+        if result is not False:
+            cache_key = self.working_copy + '.incoming'
+            set_cache(cache_key, None, 0)
+
         return True
 
     def incoming(self):

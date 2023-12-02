@@ -1,16 +1,9 @@
-try:
-    # Python 3
-    from urllib.parse import urlparse
-    str_cls = str
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
+from urllib.parse import urlparse
 
 from .rate_limit_exception import RateLimitException
 
 
-class LimitingDownloader(object):
+class LimitingDownloader:
 
     """
     A base for downloaders that checks for rate limiting headers.
@@ -34,6 +27,6 @@ class LimitingDownloader(object):
         limit_remaining = headers.get('x-ratelimit-remaining', '1')
         limit = headers.get('x-ratelimit-limit', '1')
 
-        if str_cls(limit_remaining) == '0':
+        if str(limit_remaining) == '0':
             hostname = urlparse(url).hostname
             raise RateLimitException(hostname, limit)

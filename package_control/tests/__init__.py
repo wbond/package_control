@@ -1,74 +1,19 @@
-import threading
-import unittest
+from sys import modules
 
-from . import clients, downloaders, providers
+if "sublime" not in modules:
+    import importlib.machinery
+    import os
 
+    PACKAGE_ROOT = os.path.dirname(__file__)
 
-TEST_CLASSES = [
-    downloaders.CurlDownloaderTests,
-    downloaders.OscryptoDownloaderTests,
-    downloaders.UrlLibDownloaderTests,
-    downloaders.WgetDownloaderTests,
-    downloaders.WinINetDownloaderTests,
-    clients.GitHubClientTests,
-    clients.GitLabClientTests,
-    clients.BitBucketClientTests,
-    providers.GitHubRepositoryProviderTests,
-    providers.BitBucketRepositoryProviderTests,
-    providers.GitHubUserProviderTests,
-    providers.GitLabRepositoryProviderTests,
-    providers.GitLabUserProviderTests,
-    providers.RepositoryProviderTests,
-    providers.ChannelProviderTests,
-    providers.VersionSelectorTests
-]
+    # Mock the sublime module for CLI usage
+    sublime = importlib.machinery.SourceFileLoader(
+        "sublime",
+        os.path.join(PACKAGE_ROOT, "mock_sublime.py")
+    ).load_module()
 
-
-class OutputPanel:
-
-    def __init__(self, window):
-        self.panel = window.get_output_panel('package_control_tests')
-        self.panel.settings().set('word_wrap', True)
-        self.panel.settings().set('scroll_past_end', False)
-        window.run_command("show_panel", {"panel": 'output.package_control_tests'})
-
-    def write(self, data):
-        self.panel.run_command('package_control_insert', {'string': data})
-
-    def get(self):
-        pass
-
-    def flush(self):
-        pass
-
-
-class TestRunner(threading.Thread):
-    """
-    Runs tests in a thread and outputs the results to an output panel
-
-    :example:
-        TestRunner(args=(window, test_classes)).start()
-
-    :param window:
-        A sublime.Window object to use to display the results
-
-    :param test_classes:
-        A unittest.TestCase class, or list of classes
-    """
-
-    def run(self):
-        window, test_classes = self._args
-
-        output = OutputPanel(window)
-        output.write('Running Package Control Tests\n\n')
-
-        if not isinstance(test_classes, list) and not isinstance(test_classes, tuple):
-            test_classes = [test_classes]
-
-        suite = unittest.TestSuite()
-
-        loader = unittest.TestLoader()
-        for test_class in test_classes:
-            suite.addTest(loader.loadTestsFromTestCase(test_class))
-
-        unittest.TextTestRunner(stream=output, verbosity=1).run(suite)
+    # Mock the sublime_plugin module for CLI usage
+    sublime_plugin = importlib.machinery.SourceFileLoader(
+        "sublime_plugin",
+        os.path.join(PACKAGE_ROOT, "mock_sublime_plugin.py")
+    ).load_module()

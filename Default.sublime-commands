@@ -1,15 +1,35 @@
 [
     {
-        "caption": "Package Control: Add Repository",
-        "command": "add_repository"
-    },
-    {
         "caption": "Package Control: Add Channel",
         "command": "add_channel"
     },
     {
-        "caption": "Package Control: Advanced Install Package",
-        "command": "advanced_install_package"
+        "caption": "Package Control: Add Repository",
+        "command": "add_repository"
+    },
+    {
+        "caption": "Package Control: Advanced Disable Packages",
+        "command": "disable_packages"
+    },
+    {
+        "caption": "Package Control: Advanced Enable Packages",
+        "command": "enable_packages"
+    },
+    {
+        "caption": "Package Control: Advanced Install Packages",
+        "command": "install_packages"
+    },
+    {
+        "caption": "Package Control: Advanced Remove Packages",
+        "command": "remove_packages"
+    },
+    {
+        "caption": "Package Control: Advanced Upgrade Packages",
+        "command": "upgrade_packages"
+    },
+    {
+        "caption": "Package Control: Clear Cache Directory",
+        "command": "clear_package_cache"
     },
     {
         "caption": "Package Control: Create Package File",
@@ -28,14 +48,6 @@
         "command": "enable_package"
     },
     {
-        "caption": "Package Control: Grab CA Certs",
-        "command": "grab_certs"
-    },
-    {
-        "caption": "Package Control: Install Local Dependency",
-        "command": "install_local_dependency"
-    },
-    {
         "caption": "Package Control: Install Package",
         "command": "install_package"
     },
@@ -44,12 +56,12 @@
         "command": "list_packages"
     },
     {
-        "caption": "Package Control: Remove Channel",
-        "command": "remove_channel"
-    },
-    {
         "caption": "Package Control: List Unmanaged Packages",
         "command": "list_unmanaged_packages"
+    },
+    {
+        "caption": "Package Control: Remove Channel",
+        "command": "remove_channel"
     },
     {
         "caption": "Package Control: Remove Package",
@@ -60,16 +72,32 @@
         "command": "remove_repository"
     },
     {
+        "caption": "Package Control: Revert Built-in Package",
+        "command": "revert_package"
+    },
+    {
+        "caption": "Package Control: Satisfy Libraries",
+        "command": "satisfy_libraries"
+    },
+    {
+        "caption": "Package Control: Satisfy Packages",
+        "command": "satisfy_packages"
+    },
+    {
+        "caption": "Package Control: Upgrade All Packages",
+        "command": "upgrade_all_packages"
+    },
+    {
         "caption": "Package Control: Upgrade Package",
         "command": "upgrade_package"
     },
     {
-        "caption": "Package Control: Upgrade/Overwrite All Packages",
-        "command": "upgrade_all_packages"
+        "caption": "Package Control: New Channel…",
+        "command": "new_channel_json"
     },
     {
-        "caption": "Package Control: Satisfy Dependencies",
-        "command": "satisfy_dependencies"
+        "caption": "Package Control: New Repository…",
+        "command": "new_repository_json"
     },
     {
         "caption": "Package Control: Enable Debug Mode",
@@ -80,16 +108,12 @@
         "command": "package_control_disable_debug_mode"
     },
     {
-        "caption": "Preferences: Package Control Settings – Default",
-        "command": "package_control_open_default_settings"
-    },
-    {
-        "caption": "Preferences: Package Control Settings – User",
-        "command": "package_control_open_user_settings"
-    },
-    {
         "caption": "Preferences: Package Control Settings",
-        "command": "package_control_edit_settings"
+        "command": "edit_settings",
+        "args": {
+            "base_file": "${packages}/Package Control/Package Control.sublime-settings",
+            "default": "// See the left pane for the list of settings and valid values\n{\n\t$0\n}\n"
+        }
     },
     {
         "caption": "Package Control: Tests",

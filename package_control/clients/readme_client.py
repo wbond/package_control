@@ -1,13 +1,7 @@
 import re
 import os
 import base64
-
-try:
-    # Python 3
-    from urllib.parse import urlencode
-except (ImportError):
-    # Python 2
-    from urllib import urlencode
+from urllib.parse import urlencode
 
 from .json_api_client import JSONApiClient
 
@@ -49,7 +43,7 @@ class ReadmeClient(JSONApiClient):
         # Try to grab the contents of a GitHub-based readme by grabbing the cached
         # content of the readme API call
         github_match = re.match(
-            r'https://raw\.github(?:usercontent)?\.com/([^/]+/[^/]+)/([^/]+)/'
+            r'https://raw\.github(?:usercontent)?\.com/([^/#?]+/[^/#?]+)/([^/#?]+)/'
             r'readme(\.(md|mkd|mdown|markdown|textile|creole|rst|txt))?$',
             url,
             re.I
@@ -69,7 +63,7 @@ class ReadmeClient(JSONApiClient):
         if not contents:
             contents = self.fetch(url)
 
-        basename, ext = os.path.splitext(url)
+        _, ext = os.path.splitext(url)
         format = 'txt'
         ext = ext.lower()
         if ext in _readme_formats:

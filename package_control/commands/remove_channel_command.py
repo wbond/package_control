@@ -1,34 +1,51 @@
 import sublime
 import sublime_plugin
 
-from ..show_quick_panel import show_quick_panel
-from ..settings import pc_settings_filename
 from .. import text
+from ..settings import pc_settings_filename
+from ..show_error import show_message
 
 
-class RemoveChannelCommand(sublime_plugin.WindowCommand):
+class RemoveChannelCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command to remove a channel from the user's Package Control settings
+
+    Example:
+
+    ```py
+    sublime.run_command(
+        "remove_channel",
+        {
+            "url": "https://my-server.com/channel.json",
+            "unattended": False  # if True, suppress error dialogs
+        }
+    )
+    ```
     """
 
-    def run(self):
-        self.settings = sublime.load_settings(pc_settings_filename())
-        self.channels = self.settings.get('channels')
-        if not self.channels:
-            sublime.message_dialog(text.format(
-                u'''
-                Package Control
-
-                There are no channels to remove
-                '''
-            ))
+    def run(self, url=None, unattended=False):
+        settings = sublime.load_settings(pc_settings_filename())
+        channels = settings.get('channels')
+        if not channels:
+            if not url or not unattended:
+                show_message('There are no channels to remove')
             return
 
-        run = False
-        if len(self.channels) == 1:
+        if url:
+            try:
+                channels.remove(url)
+            except (ValueError):
+                pass
+            else:
+                settings.set('channels', channels)
+                sublime.save_settings(pc_settings_filename())
+                sublime.status_message('Channel %s successfully removed' % url)
+            return
+
+        if len(channels) == 1:
             message = text.format(
-                u'''
+                '''
                 Package Control
 
                 You are about to remove the only channel in your settings. This
@@ -36,33 +53,17 @@ class RemoveChannelCommand(sublime_plugin.WindowCommand):
                 packages.
                 '''
             )
-            if sublime.ok_cancel_dialog(message, 'Ok'):
-                run = True
-        else:
-            run = True
+            if not sublime.ok_cancel_dialog(message, 'Ok'):
+                return
 
-        if run:
-            show_quick_panel(self.window, self.channels, self.on_done)
+        def on_done(index):
+            if index == -1:
+                return
 
-    def on_done(self, index):
-        """
-        Quick panel handler - removes the channel from settings
+            self.run(channels[index])
 
-        :param index:
-            The numeric index of the channel in the list of channels
-        """
-
-        # Cancelled
-        if index == -1:
-            return
-
-        channel = self.channels[index]
-
-        try:
-            self.channels.remove(channel)
-            self.settings.set('channels', self.channels)
-            sublime.save_settings(pc_settings_filename())
-            sublime.status_message('Channel %s successfully removed' % channel)
-
-        except (ValueError):
-            pass
+        sublime.active_window().show_quick_panel(
+            channels,
+            on_done,
+            sublime.KEEP_OPEN_ON_FOCUS_LOST
+        )

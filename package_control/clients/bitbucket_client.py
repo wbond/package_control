@@ -1,12 +1,9 @@
 import re
+from urllib.parse import urlencode, quote
 
-from ..versions import version_sort, version_process
+from ..downloaders.downloader_exception import DownloaderException
+from ..package_version import version_match_prefix
 from .json_api_client import JSONApiClient
-
-try:
-    from urllib import quote
-except (ImportError):
-    from urllib.parse import quote
 
 
 # A predefined list of readme filenames to look for
@@ -25,44 +22,52 @@ _readme_filenames = [
 
 class BitBucketClient(JSONApiClient):
 
-    def make_tags_url(self, repo):
+    @staticmethod
+    def user_repo_branch(url):
         """
-        Generate the tags URL for a BitBucket repo if the value passed is a BitBucket
-        repository URL
+        Extract the username, repo and branch name from the URL
 
-        :param repo:
-            The repository URL
+        :param url:
+            The URL to extract the info from, in one of the forms:
+              https://bitbucket.org/{user}
+              https://bitbucket.org/{user}/{repo}
+              https://bitbucket.org/{user}/{repo}.git
+              https://bitbucket.org/{user}/{repo}/src/{branch}
 
         :return:
-            The tags URL if repo was a BitBucket repo, otherwise False
+            A tuple of
+                (user name, repo name, branch name) or
+                (user name, repo name, None) or
+                (user name, None, None) or
+                (None, None, None) if no match.
         """
 
-        match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
-        if not match:
-            return False
+        match = re.match(
+            r'^https?://bitbucket\.org/([^/#?]+)(?:/([^/#?]+?)(?:\.git|/src/([^#?]*[^/#?])/?|/?)|/?)$',
+            url
+        )
+        if match:
+            return match.groups()
 
-        return 'https://bitbucket.org/%s#tags' % match.group(1)
+        return (None, None, None)
 
-    def make_branch_url(self, repo, branch):
+    @staticmethod
+    def repo_url(user_name, repo_name):
         """
-        Generate the branch URL for a BitBucket repo if the value passed is a BitBucket
+        Generate the tags URL for a GitHub repo if the value passed is a GitHub
         repository URL
 
-        :param repo:
-            The repository URL
+        :param owener_name:
+            The repository owner name
 
-        :param branch:
-            The branch name
+        :param repo_name:
+            The repository name
 
         :return:
-            The branch URL if repo was a BitBucket repo, otherwise False
+            The repository URL of given owner and repo name
         """
 
-        match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', repo)
-        if not match:
-            return False
-
-        return 'https://bitbucket.org/%s/src/%s' % (match.group(1), quote(branch))
+        return 'https://bitbucket.com/%s/%s' % (quote(user_name), quote(repo_name))
 
     def download_info(self, url, tag_prefix=None):
         """
@@ -77,7 +82,8 @@ class BitBucketClient(JSONApiClient):
             tag that is a valid semver version.
 
         :param tag_prefix:
-            If the URL is a tags URL, only match tags that have this prefix
+            If the URL is a tags URL, only match tags that have this prefix.
+            If tag_prefix is None, match only tags without prefix.
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -91,56 +97,129 @@ class BitBucketClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        tags_match = re.match('https?://bitbucket.org/([^/]+/[^#/]+)/?#tags$', url)
+        output = self.download_info_from_branch(url)
+        if output is None:
+            output = self.download_info_from_tags(url, tag_prefix)
+        return output
 
-        version = None
-        url_pattern = 'https://bitbucket.org/%s/get/%s.zip'
+    def download_info_from_branch(self, url, default_branch=None):
+        """
+        Retrieve information about downloading a package
 
-        output = []
-        if tags_match:
-            user_repo = tags_match.group(1)
+        :param url:
+            The URL of the repository, in one of the forms:
+              https://bitbucket.org/{user}/{repo}
+              https://bitbucket.org/{user}/{repo}/src/{branch}
 
-            tags_list = {}
-            tags_url = self._make_api_url(user_repo, '/refs/tags?pagelen=100')
+        :param default_branch:
+            The branch to use, in case url is a repo url
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
+            return None
+
+        user_repo = "%s/%s" % (user_name, repo_name)
+
+        if branch is None:
+            branch = default_branch
+            if branch is None:
+                repo_info = self.fetch_json(self._api_url(user_repo))
+                branch = repo_info['mainbranch'].get('name', 'master')
+
+        branch_url = self._api_url(user_repo, '/refs/branches/%s' % branch)
+        branch_info = self.fetch_json(branch_url)
+
+        timestamp = branch_info['target']['date'][0:19].replace('T', ' ')
+        version = re.sub(r'[\-: ]', '.', timestamp)
+
+        return [self._make_download_info(user_repo, branch, version, timestamp)]
+
+    def download_info_from_releases(self, url, asset_templates, tag_prefix=None):
+        """
+        BitBucket doesn't support releases in ways GitHub/Gitlab do.
+
+        It supports download assets, but those are not bound to tags or releases.
+
+        Version information could be extracted from file names,
+        but that's not how PC evaluates download assets, currently.
+        """
+
+        return None
+
+    def download_info_from_tags(self, url, tag_prefix=None):
+        """
+        Retrieve information about downloading a package
+
+        :param url:
+            The URL of the repository, in one of the forms:
+              https://bitbucket.org/{user}/{repo}
+              https://bitbucket.org/{user}/{repo}/#tags
+            Grabs the info from the newest tag(s) that is a valid semver version.
+
+        :param tag_prefix:
+            If the URL is a tags URL, only match tags that have this prefix.
+            If tag_prefix is None, match only tags without prefix.
+
+        :raises:
+            DownloaderException: when there is an error downloading
+            ClientException: when there is an error parsing the response
+
+        :return:
+            None if no match, False if no commit, or a list of dicts with the
+            following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
+        """
+
+        tags_match = re.match(r'https?://bitbucket\.org/([^/#?]+/[^/#?]+)/?(?:#tags)?$', url)
+        if not tags_match:
+            return None
+
+        def _get_releases(user_repo, tag_prefix, page_size=100):
+            used_versions = set()
+            query_string = urlencode({'pagelen': page_size})
+            tags_url = self._api_url(user_repo, '/refs/tags?%s' % query_string)
             while tags_url:
                 tags_json = self.fetch_json(tags_url)
                 for tag in tags_json['values']:
-                    tags_list[tag['name']] = tag['target']['date'][0:19].replace('T', ' ')
-                tags_url = tags_json['next'] if 'next' in tags_json else None
+                    version = version_match_prefix(tag['name'], tag_prefix)
+                    if version and version not in used_versions:
+                        used_versions.add(version)
+                        yield (
+                            version,
+                            tag['name'],
+                            tag['target']['date'][0:19].replace('T', ' ')
+                        )
 
-            tag_info = version_process(tags_list.keys(), tag_prefix)
-            tag_info = version_sort(tag_info, reverse=True)
-            if not tag_info:
-                return False
+                tags_url = tags_json.get('next')
 
-            used_versions = {}
-            for info in tag_info:
-                version = info['version']
-                if version in used_versions:
-                    continue
-                tag = info['prefix'] + version
-                output.append({
-                    'url': url_pattern % (user_repo, tag),
-                    'version': version,
-                    'date': tags_list[tag]
-                })
-                used_versions[version] = True
+        user_repo = tags_match.group(1)
 
-        else:
-            user_repo, branch = self._user_repo_branch(url)
-            if not user_repo:
-                return user_repo
+        max_releases = self.settings.get('max_releases', 0)
+        num_releases = 0
 
-            branch_url = self._make_api_url(user_repo, '/refs/branches/%s' % branch)
-            branch_info = self.fetch_json(branch_url)
+        output = []
+        for release in sorted(_get_releases(user_repo, tag_prefix), reverse=True):
+            version, tag, timestamp = release
 
-            timestamp = branch_info['target']['date'][0:19].replace('T', ' ')
+            output.append(self._make_download_info(user_repo, tag, str(version), timestamp))
 
-            output.append({
-                'url': url_pattern % (user_repo, branch),
-                'version': re.sub(r'[\-: ]', '.', timestamp),
-                'date': timestamp
-            })
+            num_releases += version.is_final
+            if max_releases > 0 and num_releases >= max_releases:
+                break
 
         return output
 
@@ -166,52 +245,87 @@ class BitBucketClient(JSONApiClient):
               `readme` - URL of the readme
               `issues` - URL of bug tracker
               `donate` - URL of a donate page
+              `default_branch`
         """
 
-        user_repo, branch = self._user_repo_branch(url)
-        if not user_repo:
-            return user_repo
+        user_name, repo_name, branch = self.user_repo_branch(url)
+        if not repo_name:
+            return None
 
-        api_url = self._make_api_url(user_repo)
+        user_repo = "%s/%s" % (user_name, repo_name)
+        api_url = self._api_url(user_repo)
+        repo_info = self.fetch_json(api_url)
 
-        info = self.fetch_json(api_url)
+        if branch is None:
+            branch = repo_info['mainbranch'].get('name', 'master')
 
-        issues_url = u'https://bitbucket.org/%s/issues' % user_repo
+        issues_url = 'https://bitbucket.org/%s/issues' % user_repo
 
-        author = info['owner'].get('nickname')
+        author = repo_info['owner'].get('nickname')
         if author is None:
-            author = info['owner'].get('username')
+            author = repo_info['owner'].get('username')
+
+        is_client = self.settings.get('min_api_calls', False)
+        readme_url = None if is_client else self._readme_url(user_repo, branch)
 
         return {
-            'name': info['name'],
-            'description': info['description'] or 'No description provided',
-            'homepage': info['website'] or url,
+            'name': repo_info['name'],
+            'description': repo_info['description'] or 'No description provided',
+            'homepage': repo_info['website'] or url,
             'author': author,
             'donate': None,
-            'readme': self._readme_url(user_repo, branch),
-            'issues': issues_url if info['has_issues'] else None
+            'readme': readme_url,
+            'issues': issues_url if repo_info['has_issues'] else None,
+            'default_branch': branch
         }
 
-    def _main_branch_name(self, user_repo):
+    def user_info(self, url):
         """
-        Fetch the name of the default branch
+        For API compatibility with other clients.
+
+        :param url:
+            The URL to the repository, in one of the forms:
+              https://bitbucket.org/{user}
+
+        :return:
+            None
+        """
+        return None
+
+    def _make_download_info(self, user_repo, ref_name, version, timestamp):
+        """
+        Generate a download_info record
 
         :param user_repo:
-            The user/repo name to get the main branch for
+            The user/repo of the repository
+
+        :param ref_name:
+            The git reference (branch, commit, tag)
+
+        :param version:
+            The prefixed version to add to the record
+
+        :param timestamp:
+            The timestamp the revision was created
 
         :raises:
             DownloaderException: when there is an error downloading
             ClientException: when there is an error parsing the response
 
         :return:
-            The name of the main branch - `master` or `default`
+            A dictionary with following keys:
+              `version` - the version number of the download
+              `url` - the download URL of a zip file of the package
+              `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        main_branch_url = self._make_api_url(user_repo)
-        main_branch_info = self.fetch_json(main_branch_url, True)
-        return main_branch_info['mainbranch']['name']
+        return {
+            'url': 'https://bitbucket.org/%s/get/%s.zip' % (user_repo, ref_name),
+            'version': version,
+            'date': timestamp
+        }
 
-    def _make_api_url(self, user_repo, suffix=''):
+    def _api_url(self, user_repo, suffix=''):
         """
         Generate a URL for the BitBucket API
 
@@ -249,48 +363,20 @@ class BitBucketClient(JSONApiClient):
             The URL to the readme file, or None
         """
 
-        listing_url = self._make_api_url(user_repo, '/src/%s/?pagelen=100' % branch)
+        listing_url = self._api_url(user_repo, '/src/%s/?pagelen=100' % branch)
 
-        while listing_url:
-            root_dir_info = self.fetch_json(listing_url, prefer_cached)
+        try:
+            while listing_url:
+                root_dir_info = self.fetch_json(listing_url, prefer_cached)
 
-            for entry in root_dir_info['values']:
-                if entry['path'].lower() in _readme_filenames:
-                    return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
+                for entry in root_dir_info['values']:
+                    if entry['path'].lower() in _readme_filenames:
+                        return 'https://bitbucket.org/%s/raw/%s/%s' % (user_repo, branch, entry['path'])
 
-            listing_url = root_dir_info['next'] if 'next' in root_dir_info else None
+                listing_url = root_dir_info['next'] if 'next' in root_dir_info else None
+
+        except (DownloaderException) as e:
+            if 'HTTP error 404' not in str(e):
+                raise
 
         return None
-
-    def _user_repo_branch(self, url):
-        """
-        Extract the username/repo and branch name from the URL
-
-        :param url:
-            The URL to extract the info from, in one of the forms:
-              https://bitbucket.org/{user}/{repo}
-              https://bitbucket.org/{user}/{repo}/src/{branch}
-
-        :raises:
-            DownloaderException: when there is an error downloading
-            ClientException: when there is an error parsing the response
-
-        :return:
-            A tuple of (user/repo, branch name) or (None, None) if not matching
-        """
-
-        repo_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/?$', url)
-        branch_match = re.match('https?://bitbucket.org/([^/]+/[^/]+)/src/([^/]+)/?$', url)
-
-        if repo_match:
-            user_repo = repo_match.group(1)
-            branch = self._main_branch_name(user_repo)
-
-        elif branch_match:
-            user_repo = branch_match.group(1)
-            branch = branch_match.group(2)
-
-        else:
-            return (None, None)
-
-        return (user_repo, branch)

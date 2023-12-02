@@ -27,7 +27,7 @@ import unicodedata
 from ._errors import unwrap
 from ._iri import iri_to_uri, uri_to_iri
 from ._ordereddict import OrderedDict
-from ._types import type_name, str_cls, bytes_to_list
+from ._types import type_name, str_cls, byte_cls, bytes_to_list
 from .algos import AlgorithmIdentifier, AnyAlgorithmIdentifier, DigestAlgorithm, SignedDigestAlgorithm
 from .core import (
     Any,
@@ -708,7 +708,13 @@ class NameTypeAndValue(Sequence):
         """
 
         if self._prepped is None:
-            self._prepped = self._ldap_string_prep(self['value'].native)
+            native = self['value'].native
+            if isinstance(native, str_cls):
+                self._prepped = self._ldap_string_prep(native)
+            else:
+                if isinstance(native, byte_cls):
+                    native = ' ' + native.decode('cp1252') + ' '
+                self._prepped = native
         return self._prepped
 
     def __ne__(self, other):
@@ -987,7 +993,7 @@ class Name(Choice):
 
         :param name_dict:
             A dict of name information, e.g. {"common_name": "Will Bond",
-            "country_name": "US", "organization": "Codex Non Sufficit LC"}
+            "country_name": "US", "organization_name": "Codex Non Sufficit LC"}
 
         :param use_printable:
             A bool - if PrintableString should be used for encoding instead of
@@ -1015,15 +1021,27 @@ class Name(Choice):
 
         for attribute_name, attribute_value in name_dict.items():
             attribute_name = NameType.map(attribute_name)
-            if attribute_name == 'email_address':
-                value = EmailAddress(attribute_value)
-            elif attribute_name == 'domain_component':
-                value = DNSName(attribute_value)
+            attribute_class = NameTypeAndValue._oid_specs.get(attribute_name)
+            if not attribute_class:
+                raise ValueError(unwrap(
+                    '''
+                    No encoding specification found for %s
+                    ''',
+                    attribute_name
+                ))
+
+            if isinstance(attribute_value, attribute_class):
+                value = attribute_value
+
+            elif attribute_class is not DirectoryString:
+                value = attribute_class(attribute_value)
+
             elif attribute_name in set(['dn_qualifier', 'country_name', 'serial_number']):
                 value = DirectoryString(
                     name='printable_string',
                     value=PrintableString(attribute_value)
                 )
+
             else:
                 value = DirectoryString(
                     name=encoding_name,
@@ -2079,6 +2097,8 @@ class ExtensionId(ObjectIdentifier):
         '2.16.840.1.113730.1.1': 'netscape_certificate_type',
         # https://tools.ietf.org/html/rfc6962.html#page-14
         '1.3.6.1.4.1.11129.2.4.2': 'signed_certificate_timestamp_list',
+        # https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wcce/3aec3e50-511a-42f9-a5d5-240af503e470
+        '1.3.6.1.4.1.311.20.2': 'microsoft_enroll_certtype',
     }
 
 
@@ -2114,6 +2134,9 @@ class Extension(Sequence):
         'entrust_version_extension': EntrustVersionInfo,
         'netscape_certificate_type': NetscapeCertificateType,
         'signed_certificate_timestamp_list': OctetString,
+        # Not UTF8String as Microsofts docs claim, see:
+        # https://www.alvestrand.no/objectid/1.3.6.1.4.1.311.20.2.html
+        'microsoft_enroll_certtype': BMPString,
     }
 
 

@@ -4,17 +4,8 @@ import base64
 import hashlib
 import os
 import sys
-
-try:
-    # Python 3
-    from http.client import HTTPS_PORT
-    from urllib.request import parse_keqv_list, parse_http_list
-    x509 = None
-except (ImportError):
-    # Python 2
-    from httplib import HTTPS_PORT
-    from urllib2 import parse_keqv_list, parse_http_list
-    from ..deps.asn1crypto import x509
+from http.client import HTTPS_PORT
+from urllib.request import parse_keqv_list, parse_http_list
 
 from ..console_write import console_write
 from .debuggable_https_response import DebuggableHTTPSResponse
@@ -94,6 +85,14 @@ try:
                     return True
             return False
 
+        # Compatibility for python 3.3 vs 3.8
+        #   python 3.8 replaced _set_hostport() by _get_hostport()
+        if not hasattr(DebuggableHTTPConnection, '_set_hostport'):
+
+            def _set_hostport(self, host, port):
+                (self.host, self.port) = self._get_hostport(host, port)
+                self._validate_host(self.host)
+
         def _tunnel(self):
             """
             This custom _tunnel method allows us to read and print the debug
@@ -105,7 +104,7 @@ try:
             self._proxy_port = self.port
             self._set_hostport(self._tunnel_host, self._tunnel_port)
 
-            self._tunnel_headers['Host'] = u"%s:%s" % (self.host, self.port)
+            self._tunnel_headers['Host'] = "%s:%s" % (self.host, self.port)
             self._tunnel_headers['User-Agent'] = self.user_agent
             self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
 
@@ -114,15 +113,14 @@ try:
                 request += "%s: %s\r\n" % (header, value)
             request += "\r\n"
 
-            if sys.version_info >= (3,):
-                request = bytes(request, 'iso-8859-1')
+            request = bytes(request, 'iso-8859-1')
 
             self.send(request)
 
             response = self.response_class(self.sock, method=self._method)
             (version, code, message) = response._read_status()
 
-            status_line = u"%s %s %s" % (version, code, message.rstrip())
+            status_line = "%s %s %s" % (version, code, message.rstrip())
             headers = [status_line]
 
             content_length = 0
@@ -130,8 +128,7 @@ try:
             while True:
                 line = response.fp.readline()
 
-                if sys.version_info >= (3,):
-                    line = line.decode('iso-8859-1')
+                line = line.decode('iso-8859-1')
 
                 if line == '\r\n':
                     break
@@ -148,9 +145,9 @@ try:
                     close_connection = True
 
             if self.debuglevel in [-1, 5]:
-                indented_headers = u'\n  '.join(headers)
+                indented_headers = '\n  '.join(headers)
                 console_write(
-                    u'''
+                    '''
                     Urllib %s Debug Read
                       %s
                     ''',
@@ -177,12 +174,12 @@ try:
                     response_value = self.build_digest_response(
                         supported_auth_methods['digest'], username, password)
                     if response_value:
-                        self._tunnel_headers['Proxy-Authorization'] = u"Digest %s" % response_value
+                        self._tunnel_headers['Proxy-Authorization'] = "Digest %s" % response_value
 
                 elif 'basic' in supported_auth_methods:
-                    response_value = u"%s:%s" % (username, password)
+                    response_value = "%s:%s" % (username, password)
                     response_value = base64.b64encode(response_value.encode('utf-8')).decode('utf-8')
-                    self._tunnel_headers['Proxy-Authorization'] = u"Basic %s" % response_value.strip()
+                    self._tunnel_headers['Proxy-Authorization'] = "Basic %s" % response_value.strip()
 
                 if 'Proxy-Authorization' in self._tunnel_headers:
                     self.host = self._proxy_host
@@ -242,7 +239,7 @@ try:
             else:
                 return None
 
-            host_port = u"%s:%s" % (self.host, self.port)
+            host_port = "%s:%s" % (self.host, self.port)
 
             a1 = "%s:%s:%s" % (username, realm, password)
             a2 = "CONNECT:%s" % host_port
@@ -250,11 +247,11 @@ try:
             ha2 = hash(a2)
 
             if qop is None:
-                response = hash(u"%s:%s:%s" % (ha1, nonce, ha2))
+                response = hash("%s:%s:%s" % (ha1, nonce, ha2))
             elif qop == 'auth':
                 nc = '00000001'
                 cnonce = hash(os.urandom(8))[:8]
-                response = hash(u"%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
+                response = hash("%s:%s:%s:%s:%s:%s" % (ha1, nonce, nc, cnonce, qop, ha2))
             else:
                 return None
 
@@ -274,7 +271,7 @@ try:
             if opaque:
                 response_fields['opaque'] = opaque
 
-            return ', '.join([u"%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
+            return ', '.join(["%s=\"%s\"" % (field, response_fields[field]) for field in response_fields])
 
         def connect(self):
             """
@@ -283,7 +280,7 @@ try:
 
             if self.debuglevel == -1:
                 console_write(
-                    u'''
+                    '''
                     Urllib HTTPS Debug General
                       Connecting to %s on port %s
                     ''',
@@ -296,7 +293,7 @@ try:
 
             if self.debuglevel == -1:
                 console_write(
-                    u'''
+                    '''
                     Urllib HTTPS Debug General
                       Upgrading connection to SSL using CA certs file at %s
                     ''',
@@ -305,48 +302,36 @@ try:
 
             hostname = self.host.split(':', 0)[0]
 
-            # Python 3 supports SNI when using an SSLContext
-            if sys.version_info >= (3,):
-                proto = ssl.PROTOCOL_SSLv23
-                if sys.version_info >= (3, 6):
-                    proto = ssl.PROTOCOL_TLS
-                self.ctx = ssl.SSLContext(proto)
-                if sys.version_info < (3, 7):
-                    self.ctx.options = ssl.OP_ALL | ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3
-                else:
-                    self.ctx.minimum_version = ssl.TLSVersion.TLSv1
-                self.ctx.verify_mode = self.cert_reqs
-                self.ctx.load_verify_locations(self.ca_certs)
-                # We don't call load_cert_chain() with self.key_file and self.cert_file
-                # since that is for servers, and this code only supports client mode
-                if self.debuglevel == -1:
-                    console_write(
-                        u'''
-                          Using hostname "%s" for TLS SNI extension
-                        ''',
-                        hostname,
-                        indent='  ',
-                        prefix=False
-                    )
-                self.sock = self.ctx.wrap_socket(
-                    self.sock,
-                    server_hostname=hostname
-                )
-
+            proto = ssl.PROTOCOL_SSLv23
+            if sys.version_info >= (3, 6):
+                proto = ssl.PROTOCOL_TLS
+            self.ctx = ssl.SSLContext(proto)
+            if sys.version_info < (3, 7):
+                self.ctx.options = ssl.OP_ALL | ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3
             else:
-                self.sock = ssl.wrap_socket(
-                    self.sock,
-                    keyfile=self.key_file,
-                    certfile=self.cert_file,
-                    cert_reqs=self.cert_reqs,
-                    ca_certs=self.ca_certs,
-                    ssl_version=ssl.PROTOCOL_SSLv23
+                self.ctx.minimum_version = ssl.TLSVersion.TLSv1
+            self.ctx.verify_mode = self.cert_reqs
+            self.ctx.load_verify_locations(self.ca_certs)
+            # We don't call load_cert_chain() with self.key_file and self.cert_file
+            # since that is for servers, and this code only supports client mode
+            if self.debuglevel == -1:
+                console_write(
+                    '''
+                      Using hostname "%s" for TLS SNI extension
+                    ''',
+                    hostname,
+                    indent='  ',
+                    prefix=False
                 )
+            self.sock = self.ctx.wrap_socket(
+                self.sock,
+                server_hostname=hostname
+            )
 
             if self.debuglevel == -1:
                 cipher_info = self.sock.cipher()
                 console_write(
-                    u'''
+                    '''
                       Successfully upgraded connection to %s:%s with SSL
                       Using %s with cipher %s
                     ''',
@@ -358,20 +343,6 @@ try:
             # This debugs and validates the SSL certificate
             if self.cert_reqs & ssl.CERT_REQUIRED:
                 cert = self.sock.getpeercert()
-                # Python 2.6 doesn't seem to parse the subject alt name, so
-                # we parse the raw DER certificate and grab the info ourself
-                if x509:
-                    der_cert = self.sock.getpeercert(True)
-                    cert_object = x509.Certificate.load(der_cert)
-                    if cert_object.subject_alt_name_value:
-                        subject_alt_names = []
-                        for general_name in cert_object.subject_alt_name_value:
-                            if general_name.name != 'dns_name':
-                                continue
-                            if 'commonName' not in cert or general_name.native != cert['commonName']:
-                                subject_alt_names.append(('DNS', general_name.native))
-                        if subject_alt_names:
-                            cert['subjectAltName'] = tuple(subject_alt_names)
 
                 if self.debuglevel == -1:
                     subjectMap = {
@@ -397,7 +368,7 @@ try:
                         subject_parts.append(field_name + '=' + pair[0][1])
 
                     console_write(
-                        u'''
+                        '''
                           Server SSL certificate:
                             subject: %s
                         ''',
@@ -408,18 +379,18 @@ try:
                     if 'subjectAltName' in cert:
                         alt_names = [c[1] for c in cert['subjectAltName']]
                         alt_names = ', '.join(alt_names)
-                        console_write(u'    subject alt name: %s', alt_names, prefix=False)
+                        console_write('    subject alt name: %s', alt_names, prefix=False)
                     if 'notAfter' in cert:
-                        console_write(u'    expire date: %s', cert['notAfter'], prefix=False)
+                        console_write('    expire date: %s', cert['notAfter'], prefix=False)
 
                 if not self.validate_cert_host(cert, hostname):
                     if self.debuglevel == -1:
-                        console_write(u'  Certificate INVALID', prefix=False)
+                        console_write('  Certificate INVALID', prefix=False)
 
                     raise InvalidCertificateException(hostname, cert, 'hostname mismatch')
 
                 if self.debuglevel == -1:
-                    console_write(u'  Certificate validated for %s', hostname, prefix=False)
+                    console_write('  Certificate validated for %s', hostname, prefix=False)
 
 except (ImportError):
     pass

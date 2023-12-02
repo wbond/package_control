@@ -35,7 +35,7 @@ def run():
     flake8_style = get_style_guide(config_file=os.path.join(PACKAGE_ROOT, 'tox.ini'))
 
     paths = []
-    for root, _, filenames in os.walk('package_control', 'dev'):
+    for root, _, filenames in os.walk('package_control'):
         for filename in filenames:
             if not filename.endswith('.py'):
                 continue

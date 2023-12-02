@@ -1,195 +1,251 @@
-import zipfile
-import os
-import hashlib
 import json
-from os import path
-try:
-    from urlparse import urlparse
-    str_cls = unicode  # noqa
-    from cStringIO import StringIO as BytesIO
-    package_control_dir = os.getcwd()
-except (ImportError):
-    from urllib.parse import urlparse
-    str_cls = str
-    from io import BytesIO
-    package_control_dir = path.dirname(path.dirname(__file__))
+import os
+import zipfile
+from textwrap import dedent
+from threading import Thread
 
 import sublime
 
-from .clear_directory import clear_directory, unlink_or_delete_directory, is_directory_symlink
-from .download_manager import downloader
-from .downloaders.downloader_exception import DownloaderException
+from . import library, sys_path
+from .clear_directory import delete_directory
 from .console_write import console_write
-from . import loader, sys_path
-from .open_compat import open_compat, read_compat
-from .semver import SemVer
-from .file_not_found_error import FileNotFoundError
-from .settings import pc_settings_filename
+from .package_cleanup import PackageCleanup
+from .package_disabler import PackageDisabler
+from .package_io import create_empty_file
+from .show_error import show_message
 
 
-def mark_bootstrapped():
+LOADER_PACKAGE_NAME = '0_package_control_loader'
+LOADER_PACKAGE_PATH = os.path.join(
+    sys_path.installed_packages_path(),
+    LOADER_PACKAGE_NAME + '.sublime-package'
+)
+
+
+def disable_package_control():
     """
-    Mark Package Control as successfully bootstrapped
-    """
+    Disables Package Control
 
-    pc_settings = sublime.load_settings(pc_settings_filename())
-
-    if not pc_settings.get('bootstrapped'):
-        pc_settings.set('bootstrapped', True)
-        sublime.save_settings(pc_settings_filename())
-
-
-def bootstrap_dependency(settings, url, hash_, priority, version, on_complete):
-    """
-    Downloads a dependency from a hard-coded URL - only used for bootstrapping _ssl
-    on Linux and ST2/Windows
-
-    :param settings:
-        Package Control settings
-
-    :param url:
-        The non-secure URL to download from
-
-    :param hash_:
-        The sha256 hash of the package file
-
-    :param version:
-        The version number of the package
-
-    :param priority:
-        A three-digit number that controls what order packages are
-        injected in
-
-    :param on_complete:
-        A callback to be run in the main Sublime thread, so it can use the API
+    Disabling is executed with little delay to work around a ST core bug,
+    which causes `sublime.load_resource()` to fail when being called directly
+    by `plugin_loaded()` hook.
     """
 
-    package_filename = path.basename(urlparse(url).path)
-    package_basename, _ = path.splitext(package_filename)
-
-    package_dir = path.join(sys_path.packages_path, package_basename)
-
-    version = SemVer(version)
-
-    # The package has already been installed. Don't reinstall unless we have
-    # a newer version.
-    if path.exists(package_dir) and loader.exists(package_basename):
-        try:
-            dep_metadata_path = path.join(package_dir, 'dependency-metadata.json')
-            with open_compat(dep_metadata_path, 'r') as f:
-                metadata = json.loads(read_compat(f))
-            old_version = SemVer(metadata['version'])
-            if version <= old_version:
-                sublime.set_timeout(mark_bootstrapped, 10)
-                return
-
-            console_write(
-                u'''
-                Upgrading bootstrapped dependency %s to %s from %s
-                ''',
-                (package_basename, version, old_version)
-            )
-
-        except (KeyError, FileNotFoundError):
-            # If we can't determine the old version, install the new one
-            pass
-
-    with downloader(url, settings) as manager:
-        try:
-            console_write(
-                u'''
-                Downloading bootstrapped dependency %s
-                ''',
-                package_basename
-            )
-            data = manager.fetch(url, 'Error downloading bootstrapped dependency %s.' % package_basename)
-            console_write(
-                u'''
-                Successfully downloaded bootstraped dependency %s
-                ''',
-                package_basename
-            )
-            data_io = BytesIO(data)
-
-        except (DownloaderException) as e:
-            console_write(e)
-            return
-
-    data_hash = hashlib.sha256(data).hexdigest()
-    if data_hash != hash_:
-        console_write(
-            u'''
-            Error validating bootstrapped dependency %s (got %s instead of %s)
-            ''',
-            (package_basename, data_hash, hash_)
-        )
-        return
-
-    try:
-        data_zip = zipfile.ZipFile(data_io, 'r')
-    except (zipfile.BadZipfile):
-        console_write(
-            u'''
-            Error unzipping bootstrapped dependency %s
-            ''',
-            package_filename
-        )
-        return
-
-    if is_directory_symlink(package_dir):
-        unlink_or_delete_directory(package_dir)
-
-    if not path.exists(package_dir):
-        os.makedirs(package_dir, 0o755)
-    else:
-        clear_directory(package_dir)
-
-    code = None
-    for zip_path in data_zip.namelist():
-        dest = zip_path
-
-        if not isinstance(dest, str_cls):
-            dest = dest.decode('utf-8', 'strict')
-
-        dest = dest.replace('\\', '/')
-
-        # loader.py is included for backwards compatibility. New code should use
-        # loader.code with Python inside of it. We no longer use loader.py since
-        # we can't have any files ending in .py in the root of a package,
-        # otherwise Sublime Text loads it as a plugin and then the dependency
-        # path added to sys.path and the package path loaded by Sublime Text
-        # conflict and there will be errors when Sublime Text tries to
-        # initialize plugins. By using loader.code, developers can git clone a
-        # dependency into their Packages folder without issue.
-        if dest in set([u'loader.py', u'loader.code']):
-            code = data_zip.read(zip_path).decode('utf-8')
-            if dest == u'loader.py':
-                continue
-
-        dest = path.join(package_dir, dest)
-
-        if dest[-1] == '/':
-            if not path.exists(dest):
-                os.makedirs(dest, 0o755)
-        else:
-            dest_dir = path.dirname(dest)
-            if not path.exists(dest_dir):
-                os.makedirs(dest_dir, 0o755)
-
-            with open(dest, 'wb') as f:
-                f.write(data_zip.read(zip_path))
-
-    data_zip.close()
-
-    loader.add_or_update(priority, package_basename, code)
-
-    console_write(
-        u'''
-        Successfully installed bootstrapped dependency %s
-        ''',
-        package_basename
+    sublime.set_timeout(
+        lambda: PackageDisabler.disable_packages({PackageDisabler.DISABLE: 'Package Control'}),
+        10
     )
 
-    sublime.set_timeout(mark_bootstrapped, 10)
-    if on_complete:
-        sublime.set_timeout(on_complete, 100)
+
+def bootstrap():
+    """
+    Bootstrap Package Control
+
+    Bootstrapping is executed with little delay to work around a ST core bug,
+    which causes `sublime.load_resource()` to fail when being called directly
+    by `plugin_loaded()` hook.
+    """
+
+    _install_injectors()
+
+    if not os.path.exists(LOADER_PACKAGE_PATH):
+        # Start shortly after Sublime starts so package renames don't cause errors
+        # with key bindings, settings, etc. disappearing in the middle of parsing
+        sublime.set_timeout(PackageCleanup().start, 2000)
+        return
+
+    sublime.set_timeout(_bootstrap, 10)
+
+
+def _bootstrap():
+    PackageDisabler.disable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
+    # Give ST a second to disable 0_package_control_loader
+    sublime.set_timeout(Thread(target=_migrate_dependencies).start, 1000)
+
+
+def _migrate_dependencies():
+    """
+    Moves old Package Control 3-style dependencies to the new 4-style
+    libraries, which use the Lib folder
+    """
+
+    # All old dependencies that are being migrated are treated as for 3.3
+    lib_path = sys_path.lib_paths()["3.3"]
+
+    try:
+        with zipfile.ZipFile(LOADER_PACKAGE_PATH, 'r') as z:
+            for path in z.namelist():
+                if path == 'dependency-metadata.json':
+                    continue
+                if path == '00-package_control.py':
+                    continue
+
+                name = path[3:-3]
+                try:
+                    dep_path = os.path.join(sys_path.packages_path(), name)
+                    json_path = os.path.join(dep_path, 'dependency-metadata.json')
+
+                    try:
+                        with open(json_path, 'r', encoding='utf-8') as fobj:
+                            metadata = json.load(fobj)
+                    except (OSError, ValueError) as e:
+                        console_write('Error loading dependency metadata during migration - %s' % e)
+                        continue
+
+                    did = library.convert_dependency(
+                        dep_path,
+                        "3.3",
+                        name,
+                        metadata['version'],
+                        metadata['description'],
+                        metadata['url']
+                    )
+                    library.install(did, lib_path)
+
+                    if not delete_directory(dep_path):
+                        create_empty_file(os.path.join(dep_path, 'package-control.cleanup'))
+
+                except (Exception) as e:
+                    console_write('Error trying to migrate dependency %s - %s' % (name, e))
+
+        os.remove(LOADER_PACKAGE_PATH)
+
+        def _reenable_loader():
+            PackageDisabler.reenable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
+            show_message(
+                '''
+                Dependencies have just been migrated to python libraries.
+
+                You may need to restart Sublime Text.
+                '''
+            )
+
+        sublime.set_timeout(_reenable_loader, 500)
+
+    except (OSError) as e:
+        console_write('Error trying to migrate dependencies - %s' % e)
+
+
+def _install_injectors():
+    """
+    Makes sure the module injectors are in place
+    """
+
+    injector_code = R"""
+        import os
+        import sys
+        import zipfile
+
+        import sublime_plugin
+
+        __data_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+        __pkg_path = os.path.join(__data_path, 'Packages', 'Package Control', 'package_control')
+        __zip_path = os.path.join(__data_path, 'Installed Packages', 'Package Control.sublime-package')
+
+        __code = None
+
+        # We check the .sublime-package first, since the sublime_plugin.ZipLoader deals with overrides
+        if os.path.exists(__zip_path):
+            __pkg_path = os.path.join(__zip_path, 'package_control')
+            __file_path = os.path.join(__pkg_path, '__init__.py')
+
+            __loader__ = sublime_plugin.ZipLoader(__zip_path)
+
+            try:
+                with zipfile.ZipFile(__zip_path, 'r') as __f:
+                    __code = compile(
+                        __f.read('package_control/__init__.py').decode('utf-8'),
+                        '__init__.py',
+                        'exec'
+                    )
+            except (OSError, KeyError):
+                pass
+
+            # may be required before Package Control has been loaded
+            events = sys.modules.get('package_control.events')
+            if events is None:
+                events = __loader__.load_module("Package Control.package_control.events")
+                events.__name__ = 'package_control.events'
+                events.__package__ = 'package_control'
+                sys.modules['package_control.events'] = events
+
+        elif os.path.exists(__pkg_path):
+            from importlib.machinery import SourceFileLoader
+
+            __file_path = os.path.join(__pkg_path, '__init__.py')
+
+            __loader__ = SourceFileLoader('package_control', __file_path)
+
+            try:
+                with open(__file_path, 'r', encoding='utf-8') as __f:
+                    __code = compile(__f.read(), '__init__.py', 'exec')
+            except (OSError):
+                pass
+
+            # may be required before Package Control has been loaded
+            events = sys.modules.get('package_control.events')
+            if events is None:
+                events = SourceFileLoader('events', os.path.join(__pkg_path, 'events.py')).load_module()
+                events.__name__ = 'package_control.events'
+                events.__package__ = 'package_control'
+                sys.modules['package_control.events'] = events
+
+            del globals()['SourceFileLoader']
+
+        if __code is None:
+            raise ModuleNotFoundError("No module named 'package_control'")
+
+        __file__ = __file_path
+        __package__ = 'package_control'
+        __path__ = [__pkg_path]
+
+        # initial cleanup
+        del globals()['__f']
+        del globals()['__file_path']
+        del globals()['__zip_path']
+        del globals()['__pkg_path']
+        del globals()['__data_path']
+        del globals()['sublime_plugin']
+        del globals()['zipfile']
+        del globals()['sys']
+        del globals()['os']
+
+        __data = {}
+        exec(__code, __data)
+        globals().update(__data)
+
+        # Python 3.3 doesn't have __spec__
+        if hasattr(globals(), '__spec__'):
+            __spec__.loader = __loader__
+            __spec__.origin = __file__
+            __spec__.submodule_search_locations = __path__
+            __spec__.cached = None
+
+        # final cleanup
+        del globals()['__data']
+        del globals()['__code']
+        # out-dated internals
+        del globals()['__cached__']
+    """
+
+    injector_code = dedent(injector_code).lstrip()
+    injector_code = injector_code.encode('utf-8')
+
+    for lib_path in sys_path.lib_paths().values():
+        injector_path = os.path.join(lib_path, 'package_control.py')
+
+        try:
+            with open(injector_path, 'rb') as fobj:
+                if injector_code == fobj.read():
+                    continue
+        except FileNotFoundError:
+            pass
+
+        try:
+            with open(injector_path, 'wb') as fobj:
+                fobj.write(injector_code)
+        except FileExistsError:
+            pass
+        except OSError as e:
+            console_write('Unable to write injector to "%s" - %s' % (injector_path, e))

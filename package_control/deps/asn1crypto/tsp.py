@@ -169,7 +169,7 @@ class MetaData(Sequence):
     ]
 
 
-class TimeStampAndCRL(SequenceOf):
+class TimeStampAndCRL(Sequence):
     _fields = [
         ('time_stamp', EncapsulatedContentInfo),
         ('crl', CertificateList, {'optional': True}),

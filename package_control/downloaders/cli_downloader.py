@@ -7,7 +7,7 @@ from .non_clean_exit_error import NonCleanExitError
 from .binary_not_found_error import BinaryNotFoundError
 
 
-class CliDownloader(object):
+class CliDownloader:
 
     """
     Base for downloaders that use a command line program
@@ -43,13 +43,16 @@ class CliDownloader(object):
             # This is mostly for OS X, which seems to launch ST with a
             # minimal set of environmental variables
             dirs.append('/usr/local/bin')
+            executable = name
+        else:
+            executable = name + ".exe"
 
         for dir_ in dirs:
-            path = os.path.join(dir_, name)
+            path = os.path.join(dir_, executable)
             if os.path.exists(path):
                 return path
 
-        raise BinaryNotFoundError('The binary %s could not be located' % name)
+        raise BinaryNotFoundError('The binary %s could not be located' % executable)
 
     def execute(self, args):
         """
@@ -67,19 +70,24 @@ class CliDownloader(object):
 
         if self.settings.get('debug'):
             console_write(
-                u'''
+                '''
                 Trying to execute command %s
                 ''',
                 create_cmd(args)
             )
 
-        proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-        output = proc.stdout.read()
-        self.stderr = proc.stderr.read()
-        returncode = proc.wait()
-        if returncode != 0:
-            error = NonCleanExitError(returncode)
+        proc = subprocess.Popen(
+            args, startupinfo=startupinfo, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        output, self.stderr = proc.communicate()
+
+        if proc.returncode != 0:
+            error = NonCleanExitError(proc.returncode)
             error.stderr = self.stderr
             error.stdout = output
             raise error

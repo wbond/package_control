@@ -3,97 +3,80 @@ import threading
 import sublime
 import sublime_plugin
 
-from .. import text
-from ..show_quick_panel import show_quick_panel
-from ..thread_progress import ThreadProgress
-from ..package_installer import PackageInstaller, PackageInstallerThread
-from ..package_renamer import PackageRenamer
-
-USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
+from ..activity_indicator import ActivityIndicator
+from ..console_write import console_write
+from ..package_tasks import USE_QUICK_PANEL_ITEM, PackageTaskRunner
+from ..show_error import show_message
 
 
-class UpgradePackageCommand(sublime_plugin.WindowCommand):
+class UpgradePackageCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command that presents the list of installed packages that can be upgraded
     """
 
     def run(self):
-        package_renamer = PackageRenamer()
-        package_renamer.load_settings()
 
-        thread = UpgradePackageThread(self.window, package_renamer)
-        thread.start()
-        ThreadProgress(thread, 'Loading repositories', '')
+        def show_quick_panel():
+            upgrader = PackageTaskRunner()
 
+            with ActivityIndicator('Searching updates...') as progress:
+                tasks = upgrader.create_package_tasks(
+                    actions=(upgrader.PULL, upgrader.UPGRADE),
+                    ignore_packages=upgrader.ignored_packages()  # don't upgrade disabled packages
+                )
+                if tasks is False:
+                    message = 'There are no packages available for upgrade'
+                    console_write(message)
+                    progress.finish(message)
+                    show_message(
+                        '''
+                        %s
 
-class UpgradePackageThread(threading.Thread, PackageInstaller):
+                        Please see https://packagecontrol.io/docs/troubleshooting for help
+                        ''',
+                        message
+                    )
+                    return
 
-    """
-    A thread to run the action of retrieving upgradable packages in.
-    """
+                if not tasks:
+                    message = 'All packages up-to-date!'
+                    console_write(message)
+                    progress.finish(message)
+                    show_message(message)
+                    return
 
-    def __init__(self, window, package_renamer):
-        """
-        :param window:
-            An instance of :class:`sublime.Window` that represents the Sublime
-            Text window to show the list of upgradable packages in.
+            def on_done(picked):
+                if picked == -1:
+                    return
 
-        :param package_renamer:
-            An instance of :class:`PackageRenamer`
-        """
-        self.window = window
-        self.package_renamer = package_renamer
-        self.completion_type = 'upgraded'
-        threading.Thread.__init__(self)
-        PackageInstaller.__init__(self)
+                def worker(tasks):
+                    with ActivityIndicator('Preparing...') as progress:
+                        upgrader.run_upgrade_tasks(tasks, progress)
 
-    def run(self):
-        self.package_renamer.rename_packages(self)
+                threading.Thread(
+                    target=worker,
+                    args=[[tasks[picked - 1]] if picked > 0 else tasks]
+                ).start()
 
-        self.package_list = self.make_package_list(['install', 'reinstall', 'none'])
+            items = upgrader.render_quick_panel_items(tasks)
 
-        def show_panel():
-            if not self.package_list:
-                sublime.message_dialog(text.format(
-                    u'''
-                    Package Control
-
-                    There are no packages ready for upgrade
-                    '''
+            if USE_QUICK_PANEL_ITEM:
+                items.insert(0, sublime.QuickPanelItem(
+                    "Upgrade All Packages",
+                    "Use this command to install all available upgrades."
                 ))
-                return
-            show_quick_panel(self.window, self.package_list, self.on_done)
-        sublime.set_timeout(show_panel, 10)
+            else:
+                items.insert(0, [
+                    "Upgrade All Packages",
+                    "Use this command to install all available upgrades.",
+                    ""
+                ])
 
-    def on_done(self, picked):
-        """
-        Quick panel user selection handler - disables a package, upgrades it,
-        then re-enables the package
+            sublime.active_window().show_quick_panel(
+                items,
+                on_done,
+                sublime.KEEP_OPEN_ON_FOCUS_LOST
+            )
 
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
-        """
-
-        if picked == -1:
-            return
-
-        if USE_QUICK_PANEL_ITEM:
-            package_name = self.package_list[picked].trigger
-        else:
-            package_name = self.package_list[picked][0]
-
-        if package_name in self.disable_packages(package_name, 'upgrade'):
-            def on_complete():
-                self.reenable_package(package_name)
-        else:
-            on_complete = None
-
-        thread = PackageInstallerThread(self.manager, package_name, on_complete, pause=True)
-        thread.start()
-        ThreadProgress(
-            thread,
-            'Upgrading package %s' % package_name,
-            'Package %s successfully %s' % (package_name, self.completion_type)
-        )
+        threading.Thread(target=show_quick_panel).start()

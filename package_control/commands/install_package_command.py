@@ -3,13 +3,13 @@ import threading
 import sublime
 import sublime_plugin
 
-from .. import text
-from ..show_quick_panel import show_quick_panel
-from ..package_installer import PackageInstaller
-from ..thread_progress import ThreadProgress
+from ..activity_indicator import ActivityIndicator
+from ..console_write import console_write
+from ..package_tasks import PackageTaskRunner
+from ..show_error import show_message
 
 
-class InstallPackageCommand(sublime_plugin.WindowCommand):
+class InstallPackageCommand(sublime_plugin.ApplicationCommand):
 
     """
     A command that presents the list of available packages and allows the
@@ -17,46 +17,40 @@ class InstallPackageCommand(sublime_plugin.WindowCommand):
     """
 
     def run(self):
-        thread = InstallPackageThread(self.window)
-        thread.start()
-        ThreadProgress(thread, 'Loading repositories', '')
 
+        def show_quick_panel():
+            installer = PackageTaskRunner()
 
-class InstallPackageThread(threading.Thread, PackageInstaller):
+            with ActivityIndicator('Loading packages...') as progress:
+                tasks = installer.create_package_tasks(actions=(installer.INSTALL, installer.OVERWRITE))
+                if not tasks:
+                    message = 'There are no packages available for installation'
+                    console_write(message)
+                    progress.finish(message)
+                    show_message(
+                        '''
+                        %s
 
-    """
-    A thread to run the action of retrieving available packages in. Uses the
-    default PackageInstaller.on_done quick panel handler.
-    """
+                        Please see https://packagecontrol.io/docs/troubleshooting for help
+                        ''',
+                        message
+                    )
+                    return
 
-    def __init__(self, window):
-        """
-        :param window:
-            An instance of :class:`sublime.Window` that represents the Sublime
-            Text window to show the available package list in.
-        """
+            def on_done(picked):
+                if picked == -1:
+                    return
 
-        self.window = window
-        self.completion_type = 'installed'
-        threading.Thread.__init__(self)
-        PackageInstaller.__init__(self)
+                def worker(task):
+                    with ActivityIndicator('Installing package %s' % task.package_name) as progress:
+                        installer.run_install_tasks([task], progress)
 
-    def run(self):
-        self.package_list = self.make_package_list(['upgrade', 'downgrade', 'reinstall', 'pull', 'none'])
+                threading.Thread(target=worker, args=[tasks[picked]]).start()
 
-        def show_panel():
-            if not self.package_list:
-                sublime.message_dialog(text.format(
-                    u'''
-                    Package Control
+            sublime.active_window().show_quick_panel(
+                installer.render_quick_panel_items(tasks),
+                on_done,
+                sublime.KEEP_OPEN_ON_FOCUS_LOST
+            )
 
-                    There are no packages available for installation
-
-                    Please see https://packagecontrol.io/docs/troubleshooting
-                    for help
-                    '''
-                ))
-                return
-            show_quick_panel(self.window, self.package_list, self.on_done)
-
-        sublime.set_timeout(show_panel, 10)
+        threading.Thread(target=show_quick_panel).start()

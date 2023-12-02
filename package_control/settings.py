@@ -1,19 +1,12 @@
 import sublime
 
-try:
-    str_cls = unicode
-except (NameError):
-    str_cls = str
-
 
 def preferences_filename():
     """
     :return: The appropriate settings filename based on the version of Sublime Text
     """
 
-    if int(sublime.version()) >= 2174:
-        return 'Preferences.sublime-settings'
-    return 'Global.sublime-settings'
+    return 'Preferences.sublime-settings'
 
 
 def pc_settings_filename():
@@ -36,23 +29,18 @@ def load_list_setting(settings, name):
         The name of the setting
 
     :return:
-        The current value of the setting, always a list
+        The current value of the setting, always a set
     """
 
     value = settings.get(name)
     if not value:
-        return []
-    if isinstance(value, str_cls):
+        return set()
+    if isinstance(value, str):
         value = [value]
     if not isinstance(value, list):
-        return []
+        return set()
 
-    filtered_value = []
-    for v in value:
-        if not isinstance(v, str_cls):
-            continue
-        filtered_value.append(v)
-    return sorted(filtered_value, key=lambda s: s.lower())
+    return set(filter(lambda v: isinstance(v, str), value))
 
 
 def save_list_setting(settings, filename, name, new_value, old_value=None):
@@ -74,15 +62,21 @@ def save_list_setting(settings, filename, name, new_value, old_value=None):
     :param old_value:
         If not None, then this and the new_value will be compared. If they
         are the same, the settings will not be flushed to disk.
+
+    :return:
+        ``True``, if settings have been saved.
+        ``False``, if ``new_value`` and ``old_value`` were equal.
     """
 
-    # Clean up the list to only include unique values, sorted
-    new_value = list(set(new_value))
-    new_value = sorted(new_value, key=lambda s: s.lower())
+    if not isinstance(old_value, set):
+        new_value = set(new_value)
 
     if old_value is not None:
+        if not isinstance(old_value, set):
+            old_value = set(old_value)
         if old_value == new_value:
-            return
+            return False
 
-    settings.set(name, new_value)
+    settings.set(name, sorted(new_value, key=lambda s: s.lower()))
     sublime.save_settings(filename)
+    return True

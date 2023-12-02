@@ -1,14 +1,9 @@
 import base64
 
-try:
-    # Python 3
-    from urllib.parse import urlparse
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
+from urllib.parse import urlparse
 
 
-class BasicAuthDownloader(object):
+class BasicAuthDownloader:
 
     """
     A base for downloaders to add an HTTP basic auth header

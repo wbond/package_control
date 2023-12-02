@@ -119,11 +119,17 @@ def use_openssl(libcrypto_path, libssl_path, trust_list_path=None):
     if not isinstance(libssl_path, str_cls):
         raise ValueError('libssl_path must be a unicode string, not %s' % type_name(libssl_path))
 
-    if not os.path.exists(libcrypto_path):
-        raise LibraryNotFoundError('libcrypto does not exist at %s' % libcrypto_path)
+    do_path_checks = True
+    if sys.platform == 'darwin':
+        mac_version_info = tuple(map(int, platform.mac_ver()[0].split('.')[:2]))
+        do_path_checks = mac_version_info < (10, 16)
 
-    if not os.path.exists(libssl_path):
-        raise LibraryNotFoundError('libssl does not exist at %s' % libssl_path)
+    if do_path_checks:
+        if not os.path.exists(libcrypto_path):
+            raise LibraryNotFoundError('libcrypto does not exist at %s' % libcrypto_path)
+
+        if not os.path.exists(libssl_path):
+            raise LibraryNotFoundError('libssl does not exist at %s' % libssl_path)
 
     if trust_list_path is not None:
         if not isinstance(trust_list_path, str_cls):

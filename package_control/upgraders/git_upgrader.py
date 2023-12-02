@@ -28,7 +28,7 @@ class GitUpgrader(VcsUpgrader):
 
         if not binary:
             show_error(
-                u'''
+                '''
                 Unable to find %s.
 
                 Please set the "git_binary" setting by accessing the
@@ -42,9 +42,9 @@ class GitUpgrader(VcsUpgrader):
             )
             return False
 
-        if os.name == 'nt':
+        if os.name == 'nt' and 'GIT_SSH' not in os.environ:
             tortoise_plink = self.find_binary('TortoisePlink.exe')
-            if tortoise_plink and u'pageant.exe' in list_process_names():
+            if tortoise_plink and 'pageant.exe' in list_process_names():
                 os.environ.setdefault('GIT_SSH', tortoise_plink)
 
         return binary
@@ -62,10 +62,22 @@ class GitUpgrader(VcsUpgrader):
         branch = res.replace('refs/heads/', '')
 
         # Figure out the remote and the branch name on the remote
-        remote = self.execute([binary, 'config', '--get', 'branch.%s.remote' % branch], self.working_copy)
-        res = self.execute([binary, 'config', '--get', 'branch.%s.merge' % branch], self.working_copy)
-        if remote is False or res is False:
+        remote = self.execute(
+            [binary, 'config', '--get', 'branch.{}.remote'.format(branch)],
+            self.working_copy,
+            ignore_errors='.*'
+        )
+        if not remote:
             return False
+
+        res = self.execute(
+            [binary, 'config', '--get', 'branch.{}.merge'.format(branch)],
+            self.working_copy,
+            ignore_errors='.*'
+        )
+        if not res:
+            return False
+
         remote_branch = res.replace('refs/heads/', '')
 
         return {
@@ -92,7 +104,11 @@ class GitUpgrader(VcsUpgrader):
         args = [binary]
         args.extend(self.update_command)
         args.extend([info['remote'], info['remote_branch']])
-        self.execute(args, self.working_copy, meaningful_output=True)
+        result = self.execute(args, self.working_copy, meaningful_output=True)
+        if result is not False:
+            cache_key = self.working_copy + '.incoming'
+            set_cache(cache_key, None, 0)
+
         return True
 
     def incoming(self):
@@ -116,8 +132,11 @@ class GitUpgrader(VcsUpgrader):
             return False
 
         args = [binary, 'log']
-        args.append('..%s/%s' % (info['remote'], info['remote_branch']))
+        args.append('..{}/{}'.format(info['remote'], info['remote_branch']))
         output = self.execute(args, self.working_copy, meaningful_output=True)
+        if output is False:
+            return False
+
         incoming = len(output) > 0
 
         set_cache(cache_key, incoming, self.cache_length)

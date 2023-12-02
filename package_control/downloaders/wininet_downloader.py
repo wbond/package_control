@@ -1,29 +1,22 @@
 from ctypes import windll, wintypes
 import ctypes
-import re
 import datetime
-import struct
 # To prevent import errors in thread with datetime
 import locale  # noqa
+import re
+import struct
+from urllib.parse import urlparse
 
-from ..console_write import console_write
-from ..unicode import unicode_from_os
 from .. import text
-from .non_http_error import NonHttpError
+from ..console_write import console_write
 from .http_error import HttpError
+from .non_http_error import NonHttpError
 from .downloader_exception import DownloaderException
 from .win_downloader_exception import WinDownloaderException
-from .decoding_downloader import DecodingDownloader
-from .limiting_downloader import LimitingDownloader
 from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
-
-try:
-    # Python 3
-    from urllib.parse import urlparse
-except (ImportError):
-    # Python 2
-    from urlparse import urlparse
+from .decoding_downloader import DecodingDownloader
+from .limiting_downloader import LimitingDownloader
 
 wininet = windll.wininet
 
@@ -201,7 +194,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         if self.debug:
             s = '' if self.use_count == 1 else 's'
             console_write(
-                u'''
+                '''
                 WinINet %s Debug General
                   Closing connection to %s on port %s after %s request%s
                 ''',
@@ -209,7 +202,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             )
             if changed_state_back:
                 console_write(
-                    u'  Changed Internet Explorer back to Work Offline',
+                    '  Changed Internet Explorer back to Work Offline',
                     prefix=False
                 )
 
@@ -272,12 +265,12 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         username = url_info.username
         password = url_info.password
 
-        if not username and not password:
-            username, password = self.get_username_password(url)
-
         request_headers = {
             'Accept-Encoding': self.supported_encodings()
         }
+        if not username and not password:
+            request_headers.update(self.build_auth_header(url))
+
         request_headers = self.add_conditional_headers(url, request_headers)
 
         created_connection = False
@@ -323,7 +316,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
             if not self.network_connection:
                 error_string = text.format(
-                    u'''
+                    '''
                     %s %s during network phase of downloading %s.
                     ''',
                     (error_message, self.extract_error(), url)
@@ -367,7 +360,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
             if not self.tcp_connection:
                 error_string = text.format(
-                    u'''
+                    '''
                     %s %s during connection phase of downloading %s.
                     ''',
                     (error_message, self.extract_error(), url)
@@ -401,7 +394,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         else:
             if self.debug:
                 console_write(
-                    u'''
+                    '''
                     WinINet %s Debug General
                       Re-using connection to %s on port %s for request #%s
                     ''',
@@ -431,9 +424,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 http_connection = wininet.HttpOpenRequestW(
                     self.tcp_connection,
-                    u'GET',
+                    'GET',
                     path,
-                    u'HTTP/1.1',
+                    'HTTP/1.1',
                     None,
                     None,
                     http_flags,
@@ -441,7 +434,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 )
                 if not http_connection:
                     error_string = text.format(
-                        u'''
+                        '''
                         %s %s during HTTP connection phase of downloading %s.
                         ''',
                         (error_message, self.extract_error(), url)
@@ -450,8 +443,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 request_header_lines = []
                 for header, value in request_headers.items():
-                    request_header_lines.append(u"%s: %s" % (header, value))
-                request_header_lines = u"\r\n".join(request_header_lines)
+                    request_header_lines.append("%s: %s" % (header, value))
+                request_header_lines = "\r\n".join(request_header_lines)
 
                 success = wininet.HttpSendRequestW(
                     http_connection,
@@ -463,7 +456,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                 if not success:
                     error_string = text.format(
-                        u'''
+                        '''
                         %s %s during HTTP write phase of downloading %s.
                         ''',
                         (error_message, self.extract_error(), url)
@@ -474,7 +467,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 self.cache_proxy_info()
                 if self.debug:
                     console_write(
-                        u'''
+                        '''
                         WinINet Debug Proxy
                           proxy: %s
                           proxy bypass: %s
@@ -494,7 +487,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                 if self.debug and created_connection:
                     if changed_to_online:
                         console_write(
-                            u'''
+                            '''
                             WinINet HTTP Debug General
                               Internet Explorer was set to Work Offline, temporarily going online
                             '''
@@ -523,16 +516,16 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                             issue_date = self.convert_filetime_to_datetime(cert_struct.ftStart)
                             issue_date = issue_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
                         else:
-                            issue_date = u"No issue date"
+                            issue_date = "No issue date"
 
                         if cert_struct.ftExpiry.dwLowDateTime != 0 and cert_struct.ftExpiry.dwHighDateTime != 0:
                             expiration_date = self.convert_filetime_to_datetime(cert_struct.ftExpiry)
                             expiration_date = expiration_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
                         else:
-                            expiration_date = u"No expiration date"
+                            expiration_date = "No expiration date"
 
                         console_write(
-                            u'''
+                            '''
                             WinINet HTTPS Debug General
                               Server SSL Certificate:
                                 subject: %s
@@ -542,8 +535,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                                 expire date: %s
                             ''',
                             (
-                                u', '.join(subject_parts),
-                                u', '.join(issuer_parts),
+                                ', '.join(subject_parts),
+                                ', '.join(issuer_parts),
                                 common_name,
                                 issue_date,
                                 expiration_date
@@ -556,11 +549,11 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
 
                     other_headers = []
                     for header, value in request_headers.items():
-                        other_headers.append(u'%s: %s' % (header, value))
-                    indented_headers = u'\n  '.join(other_headers)
+                        other_headers.append('%s: %s' % (header, value))
+                    indented_headers = '\n  '.join(other_headers)
 
                     console_write(
-                        u'''
+                        '''
                         WinINet %s Debug Write
                           GET %s HTTP/1.1
                           User-Agent: %s
@@ -597,7 +590,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     if not success:
                         if ctypes.GetLastError() != self.ERROR_INSUFFICIENT_BUFFER:
                             error_string = text.format(
-                                u'''
+                                '''
                                 %s %s during header read phase of downloading %s.
                                 ''',
                                 (error_message, self.extract_error(), url)
@@ -614,9 +607,9 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     headers = headers.decode('iso-8859-1').rstrip("\r\n").split("\r\n")
 
                     if self.debug:
-                        indented_headers = u'\n  '.join(headers)
+                        indented_headers = '\n  '.join(headers)
                         console_write(
-                            u'''
+                            '''
                             WinINet %s Debug Read
                               %s
                             ''',
@@ -643,7 +636,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     # GitHub and BitBucket seem to rate limit via 503
                     if tries and self.debug:
                         console_write(
-                            u'''
+                            '''
                             Downloading %s was rate limited, trying again
                             ''',
                             url
@@ -663,10 +656,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             except (NonHttpError, HttpError) as e:
 
                 # GitHub and BitBucket seem to time out a lot
-                if unicode_from_os(e).find('timed out') != -1:
+                if str(e).find('timed out') != -1:
                     if tries and self.debug:
                         console_write(
-                            u'''
+                            '''
                             Downloading %s timed out, trying again
                             ''',
                             url
@@ -674,10 +667,10 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
                     continue
 
                 error_string = text.format(
-                    u'''
+                    '''
                     %s %s downloading %s.
                     ''',
-                    (error_message, unicode_from_os(e), url)
+                    (error_message, str(e), url)
                 )
 
             finally:
@@ -720,26 +713,26 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
         error_num = ctypes.GetLastError()
         raw_error_string = ctypes.FormatError(error_num)
 
-        error_string = unicode_from_os(raw_error_string)
+        error_string = str(raw_error_string)
 
         # Try to fill in some known errors
-        if error_string == u"<no description>":
+        if error_string == "<no description>":
             error_lookup = {
-                12007: u'host not found',
-                12029: u'connection refused',
-                12057: u'error checking for server certificate revocation',
-                12169: u'invalid secure certificate',
-                12157: u'secure channel error, server not providing SSL',
-                12002: u'operation timed out'
+                12007: 'host not found',
+                12029: 'connection refused',
+                12057: 'error checking for server certificate revocation',
+                12169: 'invalid secure certificate',
+                12157: 'secure channel error, server not providing SSL',
+                12002: 'operation timed out'
             }
             if error_num in error_lookup:
                 error_string = error_lookup[error_num]
 
-        if error_string == u"<no description>":
-            return u"(errno %s)" % error_num
+        if error_string == "<no description>":
+            return "(errno %s)" % error_num
 
         error_string = error_string[0].upper() + error_string[1:]
-        return u"%s (errno %s)" % (error_string, error_num)
+        return "%s (errno %s)" % (error_string, error_num)
 
     def supports_ssl(self):
         """
@@ -774,8 +767,8 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             self.proxy_username = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_USERNAME)
             self.proxy_password = self.read_option(self.tcp_connection, self.INTERNET_OPTION_PROXY_PASSWORD)
         else:
-            self.proxy_username = u''
-            self.proxy_password = u''
+            self.proxy_username = ''
+            self.proxy_password = ''
 
     def read_option(self, handle, option):
         """

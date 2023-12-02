@@ -651,7 +651,7 @@ def raw_rsa_private_crypt(private_key, data):
         ))
 
     algo = private_key.asn1['private_key_algorithm']['algorithm'].native
-    if algo != 'rsa':
+    if algo != 'rsa' and algo != 'rsassa_pss':
         raise ValueError(pretty_message(
             '''
             private_key must be an RSA key, not %s
@@ -712,7 +712,7 @@ def raw_rsa_public_crypt(certificate_or_public_key, data):
         ))
 
     algo = certificate_or_public_key.asn1['algorithm']['algorithm'].native
-    if algo != 'rsa':
+    if algo != 'rsa' and algo != 'rsassa_pss':
         raise ValueError(pretty_message(
             '''
             certificate_or_public_key must be an RSA key, not %s

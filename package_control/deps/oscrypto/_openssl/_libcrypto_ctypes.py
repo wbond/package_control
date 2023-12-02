@@ -40,13 +40,13 @@ except (AttributeError):
 
 is_libressl = 'LibreSSL' in version_string
 
-version_match = re.search('\\b(\\d\\.\\d\\.\\d[a-z]*)\\b', version_string)
+version_match = re.search('\\b(\\d+\\.\\d+\\.\\d+[a-z]*)\\b', version_string)
 if not version_match:
-    version_match = re.search('(?<=LibreSSL )(\\d\\.\\d(\\.\\d)?)\\b', version_string)
+    version_match = re.search('(?<=LibreSSL )(\\d+\\.\\d+(\\.\\d+)?)\\b', version_string)
 if not version_match:
     raise LibraryNotFoundError('Error detecting the version of libcrypto')
 version = version_match.group(1)
-version_parts = re.sub('(\\d)([a-z]+)', '\\1.\\2', version).split('.')
+version_parts = re.sub('(\\d+)([a-z]+)', '\\1.\\2', version).split('.')
 version_info = tuple(int(part) if part.isdigit() else part for part in version_parts)
 
 # LibreSSL is compatible with libcrypto from OpenSSL 1.0.1
@@ -73,6 +73,8 @@ P_EVP_MD_CTX = c_void_p
 P_EVP_MD = c_void_p
 
 P_ENGINE = c_void_p
+OSSL_PROVIDER = c_void_p
+OSSL_LIB_CTX = c_void_p
 
 P_EVP_PKEY = c_void_p
 EVP_PKEY_CTX = c_void_p
@@ -96,6 +98,13 @@ try:
 
         libcrypto.ERR_free_strings.argtypes = []
         libcrypto.ERR_free_strings.restype = None
+
+    if version_info >= (3, ):
+        libcrypto.OSSL_PROVIDER_available.argtypes = [OSSL_LIB_CTX, c_char_p]
+        libcrypto.OSSL_PROVIDER_available.restype = c_int
+
+        libcrypto.OSSL_PROVIDER_load.argtypes = [OSSL_LIB_CTX, c_char_p]
+        libcrypto.OSSL_PROVIDER_load.restype = POINTER(OSSL_PROVIDER)
 
     libcrypto.ERR_get_error.argtypes = []
     libcrypto.ERR_get_error.restype = c_ulong
@@ -301,10 +310,16 @@ try:
     libcrypto.EVP_sha512.argtypes = []
     libcrypto.EVP_sha512.restype = P_EVP_MD
 
-    libcrypto.EVP_PKEY_size.argtypes = [
-        P_EVP_PKEY
-    ]
-    libcrypto.EVP_PKEY_size.restype = c_int
+    if version_info < (3, 0):
+        libcrypto.EVP_PKEY_size.argtypes = [
+            P_EVP_PKEY
+        ]
+        libcrypto.EVP_PKEY_size.restype = c_int
+    else:
+        libcrypto.EVP_PKEY_get_size.argtypes = [
+            P_EVP_PKEY
+        ]
+        libcrypto.EVP_PKEY_get_size.restype = c_int
 
     libcrypto.EVP_PKEY_get1_RSA.argtypes = [
         P_EVP_PKEY

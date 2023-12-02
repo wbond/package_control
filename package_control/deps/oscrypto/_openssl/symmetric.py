@@ -5,7 +5,7 @@ import math
 
 from .._errors import pretty_message
 from .._ffi import new, null, is_null, buffer_from_bytes, bytes_from_buffer, deref
-from ._libcrypto import libcrypto, LibcryptoConst, handle_openssl_error
+from ._libcrypto import libcrypto, libcrypto_legacy_support, LibcryptoConst, handle_openssl_error
 from ..util import rand_bytes
 from .._types import type_name, byte_cls
 
@@ -236,6 +236,9 @@ def rc4_encrypt(key, data):
         A byte string of the ciphertext
     """
 
+    if not libcrypto_legacy_support:
+        raise EnvironmentError('OpenSSL has been compiled without RC4 support')
+
     if len(key) < 5 or len(key) > 16:
         raise ValueError(pretty_message(
             '''
@@ -265,6 +268,9 @@ def rc4_decrypt(key, data):
     :return:
         A byte string of the plaintext
     """
+
+    if not libcrypto_legacy_support:
+        raise EnvironmentError('OpenSSL has been compiled without RC4 support')
 
     if len(key) < 5 or len(key) > 16:
         raise ValueError(pretty_message(
@@ -300,6 +306,9 @@ def rc2_cbc_pkcs5_encrypt(key, data, iv):
     :return:
         A tuple of two byte strings (iv, ciphertext)
     """
+
+    if not libcrypto_legacy_support:
+        raise EnvironmentError('OpenSSL has been compiled without RC2 support')
 
     if len(key) < 5 or len(key) > 16:
         raise ValueError(pretty_message(
@@ -344,6 +353,9 @@ def rc2_cbc_pkcs5_decrypt(key, data, iv):
     :return:
         A byte string of the plaintext
     """
+
+    if not libcrypto_legacy_support:
+        raise EnvironmentError('OpenSSL has been compiled without RC2 support')
 
     if len(key) < 5 or len(key) > 16:
         raise ValueError(pretty_message(
@@ -487,6 +499,9 @@ def des_cbc_pkcs5_encrypt(key, data, iv):
         A tuple of two byte strings (iv, ciphertext)
     """
 
+    if not libcrypto_legacy_support:
+        raise EnvironmentError('OpenSSL has been compiled without DES support')
+
     if len(key) != 8:
         raise ValueError(pretty_message(
             '''
@@ -529,6 +544,9 @@ def des_cbc_pkcs5_decrypt(key, data, iv):
     :return:
         A byte string of the plaintext
     """
+
+    if not libcrypto_legacy_support:
+        raise EnvironmentError('OpenSSL has been compiled without DES support')
 
     if len(key) != 8:
         raise ValueError(pretty_message(
@@ -604,23 +622,9 @@ def _encrypt(cipher, key, data, iv, padding):
 
     if cipher != 'rc4' and not padding:
         # AES in CBC mode can be allowed with no padding if
-        # the data is an exact multiple of the key size
-        aes128_no_padding = (
-            cipher == 'aes128' and
-            padding is False and
-            len(data) % 16 == 0
-        )
-        aes192_no_padding = (
-            cipher == 'aes192' and
-            padding is False and
-            len(data) % 24 == 0
-        )
-        aes256_no_padding = (
-            cipher == 'aes256' and
-            padding is False and
-            len(data) % 32 == 0
-        )
-        if aes128_no_padding is False and aes192_no_padding is False and aes256_no_padding is False:
+        # the data is an exact multiple of the block size
+        is_aes = cipher in set(['aes128', 'aes192', 'aes256'])
+        if not is_aes or (is_aes and (len(data) % 16) != 0):
             raise ValueError('padding must be specified')
 
     evp_cipher_ctx = None
@@ -730,7 +734,7 @@ def _decrypt(cipher, key, data, iv, padding):
             type_name(iv)
         ))
 
-    if cipher != 'rc4' and padding is None:
+    if cipher not in set(['rc4', 'aes128', 'aes192', 'aes256']) and not padding:
         raise ValueError('padding must be specified')
 
     evp_cipher_ctx = None

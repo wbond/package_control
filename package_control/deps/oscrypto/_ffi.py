@@ -111,8 +111,6 @@ if ffi() == 'cffi':
             return True
         if ffi.getctype(ffi.typeof(point)) == 'void *':
             return False
-        if point[0] == ffi.NULL:
-            return True
         return False
 
     def errno():
@@ -212,6 +210,7 @@ else:
         'int': c_int,
         'unsigned int': c_uint,
         'size_t': ctypes.c_size_t,
+        'uint16_t': ctypes.c_uint16,
         'uint32_t': ctypes.c_uint32,
     }
     if sys.platform == 'win32':
@@ -294,6 +293,8 @@ else:
         return ctypes.cast(value, type_)
 
     def sizeof(library, value):
+        if isinstance(value, str_cls):
+            return ctypes.sizeof(getattr(library, value))
         return ctypes.sizeof(value)
 
     def bytes_from_buffer(buffer, maxlen=None):

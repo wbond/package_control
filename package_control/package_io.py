@@ -1,10 +1,90 @@
 import os
 import zipfile
 
-import sublime
-
+from . import sys_path
 from .console_write import console_write
-from .open_compat import open_compat, read_compat
+
+
+def create_empty_file(filename):
+    """
+    Creates an empty file if it does not exist.
+
+    The main use case is to create empty cookie files, such as
+    ``package-control.cleanup`` without throwing exceptions.
+
+    :param filename:
+        The absolute path of the file to create.
+
+    :returns:
+        True, if file exists or is successfully created
+        False, if file couldn't be created
+    """
+
+    try:
+        open(filename, 'xb').close()
+    except FileExistsError:
+        pass
+    except (OSError, IOError) as e:
+        console_write('Unable to create %s: %s', (filename, e))
+        return False
+    return True
+
+
+def list_sublime_package_dirs(path):
+    """
+    Return a set of directories in the folder specified that are not
+    hidden and are not marked to be removed
+
+    :param path:
+        The folder to list the directories inside of
+
+    :return:
+        A generator of directory names
+    """
+
+    try:
+        for filename in os.listdir(path):
+            if filename[0] == '.':
+                continue
+            file_path = os.path.join(path, filename)
+            # Don't include files
+            if not os.path.isdir(file_path):
+                continue
+            # Don't include hidden packages
+            if os.path.exists(os.path.join(file_path, '.hidden-sublime-package')):
+                continue
+            # Don't include a dir if it is going to be cleaned up
+            if os.path.exists(os.path.join(file_path, 'package-control.cleanup')):
+                continue
+            yield filename
+
+    except FileNotFoundError:
+        pass
+
+
+def list_sublime_package_files(path):
+    """
+    Return a set of all .sublime-package files in a folder
+
+    :param path:
+        The directory to look in for .sublime-package files
+
+    :return:
+        A generator of package names with .sublime-package suffix removed
+    """
+
+    try:
+        for filename in os.listdir(path):
+            name, ext = os.path.splitext(filename)
+            if ext.lower() != '.sublime-package':
+                continue
+            file_path = os.path.join(path, filename)
+            if not os.path.isfile(file_path):
+                continue
+            yield name
+
+    except FileNotFoundError:
+        pass
 
 
 def read_package_file(package, relative_path, binary=False):
@@ -27,17 +107,10 @@ def read_package_file(package, relative_path, binary=False):
     if relative_path is None:
         return False
 
-    package_dir = _get_package_dir(package)
-
-    if os.path.exists(package_dir) and _regular_file_exists(package, relative_path):
+    if regular_file_exists(package, relative_path):
         return _read_regular_file(package, relative_path, binary)
 
-    if int(sublime.version()) >= 3000:
-        result = _read_zip_file(package, relative_path, binary)
-        if result is not False:
-            return result
-
-    return False
+    return _read_zip_file(package, relative_path, binary)
 
 
 def package_file_exists(package, relative_path):
@@ -58,35 +131,78 @@ def package_file_exists(package, relative_path):
     if relative_path is None:
         return False
 
-    package_dir = _get_package_dir(package)
-
-    if os.path.exists(package_dir):
-        result = _regular_file_exists(package, relative_path)
-        if result:
-            return result
-
-    if int(sublime.version()) >= 3000:
-        return _zip_file_exists(package, relative_path)
-
-    return False
+    return regular_file_exists(package, relative_path) or zip_file_exists(package, relative_path)
 
 
-def _get_package_dir(package):
-    """:return: The full filesystem path to the package directory"""
+def get_package_cache_dir(package):
+    """
+    Return the absolute path of the package's cache directory.
 
-    return os.path.join(sublime.packages_path(), package)
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the package's cache directory
+    """
+
+    return os.path.join(sys_path.cache_path(), package)
+
+
+def get_package_module_cache_dir(package):
+    """
+    Return the absolute path of the package's python modules cache directory.
+
+    Relevant for python 3.8 plugins only.
+
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the package's python module cache directory
+    """
+
+    return os.path.join(sys_path.python_packages_cache_path(), package)
+
+
+def get_package_dir(package):
+    """
+    Return the absolute path of the package.
+
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the package directory
+    """
+
+    return os.path.join(sys_path.packages_path(), package)
+
+
+def get_installed_package_path(package):
+    """
+    Generate the absolute sublime-package file path of a package.
+
+    :param package:
+        The package name to return path for.
+
+    :return:
+        The full filesystem path to the sublime-package file
+    """
+
+    return os.path.join(sys_path.installed_packages_path(), package + '.sublime-package')
 
 
 def _read_regular_file(package, relative_path, binary=False):
-    package_dir = _get_package_dir(package)
+    package_dir = get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
 
-    with open_compat(file_path, ('rb' if binary else 'r')) as f:
-        return read_compat(f)
+    mode, encoding = ('rb', None) if binary else ('r', 'utf-8')
+    with open(file_path, mode=mode, encoding=encoding) as fobj:
+        return fobj.read()
 
 
 def _read_zip_file(package, relative_path, binary=False):
-    zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
+    zip_path = get_installed_package_path(package)
 
     if not os.path.exists(zip_path):
         return False
@@ -96,7 +212,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             An error occurred while trying to unzip the sublime-package file
             for %s.
             ''',
@@ -115,7 +231,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to the
             package file being corrupt
             ''',
@@ -124,7 +240,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (IOError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
             invalid filename
             ''',
@@ -133,7 +249,7 @@ def _read_zip_file(package, relative_path, binary=False):
 
     except (UnicodeDecodeError):
         console_write(
-            u'''
+            '''
             Unable to read file from sublime-package file for %s due to an
             invalid filename or character encoding issue
             ''',
@@ -143,14 +259,14 @@ def _read_zip_file(package, relative_path, binary=False):
     return False
 
 
-def _regular_file_exists(package, relative_path):
-    package_dir = _get_package_dir(package)
+def regular_file_exists(package, relative_path):
+    package_dir = get_package_dir(package)
     file_path = os.path.join(package_dir, relative_path)
     return os.path.exists(file_path)
 
 
-def _zip_file_exists(package, relative_path):
-    zip_path = os.path.join(sublime.installed_packages_path(), package + '.sublime-package')
+def zip_file_exists(package, relative_path):
+    zip_path = get_installed_package_path(package)
 
     if not os.path.exists(zip_path):
         return False
@@ -160,7 +276,7 @@ def _zip_file_exists(package, relative_path):
 
     except (zipfile.BadZipfile):
         console_write(
-            u'''
+            '''
             An error occurred while trying to unzip the sublime-package file
             for %s.
             ''',

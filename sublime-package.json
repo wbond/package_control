@@ -1,0 +1,1874 @@
+{
+	"contributions": {
+		"settings": [
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/channel",
+					"oneOf": [
+						{ "$ref": "sublime://packagecontrol.io/schemas/channel/4.0.0" },
+						{ "$ref": "sublime://packagecontrol.io/schemas/channel/3.0.0" },
+						{ "$ref": "sublime://packagecontrol.io/schemas/channel/2.0" }
+					]
+				}
+			},
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/channel/2.0",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"$schema": {
+							"type": "string",
+							"format": "uri",
+							"markdownDescription": "JSON schema to use for validation and completions.",
+							"default": "sublime://packagecontrol.io/schemas/channel"
+						},
+						"schema_version": {
+							"type": "string",
+							"markdownDescription": "```json\n\"schema_version\": \"2.0\"\n```\n\nSemantic version of the channel's scheme.",
+							"default": "2.0",
+							"enum": ["2.0"]
+						},
+						"repositories": {
+							"markdownDescription": "```json\n\"repositories\": [\n\t\"./repository/a.json\",\n\t\"https://packagecontrol.io/repository/b.json\"\n]\n```\n\nA list of repositories, managed by the channel.\n\nThe main purposes of a channel are\n\n- to group various repositories\n\n- provide cached packages/dependencies to reduce a clients network bandwidth.",
+							"$ref": "sublime://packagecontrol.io/schemas/repository/2.0#/definitions/RepositoriesList"
+						},
+						"certs": {
+							"type": "object"
+						},
+						"packages_cache": {
+							"type": "object",
+							"markdownDescription": "A map of repository URLs and lists of packages it provides.",
+							"patternProperties": {
+								"^https?://.+\\.json$": {
+									"$ref": "sublime://packagecontrol.io/schemas/repository/2.0#/definitions/ResolvedPackagesList"
+								}
+							}
+						}
+					},
+					"required": [
+						"schema_version",
+						"repositories"
+					]
+				}
+			},
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/channel/3.0.0",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"$schema": {
+							"type": "string",
+							"format": "uri",
+							"markdownDescription": "JSON schema to use for validation and completions.",
+							"default": "sublime://packagecontrol.io/schemas/channel"
+						},
+						"schema_version": {
+							"type": "string",
+							"markdownDescription": "```json\n\"schema_version\": \"3.0.0\"\n```\n\nSemantic version of the channel's scheme.",
+							"default": "3.0.0",
+							"enum": ["3.0.0"]
+						},
+						"repositories": {
+							"markdownDescription": "```json\n\"repositories\": [\n\t\"./repository/a.json\",\n\t\"https://packagecontrol.io/repository/b.json\"\n]\n```\n\nA list of repositories, managed by the channel.\n\nThe main purposes of a channel are\n\n- to group various repositories\n\n- provide cached packages/dependencies to reduce a clients network bandwidth.",
+							"$ref": "sublime://packagecontrol.io/schemas/repository/3.0.0#/definitions/RepositoriesList"
+						},
+						"packages_cache": {
+							"type": "object",
+							"markdownDescription": "A map of repository URLs and lists of packages it provides.",
+							"patternProperties": {
+								"^https?://.+\\.json$": {
+									"$ref": "sublime://packagecontrol.io/schemas/repository/3.0.0#/definitions/ResolvedPackagesList"
+								}
+							}
+						},
+						"dependencies_cache": {
+							"type": "object",
+							"markdownDescription": "A map of repository URLs and lists of dependencies it provides.",
+							"additionalProperties": false,
+							"patternProperties": {
+								"^https?://.+\\.json$": {
+									"$ref": "sublime://packagecontrol.io/schemas/repository/3.0.0#/definitions/ResolvedDependenciesList"
+								}
+							}
+						}
+					},
+					"required": [
+						"schema_version",
+						"repositories"
+					]
+				}
+			},
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/channel/4.0.0",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"$schema": {
+							"type": "string",
+							"format": "uri",
+							"markdownDescription": "JSON schema to use for validation and completions.",
+							"default": "sublime://packagecontrol.io/schemas/channel"
+						},
+						"schema_version": {
+							"type": "string",
+							"markdownDescription": "```json\n\"schema_version\": \"4.0.0\"\n```\n\nSemantic version of the channel's scheme.",
+							"default": "4.0.0",
+							"enum": ["4.0.0"]
+						},
+						"repositories": {
+							"markdownDescription": "```json\n\"repositories\": [\n\t\"./repository/a.json\",\n\t\"https://packagecontrol.io/repository/b.json\"\n]\n```\n\nA list of repositories, managed by the channel.\n\nThe main purposes of a channel are\n\n- to group various repositories\n\n- provide cached packages/libraries to reduce a clients network bandwidth.",
+							"$ref": "sublime://packagecontrol.io/schemas/repository/4.0.0#/definitions/RepositoriesList"
+						},
+						"packages_cache": {
+							"type": "object",
+							"markdownDescription": "A map of repository URLs and lists of packages it provides.",
+							"patternProperties": {
+								"^https?://.+\\.json$": {
+									"$ref": "sublime://packagecontrol.io/schemas/repository/4.0.0#/definitions/ResolvedPackagesList"
+								}
+							}
+						},
+						"libraries_cache": {
+							"type": "object",
+							"markdownDescription": "A map of repository URLs and lists of libraries it provides.",
+							"additionalProperties": false,
+							"patternProperties": {
+								"^https?://.+\\.json$": {
+									"$ref": "sublime://packagecontrol.io/schemas/repository/4.0.0#/definitions/ResolvedLibrariesList"
+								}
+							}
+						}
+					},
+					"required": [
+						"schema_version",
+						"repositories"
+					]
+				}
+			},
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/repository",
+					"oneOf": [
+						{ "$ref": "sublime://packagecontrol.io/schemas/repository/4.0.0" },
+						{ "$ref": "sublime://packagecontrol.io/schemas/repository/3.0.0" },
+						{ "$ref": "sublime://packagecontrol.io/schemas/repository/2.0" }
+					]
+				}
+			},
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/repository/2.0",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"$schema": {
+							"type": "string",
+							"format": "uri",
+							"markdownDescription": "JSON schema to use for validation and completions.",
+							"default": "sublime://packagecontrol.io/schemas/repository"
+						},
+						"schema_version": {
+							"type": "string",
+							"markdownDescription": "```json\n\"schema_version\": \"2.0\"\n```\n\nSemantic version of the repository's scheme.",
+							"default": "2.0",
+							"enum": ["2.0"]
+						},
+						"packages": {
+							"$ref": "#/definitions/PackageTemplatesList"
+						},
+						"includes": {
+							"markdownDescription": "```json\n\"includes\": [\n\t\"./repository/a.json\",\n\t\"https://packagecontrol.io/repository/b.json\"\n]\n```\n\nA list of included repositories.",
+							"$ref": "#/definitions/RepositoriesList"
+						}
+					},
+					"required": [
+						"schema_version",
+						"packages"
+					],
+					"definitions": {
+						"RepositoriesList": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"markdownDescription": "```json\n\"https://domain.com/repository.json\",\n\"./subdir/repository.json\"\n```\n\nURL or URI of a repository.\n\nRelative paths are resolved using the owning directory of this repository.",
+								"pattern": "^(?:https?://|\\./).+\\.json$"
+							},
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+
+						"ResolvedPackagesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"https://packagecontrol.io/package.json\": [\n\t{\n\t\t\"name\": \"My Package\",\n\t\t\"description\": \"A Sublime Text plugin to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"homepage\": \"www.my-package-homepage.com\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA mapping of repository URLs and lists of resolved package information, provided.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"items": { "$ref": "#/definitions/ResolvedPackage" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"ResolvedPackage": {
+							"type": "object",
+							"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"homepage\": \"www.my-package-homepage.com\",\n\t\"releases\": []\n}\n```\n\nResolved information about a package.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"additionalProperties": false,
+							"properties": {
+								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+								"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+								"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+								"releases": { "$ref": "#/definitions/ResolvedPackageReleasesList" }
+							},
+							"required": [
+								"name",
+								"author",
+								"releases"
+							]
+						},
+						"ResolvedPackageReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of package release artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"$ref": "#/definitions/PackageReleaseArtefact"
+							}
+						},
+
+						"PackageTemplatesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"packages\": [\n\t{\n\t\t\"name\": \"May Package\",\n\t\t\"details\": \"https://github.com/user/repo\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of package information.",
+							"items": { "$ref": "#/definitions/PackageTemplate" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"PackageTemplate": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "```json\n{\n\t\"name\": \"May Package\",\n\t\"details\": \"https://github.com/user/repo\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"additionalProperties": false,
+									"properties": {
+										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
+										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+										"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+										"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+										"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
+									},
+									"required": [
+										"details",
+										"releases"
+									],
+									"defaultSnippets": [
+										{
+											"bodyText": "{\n\t\"details\": \"$1\",\n\t\"releases\": [$0]\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"additionalProperties": false,
+									"properties": {
+										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+										"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+										"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+										"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
+									},
+									"required": [
+										"name",
+										"author",
+										"releases"
+									],
+									"defaultSnippets": [
+										{
+											"bodyText": "{\n\t\"name\": \"$1\",\n\t\"description\": \"$2\",\n\t\"author\": \"$3\",\n\t\"issues\": \"$4\",\n\t\"releases\": [$0]\n}"
+										}
+									]
+								}
+							]
+						},
+						"PackageTemplateReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of package release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/PackageReleaseArtefact"},
+									{"$ref": "#/definitions/PackageReleaseTemplate"}
+								]
+							}
+						},
+
+						"PackageReleaseArtefact": {
+							"type": "object",
+							"markdownDescription": "A release with an explicit `version` and `url` to download the binary from.",
+							"additionalProperties": false,
+							"properties": {
+								"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+								"url": { "$ref": "#/definitions/ReleaseValues/url" },
+								"version": { "$ref": "#/definitions/ReleaseValues/version" },
+								"date": { "$ref": "#/definitions/ReleaseValues/date" }
+							},
+							"required": [
+								"sublime_text",
+								"url",
+								"version"
+							],
+							"defaultSnippets": [
+								{
+									"label": "Release Artefact",
+									"bodyText": "{\n\t\"version\": \"${1:1}.${2:0}.${3:0}\",\n\t\"url\": \"$4\",\n\t\"sublime_text\": \"${5:*}\"${6:,\n\t\"platforms\": [\"${7:*}\"]}\n}"
+								}
+							]
+						},
+						"PackageReleaseTemplate": {
+							"type": "object",
+							"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
+							"additionalProperties": false,
+							"properties": {
+								"details": { "$ref": "#/definitions/ReleaseValues/details" },
+								"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+							},
+							"required": [
+								"sublime_text"
+							],
+							"defaultSnippets": [
+								{
+									"label": "release template",
+									"bodyText": "{\n\t\"details\": \"${1:https://github.com/author/repo/tags}\",\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+								}
+							]
+						},
+
+						"InfoValues": {
+							"DetailsValue": {
+								"type": "string",
+								"format": "uri-reference",
+								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or dependency from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+							},
+							"NameValue": {
+								"type": "string",
+								"markdownDescription": "The name a package or dependency is installed as."
+							},
+							"DescriptionValue": {
+								"type": "string",
+								"markdownDescription": "A brief description of what the package/dependency is used for."
+							},
+							"LoadOrderValue": {
+								"type": "string",
+								"markdownDescription": "A string of two digits defining load order of the depencency.",
+								"pattern": "^[0-9][0-9]$"
+							},
+							"AuthorValue": {
+								"type": ["string", "array"],
+								"markdownDescription": "A string or list of author names.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"IssuesValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website bugs/issues can be reported at."
+							},
+							"HomepageValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a homepage used to represent the package online."
+							},
+							"ReadmeValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a readme file in Markdown, Creole or reStructuredText, with a detailed description of the package, how it is installed and used."
+							},
+							"BuyValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website used to buy a licence for the package."
+							},
+							"DonateValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website for donations."
+							},
+							"LabelsValue": {
+								"type": "array",
+								"markdownDescription": "A list of keywords which can be used for filtering.",
+								"items": {
+									"type": "string"
+								},
+								"uniqueItems": true
+							},
+							"LastModifiedValue": {
+								"type": "string",
+								"markdownDescription": "```json\n\"last_modified\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp the package/library has been modified in the format of `YYYY-MM-DD hh:mm:ss`.",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+							},
+							"PreviousNamesValue": {
+								"type": "array",
+								"markdownDescription": "A list of names previously used by the package/dependency. It is required to automatically rename old packages on clients when upgrading packages.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							}
+						},
+						"ReleaseValues": {
+							"date": {
+								"type": "string",
+								"markdownDescription": "```json\n\"date\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp of the package/dependency release in the format of `YYYY-MM-DD hh:mm:ss`.",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+							},
+							"details": {
+								"type": "string",
+								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+							},
+							"platforms": {
+								"type": ["string", "array"],
+								"markdownDescription": "A list of platforms, supported by the package/dependency release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx-arm64\", \"windows-x64\"]\n```",
+								"default": ["*"],
+								"items": {
+									"oneOf": [
+										{
+											"type": "string",
+											"enum": ["*"]
+										},
+										{
+											"type": "string",
+											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x32", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x32"]
+										}
+									]
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"sublime_text": {
+								"type": "string",
+								"markdownDescription": "```json\n\"sublime_text\": \"*\"\n```\n\nSublime Text build selector\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
+								"default": "*",
+								"pattern": "^(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})$"
+							},
+							"url": {
+								"type": "string",
+								"format": "uri-reference",
+								"markdownDescription": "```json\n\"url\": \"https://any-domain.com/downloads/mypackage-2.0.0.zip\"\n```\n\nURL of the download artefact.\n\nThe URL needs to be a zip file containing the package.\n\nIt is permissible for the zip file to contain a single root folder with any name. All file will be extracted out of this single root folder. This allows zip files from GitHub and BitBucket to be used a sources.\n\nThe URL can be relative to the location of this repository.json (e.g.: `./downloads/mypackage-2.0.0.zip`).\n\n_Used in conjunction with `version`._"
+							},
+							"version": {
+								"type": "string",
+								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
+								"pattern": "^v?\\d+(?:\\.\\d+){2}(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
+							}
+						}
+					}
+				}
+			},
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/repository/3.0.0",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"$schema": {
+							"type": "string",
+							"format": "uri",
+							"markdownDescription": "JSON schema to use for validation and completions.",
+							"default": "sublime://packagecontrol.io/schemas/repository"
+						},
+						"schema_version": {
+							"type": "string",
+							"markdownDescription": "```json\n\"schema_version\": \"3.0.0\"\n```\n\nSemantic version of the repository's scheme.",
+							"default": "3.0.0",
+							"enum": ["3.0.0"]
+						},
+						"packages": {
+							"$ref": "#/definitions/PackageTemplatesList"
+						},
+						"dependencies": {
+							"$ref": "#/definitions/DependencyTemplatesList"
+						},
+						"includes": {
+							"markdownDescription": "```json\n\"includes\": [\n\t\"./repository/a.json\",\n\t\"https://packagecontrol.io/repository/b.json\"\n]\n```\n\nA list of included repositories.",
+							"$ref": "#/definitions/RepositoriesList"
+						}
+					},
+					"required": [
+						"schema_version",
+						"packages"
+					],
+					"definitions": {
+						"RepositoriesList": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"markdownDescription": "```json\n\"https://domain.com/repository.json\",\n\"./subdir/repository.json\"\n```\n\nURL or URI of a repository.\n\nRelative paths are resolved using the owning directory of this repository.",
+								"pattern": "^(?:https?://|\\./).+\\.json$"
+							},
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+
+						"ResolvedDependenciesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"https://packagecontrol.io/package.json\": [\n\t{\n\t\t\"name\": \"mylib\",\n\t\t\"description\": \"A Sublime Text dependency to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"homepage\": \"www.my-dependency-homepage.com\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA mapping of repository URLs and lists of resolved dependency information, provided.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"items": { "$ref": "#/definitions/ResolvedDependency" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"ResolvedDependency": {
+							"type": "object",
+							"markdownDescription": "```json\n{\n\t\"name\": \"libname\",\n\t\"description\": \"A Sublime Text dependency to ...\",\n\t\"author\": \"John Doe\",\n\t\"homepage\": \"www.my-dependency-homepage.com\",\n\t\"releases\": []\n}\n```\n\nResolved information about a dependency.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"additionalProperties": false,
+							"properties": {
+								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+								"load_order": { "$ref": "#/definitions/InfoValues/LoadOrderValue" },
+								"releases": { "$ref": "#/definitions/ResolvedDependencyReleasesList" }
+							},
+							"required": [
+								"name",
+								"description",
+								"author",
+								"issues",
+								"load_order",
+								"releases"
+							]
+						},
+						"ResolvedDependencyReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of dependency release artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"$ref": "#/definitions/DependencyReleaseArtefact"
+							}
+						},
+
+						"DependencyTemplatesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"dependencies\": [\n\t{\n\t\t\"name\": \"mylib\",\n\t\t\"description\": \"A Sublime Text dependency to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of dependency information.",
+							"items": { "$ref": "#/definitions/DependencyTemplate" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"DependencyTemplate": {
+							"type": "object",
+							"markdownDescription": "```json\n{\n\t\"name\": \"libname\",\n\t\"description\": \"A Sublime Text dependency to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a dependency.",
+							"additionalProperties": false,
+							"properties": {
+								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+								"load_order": { "$ref": "#/definitions/InfoValues/LoadOrderValue" },
+								"releases": { "$ref": "#/definitions/DependencyTemplateReleasesList" }
+							},
+							"required": [
+								"name",
+								"description",
+								"author",
+								"issues",
+								"load_order",
+								"releases"
+							],
+							"defaultSnippets": [
+								{
+									"label": "Dependency download information",
+									"bodyText": "{\n\t\"name\": \"$1\",\n\t\"description\": \"$2\",\n\t\"author\": \"$3\",\n\t\"issues\": \"$4\",\n\t\"releases\": [$0]\n}"
+								}
+							]
+						},
+						"DependencyTemplateReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of dependency release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/DependencyReleaseArtefact"},
+									{"$ref": "#/definitions/DependencyReleaseTemplate"}
+								]
+							}
+						},
+
+						"DependencyReleaseArtefact": {
+							"additionalProperties": false,
+							"properties": {
+								"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+								"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+								"sha256": { "$ref": "#/definitions/ReleaseValues/sha256" },
+								"url": { "$ref": "#/definitions/ReleaseValues/url" },
+								"version": { "$ref": "#/definitions/ReleaseValues/version" },
+								"date": { "$ref": "#/definitions/ReleaseValues/date" }
+							},
+							"required": [
+								"url",
+								"version",
+								"sublime_text"
+							],
+							"defaultSnippets": [
+								{
+									"label": "Release Artefact",
+									"bodyText": "{\n\t\"version\": \"${1:1}.${2:0}.${3:0}\",\n\t\"url\": \"$4\",\n\t\"sublime_text\": \"${5:*}\",\n\t\"platforms\": [\"${6:*}\"]\n}"
+								}
+							]
+						},
+						"DependencyReleaseTemplate": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"base",
+										"tags",
+										"platforms",
+										"sublime_text"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\",\n\t\"platforms\": [\"${4:*}\"]\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"base",
+										"branch",
+										"platforms",
+										"sublime_text"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\",\n\t\"platforms\": [\"${4:*}\"]\n}"
+										}
+									]
+								}
+							]
+						},
+
+						"ResolvedPackagesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"https://packagecontrol.io/package.json\": [\n\t{\n\t\t\"name\": \"My Package\",\n\t\t\"description\": \"A Sublime Text plugin to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"homepage\": \"www.my-package-homepage.com\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA mapping of repository URLs and lists of resolved package information, provided.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"items": { "$ref": "#/definitions/ResolvedPackage" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"ResolvedPackage": {
+							"type": "object",
+							"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"homepage\": \"www.my-package-homepage.com\",\n\t\"releases\": []\n}\n```\n\nResolved information about a package.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"additionalProperties": false,
+							"properties": {
+								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+								"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+								"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+								"releases": { "$ref": "#/definitions/ResolvedPackageReleasesList" }
+							},
+							"required": [
+								"name",
+								"author",
+								"releases"
+							]
+						},
+						"ResolvedPackageReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of package release artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"$ref": "#/definitions/PackageReleaseArtefact"
+							}
+						},
+
+						"PackageTemplatesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"packages\": [\n\t{\n\t\t\"name\": \"May Package\",\n\t\t\"details\": \"https://github.com/user/repo\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of package information.",
+							"items": { "$ref": "#/definitions/PackageTemplate" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"PackageTemplate": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "```json\n{\n\t\"name\": \"May Package\",\n\t\"details\": \"https://github.com/user/repo\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"additionalProperties": false,
+									"properties": {
+										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
+										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+										"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+										"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+										"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
+									},
+									"required": [
+										"details",
+										"releases"
+									],
+									"defaultSnippets": [
+										{
+											"bodyText": "{\n\t\"details\": \"$1\",\n\t\"releases\": [$0]\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"additionalProperties": false,
+									"properties": {
+										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+										"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+										"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+										"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesListWithBase" }
+									},
+									"required": [
+										"name",
+										"author",
+										"releases"
+									],
+									"defaultSnippets": [
+										{
+											"bodyText": "{\n\t\"name\": \"$1\",\n\t\"description\": \"$2\",\n\t\"author\": \"$3\",\n\t\"issues\": \"$4\",\n\t\"releases\": [$0]\n}"
+										}
+									]
+								}
+							]
+						},
+						"PackageTemplateReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of package release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/PackageReleaseArtefact"},
+									{"$ref": "#/definitions/PackageReleaseTemplate"}
+								]
+							}
+						},
+						"PackageTemplateReleasesListWithBase": {
+							"type": "array",
+							"markdownDescription": "A list of package release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/PackageReleaseArtefact"},
+									{"$ref": "#/definitions/PackageReleaseTemplateWithBase"}
+								]
+							}
+						},
+
+						"PackageReleaseArtefact": {
+							"type": "object",
+							"markdownDescription": "A release with an explicit `version` and `url` to download the binary from.",
+							"additionalProperties": false,
+							"properties": {
+								"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+								"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+								"url": { "$ref": "#/definitions/ReleaseValues/url" },
+								"version": { "$ref": "#/definitions/ReleaseValues/version" },
+								"date": { "$ref": "#/definitions/ReleaseValues/date" }
+							},
+							"required": [
+								"url",
+								"version",
+								"sublime_text"
+							],
+							"defaultSnippets": [
+								{
+									"label": "Release Artefact",
+									"bodyText": "{\n\t\"version\": \"${1:1}.${2:0}.${3:0}\",\n\t\"url\": \"$4\",\n\t\"sublime_text\": \"${5:*}\"${6:,\n\t\"platforms\": [\"${7:*}\"]}\n}"
+								}
+							]
+						},
+						"PackageReleaseTemplate": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"tags",
+										"sublime_text"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"branch",
+										"sublime_text"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								}
+							]
+						},
+						"PackageReleaseTemplateWithBase": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"base",
+										"tags",
+										"sublime_text"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"dependencies": { "$ref": "#/definitions/ReleaseValues/dependencies" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" }
+									},
+									"required": [
+										"base",
+										"branch",
+										"sublime_text"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								}
+							]
+						},
+
+						"InfoValues": {
+							"DetailsValue": {
+								"type": "string",
+								"format": "uri-reference",
+								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or dependency from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+							},
+							"NameValue": {
+								"type": "string",
+								"markdownDescription": "The name a package or dependency is installed as."
+							},
+							"DescriptionValue": {
+								"type": "string",
+								"markdownDescription": "A brief description of what the package/dependency is used for."
+							},
+							"LoadOrderValue": {
+								"type": "string",
+								"markdownDescription": "A string of two digits defining load order of the depencency.",
+								"pattern": "^[0-9][0-9]$"
+							},
+							"AuthorValue": {
+								"type": ["string", "array"],
+								"markdownDescription": "A string or list of author names.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"IssuesValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website bugs/issues can be reported at."
+							},
+							"HomepageValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a homepage used to represent the package online."
+							},
+							"ReadmeValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a readme file in Markdown, Creole or reStructuredText, with a detailed description of the package, how it is installed and used."
+							},
+							"BuyValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website used to buy a licence for the package."
+							},
+							"DonateValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website for donations."
+							},
+							"LabelsValue": {
+								"type": "array",
+								"markdownDescription": "A list of keywords which can be used for filtering.",
+								"items": {
+									"type": "string"
+								},
+								"uniqueItems": true
+							},
+							"LastModifiedValue": {
+								"type": "string",
+								"markdownDescription": "```json\n\"last_modified\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp the package/library has been modified in the format of `YYYY-MM-DD hh:mm:ss`.",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+							},
+							"PreviousNamesValue": {
+								"type": "array",
+								"markdownDescription": "A list of names previously used by the package/dependency. It is required to automatically rename old packages on clients when upgrading packages.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							}
+						},
+						"ReleaseValues": {
+							"base": {
+								"type": "string",
+								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
+								"pattern": "^(https://bitbucket\\.org/[^/#?]+/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|https://github\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|https://gitlab\\.com/[^/#?]+/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+							},
+							"branch": {
+								"type": ["boolean", "string"],
+								"markdownDescription": "Create branch based releases.\n\n---\n```json\n\"branch\": true\n```\n\nIf `true`, a release is created for the repositorie's default branch.\n\n---\n\n```json\n\"branch\": \"any-branch\"\n```\n\nA `string` value specifies a branch name to create releases from.",
+								"default": true
+							},
+							"date": {
+								"type": "string",
+								"markdownDescription": "```json\n\"date\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp of the package/dependency release in the format of `YYYY-MM-DD hh:mm:ss`.",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+							},
+							"dependencies": {
+								"type": "array",
+								"markdownDescription": "```json\n\"dependencies\": [\"mdpopups\", \"sublime_lib\"]\n```\n\nA list of dependency names required by the package/dependency release.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"platforms": {
+								"type": ["string", "array"],
+								"markdownDescription": "A list of platforms, supported by the package/dependency release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx-arm64\", \"windows-x64\"]\n```",
+								"default": ["*"],
+								"items": {
+									"oneOf": [
+										{
+											"type": "string",
+											"enum": ["*"]
+										},
+										{
+											"type": "string",
+											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x32", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x32"]
+										}
+									]
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"sublime_text": {
+								"type": "string",
+								"markdownDescription": "```json\n\"sublime_text\": \"*\"\n```\n\nSublime Text build selector\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
+								"default": "*",
+								"pattern": "^(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})$"
+							},
+							"sha256": {
+								"type": "string",
+								"markdownDescription": "```json\n\"sha256\": \"efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea\"\n```\n\nDownload artefact checksum.\n\n_Used in conjunction with `url`._",
+								"pattern": "[0-9a-f]{64}"
+							},
+							"tags": {
+								"type": ["boolean", "string"],
+								"markdownDescription": "Create tag based releases.\n\n---\n```json\n\"tag\": true\n```\n\nIf `true`, a release is created for each tag named like a semantic version (e.g.: `1.0.0`).\n\n---\n\n```json\n\"tag\": \"st3-\"\n```\n\nA `string` value specifies a prefix a tag must start with followed by a semantic version to be picked up as release (e.g.: `st3-1.0.0`).",
+								"default": true
+							},
+							"url": {
+								"type": "string",
+								"format": "uri-reference",
+								"markdownDescription": "```json\n\"url\": \"https://any-domain.com/downloads/mypackage-2.0.0.zip\"\n```\n\nURL of the download artefact.\n\nThe URL needs to be a zip file containing the package.\n\nIt is permissible for the zip file to contain a single root folder with any name. All file will be extracted out of this single root folder. This allows zip files from GitHub and BitBucket to be used a sources.\n\nThe URL can be relative to the location of this repository.json (e.g.: `./downloads/mypackage-2.0.0.zip`).\n\n_Used in conjunction with `version`._"
+							},
+							"version": {
+								"type": "string",
+								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
+								"pattern": "^v?\\d+(?:\\.\\d+){2}(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
+							}
+						}
+					}
+				}
+			},
+			{
+				"file_patterns": [],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/repository/4.0.0",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"$schema": {
+							"type": "string",
+							"format": "uri",
+							"markdownDescription": "JSON schema to use for validation and completions.",
+							"default": "sublime://packagecontrol.io/schemas/repository"
+						},
+						"schema_version": {
+							"type": "string",
+							"markdownDescription": "```json\n\"schema_version\": \"4.0.0\"\n```\n\nSemantic version of the repository's scheme.",
+							"default": "4.0.0",
+							"enum": ["4.0.0"]
+						},
+						"packages": {
+							"$ref": "#/definitions/PackageTemplatesList"
+						},
+						"libraries": {
+							"$ref": "#/definitions/LibraryTemplatesList"
+						},
+						"includes": {
+							"markdownDescription": "```json\n\"includes\": [\n\t\"./repository/a.json\",\n\t\"https://packagecontrol.io/repository/b.json\"\n]\n```\n\nA list of included repositories.",
+							"$ref": "#/definitions/RepositoriesList"
+						}
+					},
+					"anyOf": [
+						{
+							"required": [
+								"schema_version",
+								"packages"
+							]
+						},
+						{
+							"required": [
+								"schema_version",
+								"libraries"
+							]
+						}
+					],
+					"definitions": {
+						"RepositoriesList": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"markdownDescription": "```json\n\"https://domain.com/repository.json\",\n\"./subdir/repository.json\"\n```\n\nURL or URI of a repository.\n\nRelative paths are resolved using the owning directory of this repository.",
+								"pattern": "^(?:https?://|\\./).+\\.json$"
+							},
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+
+						"ResolvedLibrariesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"https://packagecontrol.io/package.json\": [\n\t{\n\t\t\"name\": \"mylib\",\n\t\t\"description\": \"A Sublime Text library to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"homepage\": \"www.my-library-homepage.com\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA mapping of repository URLs and lists of resolved library information, provided.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"items": { "$ref": "#/definitions/ResolvedLibrary" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"ResolvedLibrary": {
+							"type": "object",
+							"markdownDescription": "```json\n{\n\t\"name\": \"libname\",\n\t\"description\": \"A Sublime Text library to ...\",\n\t\"author\": \"John Doe\",\n\t\"homepage\": \"www.my-library-homepage.com\",\n\t\"releases\": []\n}\n```\n\nResolved information about a library.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"additionalProperties": false,
+							"properties": {
+								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+								"releases": { "$ref": "#/definitions/ResolvedLibraryReleasesList" }
+							},
+							"required": [
+								"name",
+								"description",
+								"author",
+								"issues",
+								"releases"
+							]
+						},
+						"ResolvedLibraryReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of library release artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"$ref": "#/definitions/LibraryReleaseArtefact"
+							}
+						},
+
+						"LibraryTemplatesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"libraries\": [\n\t{\n\t\t\"name\": \"mylib\",\n\t\t\"description\": \"A Sublime Text library to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of library information.",
+							"items": { "$ref": "#/definitions/LibraryTemplate" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"LibraryTemplate": {
+							"type": "object",
+							"markdownDescription": "```json\n{\n\t\"name\": \"libname\",\n\t\"description\": \"A Sublime Text library to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a library.",
+							"additionalProperties": false,
+							"properties": {
+								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+								"releases": { "$ref": "#/definitions/LibraryTemplateReleasesList" }
+							},
+							"required": [
+								"name",
+								"description",
+								"author",
+								"issues",
+								"releases"
+							],
+							"defaultSnippets": [
+								{
+									"label": "Library download information",
+									"bodyText": "{\n\t\"name\": \"$1\",\n\t\"description\": \"$2\",\n\t\"author\": \"$3\",\n\t\"issues\": \"$4\",\n\t\"releases\": [$0]\n}"
+								}
+							]
+						},
+						"LibraryTemplateReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of library release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/LibraryReleaseArtefact"},
+									{"$ref": "#/definitions/LibraryReleaseTemplate"}
+								]
+							}
+						},
+
+						"LibraryReleaseArtefact": {
+							"additionalProperties": false,
+							"properties": {
+								"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+								"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" },
+								"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+								"sha256": { "$ref": "#/definitions/ReleaseValues/sha256" },
+								"url": { "$ref": "#/definitions/ReleaseValues/url" },
+								"version": { "$ref": "#/definitions/ReleaseValues/version" },
+								"date": { "$ref": "#/definitions/ReleaseValues/date" }
+							},
+							"required": [
+								"url",
+								"version"
+							],
+							"defaultSnippets": [
+								{
+									"label": "Release Artefact",
+									"bodyText": "{\n\t\"version\": \"${1:1}.${2:0}.${3:0}\",\n\t\"url\": \"$4\",\n\t\"sublime_text\": \"${5:*}\",\n\t\"platforms\": [\"${6:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+								}
+							]
+						},
+						"LibraryReleaseTemplate": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `asset` specification to collect available releases from `base` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/library_asset_base" },
+										"asset": { "$ref": "#/definitions/ReleaseValues/asset" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"asset"
+									],
+									"defaultSnippets": [
+										{
+											"label": "release based release template with download asset",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.whl}\",\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"tags"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"branch"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+										}
+									]
+								}
+							]
+						},
+
+						"ResolvedPackagesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"https://packagecontrol.io/package.json\": [\n\t{\n\t\t\"name\": \"My Package\",\n\t\t\"description\": \"A Sublime Text plugin to ...\",\n\t\t\"author\": \"John Doe\",\n\t\t\"homepage\": \"www.my-package-homepage.com\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA mapping of repository URLs and lists of resolved package information, provided.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"items": { "$ref": "#/definitions/ResolvedPackage" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"ResolvedPackage": {
+							"type": "object",
+							"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"homepage\": \"www.my-package-homepage.com\",\n\t\"releases\": []\n}\n```\n\nResolved information about a package.\n\nThis means that the `\"details\"` key must be expanded into the various keys it provides.",
+							"additionalProperties": false,
+							"properties": {
+								"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+								"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+								"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+								"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+								"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+								"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+								"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+								"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+								"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+								"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+								"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+								"releases": { "$ref": "#/definitions/ResolvedPackageReleasesList" }
+							},
+							"required": [
+								"name",
+								"description",
+								"author",
+								"releases"
+							]
+						},
+						"ResolvedPackageReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of package release artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"$ref": "#/definitions/PackageReleaseArtefact"
+							}
+						},
+
+						"PackageTemplatesList": {
+							"type": "array",
+							"markdownDescription": "```json\n\"packages\": [\n\t{\n\t\t\"name\": \"May Package\",\n\t\t\"details\": \"https://github.com/user/repo\",\n\t\t\"releases\": []\n\t}\n]\n```\n\nA list of package information.",
+							"items": { "$ref": "#/definitions/PackageTemplate" },
+							"additionalItems": false,
+							"uniqueItems": true
+						},
+						"PackageTemplate": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "```json\n{\n\t\"name\": \"May Package\",\n\t\"details\": \"https://github.com/user/repo\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"additionalProperties": false,
+									"properties": {
+										"details": { "$ref": "#/definitions/InfoValues/DetailsValue" },
+										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+										"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+										"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+										"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesList" }
+									},
+									"required": [
+										"details",
+										"releases"
+									],
+									"defaultSnippets": [
+										{
+											"bodyText": "{\n\t\"details\": \"$1\",\n\t\"releases\": [$0]\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "```json\n{\n\t\"name\": \"My Package\",\n\t\"description\": \"A Sublime Text plugin to ...\",\n\t\"author\": \"John Doe\",\n\t\"issues\": \"https://github.com/user/repo/issues\",\n\t\"releases\": []\n}\n```\n\nInformation about a package.",
+									"additionalProperties": false,
+									"properties": {
+										"name": { "$ref": "#/definitions/InfoValues/NameValue" },
+										"description": { "$ref": "#/definitions/InfoValues/DescriptionValue" },
+										"author": { "$ref": "#/definitions/InfoValues/AuthorValue" },
+										"homepage": { "$ref": "#/definitions/InfoValues/HomepageValue" },
+										"issues": { "$ref": "#/definitions/InfoValues/IssuesValue" },
+										"readme": { "$ref": "#/definitions/InfoValues/ReadmeValue" },
+										"buy": { "$ref": "#/definitions/InfoValues/BuyValue" },
+										"donate": { "$ref": "#/definitions/InfoValues/DonateValue" },
+										"labels": { "$ref": "#/definitions/InfoValues/LabelsValue" },
+										"last_modified": { "$ref": "#/definitions/InfoValues/LastModifiedValue" },
+										"previous_names": { "$ref": "#/definitions/InfoValues/PreviousNamesValue" },
+										"releases": { "$ref": "#/definitions/PackageTemplateReleasesListWithBase" }
+									},
+									"required": [
+										"name",
+										"description",
+										"author",
+										"releases"
+									],
+									"defaultSnippets": [
+										{
+											"bodyText": "{\n\t\"name\": \"$1\",\n\t\"description\": \"$2\",\n\t\"author\": \"$3\",\n\t\"issues\": \"$4\",\n\t\"releases\": [$0]\n}"
+										}
+									]
+								}
+							]
+						},
+						"PackageTemplateReleasesList": {
+							"type": "array",
+							"markdownDescription": "A list of package release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/PackageReleaseArtefact"},
+									{"$ref": "#/definitions/PackageReleaseTemplate"}
+								]
+							}
+						},
+						"PackageTemplateReleasesListWithBase": {
+							"type": "array",
+							"markdownDescription": "A list of package release templates or artefacts.",
+							"additionalItems": false,
+							"uniqueItems": true,
+							"items": {
+								"oneOf": [
+									{"$ref": "#/definitions/PackageReleaseArtefact"},
+									{"$ref": "#/definitions/PackageReleaseTemplateWithBase"}
+								]
+							}
+						},
+
+						"PackageReleaseArtefact": {
+							"type": "object",
+							"markdownDescription": "A release with an explicit `version` and `url` to download the binary from.",
+							"additionalProperties": false,
+							"properties": {
+								"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+								"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+								"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" },
+								"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+								"url": { "$ref": "#/definitions/ReleaseValues/url" },
+								"version": { "$ref": "#/definitions/ReleaseValues/version" },
+								"date": { "$ref": "#/definitions/ReleaseValues/date" }
+							},
+							"required": [
+								"url",
+								"version"
+							],
+							"defaultSnippets": [
+								{
+									"label": "Release Artefact",
+									"bodyText": "{\n\t\"version\": \"${1:1}.${2:0}.${3:0}\",\n\t\"url\": \"$4\",\n\t\"sublime_text\": \"${5:*}\"${6:,\n\t\"platforms\": [\"${7:*}\"]}\n}"
+								}
+							]
+						},
+						"PackageReleaseTemplate": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `asset` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"asset": { "$ref": "#/definitions/ReleaseValues/asset" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"asset"
+									],
+									"defaultSnippets": [
+										{
+											"label": "release based release template with download asset",
+											"bodyText": "{\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.sublime-package}\",\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"tags"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"branch"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								}
+							]
+						},
+						"PackageReleaseTemplateWithBase": {
+							"oneOf": [
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `asset` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"asset": { "$ref": "#/definitions/ReleaseValues/asset" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"asset"
+									],
+									"defaultSnippets": [
+										{
+											"label": "release based release template with download asset",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.sublime-package}\",\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `tags` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"tags": { "$ref": "#/definitions/ReleaseValues/tags" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"tags"
+									],
+									"defaultSnippets": [
+										{
+											"label": "tag based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								},
+								{
+									"type": "object",
+									"markdownDescription": "A release template, which uses given `branch` specification to collect available releases from `base` or package's `details` url.",
+									"additionalProperties": false,
+									"properties": {
+										"base": { "$ref": "#/definitions/ReleaseValues/base" },
+										"branch": { "$ref": "#/definitions/ReleaseValues/branch" },
+										"libraries": { "$ref": "#/definitions/ReleaseValues/libraries" },
+										"sublime_text": { "$ref": "#/definitions/ReleaseValues/sublime_text" },
+										"platforms": { "$ref": "#/definitions/ReleaseValues/platforms" },
+										"python_versions": { "$ref": "#/definitions/ReleaseValues/python_versions" }
+									},
+									"required": [
+										"base",
+										"branch"
+									],
+									"defaultSnippets": [
+										{
+											"label": "branch based release template",
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"sublime_text\": \"${3:*}\"${4:,\n\t\"platforms\": [\"${5:*}\"]}\n}"
+										}
+									]
+								}
+							]
+						},
+
+						"InfoValues": {
+							"DetailsValue": {
+								"type": "string",
+								"format": "uri-reference",
+								"markdownDescription": "URL of a BitBucket/Github/Gitlab repository to fetch information about the package or library from.\n\nCan be a relative path to the location of this repository.json (e.g.: `../mypackage`).",
+								"pattern": "^((https://bitbucket\\.org/[^/#?]+|\\.\\.?)/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|(https://github\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|(https://gitlab\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+							},
+							"NameValue": {
+								"type": "string",
+								"markdownDescription": "The name a package or library is installed as."
+							},
+							"DescriptionValue": {
+								"type": "string",
+								"markdownDescription": "A brief description of what the package/library is used for."
+							},
+							"AuthorValue": {
+								"type": ["string", "array"],
+								"markdownDescription": "A string or list of author names.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"IssuesValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website bugs/issues can be reported at."
+							},
+							"HomepageValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a homepage used to represent the package online."
+							},
+							"ReadmeValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a readme file in Markdown, Creole or reStructuredText, with a detailed description of the package, how it is installed and used."
+							},
+							"BuyValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website used to buy a licence for the package."
+							},
+							"DonateValue": {
+								"type": ["string", "null"],
+								"format": "uri",
+								"markdownDescription": "URL of a website for donations."
+							},
+							"LabelsValue": {
+								"type": "array",
+								"markdownDescription": "A list of keywords which can be used for filtering.",
+								"items": {
+									"type": "string"
+								},
+								"uniqueItems": true
+							},
+							"LastModifiedValue": {
+								"type": "string",
+								"markdownDescription": "```json\n\"last_modified\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp the package/library has been modified in the format of `YYYY-MM-DD hh:mm:ss`.",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+							},
+							"PreviousNamesValue": {
+								"type": "array",
+								"markdownDescription": "A list of names previously used by the package/library. It is required to automatically rename old packages on clients when upgrading packages.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							}
+						},
+						"ReleaseValues": {
+							"asset": {
+								"type": "string",
+								"markdownDescription": "```jsonc\n\"asset\": \"FileName-*.*.*-${platform}.sublime-package\"\n```\n\nA pattern to describe the display name of a download asset associated with a Bitbucket/GitHub/GitLab release.\n\nThe pattern supports fnmatch like placeholders as well as variable expansion.\n\n> If `\"asset\"` is present `\"tags\"` key is required only to specify a tag prefix.\n\n---\n\n### Globs\n\n- `*` : any number of characters\n- `?` : single character placeholder\n\n---\n\n### Variables\n\nVariable are expanded with information from owning release specification.\n\nNew release specifications are created for each combination of expanded variables.\n\n---\n\n### `${platform}`\n\n\n\nA platform-arch string as given in `\"platforms\"` list of owning release specification.\n\nA separate explicit release is evaluated for each platform.\n\nIf `\"platforms\": ['*']` is specified, variable is set to `\"any\"`.\n\n---\n\n### `${py_version}`\n\n\n\nMajor and minor part of required python version without period.\n\nOne of `\"33\"`, `\"38\"` or any other valid python version supported by ST.\n\n> Note: This variable is only useful for libraries.\n\n---\n\n### `${st_build}`\n\n\n\nValue of `\"sublime_text\"` key of owning release specification stripped by operators.\n\n```\n\"*\"            => \"any\"\n\">=4107\"       => \"4107\"\n\"<4107\"        => \"4107\"\n\"4107 - 4126\"  => \"4107\"\n```\n\n---\n\n### `${version}`\n\n\n\nResolved SemVer / PEP440 without tag prefix  \n(e.g.: tag = st4107-1.0.5 => version 1.0.5)\n\n"
+							},
+							"base": {
+								"type": "string",
+								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
+								"pattern": "^((https://bitbucket\\.org/[^/#?]+|\\.\\.?)/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|(https://github\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|(https://gitlab\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?)$"
+							},
+							"library_asset_base": {
+								"type": "string",
+								"markdownDescription": "```json\n\"base\": \"https://github.com/user/repository\"\n```\n\nURL of a BitBucket/Github/Gitlab repository to fetch information about available releases from.\n\nThe key is required only, if no or a differend `details` URL is specified by the owning package.",
+								"pattern": "^((https://bitbucket\\.org/[^/#?]+|\\.\\.?)/[^/#?]+(/src/[^#?]*[^/#?]|\\#tags|/)?|(https://github\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/tree/[^#?]*[^/#?]|/)?|(https://gitlab\\.com/[^/#?]+|\\.\\.?)/[^/#?]+(?<!\\.git)(/-/tree/[^#?]*[^/#?]|/)?|https://pypi.org/project/[^/#?]*(/[^/#?]*)?/?)$"
+							},
+							"branch": {
+								"type": ["boolean", "string"],
+								"markdownDescription": "Create branch based releases.\n\n---\n```json\n\"branch\": true\n```\n\nIf `true`, a release is created for the repositorie's default branch.\n\n---\n\n```json\n\"branch\": \"any-branch\"\n```\n\nA `string` value specifies a branch name to create releases from.",
+								"default": true
+							},
+							"date": {
+								"type": "string",
+								"markdownDescription": "```json\n\"date\": \"2021-03-06 19:43:21\"\n```\n\nTimestamp of the package/library release in the format of `YYYY-MM-DD hh:mm:ss`.",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+							},
+							"libraries": {
+								"type": "array",
+								"markdownDescription": "```json\n\"libraries\": [\"mdpopups\", \"sublime_lib\"]\n```\n\nA list of library names required by the package/library release.",
+								"items": {
+									"type": "string"
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"platforms": {
+								"type": ["string", "array"],
+								"markdownDescription": "A list of platforms, supported by the package/library release.\n\nCan contain a wildcard\n\n```json\n\"platforms\": [\"*\"]\n```\n\nor a supported plattform names\n\n```json\n\"platforms\": [\"linux\", \"osx-arm64\", \"windows-x64\"]\n```",
+								"default": ["*"],
+								"items": {
+									"oneOf": [
+										{
+											"type": "string",
+											"enum": ["*"]
+										},
+										{
+											"type": "string",
+											"enum": ["linux", "linux-arm64", "linux-x64", "linux-x32", "osx", "osx-arm64", "osx-x64", "windows", "windows-arm64", "windows-x64", "windows-x32"]
+										}
+									]
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"python_versions": {
+								"type": "array",
+								"markdownDescription": "```json\n\"python_versions\": [\"3.3\", \"3.8\"]\n```\n\nA list of python versions, supported by the package/library release. Must be one of `\"3.3\"` or `\"3.8\"`.",
+								"default": ["3.3"],
+								"items": {
+									"type": "string",
+									"enum": ["3.3", "3.8"]
+								},
+								"additionalItems": false,
+								"uniqueItems": true
+							},
+							"sublime_text": {
+								"type": "string",
+								"markdownDescription": "```json\n\"sublime_text\": \"*\"\n```\n\nSublime Text build selector\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
+								"default": "*",
+								"pattern": "^(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})$"
+							},
+							"sha256": {
+								"type": "string",
+								"markdownDescription": "```json\n\"sha256\": \"efe25e3bdf2e8f791d86327978aabe093c9597a6ceb8c2fb5438c1d810e02bea\"\n```\n\nDownload artefact checksum.\n\n_Used in conjunction with `url`._",
+								"pattern": "[0-9a-f]{64}"
+							},
+							"tags": {
+								"type": ["boolean", "string"],
+								"markdownDescription": "Create tag based releases.\n\n---\n```json\n\"tag\": true\n```\n\nIf `true`, a release is created for each tag named like a semantic version (e.g.: `1.0.0`).\n\n---\n\n```json\n\"tag\": \"st3-\"\n```\n\nA `string` value specifies a prefix a tag must start with followed by a semantic version to be picked up as release (e.g.: `st3-1.0.0`).",
+								"default": true
+							},
+							"url": {
+								"type": "string",
+								"format": "uri-reference",
+								"markdownDescription": "```json\n\"url\": \"https://any-domain.com/downloads/mypackage-2.0.0.zip\"\n```\n\nURL of the download artefact.\n\nThe URL needs to be a zip file containing the package.\n\nIt is permissible for the zip file to contain a single root folder with any name. All file will be extracted out of this single root folder. This allows zip files from GitHub and BitBucket to be used a sources.\n\nThe URL can be relative to the location of this repository.json (e.g.: `./downloads/mypackage-2.0.0.zip`).\n\n_Used in conjunction with `version`._"
+							},
+							"version": {
+								"type": "string",
+								"markdownDescription": "```json\n\"version\": \"1.0.0\"\n```\n\nA semantic version string.\n\n_Used in conjunction with `url`._",
+								"pattern": "^v?\\d+(?:\\.\\d+){2}(?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\\.?\\d*)?(?:-\\d+|(?:[-._]?(?:rev|r|post)\\.?\\d*))?(?:[-._]?dev\\.?\\d*)?$"
+							}
+						}
+					}
+				}
+			},
+			{
+				"file_patterns": [
+					"example-dependencies.json",
+					"dependencies.json"
+				],
+				"schema": {
+					"$id": "sublime://packagecontrol.io/schemas/dependencies",
+					"$ref": "#/definitions/DependenciesRoot",
+					"definitions": {
+						"DependenciesRoot": {
+							"type": "object",
+							"additionalProperties": false,
+							"properties": {
+								"$schema": {
+									"type": "string",
+									"format": "uri",
+									"markdownDescription": "JSON schema to use for validation and completions.",
+									"default": "sublime://packagecontrol.io/schemas/dependencies"
+								},
+								"*": { "$ref": "#/definitions/SublimeTextSelectors" },
+								"linux": { "$ref": "#/definitions/SublimeTextSelectors" },
+								"osx": { "$ref": "#/definitions/SublimeTextSelectors" },
+								"windows": { "$ref": "#/definitions/SublimeTextSelectors" }
+							}
+						},
+						"SublimeTextSelectors": {
+							"type": "object",
+							"markdownDescription": "Dictionary of Sublime Text selectors and lists of libraries to install for the given platform.",
+							"additionalProperties": false,
+							"patternProperties": {
+								"^(?:\\*|(?:>=?|<=?)\\d{4}|\\d{4} - \\d{4})": {
+									"type": "array",
+									"markdownDescription": "List of libraries to install for given platform and Sublime Text build.\n\nValid selectors are of the form:\n\n- `*`\n- `<4107`\n- `<=4107`\n- `>4107`\n- `>=4107`\n- `4107 - 4143`",
+									"items": {
+										"type": "string"
+									},
+									"additionalItems": false,
+									"uniqueItems": true
+								}
+							}
+						}
+					}
+				}
+			}
+		]
+	}
+}

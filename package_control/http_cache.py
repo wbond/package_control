@@ -1,22 +1,36 @@
 import os
 import time
 
-from .file_not_found_error import FileNotFoundError
-from .open_compat import open_compat, read_compat
-from .sys_path import pc_cache_dir
+from . import sys_path
 
 
-class HttpCache(object):
+class HttpCache:
 
     """
     A data store for caching HTTP response data.
     """
 
     def __init__(self, ttl):
-        self.base_path = os.path.join(pc_cache_dir(), 'http_cache')
-        if not os.path.exists(self.base_path):
-            os.mkdir(self.base_path)
-        self.clear(int(ttl))
+        """
+        Constructs a new instance.
+
+        :param ttl:
+            The number of seconds a cache entry should be valid for
+        """
+        self.ttl = int(ttl)
+        self.base_path = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
+        os.makedirs(self.base_path, exist_ok=True)
+
+    def __del__(self):
+        """
+        Delete an existing instance.
+
+        Remove outdated cache files, when cache object is deleted.
+        All files which have been accessed by deleted instance keep untouched.
+        """
+
+        if self.ttl > 0:
+            self.clear(self.ttl)
 
     def clear(self, ttl):
         """
@@ -28,15 +42,19 @@ class HttpCache(object):
 
         ttl = int(ttl)
 
-        for filename in os.listdir(self.base_path):
-            path = os.path.join(self.base_path, filename)
-            # There should not be any folders in the cache dir, but we
-            # ignore to prevent an exception
-            if os.path.isdir(path):
-                continue
-            mtime = os.stat(path).st_mtime
-            if mtime < time.time() - ttl:
-                os.unlink(path)
+        try:
+            for filename in os.listdir(self.base_path):
+                path = os.path.join(self.base_path, filename)
+                # There should not be any folders in the cache dir, but we
+                # ignore to prevent an exception
+                if os.path.isdir(path):
+                    continue
+                mtime = os.stat(path).st_mtime
+                if mtime < time.time() - ttl:
+                    os.unlink(path)
+
+        except FileNotFoundError:
+            pass
 
     def get(self, key):
         """
@@ -49,9 +67,18 @@ class HttpCache(object):
             The (binary) cached value, or False
         """
         try:
+            content = None
             cache_file = os.path.join(self.base_path, key)
-            with open_compat(cache_file, 'rb') as f:
-                return read_compat(f)
+            with open(cache_file, 'rb') as fobj:
+                content = fobj.read()
+
+            # update filetime to prevent unmodified cache files
+            # from being deleted, if they are frequently accessed.
+            now = time.time()
+            os.utime(cache_file, (now, now))
+
+            return content
+
         except FileNotFoundError:
             return False
 
@@ -84,5 +111,5 @@ class HttpCache(object):
         """
 
         cache_file = os.path.join(self.base_path, key)
-        with open_compat(cache_file, 'wb') as f:
+        with open(cache_file, 'wb') as f:
             f.write(content)

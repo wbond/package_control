@@ -1,469 +1,509 @@
-import threading
 import os
-import functools
+import json
+import threading
+import time
+import traceback
 
-import sublime
-
-from .show_error import show_error
-from .console_write import console_write
-from .unicode import unicode_from_os
-from .clear_directory import clear_directory, unlink_or_delete_directory, clean_old_files
+from . import library, sys_path, text, __version__
+from .activity_indicator import ActivityIndicator
 from .automatic_upgrader import AutomaticUpgrader
-from .package_manager import PackageManager
-from .open_compat import open_compat
-from .package_io import package_file_exists
-from .settings import preferences_filename, pc_settings_filename, load_list_setting, save_list_setting
-from . import loader, text, __version__
-from .providers.release_selector import is_compatible_version
+from .clear_directory import clear_directory, delete_directory
+from .console_write import console_write
+from .package_io import (
+    create_empty_file,
+    get_installed_package_path,
+)
+from .package_tasks import PackageTaskRunner
+from .show_error import show_error, show_message
 
 
-class PackageCleanup(threading.Thread):
+class PackageCleanup(threading.Thread, PackageTaskRunner):
 
     """
-    Cleans up folders for packages that were removed, but that still have files
-    in use.
+    Perform initial package maintenance tasks after start of ST.
+
+    It's main purpose is to remove old folders and bring packages and libraries
+    to a fully working state as specified by `installed_packages` no matter
+    what is found in filesystem.
+
+    It's enough to place a Package Control.sublime-settings with desired list of
+    `installed_packages` into User package. This task does the rest.
+
+    The following tasks are performed one after another:
+
+    1. Complete pending operations, which had been deferred due to locked files.
+    2. Remove packages, which exist in filesystem but not in `installed_packages`.
+    3. Migrate or upgrade incompatible packages immediately.
+    4. Install packages, which don't exist in filesystem but in `installed_packages`.
+    5. Install required libraries, which have not yet been installed by step 3. or 4.
+    6. Removes libraries, which are no longer required by finally present packages.
     """
 
     def __init__(self):
-        self.manager = PackageManager()
-
-        settings = sublime.load_settings(pc_settings_filename())
-
-        # We no longer use the installed_dependencies setting because it is not
-        # necessary and created issues with settings shared across operating systems
-        if settings.get('installed_dependencies'):
-            settings.erase('installed_dependencies')
-            sublime.save_settings(pc_settings_filename())
-
-        self.original_installed_packages = load_list_setting(settings, 'installed_packages')
-        self.remove_orphaned = settings.get('remove_orphaned', True)
-
         threading.Thread.__init__(self)
+        PackageTaskRunner.__init__(self)
+        self.failed_cleanup = set()
+        self.updated_libraries = False
 
     def run(self):
         # This song and dance is necessary so Package Control doesn't try to clean
         # itself up, but also get properly marked as installed in the settings
-        installed_packages_at_start = list(self.original_installed_packages)
-
         # Ensure we record the installation of Package Control itself
-        if 'Package Control' not in installed_packages_at_start:
-            params = {
+        updated = self.manager.update_installed_packages(add='Package Control')
+        if updated:
+            self.manager.record_usage({
                 'package': 'Package Control',
                 'operation': 'install',
                 'version': __version__
-            }
-            self.manager.record_usage(params)
-            installed_packages_at_start.append('Package Control')
+            })
+            if self.manager.settings.get('debug'):
+                console_write("Prevented Package Control from removing itself.")
 
-        found_packages = []
-        installed_packages = list(installed_packages_at_start)
+        # To limit disk space occupied remove all old enough backups
+        self.manager.prune_backup_dir()
 
-        found_dependencies = []
-        installed_dependencies = self.manager.list_dependencies()
+        # Clear trash
+        clear_directory(sys_path.trash_path())
 
-        # We scan the Installed Packages folder in ST3 before we check for
-        # dependencies since some dependencies might be specified by a
-        # .sublime-package-new that has not yet finished being installed.
-        if int(sublime.version()) >= 3000:
-            installed_path = sublime.installed_packages_path()
+        # Scan through packages and complete pending operations
+        found_packages = self.cleanup_pending_packages()
 
-            for file in os.listdir(installed_path):
-                # If there is a package file ending in .sublime-package-new, it
-                # means that the .sublime-package file was locked when we tried
-                # to upgrade, so the package was left in ignored_packages and
-                # the user was prompted to restart Sublime Text. Now that the
-                # package is not loaded, we can replace the old version with the
-                # new one.
-                if file[-20:] == '.sublime-package-new' and file != loader.loader_package_name + '.sublime-package-new':
-                    package_name = file.replace('.sublime-package-new', '')
-                    package_file = os.path.join(installed_path, package_name + '.sublime-package')
-                    if os.path.exists(package_file):
+        # Clean-up packages that were installed via Package Control, but have been
+        # removed from the "installed_packages" list - usually by removing them
+        # from another computer and the settings file being synced.
+        removed_packages = self.remove_orphaned_packages(found_packages)
+        found_packages -= removed_packages
+
+        # Make sure we didn't accidentally ignore packages because something was
+        # interrupted before it completed. Keep orphaned packages disabled which
+        # are deferred to next start.
+        in_process = self.in_progress_packages() - removed_packages
+        if in_process:
+            console_write(
+                'Re-enabling %d package%s after a Package Control operation was interrupted...',
+                (len(in_process), 's' if len(in_process) != 1 else '')
+            )
+
+        # Remove non-existing packages from ignored_packages list.
+        orphaned_ignored_packages = self.ignored_packages() - found_packages \
+            - self.manager.list_default_packages()
+
+        if in_process or orphaned_ignored_packages:
+            self.reenable_packages({self.ENABLE: in_process | orphaned_ignored_packages})
+
+        # garbage collect no longer needed sets
+        in_process = None
+        orphaned_ignored_packages = None
+        removed_packages = None
+
+        self.remove_legacy_libraries()
+
+        # Check metadata to verify packages were not improperly installed
+        self.migrate_incompatible_packages(found_packages)
+
+        self.install_missing_packages(found_packages)
+        self.install_missing_libraries()
+
+        if self.manager.settings.get('remove_orphaned', True):
+            self.manager.cleanup_libraries()
+
+        if self.manager.settings.get('auto_upgrade'):
+            AutomaticUpgrader(self.manager).run()
+
+        # make sure to restore indexing state
+        # note: required after Package Control upgrade
+        self.resume_indexer()
+
+        if self.failed_cleanup:
+            show_error(
+                '''
+                Package clean-up could not be completed.
+                You may need to restart your OS to unlock relevant files and directories.
+
+                The following packages are effected: "%s"
+                ''',
+                '", "'.join(sorted(self.failed_cleanup, key=lambda s: s.lower()))
+            )
+            return
+
+        message = ''
+
+        in_process = self.in_progress_packages()
+        if in_process:
+            message += 'to complete pending package operations on "%s"' \
+                % '", "'.join(sorted(in_process, key=lambda s: s.lower()))
+
+        if self.updated_libraries:
+            if message:
+                message += ' and '
+            message += 'for installed or updated libraries to take effect.'
+            message += ' Otherwise some packages may not work properly.'
+
+        if message:
+            show_message('Sublime Text needs to be restarted %s.' % message)
+
+    def cleanup_pending_packages(self):
+        """
+        Scan through packages and complete pending operations
+
+        The method ...
+        1. replaces *.sublime-package files with *.sublime-package-new
+        2. deletes package directories with a package-control.cleanup file
+        3. clears package directories with a package-control.reinstall file
+           and re-installs it.
+
+        All found packages are considered `ignored_packages` and present/absent
+        in `installed_packages` as related operation was interrupted or deferred
+        before ST was restarted.
+
+        :returns:
+            A set of found packages.
+        """
+
+        found_packages = set()
+
+        for file in os.listdir(sys_path.installed_packages_path()):
+            package_name, file_extension = os.path.splitext(file)
+            file_extension = file_extension.lower()
+
+            # If there is a package file ending in .sublime-package-new, it
+            # means that the .sublime-package file was locked when we tried
+            # to upgrade, so the package was left in ignored_packages and
+            # the user was prompted to restart Sublime Text. Now that the
+            # package is not loaded, we can replace the old version with the
+            # new one.
+            if file_extension == '.sublime-package-new':
+                new_file = os.path.join(sys_path.installed_packages_path(), file)
+                package_file = get_installed_package_path(package_name)
+                try:
+                    try:
                         os.remove(package_file)
-                    os.rename(os.path.join(installed_path, file), package_file)
+                    except FileNotFoundError:
+                        pass
+
+                    os.rename(new_file, package_file)
                     console_write(
-                        u'''
+                        '''
                         Finished replacing %s.sublime-package
                         ''',
                         package_name
                     )
-                    continue
 
-                if file[-16:] != '.sublime-package':
-                    continue
+                except OSError as e:
+                    self.failed_cleanup.add(package_name)
+                    console_write(
+                        '''
+                        Failed to replace %s.sublime-package with new package. %s
+                        ''',
+                        (package_name, e)
+                    )
 
-                package_name = file.replace('.sublime-package', '')
+                found_packages.add(package_name)
 
-                if package_name == loader.loader_package_name:
-                    found_dependencies.append(package_name)
-                    continue
+            elif file_extension == '.sublime-package':
+                found_packages.add(package_name)
 
-                # Cleanup packages that were installed via Package Control, but
-                # we removed from the "installed_packages" list - usually by
-                # removing them from another computer and the settings file
-                # being synced.
-                if self.remove_orphaned and package_name not in installed_packages_at_start \
-                        and package_file_exists(package_name, 'package-metadata.json'):
-                    # Since Windows locks the .sublime-package files, we must
-                    # do a dance where we disable the package first, which has
-                    # to be done in the main Sublime Text thread.
-                    package_filename = os.path.join(installed_path, file)
+        for package_name in os.listdir(sys_path.packages_path()):
 
-                    # We use a functools.partial to generate the on-complete callback in
-                    # order to bind the current value of the parameters, unlike lambdas.
-                    sublime.set_timeout(functools.partial(self.remove_package_file, package_name, package_filename), 10)
+            # Ignore `.`, `..` or hidden dot-directories
+            if package_name[0] == '.':
+                continue
 
-                else:
-                    found_packages.append(package_name)
+            # Make sure not to clear user settings under all circumstances
+            if package_name.lower() == 'user':
+                continue
 
-        required_dependencies = set(self.manager.find_required_dependencies())
-        extra_dependencies = list(set(installed_dependencies) - required_dependencies)
-
-        # Clean up unneeded dependencies so that found_dependencies will only
-        # end up having required dependencies added to it
-        for dependency in extra_dependencies:
-            dependency_dir = os.path.join(sublime.packages_path(), dependency)
-            if unlink_or_delete_directory(dependency_dir):
-                console_write(
-                    u'''
-                    Removed directory for unneeded dependency %s
-                    ''',
-                    dependency
-                )
-            else:
-                cleanup_file = os.path.join(dependency_dir, 'package-control.cleanup')
-                if not os.path.exists(cleanup_file):
-                    open_compat(cleanup_file, 'w').close()
-                console_write(
-                    u'''
-                    Unable to remove directory for unneeded dependency %s -
-                    deferring until next start
-                    ''',
-                    dependency
-                )
-            # Make sure when cleaning up the dependency files that we remove the loader for it also
-            loader.remove(dependency)
-
-        for package_name in os.listdir(sublime.packages_path()):
-            found = True
-
-            package_dir = os.path.join(sublime.packages_path(), package_name)
+            # Ignore files
+            package_dir = os.path.join(sys_path.packages_path(), package_name)
             if not os.path.isdir(package_dir):
                 continue
 
-            clean_old_files(package_dir)
+            # Ignore hidden packages
+            if os.path.exists(os.path.join(package_dir, '.hidden-sublime-package')):
+                continue
 
-            # Cleanup packages/dependencies that could not be removed due to in-use files
+            # Clean-up packages that could not be removed due to in-use files
             cleanup_file = os.path.join(package_dir, 'package-control.cleanup')
             if os.path.exists(cleanup_file):
-                if unlink_or_delete_directory(package_dir):
+                if delete_directory(package_dir):
                     console_write(
-                        u'''
-                        Removed old directory %s
-                        ''',
-                        package_name
-                    )
-                    found = False
-                else:
-                    if not os.path.exists(cleanup_file):
-                        open_compat(cleanup_file, 'w').close()
-                    console_write(
-                        u'''
-                        Unable to remove old directory %s - deferring until next
-                        start
+                        '''
+                        Removed old package directory %s
                         ''',
                         package_name
                     )
 
-            # Finish reinstalling packages that could not be upgraded due to
-            # in-use files
-            reinstall = os.path.join(package_dir, 'package-control.reinstall')
-            if os.path.exists(reinstall):
-                metadata_path = os.path.join(package_dir, 'package-metadata.json')
-                # No need to handle symlinks here as that was already handled in earlier step
-                # that has attempted to re-install the package initially.
-                if not clear_directory(package_dir, [metadata_path]):
-                    if not os.path.exists(reinstall):
-                        open_compat(reinstall, 'w').close()
-
-                    def show_still_locked(package_name):
-                        show_error(
-                            u'''
-                            An error occurred while trying to finish the upgrade of
-                            %s. You will most likely need to restart your computer
-                            to complete the upgrade.
-                            ''',
-                            package_name
-                        )
-                    # We use a functools.partial to generate the on-complete callback in
-                    # order to bind the current value of the parameters, unlike lambdas.
-                    sublime.set_timeout(functools.partial(show_still_locked, package_name), 10)
                 else:
-                    self.manager.install_package(package_name)
+                    self.failed_cleanup.add(package_name)
+                    create_empty_file(cleanup_file)
+                    console_write(
+                        '''
+                        Unable to remove old package directory "%s".
+                        A restart of your computer may be required to unlock files.
+                        ''',
+                        package_name
+                    )
 
-            if package_file_exists(package_name, 'package-metadata.json'):
-                # This adds previously installed packages from old versions of
-                # PC. As of PC 3.0, this should basically never actually be used
-                # since installed_packages was added in late 2011.
-                if not installed_packages_at_start:
-                    installed_packages.append(package_name)
-                    params = {
-                        'package': package_name,
-                        'operation': 'install',
-                        'version':
-                            self.manager.get_metadata(package_name).get('version')
-                    }
-                    self.manager.record_usage(params)
-
-                # Cleanup packages that were installed via Package Control, but
-                # we removed from the "installed_packages" list - usually by
-                # removing them from another computer and the settings file
-                # being synced.
-                elif self.remove_orphaned and package_name not in installed_packages_at_start:
-                    self.manager.backup_package_dir(package_name)
-                    if unlink_or_delete_directory(package_dir):
-                        console_write(
-                            u'''
-                            Removed directory for orphaned package %s
-                            ''',
-                            package_name
-                        )
-                        found = False
-                    else:
-                        if not os.path.exists(cleanup_file):
-                            open_compat(cleanup_file, 'w').close()
-                        console_write(
-                            u'''
-                            Unable to remove directory for orphaned package %s -
-                            deferring until next start
-                            ''',
-                            package_name
-                        )
-
-            if package_name[-20:] == '.package-control-old':
-                console_write(
-                    u'''
-                    Removed old directory %s
-                    ''',
-                    package_name
-                )
-                unlink_or_delete_directory(package_dir)
-
-            # Skip over dependencies since we handle them separately
-            if (package_file_exists(package_name, 'dependency-metadata.json')
-                    or package_file_exists(package_name, '.sublime-dependency')) \
-                    and (package_name == loader.loader_package_name or loader.exists(package_name)):
-                found_dependencies.append(package_name)
                 continue
 
-            if found:
-                found_packages.append(package_name)
-
-        invalid_packages = []
-        invalid_dependencies = []
-
-        # Check metadata to verify packages were not improperly installed
-        for package in found_packages:
-            if package == 'User':
-                continue
-
-            metadata = self.manager.get_metadata(package)
-            if metadata and not self.is_compatible(metadata):
-                invalid_packages.append(package)
-
-        # Make sure installed dependencies are not improperly installed
-        for dependency in found_dependencies:
-            metadata = self.manager.get_metadata(dependency, is_dependency=True)
-            if metadata and not self.is_compatible(metadata):
-                invalid_dependencies.append(dependency)
-
-        if invalid_packages or invalid_dependencies:
-            def show_sync_error():
-                message = u''
-                if invalid_packages:
-                    package_s = 's were' if len(invalid_packages) != 1 else ' was'
-                    message += text.format(
-                        u'''
-                        The following incompatible package%s found installed:
-
-                        %s
-
+            # Finish reinstalling packages that could not be upgraded due to in-use files
+            reinstall_file = os.path.join(package_dir, 'package-control.reinstall')
+            if os.path.exists(reinstall_file):
+                if not clear_directory(package_dir):
+                    self.failed_cleanup.add(package_name)
+                    create_empty_file(reinstall_file)
+                    console_write(
+                        '''
+                        Unable to clear package directory "%s" for re-install.
+                        A restart of your computer may be required to unlock files.
                         ''',
-                        (package_s, '\n'.join(invalid_packages))
+                        package_name
                     )
-                if invalid_dependencies:
-                    dependency_s = 'ies were' if len(invalid_dependencies) != 1 else 'y was'
-                    message += text.format(
-                        u'''
-                        The following incompatible dependenc%s found installed:
 
-                        %s
+                elif not self.manager.install_package(package_name, unattended=True):
+                    create_empty_file(reinstall_file)
 
-                        ''',
-                        (dependency_s, '\n'.join(invalid_dependencies))
-                    )
-                message += text.format(
-                    u'''
-                    This is usually due to syncing packages across different
-                    machines in a way that does not check package metadata for
-                    compatibility.
-
-                    Please visit https://packagecontrol.io/docs/syncing for
-                    information about how to properly sync configuration and
-                    packages across machines.
-
-                    To restore package functionality, please remove each listed
-                    package and reinstall it.
-                    '''
-                )
-                show_error(message)
-            sublime.set_timeout(show_sync_error, 100)
-
-        sublime.set_timeout(lambda: self.finish(installed_packages, found_packages, found_dependencies), 10)
-
-    def remove_package_file(self, name, filename):
-        """
-        On Windows, .sublime-package files are locked when imported, so we must
-        disable the package, delete it and then re-enable the package.
-
-        :param name:
-            The name of the package
-
-        :param filename:
-            The filename of the package
-        """
-
-        def do_remove():
+            # Convert unpacked managed package into unmanaged package,
+            # if folder name no longer matches original package name,
+            # in order to avoid it being removed as orphaned.
             try:
-                os.remove(filename)
-                console_write(
-                    u'''
-                    Removed orphaned package %s
-                    ''',
-                    name
-                )
+                clear = False
+                metadata_file = os.path.join(package_dir, 'package-metadata.json')
 
-            except (OSError) as e:
-                console_write(
-                    u'''
-                    Unable to remove orphaned package %s - deferring until
-                    next start: %s
-                    ''',
-                    (name, unicode_from_os(e))
-                )
+                with open(metadata_file, 'r', encoding='utf-8') as fobj:
+                    metadata = json.load(fobj)
+                    clear = metadata['name'] != package_name
 
-            finally:
-                # Always re-enable the package so it doesn't get stuck
-                pref_filename = preferences_filename()
-                settings = sublime.load_settings(pref_filename)
-                ignored = load_list_setting(settings, 'ignored_packages')
-                new_ignored = list(ignored)
-                try:
-                    new_ignored.remove(name)
-                except (ValueError):
-                    pass
-                save_list_setting(settings, pref_filename, 'ignored_packages', new_ignored, ignored)
+                if clear:
+                    os.remove(metadata_file)
+                    console_write(
+                        '''
+                        Package "%s" is now unmanaged as it was renamed by user.
+                        ''',
+                        package_name
+                    )
 
-        # Disable the package so any filesystem locks are released
-        pref_filename = preferences_filename()
-        settings = sublime.load_settings(pref_filename)
-        ignored = load_list_setting(settings, 'ignored_packages')
-        new_ignored = list(ignored)
-        new_ignored.append(name)
-        save_list_setting(settings, pref_filename, 'ignored_packages', new_ignored, ignored)
+            except (OSError, KeyError, ValueError):
+                pass
 
-        sublime.set_timeout(do_remove, 700)
+            found_packages.add(package_name)
 
-    def is_compatible(self, metadata):
+        return found_packages
+
+    def migrate_incompatible_packages(self, found_packages):
         """
-        Detects if a package is compatible with the current Sublime Text install
-
-        :param metadata:
-            A dict from a metadata file
-
-        :return:
-            If the package is compatible
-        """
-
-        sublime_text = metadata.get('sublime_text')
-        platforms = metadata.get('platforms', [])
-
-        # This indicates the metadata is old, so we assume a match
-        if not sublime_text and not platforms:
-            return True
-
-        if not is_compatible_version(sublime_text, int(sublime.version())):
-            return False
-
-        if not isinstance(platforms, list):
-            platforms = [platforms]
-
-        platform_selectors = [
-            sublime.platform() + '-' + sublime.arch(),
-            sublime.platform(),
-            '*'
-        ]
-
-        for selector in platform_selectors:
-            if selector in platforms:
-                return True
-
-        return False
-
-    def finish(self, installed_packages, found_packages, found_dependencies):
-        """
-        A callback that can be run the main UI thread to perform saving of the
-        Package Control.sublime-settings file. Also fires off the
-        :class:`AutomaticUpgrader`.
-
-        :param installed_packages:
-            A list of the string package names of all "installed" packages,
-            even ones that do not appear to be in the filesystem.
+        Determine and reinstall all incompatible packages
 
         :param found_packages:
-            A list of the string package names of all packages that are
-            currently installed on the filesystem.
+            A set of found packages to verify compatibility for.
 
-        :param found_dependencies:
-            A list of the string package names of all dependencies that are
-            currently installed on the filesystem.
+        :returns:
+            A set of invalid packages which are not available for current ST or OS.
         """
 
-        # Make sure we didn't accidentally ignore packages because something
-        # was interrupted before it completed.
-        pc_filename = pc_settings_filename()
-        pc_settings = sublime.load_settings(pc_filename)
+        incompatible_packages = set(filter(
+            lambda p: not self.manager.is_compatible(p),
+            found_packages - self.ignored_packages()
+        ))
+        if not incompatible_packages:
+            return set()
 
-        in_process = load_list_setting(pc_settings, 'in_process_packages')
-        if in_process:
-            filename = preferences_filename()
-            settings = sublime.load_settings(filename)
+        if self.manager.settings.get('auto_migrate', True):
+            available_packages = set(self.manager.list_available_packages())
+            migrate_packages = incompatible_packages & available_packages
+            if migrate_packages:
+                num_packages = len(migrate_packages)
+                if num_packages == 1:
+                    message = 'Migrating package {}'.format(list(migrate_packages)[0])
+                else:
+                    message = 'Migrating {} packages...'.format(num_packages)
+                    console_write(message)
 
-            ignored = load_list_setting(settings, 'ignored_packages')
-            new_ignored = list(ignored)
-            for package in in_process:
-                if package in new_ignored:
-                    # This prevents removing unused dependencies from being messed up by
-                    # the functionality to re-enable packages that were left disabled
-                    # by an error.
-                    if loader.loader_package_name == package and loader.is_swapping():
-                        continue
-                    console_write(
-                        u'''
-                        The package %s is being re-enabled after a Package
-                        Control operation was interrupted
-                        ''',
-                        package
-                    )
-                    new_ignored.remove(package)
+                with ActivityIndicator(message) as progress:
+                    reenable_packages = self.disable_packages({self.UPGRADE: migrate_packages})
+                    time.sleep(0.7)
 
-            save_list_setting(settings, filename, 'ignored_packages', new_ignored, ignored)
-            save_list_setting(pc_settings, pc_filename, 'in_process_packages', [])
+                    num_success = 0
 
-        save_list_setting(
-            pc_settings,
-            pc_filename,
-            'installed_packages',
-            installed_packages,
-            self.original_installed_packages
+                    for package_name in sorted(migrate_packages, key=lambda s: s.lower()):
+                        try:
+                            progress.set_label('Migrating package {}...'.format(package_name))
+                            result = self.manager.install_package(package_name, unattended=True)
+                            if result is True:
+                                num_success += 1
+
+                            # re-enable if upgrade is not deferred to next start
+                            if result is None and package_name in reenable_packages:
+                                reenable_packages.remove(package_name)
+
+                            # handle as compatible if update didn't explicitly fail
+                            if result is not False:
+                                incompatible_packages.remove(package_name)
+
+                        except Exception as e:
+                            traceback.print_tb(e.__traceback__)
+
+                    if num_packages == 1:
+                        message = 'Package {} successfully migrated'.format(list(migrate_packages)[0])
+                    elif num_packages == num_success:
+                        message = 'All packages successfully migrated'
+                        console_write(message)
+                    else:
+                        message = '{} of {} packages successfully migrated'.format(num_success, num_packages)
+                        console_write(message)
+
+                    if reenable_packages:
+                        time.sleep(0.7)
+                        self.reenable_packages({self.UPGRADE: reenable_packages})
+
+                    progress.finish(message)
+
+        if incompatible_packages:
+            self.remove_packages(incompatible_packages, package_kind='incompatible')
+
+            if len(incompatible_packages) == 1:
+                message = text.format(
+                    '''
+                    The following incompatible package was found installed:
+
+                    - %s
+
+                    It has been removed as migration was not possible!
+                    ''',
+                    incompatible_packages
+                )
+            else:
+                message = text.format(
+                    '''
+                    The following incompatible packages were found installed:
+
+                    - %s
+
+                    They have been removed as migration was not possible!
+                    ''',
+                    ('\n- '.join(sorted(incompatible_packages, key=lambda s: s.lower())))
+                )
+
+            message += text.format(
+                '''
+
+                This is usually due to syncing packages across different
+                machines in a way that does not check package metadata for
+                compatibility.
+
+                Please visit https://packagecontrol.io/docs/syncing for
+                information about how to properly sync configuration and
+                packages across machines.
+                '''
+            )
+
+            show_message(message)
+
+        return incompatible_packages
+
+    def install_missing_libraries(self):
+        missing_libraries = self.manager.find_missing_libraries()
+        if not missing_libraries:
+            return
+
+        num_libraries = len(missing_libraries)
+        if num_libraries == 1:
+            message = 'Installing library {}'.format(list(missing_libraries)[0])
+        else:
+            message = 'Installing {} libraries...'.format(num_libraries)
+            console_write(message)
+
+        with ActivityIndicator(message) as progress:
+            for lib in missing_libraries:
+                progress.set_label('Installing library {}'.format(lib.name))
+                if self.manager.install_library(lib):
+                    self.updated_libraries = True
+
+    def install_missing_packages(self, found_packages):
+        """
+        Install missing packages.
+
+        Installs all packages that are listed in `installed_packages` setting
+        of Package Control.sublime-settings but were not found on the filesystem
+        and passed as `found_packages`.
+
+        :param found_packages:
+            A set of packages found on filesystem.
+        """
+
+        if not self.manager.settings.get('install_missing', True):
+            return
+
+        installed_packages = self.manager.installed_packages()
+
+        tasks = self.create_package_tasks(
+            actions=(self.INSTALL, self.OVERWRITE),
+            include_packages=installed_packages,
+            found_packages=found_packages
         )
-        AutomaticUpgrader(found_packages, found_dependencies).start()
+        if tasks:
+            with ActivityIndicator('Installing missing packages...') as progress:
+                self.run_install_tasks(tasks, progress, unattended=True, package_kind='missing')
+
+        # Drop remaining missing packages, which seem no longer available upstream,
+        # to avoid trying again and again each time ST starts.
+        missing_packages = installed_packages - self.manager.list_packages()
+        if missing_packages:
+            self.manager.update_installed_packages(remove=missing_packages)
+            console_write('Dropped unavailable packages: ' + ', '.join(missing_packages))
+            show_message(
+                '''
+                The following packages are not available for this version of Sublime Text,
+                operating system or CPU architecture and have therefore not been installed:
+
+                - %s
+                ''',
+                '\n- '.join(missing_packages)
+            )
+
+    def remove_legacy_libraries(self):
+        """
+        Rename .dist-info directory
+
+        Prevent corruptions when satisfying libraries due to name translations
+        """
+
+        for lib in library.list_all():
+            if lib.name in library.DEPENDENCY_NAME_MAP:
+                library.remove(lib)
+
+    def remove_orphaned_packages(self, found_packages):
+        """
+        Removes orphaned packages.
+
+        The method removes all found and managed packages from filesystem,
+        which are not present in `installed_packages`. They are considered
+        active and therefore are disabled via PackageDisabler to properly
+        reset theme/color scheme/syntax settings if needed.
+
+        Compared to normal ``PackageManager.remove_package()` it doesn't
+        - update `installed_packages` (not required)
+        - remove orphaned libraries (will be done later)
+        - send usage stats
+
+        :param found_packages:
+            A set of packages found on filesystem.
+
+        :returns:
+            A set of orphaned packages, which have successfully been removed.
+        """
+
+        if not self.manager.settings.get('remove_orphaned', True):
+            return set()
+
+        # find all managed orphaned packages
+        orphaned_packages = set(filter(
+            self.manager.is_managed,
+            found_packages - self.manager.installed_packages()
+        ))
+
+        if orphaned_packages:
+            with ActivityIndicator('Removing orphaned packages...') as progress:
+                self.remove_packages(orphaned_packages, package_kind='orphaned', progress=progress)
+
+        return orphaned_packages

@@ -3,13 +3,46 @@
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
 	"channels": [
+		// channel_v4 for python 3.8 compatible libraries to enable plugins
+		// to migrate to python 3.8 until packagecontrol.io supports new scheme.
+		// Note: Must always be located before default channel in the list!
+		"https://packagecontrol.github.io/channel/channel_v4.json",
+		// default channel for packages
 		"https://packagecontrol.io/channel_v3.json"
 	],
 
-	// A list of URLs that contain a packages JSON file. These repositories
-	// are placed in order before repositories from the "channels"
-	// setting
+	// A list of URLs that contain a packages JSON file or point to a
+	// Github, GitLab or BitBucket user, repository or reference.
+	//
+	// Examples:
+	//
+	//    https://my-server.com/packages/repository.json
+	//    https://github.com/{user}
+	//    https://github.com/{user}/{repo}
+	//    https://github.com/{user}/{repo}/tags
+	//    https://github.com/{user}/{repo}/tree/{branch}
+	//
+	// Note:
+	//
+	//    Authentication via `http_basic_auth` setting may be required to avoid
+	//    hitting rate limit too early and often, if many codehoster repositories
+	//    are listed here.
+	//
+	// These repositories are placed in order before repositories from
+	// the "channels" setting.
 	"repositories": [],
+
+	// A list of packages, which have been installed via Package Control.
+	//
+	// All packages in this list are automatically installed at start,
+	// if missing on filesystem (see: ``install_missing``).
+	//
+	// Values of all all found Package Control.sublime-settings are merged to
+	// determine the list of packages to install. Any package can therefore
+	// ship a list of required packages, it wants to also be installed.
+	// Such packages are can't be uninstalled by user and aren't added to
+	// Packages/User/Package Control.sublime-settings
+	"installed_packages": [],
 
 	// A list of packages to install pre-release versions for. Versions
 	// under 1.0.0 are not considered pre-release, only those using the SemVer
@@ -17,15 +50,15 @@
 	// list.
 	"install_prereleases": [],
 
+	// This helps solve naming issues where a repository is not named the
+	// same as the package should be. This is primarily only useful for
+	// GitHub, Gitlab and BitBucket repositories. This mapping will override
+	// the mapping that is retrieved from the repository channels.
+	"package_name_map": {},
+
 	// If debugging information for HTTP/HTTPS connections should be printed
 	// to the Sublime Text console
 	"debug": false,
-
-	// This helps solve naming issues where a repository it not named the
-	// same as the package should be. This is primarily only useful for
-	// GitHub and BitBucket repositories. This mapping will override the
-	// mapping that is retrieved from the repository channels.
-	"package_name_map": {},
 
 	// If package install, upgrade and removal info should be submitted to
 	// the channel for aggregated statistics
@@ -34,8 +67,8 @@
 	// The URL to post install, upgrade and removal notices to
 	"submit_url": "https://packagecontrol.io/submit",
 
-	// If packages should be automatically upgraded when ST starts
-	"auto_upgrade": true,
+	// Maximum days to keep backups. All older ones are removed when ST starts
+	"max_backup_age": 14,
 
 	// If missing packages should be automatically installed when ST starts
 	"install_missing": true,
@@ -46,9 +79,17 @@
 	// the Package Control.sublime-settings file was synced to this machine.
 	"remove_orphaned": true,
 
+	// If incompatible packages should be automatically upgraded when ST starts.
+	// If ST is upgraded or moved to other computers, installed packages may
+	// become incompatible with either ST, OS or CPU architecture.
+	"auto_migrate": true,
+
+	// If packages should be automatically upgraded when ST starts
+	"auto_upgrade": true,
+
 	// The minimum frequency in hours in which to check for automatic upgrades,
 	// setting this to 0 will always check for automatic upgrades
-	"auto_upgrade_frequency": 1,
+	"auto_upgrade_frequency": 8,
 
 	// Packages to not auto upgrade
 	"auto_upgrade_ignore": [],
@@ -65,6 +106,7 @@
 	// if WinINet is not working properly, this will be used by the Urllib
 	// downloader, which acts as a fallback.
 	"http_proxy": "",
+
 	// An HTTPS proxy server to use for requests - this will inherit from
 	// http_proxy if it is set to "" or null and http_proxy has a value. You
 	// can set this to false to prevent inheriting from http_proxy. Not
@@ -122,7 +164,7 @@
 
 	// This should NOT contain the name of the remote or branch - that will
 	// be automatically determined.
-	"git_update_command": ["pull", "--ff", "--commit"],
+	"git_update_command": ["pull", "--ff-only", "--quiet"],
 
 	// Custom path(s) to "hg" binary for when it can't be automatically
 	// found on the system and a package includes a .hg metadata directory.
@@ -151,7 +193,7 @@
 	// The "curl" and "wget" options require the command line "curl" or "wget"
 	// program installed and present in the PATH.
 	"downloader_precedence": {
-		"windows": ["wininet", "oscrypto"],
+		"windows": ["wininet", "oscrypto", "urllib"],
 		"osx": ["urllib", "oscrypto", "curl"],
 		"linux": ["urllib", "oscrypto", "curl", "wget"]
 	},

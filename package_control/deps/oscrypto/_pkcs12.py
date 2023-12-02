@@ -190,7 +190,7 @@ def pkcs12_kdf(hash_algorithm, password, salt, iterations, key_length, id_):
 
                 i = i[0:start] + i_num2 + i[end:]
 
-        # Step 7 (one peice at a time)
+        # Step 7 (one piece at a time)
         begin = (num - 1) * u
         to_copy = min(key_length, u)
         a = a[0:begin] + a2[0:to_copy] + a[begin + to_copy:]

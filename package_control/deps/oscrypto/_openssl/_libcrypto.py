@@ -22,6 +22,7 @@ else:
 __all__ = [
     'handle_openssl_error',
     'libcrypto',
+    'libcrypto_legacy_support',
     'libcrypto_version',
     'libcrypto_version_info',
     'LibcryptoConst',
@@ -36,6 +37,19 @@ _fallback_encodings = ['utf-8', 'cp1252']
 if libcrypto_version_info < (1, 1):
     libcrypto.ERR_load_crypto_strings()
 libcrypto.OPENSSL_config(null())
+
+
+# This enables legacy algorithms in OpenSSL 3.0, such as RC2, etc
+# which are used by various tests and some old protocols and things
+# like PKCS12
+libcrypto_legacy_support = True
+if libcrypto_version_info >= (3, ):
+
+    libcrypto.OSSL_PROVIDER_load(null(), "legacy".encode("ascii"))
+    libcrypto.OSSL_PROVIDER_load(null(), "default".encode("ascii"))
+
+    if libcrypto.OSSL_PROVIDER_available(null(), "legacy".encode("ascii")) == 0:
+        libcrypto_legacy_support = False
 
 
 def _try_decode(value):
@@ -57,7 +71,7 @@ def _try_decode(value):
 
 def handle_openssl_error(result, exception_class=None):
     """
-    Checks if an error occured, and if so throws an OSError containing the
+    Checks if an error occurred, and if so throws an OSError containing the
     last OpenSSL error message
 
     :param result:
@@ -95,9 +109,15 @@ def peek_openssl_error():
     """
 
     error = libcrypto.ERR_peek_error()
-    lib = int((error >> 24) & 0xff)
-    func = int((error >> 12) & 0xfff)
-    reason = int(error & 0xfff)
+    if libcrypto_version_info < (3, 0):
+        lib = int((error >> 24) & 0xff)
+        func = int((error >> 12) & 0xfff)
+        reason = int(error & 0xfff)
+    else:
+        lib = int((error >> 23) & 0xff)
+        # OpenSSL 3.0 removed ERR_GET_FUNC()
+        func = 0
+        reason = int(error & 0x7fffff)
 
     return (lib, func, reason)
 

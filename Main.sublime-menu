@@ -1,29 +1,48 @@
 [
     {
+        "id": "tools",
+        "children": [
+            {
+                "caption": "Packages",
+                "id": "packages",
+                "children": [
+                    {
+                        "caption": "Package Control",
+                        "id": "package-control",
+                        "children":
+                        [
+                            {
+                                "caption": "New Channel…",
+                                "command": "new_channel_json"
+                            },
+                            {
+                                "caption": "New Repository…",
+                                "command": "new_repository_json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "id": "preferences",
-        "children":
-        [
+        "children": [
             {
                 "caption": "Package Settings",
                 "mnemonic": "P",
                 "id": "package-settings",
-                "children":
-                [
+                "children": [
                     {
                         "caption": "Package Control",
-                        "children":
-                        [
+                        "children": [
                             {
-                                "command": "package_control_open_default_settings",
-                                "caption": "Settings – Default"
-                            },
-                            {
-                                "command": "package_control_open_user_settings",
-                                "caption": "Settings – User"
-                            },
-                            {
-                                "command": "package_control_edit_settings",
-                                "caption": "Settings"
+                                "caption": "Settings",
+                                "command": "edit_settings",
+                                "args": {
+                                    "base_file": "${packages}/Package Control/Package Control.sublime-settings",
+                                    "default": "// See the left pane for the list of settings and valid values\n{\n\t$0\n}\n"
+                                }
                             },
                             { "caption": "-" }
                         ]

@@ -1,0 +1,14 @@
+# Common
+setuptools >= 39.0.1 ; python_version >= '3.3'
+# Python 3.3
+enum34 == 1.1.10 ; python_version == '3.3'
+mccabe == 0.6.1 ; python_version == '3.3'
+pycodestyle == 2.3.1 ; python_version == '3.3'
+pyflakes == 1.6.0 ; python_version == '3.3'
+flake8 == 3.5.0 ; python_version == '3.3'
+# Python 3.8
+mccabe == 0.7.0 ; python_version >= '3.8'
+pycodestyle == 2.11.1 ; python_version >= '3.8'
+pyflakes == 3.1.0 ; python_version >= '3.8'
+entrypoints == 0.4 ; python_version >= '3.8'
+flake8 == 6.1.0 ; python_version >= '3.8'

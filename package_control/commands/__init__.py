@@ -1,52 +1,64 @@
 from .add_channel_command import AddChannelCommand
 from .add_repository_command import AddRepositoryCommand
-from .advanced_install_package_command import AdvancedInstallPackageCommand
+from .clear_package_cache_command import ClearPackageCacheCommand
 from .create_package_command import CreatePackageCommand
 from .disable_package_command import DisablePackageCommand
+from .disable_packages_command import DisablePackagesCommand
 from .discover_packages_command import DiscoverPackagesCommand
 from .enable_package_command import EnablePackageCommand
-from .install_local_dependency_command import InstallLocalDependencyCommand
+from .enable_packages_command import EnablePackagesCommand
 from .install_package_command import InstallPackageCommand
+from .install_packages_command import InstallPackagesCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
-from .remove_package_command import RemovePackageCommand
-from .upgrade_all_packages_command import UpgradeAllPackagesCommand
-from .upgrade_package_command import UpgradePackageCommand
+from .new_template_command import NewChannelJsonCommand
+from .new_template_command import NewRepositoryJsonCommand
 from .package_control_disable_debug_mode_command import PackageControlDisableDebugModeCommand
-from .package_control_edit_settings_command import PackageControlEditSettingsCommand
 from .package_control_enable_debug_mode_command import PackageControlEnableDebugModeCommand
 from .package_control_insert_command import PackageControlInsertCommand
+from .package_control_message_command import PackageControlMessageCommand
 from .package_control_tests_command import PackageControlTestsCommand
-from .package_control_open_default_settings_command import PackageControlOpenDefaultSettingsCommand
-from .package_control_open_user_settings_command import PackageControlOpenUserSettingsCommand
 from .remove_channel_command import RemoveChannelCommand
+from .remove_package_command import RemovePackageCommand
+from .remove_packages_command import RemovePackagesCommand
 from .remove_repository_command import RemoveRepositoryCommand
-from .satisfy_dependencies_command import SatisfyDependenciesCommand
+from .revert_package_command import RevertPackageCommand
+from .satisfy_libraries_command import SatisfyLibrariesCommand
+from .satisfy_packages_command import SatisfyPackagesCommand
+from .upgrade_all_packages_command import UpgradeAllPackagesCommand
+from .upgrade_package_command import UpgradePackageCommand
+from .upgrade_packages_command import UpgradePackagesCommand
 
 
 __all__ = [
     'AddChannelCommand',
     'AddRepositoryCommand',
-    'AdvancedInstallPackageCommand',
+    'ClearPackageCacheCommand',
     'CreatePackageCommand',
     'DisablePackageCommand',
+    'DisablePackagesCommand',
     'DiscoverPackagesCommand',
     'EnablePackageCommand',
-    'InstallLocalDependencyCommand',
+    'EnablePackagesCommand',
     'InstallPackageCommand',
+    'InstallPackagesCommand',
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',
-    'RemovePackageCommand',
-    'UpgradeAllPackagesCommand',
-    'UpgradePackageCommand',
+    'NewChannelJsonCommand',
+    'NewRepositoryJsonCommand',
     'PackageControlDisableDebugModeCommand',
-    'PackageControlEditSettingsCommand',
     'PackageControlEnableDebugModeCommand',
     'PackageControlInsertCommand',
+    'PackageControlMessageCommand',
     'PackageControlTestsCommand',
-    'PackageControlOpenDefaultSettingsCommand',
-    'PackageControlOpenUserSettingsCommand',
     'RemoveChannelCommand',
+    'RemovePackageCommand',
+    'RemovePackagesCommand',
     'RemoveRepositoryCommand',
-    'SatisfyDependenciesCommand'
+    'RevertPackageCommand',
+    'SatisfyLibrariesCommand',
+    'SatisfyPackagesCommand',
+    'UpgradeAllPackagesCommand',
+    'UpgradePackageCommand',
+    'UpgradePackagesCommand',
 ]

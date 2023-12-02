@@ -1,97 +1,62 @@
 import threading
-import time
 
-import sublime
-import sublime_plugin
-
-from .. import text
-from ..show_quick_panel import show_quick_panel
+from ..activity_indicator import ActivityIndicator
+from ..package_tasks import PackageTaskRunner
 from .existing_packages_command import ExistingPackagesCommand
-from ..thread_progress import ThreadProgress
-from ..package_disabler import PackageDisabler
-from ..package_manager import PackageManager
-
-USE_QUICK_PANEL_ITEM = hasattr(sublime, 'QuickPanelItem')
 
 
-class RemovePackageCommand(sublime_plugin.WindowCommand, ExistingPackagesCommand, PackageDisabler):
+class RemovePackageCommand(ExistingPackagesCommand):
 
     """
     A command that presents a list of installed packages, allowing the user to
     select one to remove
     """
 
-    def __init__(self, window):
+    def action(self):
         """
-        :param window:
-            An instance of :class:`sublime.Window` that represents the Sublime
-            Text window to show the list of installed packages in.
+        Build a strng to describe the action taken on selected package.
         """
 
-        self.window = window
-        self.manager = PackageManager()
+        return "remove"
 
-    def run(self):
-        self.package_list = self.make_package_list('remove')
-        if not self.package_list:
-            sublime.message_dialog(text.format(
-                u'''
-                Package Control
-
-                There are no packages that can be removed
-                '''
-            ))
-            return
-        show_quick_panel(self.window, self.package_list, self.on_done)
-
-    def on_done(self, picked):
+    def no_packages_error(self):
         """
-        Quick panel user selection handler - deletes the selected package
-
-        :param picked:
-            An integer of the 0-based package name index from the presented
-            list. -1 means the user cancelled.
+        Return the error message to display if no packages are availablw.
         """
 
-        if picked == -1:
-            return
+        return "There are no packages that can be removed"
 
-        if USE_QUICK_PANEL_ITEM:
-            package_name = self.package_list[picked].trigger
-        else:
-            package_name = self.package_list[picked][0]
+    def list_packages(self, manager):
+        """
+        Build a list of packages installed by user.
 
-        self.disable_packages(package_name, 'remove')
+        :param manager:
+            The package manager instance to use.
 
-        thread = RemovePackageThread(self.manager, package_name)
-        thread.start()
-        ThreadProgress(
-            thread,
-            'Removing package %s' % package_name,
-            'Package %s successfully removed' % package_name
+        :returns:
+            A list of package names to add to the quick panel
+        """
+
+        return (
+            manager.list_packages()
+            - manager.list_default_packages()
+            - manager.predefined_packages()
         )
 
+    def on_done(self, manager, package_name):
+        """
+        Callback function to perform action on selected package.
 
-class RemovePackageThread(threading.Thread, PackageDisabler):
+        :param manager:
+            The package manager instance to use.
 
-    """
-    A thread to run the remove package operation in so that the Sublime Text
-    UI does not become frozen
-    """
+        :param package_name:
+            A package name to perform action for
+        """
 
-    def __init__(self, manager, package):
-        self.manager = manager
-        self.package = package
-        threading.Thread.__init__(self)
+        def worker():
+            with ActivityIndicator() as progress:
+                remover = PackageTaskRunner(manager)
+                remover.remove_packages({package_name}, progress)
 
-    def run(self):
-        # Let the package disabling take place
-        time.sleep(0.7)
-        self.result = self.manager.remove_package(self.package)
-
-        # Do not reenable if removing deferred until next restart
-        if self.result is not None:
-            def unignore_package():
-                self.reenable_package(self.package, 'remove')
-
-            sublime.set_timeout(unignore_package, 200)
+        threading.Thread(target=worker).start()

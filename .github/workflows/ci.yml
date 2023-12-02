@@ -1,96 +1,93 @@
 name: CI
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push, pull_request]
 
 jobs:
-  build-38:
-    name: Python 3.8.7 on ${{ matrix.os }} ${{ matrix.arch }}
+  test-all-38:
+    name: Python 3.8 on ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
           - windows-2019
-          - macos-10.15
-          - ubuntu-18.04
+          - macos-11
+          - ubuntu-20.04
         arch:
           - x86
           - x64
         exclude:
-          - os: macos-10.15
+          - os: macos-11
             arch: x86
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             arch: x86
     steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
-          python-version: '3.8.7'
+          python-version: '3.8'
           architecture: ${{ matrix.arch }}
       - name: Install dependencies
-        run: python dev/deps.py
+        run: pip install -U flake8 pytest
       - name: Run linter
-        run: python dev/lint.py
+        run: flake8
       - name: Run tests
-        run: python dev/tests.py
+        run: pytest
         env:
+          ST_DIR: ~/sublime_text
           GH_PASS: ${{ secrets.GH_PASS }}
           GL_PASS: ${{ secrets.GL_PASS }}
           BB_PASS: ${{ secrets.BB_PASS }}
 
-  build-linux-33:
-    name: Python 3.3.7 on ubuntu-18.04 x64
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-python@main
-        with:
-          python-version: '3.3.7'
-          architecture: x64
-      - name: Install dependencies
-        run: python dev/deps.py
-      - name: Run linter
-        run: python dev/lint.py
-      - name: Run tests
-        run: python dev/tests.py
-        env:
-          GH_PASS: ${{ secrets.GH_PASS }}
-          GL_PASS: ${{ secrets.GL_PASS }}
-          BB_PASS: ${{ secrets.BB_PASS }}
+  # test-linux-33:
+  #   name: Python 3.3.7 on ubuntu-18.04 x64
+  #   runs-on: ubuntu-18.04
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.3.7'
+  #         architecture: x64
+  #     - name: Install dependencies
+  #       run: python dev/deps.py
+  #     - name: Run linter
+  #       run: python dev/lint.py
+  #     - name: Run tests
+  #       run: python dev/tests.py
+  #       env:
+  #         ST_DIR: ~/sublime_text
+  #         GH_PASS: ${{ secrets.GH_PASS }}
+  #         GL_PASS: ${{ secrets.GL_PASS }}
+  #         BB_PASS: ${{ secrets.BB_PASS }}
 
-  build-mac-33:
-    name: Python 3.3.7 on macos-10.15 x64
-    runs-on: macos-10.15
-    steps:
-      - uses: actions/checkout@master
+  # test-mac-33:
+  #   name: Python 3.3.7 on macos-11 x64
+  #   runs-on: macos-11
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Check pyenv
-        id: check-pyenv
-        uses: actions/cache@v2
-        with:
-          path: ~/.pyenv
-          key: macos-10.15-3.3-pyenv
+  #     - name: Check pyenv
+  #       id: check-pyenv
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: ~/.pyenv
+  #         key: macos-11-3.3-pyenv
 
-      - name: Install Python 3.3
-        run: python dev/pyenv-install.py 3.3 >> $GITHUB_PATH
+  #     - name: Install Python 3.3
+  #       run: python dev/pyenv-install.py 3.3 >> $GITHUB_PATH
 
-      - name: Install dependencies
-        run: python dev/deps.py
-      - name: Run linter
-        run: python dev/lint.py
-      - name: Run tests
-        run: python dev/tests.py
-        env:
-          GH_PASS: ${{ secrets.GH_PASS }}
-          GL_PASS: ${{ secrets.GL_PASS }}
-          BB_PASS: ${{ secrets.BB_PASS }}
+  #     - name: Install dependencies
+  #       run: python dev/deps.py
+  #     - name: Run linter
+  #       run: python dev/lint.py
+  #     - name: Run tests
+  #       run: python dev/tests.py
+  #       env:
+  #         ST_DIR: ~/sublime_text
+  #         GH_PASS: ${{ secrets.GH_PASS }}
+  #         GL_PASS: ${{ secrets.GL_PASS }}
+  #         BB_PASS: ${{ secrets.BB_PASS }}
 
-  build-windows-33:
+  test-windows-33:
     name: Python 3.3.5 on windows-2019 ${{ matrix.arch }}
     runs-on: windows-2019
     strategy:
@@ -99,11 +96,11 @@ jobs:
           - 'x86'
           - 'x64'
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
 
       - name: Cache Python
         id: cache-python
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/AppData/Local/Python3.3-${{ matrix.arch }}
           key: windows-2019-python-3.3-${{ matrix.arch }}
@@ -118,6 +115,7 @@ jobs:
       - name: Run tests
         run: python dev/tests.py
         env:
+          ST_DIR: ~/sublime_text
           GH_PASS: ${{ secrets.GH_PASS }}
           GL_PASS: ${{ secrets.GL_PASS }}
           BB_PASS: ${{ secrets.BB_PASS }}
