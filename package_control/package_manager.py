@@ -1199,10 +1199,14 @@ class PackageManager:
             if modified_paths:
                 console_write(
                     '''
-                    Unable to upgrade library "%s" because files on disk have been modified:
+                    Unable to upgrade library "%s" for Python %s because files on disk have been modified:
                       %s
                     ''',
-                    (lib.name, '\n  '.join(sorted(map(sys_path.shortpath, modified_paths), key=lambda s: s.lower())))
+                    (
+                        lib.name,
+                        lib.python_version,
+                        '\n  '.join(sorted(map(sys_path.shortpath, modified_paths), key=lambda s: s.lower()))
+                    )
                 )
                 return False
 
@@ -1244,12 +1248,13 @@ class PackageManager:
                 if modified_paths:
                     console_write(
                         '''
-                        Unable to %s library "%s" because files in the archive have been modified:
+                        Unable to %s library "%s" for Python %s because files in the archive have been modified:
                           %s
                         ''',
                         (
                             'upgrade' if is_upgrade else 'install',
                             lib.name,
+                            lib.python_version,
                             '\n  '.join(sorted(map(sys_path.shortpath, modified_paths), key=lambda s: s.lower()))
                         )
                     )
@@ -1274,9 +1279,9 @@ class PackageManager:
                 except ValueError as e:
                     console_write(
                         '''
-                        Failed to install the library "%s": %s
+                        Failed to install the library "%s" for Python %s: %s
                         ''',
-                        (lib.name, e)
+                        (lib.name, lib.python_version, e)
                     )
                     return False
 
@@ -1286,9 +1291,9 @@ class PackageManager:
                 except OSError as e:
                     console_write(
                         '''
-                        Failed to upgrade the library "%s": %s
+                        Failed to upgrade the library "%s" for Python %s: %s
                         ''',
-                        (lib.name, e)
+                        (lib.name, lib.python_version, e)
                     )
                     return False
 
