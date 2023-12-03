@@ -762,18 +762,25 @@ class PackageManager:
 
         return library.list_all()
 
-    def list_packages(self, ignored_packages=None, unpacked_only=False):
+    def list_packages(self, ignored_packages=None, unpacked_only=False, include_hidden=False):
         """
         List installed packages on the machine
 
+        :param ignored_packages:
+            A list of packages to ignore in returned result.
+            The default value ``None`` or an empty list disables filtering.
+
         :param unpacked_only:
             Only list packages that are not inside of .sublime-package files
+
+        :param include_hidden:
+            If True, also return hidden packages
 
         :return:
             A set of all installed or overridden default package names
         """
 
-        packages = set(list_sublime_package_dirs(sys_path.packages_path()))
+        packages = set(list_sublime_package_dirs(sys_path.packages_path(), include_hidden))
         if unpacked_only is False:
             packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
         if ignored_packages:
@@ -793,15 +800,18 @@ class PackageManager:
         packages -= {'User'}
         return packages
 
-    def list_all_packages(self):
+    def list_all_packages(self, include_hidden=False):
         """
         Lists all packages on the machine
+
+        :param include_hidden:
+            If True, also return hidden packages
 
         :return:
             A set of all package names, including default packages
         """
 
-        packages = set(list_sublime_package_dirs(sys_path.packages_path()))
+        packages = set(list_sublime_package_dirs(sys_path.packages_path(), include_hidden))
         packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
         packages |= set(list_sublime_package_files(sys_path.default_packages_path()))
         packages -= {'User'}
@@ -914,7 +924,7 @@ class PackageManager:
         """
 
         output = set()
-        for package in self.list_packages():
+        for package in self.list_packages(include_hidden=True):
             output |= self.get_libraries(package)
 
         output |= self.get_libraries('User')

@@ -30,13 +30,16 @@ def create_empty_file(filename):
     return True
 
 
-def list_sublime_package_dirs(path):
+def list_sublime_package_dirs(path, include_hidden=False):
     """
     Return a set of directories in the folder specified that are not
     hidden and are not marked to be removed
 
     :param path:
         The folder to list the directories inside of
+
+    :param include_hidden:
+        If True, also return hidden packages
 
     :return:
         A generator of directory names
@@ -51,7 +54,7 @@ def list_sublime_package_dirs(path):
             if not os.path.isdir(file_path):
                 continue
             # Don't include hidden packages
-            if os.path.exists(os.path.join(file_path, '.hidden-sublime-package')):
+            if not include_hidden and os.path.exists(os.path.join(file_path, '.hidden-sublime-package')):
                 continue
             # Don't include a dir if it is going to be cleaned up
             if os.path.exists(os.path.join(file_path, 'package-control.cleanup')):
