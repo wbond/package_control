@@ -797,6 +797,7 @@ class PackageManager:
         """
 
         packages = set(list_sublime_package_files(sys_path.default_packages_path()))
+        packages |= set(list_sublime_package_dirs(sys_path.default_packages_path()))
         packages -= {'User'}
         return packages
 
