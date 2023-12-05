@@ -792,11 +792,15 @@ class PackageManager:
         """
         Lists all built-in packages shipped with ST
 
+        Packages can be packed as *.sublime-package or being extracted.
+
         :return:
             A set of default package names
         """
 
-        packages = set(list_sublime_package_files(sys_path.default_packages_path()))
+        default_packages_path = sys_path.default_packages_path()
+        packages = set(list_sublime_package_dirs(default_packages_path))
+        packages |= set(list_sublime_package_files(default_packages_path))
         packages -= {'User'}
         return packages
 
@@ -811,11 +815,7 @@ class PackageManager:
             A set of all package names, including default packages
         """
 
-        packages = set(list_sublime_package_dirs(sys_path.packages_path(), include_hidden))
-        packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
-        packages |= set(list_sublime_package_files(sys_path.default_packages_path()))
-        packages -= {'User'}
-        return packages
+        return self.list_packages(include_hidden=include_hidden) | self.list_default_packages()
 
     def predefined_packages(self):
         """
