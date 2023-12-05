@@ -445,22 +445,6 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             with ActivityIndicator('Installing missing packages...') as progress:
                 self.run_install_tasks(tasks, progress, unattended=True, package_kind='missing')
 
-        # Drop remaining missing packages, which seem no longer available upstream,
-        # to avoid trying again and again each time ST starts.
-        missing_packages = installed_packages - self.manager.list_packages()
-        if missing_packages:
-            self.manager.update_installed_packages(remove=missing_packages)
-            console_write('Dropped unavailable packages: ' + ', '.join(missing_packages))
-            show_message(
-                '''
-                The following packages are not available for this version of Sublime Text,
-                operating system or CPU architecture and have therefore not been installed:
-
-                - %s
-                ''',
-                '\n- '.join(missing_packages)
-            )
-
     def remove_legacy_libraries(self):
         """
         Rename .dist-info directory
