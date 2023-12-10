@@ -1,20 +1,47 @@
 # Package Control
 
-The [Sublime Text](http://www.sublimetext.com) package manager. Visit
-[packagecontrol.io](https://packagecontrol.io) for
-[installation instructions](https://packagecontrol.io/installation), a list of
-[available packages](https://packagecontrol.io/browse) and detailed
-[documentation](https://packagecontrol.io/docs).
+The [Sublime Text](http://www.sublimetext.com) package manager. 
+It allows users to find, install and keep packages up to date.
+
+## Installation
+
+To install:
+
+ - Open the command palette and type "Install Package Control"
+ - or, use the menu *Tools > Install Package Control*
+
+Until Package Control 4.0 is available via packagecontrol.io, call the following command from Sublime Text's console.
+
+```py
+from urllib.request import urlretrieve;urlretrieve(url="https://github.com/wbond/package_control/releases/latest/download/Package.Control.sublime-package", filename=sublime.installed_packages_path() + '/Package Control.sublime-package')
+```
+
+## Usage
+
+All of the primary features of Package Control are exposed through the command palette.
+
+To install a package:
+
+ - Open the command palette
+ - Type "Install Package"
+ - Select a package from the list
+
+For more features, see https://packagecontrol.io/docs/usage.
+
+## Documentation
+
+The documentation for Package Control can be found at https://packagecontrol.io/docs.
+
+## Bug Reports
+
+If you find a bug with Package Control, please follow the directions at https://packagecontrol.io/docs/issues to submit an issue.
 
 ## License
 
 Package Control is licensed under the MIT license.
 
-All of the source code (except for `package_control/deps/semver.py`), is under
-the license:
-
 ```
-Copyright (c) 2011-2020 Will Bond <will@wbond.net>
+Copyright (c) 2011-2023 Will Bond <will@wbond.net>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
