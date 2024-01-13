@@ -11,8 +11,6 @@ except ImportError:
     certifi = None
 
 try:
-    from .deps.oscrypto import use_ctypes
-    use_ctypes()
     from .deps.oscrypto import trust_list  # noqa
     from .deps.oscrypto.errors import CACertsError
 except Exception as e:

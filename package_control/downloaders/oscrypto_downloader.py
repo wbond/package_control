@@ -7,7 +7,6 @@ import hashlib
 import os
 import re
 import socket
-import sys
 from urllib.parse import urlparse
 from urllib.request import parse_keqv_list, parse_http_list
 
@@ -16,33 +15,12 @@ from ..ca_certs import get_user_ca_bundle_path
 from ..console_write import console_write
 from ..deps.asn1crypto.util import OrderedDict
 from ..deps.asn1crypto import pem, x509
-from ..deps.oscrypto import use_ctypes, use_openssl
 from .downloader_exception import DownloaderException
 from .oscrypto_downloader_exception import OscryptoDownloaderException
 from .basic_auth_downloader import BasicAuthDownloader
 from .caching_downloader import CachingDownloader
 from .decoding_downloader import DecodingDownloader
 from .limiting_downloader import LimitingDownloader
-
-use_ctypes()
-
-# On Linux we need to use the version of OpenSSL included with Sublime Text
-# to prevent conflicts between two different versions of OpenSSL being
-# dynamically linked. On ST3, we can't use oscrypto for OpenSSL stuff since
-# it has OpenSSL statically linked, and we can't dlopen() that.
-# ST 4081 broke sys.executable to return "sublime_text", but other 4xxx builds
-# will contain "plugin_host".
-if sys.version_info[:2] == (3, 8) and sys.platform == 'linux' and (
-        'sublime_text' in sys.executable or
-        'plugin_host' in sys.executable):
-    install_dir = os.path.dirname(sys.executable)
-    try:
-        use_openssl(
-            os.path.join(install_dir, 'libcrypto.so.1.1'),
-            os.path.join(install_dir, 'libssl.so.1.1')
-        )
-    except RuntimeError:
-        pass  # runtime error may be raised, when reloading modules.
 
 from ..deps.oscrypto import tls  # noqa
 from ..deps.oscrypto import errors as oscrypto_errors  # noqa
