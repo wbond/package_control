@@ -116,6 +116,14 @@
         }
     },
     {
+        "caption": "Package Control: User CA bundle",
+        "command": "open_file",
+        "args": {
+            "file": "$packages/User/Package Control.user-ca-bundle",
+            "semi_transient": true
+        },
+    },
+    {
         "caption": "Package Control: Tests",
         "command": "package_control_tests"
     }
