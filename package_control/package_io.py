@@ -65,12 +65,15 @@ def list_sublime_package_dirs(path, include_hidden=False):
         pass
 
 
-def list_sublime_package_files(path):
+def list_sublime_package_files(path, include_hidden=False):
     """
     Return a set of all .sublime-package files in a folder
 
     :param path:
         The directory to look in for .sublime-package files
+
+    :param include_hidden:
+        If True, also return hidden packages
 
     :return:
         A generator of package names with .sublime-package suffix removed
@@ -84,6 +87,10 @@ def list_sublime_package_files(path):
             file_path = os.path.join(path, filename)
             if not os.path.isfile(file_path):
                 continue
+            if not include_hidden:
+                with zipfile.ZipFile(file_path) as fobj:
+                    if '.hidden-sublime-package' in fobj.NameToInfo:
+                        continue
             yield name
 
     except FileNotFoundError:

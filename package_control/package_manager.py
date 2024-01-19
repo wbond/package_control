@@ -782,7 +782,7 @@ class PackageManager:
 
         packages = set(list_sublime_package_dirs(sys_path.packages_path(), include_hidden))
         if unpacked_only is False:
-            packages |= set(list_sublime_package_files(sys_path.installed_packages_path()))
+            packages |= set(list_sublime_package_files(sys_path.installed_packages_path(), include_hidden))
         if ignored_packages:
             packages -= ignored_packages
         packages -= {'User'}
@@ -799,8 +799,8 @@ class PackageManager:
         """
 
         default_packages_path = sys_path.default_packages_path()
-        packages = set(list_sublime_package_dirs(default_packages_path))
-        packages |= set(list_sublime_package_files(default_packages_path))
+        packages = set(list_sublime_package_dirs(default_packages_path, True))
+        packages |= set(list_sublime_package_files(default_packages_path, True))
         packages -= {'User'}
         return packages
 
