@@ -27,7 +27,7 @@ from ._config import (
 )
 
 # URL to repository with test data (channels, repositories)
-TEST_REPOSITORY_URL = "https://raw.githubusercontent.com/wbond/package_control-json/master/"
+TEST_REPOSITORY_URL = "https://raw.githubusercontent.com/wbond/package_control/master/package_control/tests/repositories/"
 
 # prevent optimizations when running tests those
 # filter out required results for platform independent tests.
