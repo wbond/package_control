@@ -218,23 +218,11 @@ def _read_zip_file(package, relative_path, binary=False):
         return False
 
     try:
-        package_zip = zipfile.ZipFile(zip_path, 'r')
-
-    except (zipfile.BadZipfile):
-        console_write(
-            '''
-            An error occurred while trying to unzip the sublime-package file
-            for %s.
-            ''',
-            package
-        )
-        return False
-
-    try:
-        contents = package_zip.read(relative_path)
-        if not binary:
-            contents = contents.decode('utf-8')
-        return contents
+        with zipfile.ZipFile(zip_path) as package_zip:
+            contents = package_zip.read(relative_path)
+            if not binary:
+                contents = contents.decode('utf-8')
+            return contents
 
     except (KeyError):
         pass
@@ -282,21 +270,13 @@ def zip_file_exists(package, relative_path):
         return False
 
     try:
-        package_zip = zipfile.ZipFile(zip_path, 'r')
+        with zipfile.ZipFile(zip_path) as package_zip:
+            return relative_path in package_zip.NameToInfo
 
     except (zipfile.BadZipfile):
         console_write(
-            '''
-            An error occurred while trying to unzip the sublime-package file
-            for %s.
-            ''',
+            ' An error occurred while trying to unzip the sublime-package file for %s.',
             package
         )
-        return False
 
-    try:
-        package_zip.getinfo(relative_path)
-        return True
-
-    except (KeyError):
-        return False
+    return False
