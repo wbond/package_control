@@ -1,0 +1,86 @@
+{
+	"$schema": "sublime://packagecontrol.io/schemas/repository",
+	"schema_version": "4.0.0",
+	"libraries": [
+		{
+			"name": "coverage",
+			"author": "Ned Batchelder",
+			"description": "The code coverage tool for Python",
+			"issues": "https://github.com/nedbat/coveragepy/issues",
+			"releases": [
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp33-*-manylinux1_i686.whl",
+					"platforms": ["linux-x32"],
+					"python_versions": ["3.3"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp33-*-manylinux1_x86_64.whl",
+					"platforms": ["linux-x64"],
+					"python_versions": ["3.3"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp33-*-macosx_*_x86_64.whl",
+					"platforms": ["osx-x64"],
+					"python_versions": ["3.3"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp33-*-win32.whl",
+					"platforms": ["windows-x32"],
+					"python_versions": ["3.3"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage",
+					"asset": "coverage-*-cp33-*-win_amd64.whl",
+					"platforms": ["windows-x64"],
+					"python_versions": ["3.3"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage/7.3.2",
+					"asset": "coverage-*-cp38-*-manylinux_2_17_aarch64*.whl",
+					"platforms": ["linux-arm64"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage/7.3.2",
+					"asset": "coverage-*-cp38-*-manylinux_2_5_i686*.whl",
+					"platforms": ["linux-x32"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage/7.3.2",
+					"asset": "coverage-*-cp38-*-manylinux_2_5_x86_64*.whl",
+					"platforms": ["linux-x64"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage/7.3.2",
+					"asset": "coverage-*-cp38-*-macosx_*_arm64.whl",
+					"platforms": ["osx-arm64"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage/7.3.2",
+					"asset": "coverage-*-cp38-*-macosx_*_x86_64.whl",
+					"platforms": ["osx-x64"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage/7.3.2",
+					"asset": "coverage-*-cp38-*-win32.whl",
+					"platforms": ["windows-x32"],
+					"python_versions": ["3.8"]
+				},
+				{
+					"base": "https://pypi.org/project/coverage/7.3.2",
+					"asset": "coverage-*-cp38-cp38-win_amd64.whl",
+					"platforms": ["windows-x64"],
+					"python_versions": ["3.8"]
+				}
+			]
+		}
+	]
+}

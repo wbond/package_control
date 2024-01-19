@@ -1,0 +1,36 @@
+{
+	"schema_version": "3.0.0",
+	"packages": [
+		{
+			"name": "package_control-tester-3.0.0-bb-tags",
+			"details": "https://bitbucket.org/wbond/package_control-tester",
+			"releases": [
+				{
+					"tags": true,
+					"sublime_text": "*"
+				}
+			]
+		},
+		{
+			"name": "package_control-tester-3.0.0-bb-tags_prefix",
+			"details": "https://bitbucket.org/wbond/package_control-tester",
+			"releases": [
+				{
+					"tags": "win-",
+					"sublime_text": "<3000",
+					"platforms": ["windows"]
+				}
+			]
+		},
+		{
+			"name": "package_control-tester-3.0.0-bb-branch",
+			"details": "https://bitbucket.org/wbond/package_control-tester",
+			"releases": [
+				{
+					"branch": "master",
+					"sublime_text": "*"
+				}
+			]
+		}
+	]
+}

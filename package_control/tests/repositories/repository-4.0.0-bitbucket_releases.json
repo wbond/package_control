@@ -1,0 +1,35 @@
+{
+	"$schema": "sublime://packagecontrol.io/schemas/repository",
+	"schema_version": "4.0.0",
+	"packages": [
+		{
+			"name": "package_control-tester-4.0.0-bb-tags",
+			"details": "https://bitbucket.org/wbond/package_control-tester",
+			"releases": [
+				{
+					"tags": true
+				}
+			]
+		},
+		{
+			"name": "package_control-tester-4.0.0-bb-tags_prefix",
+			"details": "https://bitbucket.org/wbond/package_control-tester",
+			"releases": [
+				{
+					"tags": "win-",
+					"sublime_text": "<3000",
+					"platforms": ["windows"]
+				}
+			]
+		},
+		{
+			"name": "package_control-tester-4.0.0-bb-branch",
+			"details": "https://bitbucket.org/wbond/package_control-tester",
+			"releases": [
+				{
+					"branch": "master"
+				}
+			]
+		}
+	]
+}

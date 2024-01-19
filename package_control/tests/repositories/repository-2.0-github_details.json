@@ -1,0 +1,15 @@
+{
+	"schema_version": "2.0",
+	"packages": [
+		{
+			"name": "package_control-tester-2.0-gh",
+			"details": "https://github.com/packagecontrol-test/package_control-tester",
+			"releases": [
+				{
+					"details": "https://github.com/packagecontrol-test/package_control-tester/tags",
+					"sublime_text": "<3000"
+				}
+			]
+		}
+	]
+}

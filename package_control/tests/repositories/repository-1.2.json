@@ -1,0 +1,30 @@
+{
+	"schema_version": "1.2",
+	"packages": [
+		{
+			"name": "package_control-tester-1.2",
+			"author": "packagecontrol",
+			"description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+			"homepage": "https://github.com/packagecontrol-test/package_control-tester",
+			"last_modified": "2014-11-12 15:52:35",
+			"platforms": {
+				"*": [
+					{
+						"version": "1.0.0",
+						"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.0"
+					}
+				],
+				"windows": [
+					{
+						"version": "1.0.1",
+						"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1"
+					},
+					{
+						"version": "1.0.1-beta",
+						"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1-beta"
+					}
+				]
+			}
+		}
+	]
+}

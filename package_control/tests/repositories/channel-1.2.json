@@ -1,0 +1,65 @@
+{
+	"schema_version": "1.2",
+	"repositories": [
+		"https://raw.githubusercontent.com/wbond/package_control/master/package_control/tests/repositories/repository-1.0.json",
+		"https://raw.githubusercontent.com/wbond/package_control/master/package_control/tests/repositories/repository-1.2.json"
+	],
+	"package_name_map": {},
+	"renamed_packages": {},
+	"packages": {
+		"https://raw.githubusercontent.com/wbond/package_control/master/package_control/tests/repositories/repository-1.0.json": [
+			{
+				"name": "package_control-tester-1.0",
+				"author": "packagecontrol",
+				"description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+				"homepage": "https://github.com/packagecontrol-test/package_control-tester",
+				"last_modified": "2011-08-01 00:00:00",
+				"platforms": {
+					"*": [
+						{
+							"version": "1.0.0",
+							"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.0"
+						}
+					],
+					"windows": [
+						{
+							"version": "1.0.1",
+							"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1"
+						},
+						{
+							"version": "1.0.1-beta",
+							"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1-beta"
+						}
+					]
+				}
+			}
+		],
+		"https://raw.githubusercontent.com/wbond/package_control/master/package_control/tests/repositories/repository-1.2.json": [
+			{
+				"name": "package_control-tester-1.2",
+				"author": "packagecontrol",
+				"description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+				"homepage": "https://github.com/packagecontrol-test/package_control-tester",
+				"last_modified": "2014-11-12 15:52:35",
+				"platforms": {
+					"*": [
+						{
+							"version": "1.0.0",
+							"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.0"
+						}
+					],
+					"windows": [
+						{
+							"version": "1.0.1",
+							"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1"
+						},
+						{
+							"version": "1.0.1-beta",
+							"url": "https://codeload.github.com/packagecontrol-test/package_control-tester/zip/1.0.1-beta"
+						}
+					]
+				}
+			}
+		]
+	}
+}

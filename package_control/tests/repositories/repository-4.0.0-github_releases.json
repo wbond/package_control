@@ -1,0 +1,47 @@
+{
+	"$schema": "sublime://packagecontrol.io/schemas/repository",
+	"schema_version": "4.0.0",
+	"packages": [
+		{
+			"name": "package_control-tester-4.0.0-gh-tags",
+			"details": "https://github.com/packagecontrol-test/package_control-tester",
+			"releases": [
+				{
+					"tags": true
+				}
+			]
+		},
+		{
+			"name": "package_control-tester-4.0.0-gh-tags_base",
+			"author": "packagecontrol",
+			"description": "A test of Package Control upgrade messages with explicit versions, but date-based releases.",
+			"homepage": "https://github.com/packagecontrol-test/package_control-tester",
+			"releases": [
+				{
+					"base": "https://github.com/packagecontrol-test/package_control-tester",
+					"tags": true
+				}
+			]
+		},
+		{
+			"name": "package_control-tester-4.0.0-gh-tags_prefix",
+			"details": "https://github.com/packagecontrol-test/package_control-tester",
+			"releases": [
+				{
+					"tags": "win-",
+					"sublime_text": "<3000",
+					"platforms": "windows"
+				}
+			]
+		},
+		{
+			"name": "package_control-tester-4.0.0-gh-branch",
+			"details": "https://github.com/packagecontrol-test/package_control-tester",
+			"releases": [
+				{
+					"branch": "master"
+				}
+			]
+		}
+	]
+}
