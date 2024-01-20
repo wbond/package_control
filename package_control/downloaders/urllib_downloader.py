@@ -269,11 +269,11 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                 if https_proxy:
                     password_manager.add_password(None, https_proxy, proxy_username, proxy_password)
 
-            handlers = [proxy_handler]
-
-            basic_auth_handler = ProxyBasicAuthHandler(password_manager)
-            digest_auth_handler = ProxyDigestAuthHandler(password_manager)
-            handlers.extend([digest_auth_handler, basic_auth_handler])
+            handlers = [
+                proxy_handler,
+                ProxyBasicAuthHandler(password_manager),
+                ProxyDigestAuthHandler(password_manager)
+            ]
 
             debug = self.settings.get('debug')
 
