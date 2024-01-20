@@ -17,31 +17,17 @@ class HttpCache:
         :param ttl:
             The number of seconds a cache entry should be valid for
         """
-        self.ttl = int(ttl)
+        self.ttl = float(ttl)
         self.base_path = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         os.makedirs(self.base_path, exist_ok=True)
 
-    def __del__(self):
-        """
-        Delete an existing instance.
-
-        Remove outdated cache files, when cache object is deleted.
-        All files which have been accessed by deleted instance keep untouched.
-        """
-
-        if self.ttl > 0:
-            self.clear(self.ttl)
-
-    def clear(self, ttl):
+    def prune(self):
         """
         Removes all cache entries older than the TTL
 
         :param ttl:
             The number of seconds a cache entry should be valid for
         """
-
-        ttl = int(ttl)
-
         try:
             for filename in os.listdir(self.base_path):
                 path = os.path.join(self.base_path, filename)
@@ -49,8 +35,7 @@ class HttpCache:
                 # ignore to prevent an exception
                 if os.path.isdir(path):
                     continue
-                mtime = os.stat(path).st_mtime
-                if mtime < time.time() - ttl:
+                if os.stat(path).st_atime < time.time() - self.ttl:
                     os.unlink(path)
 
         except FileNotFoundError:
@@ -67,17 +52,14 @@ class HttpCache:
             The (binary) cached value, or False
         """
         try:
-            content = None
             cache_file = os.path.join(self.base_path, key)
-            with open(cache_file, 'rb') as fobj:
-                content = fobj.read()
 
             # update filetime to prevent unmodified cache files
             # from being deleted, if they are frequently accessed.
-            now = time.time()
-            os.utime(cache_file, (now, now))
+            os.utime(cache_file)
 
-            return content
+            with open(cache_file, 'rb') as fobj:
+                return fobj.read()
 
         except FileNotFoundError:
             return False

@@ -21,6 +21,7 @@ from .downloaders.urllib_downloader import UrlLibDownloader
 from .downloaders.win_downloader_exception import WinDownloaderException
 from .http_cache import HttpCache
 
+_http_cache = None
 
 _managers = {}
 """A dict of domains - each points to a list of downloaders"""
@@ -85,7 +86,7 @@ def http_get(url, settings, error_message='', prefer_cached=False):
 
 
 def _grab(url, settings):
-    global _managers, _lock, _in_use, _timer
+    global _http_cache, _managers, _lock, _in_use, _timer
 
     with _lock:
         if _timer:
@@ -100,7 +101,15 @@ def _grab(url, settings):
             _managers[hostname] = []
 
         if not _managers[hostname]:
-            _managers[hostname].append(DownloadManager(settings))
+            http_cache = None
+            if settings.get('http_cache'):
+                # first call defines http cache settings
+                # It is safe to assume all calls share same settings.
+                if not _http_cache:
+                    _http_cache = HttpCache(settings.get('http_cache_length', 604800))
+                http_cache = _http_cache
+
+            _managers[hostname].append(DownloadManager(settings, http_cache))
 
         _in_use += 1
 
@@ -135,12 +144,16 @@ def _release(url, manager):
 
 
 def close_all_connections():
-    global _managers, _lock, _in_use, _timer
+    global _http_cache, _managers, _lock, _in_use, _timer
 
     with _lock:
         if _timer:
             _timer.cancel()
             _timer = None
+
+        if _http_cache:
+            _http_cache.prune()
+            _http_cache = None
 
         for managers in _managers.values():
             for manager in managers:
@@ -266,7 +279,7 @@ def update_url(url, debug):
 
 class DownloadManager:
 
-    def __init__(self, settings):
+    def __init__(self, settings, http_cache=None):
         # Cache the downloader for re-use
         self.downloader = None
 
@@ -292,11 +305,10 @@ class DownloadManager:
         if user_agent and '%s' in user_agent:
             self.settings['user_agent'] = user_agent % __version__
 
-        # setup private http cache storage driver
-        if settings.get('http_cache'):
-            cache_length = settings.get('http_cache_length', 604800)
-            self.settings['cache'] = HttpCache(cache_length)
-            self.settings['cache_length'] = cache_length
+        # assign global http cache storage driver
+        if http_cache:
+            self.settings['cache'] = http_cache
+            self.settings['cache_length'] = http_cache.ttl
 
     def close(self):
         if self.downloader:
