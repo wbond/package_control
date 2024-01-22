@@ -292,7 +292,6 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
             secure_url_match = re.match(r'^https://([^/#?]+)', url)
             if secure_url_match is not None:
                 bundle_path = get_ca_bundle_path(self.settings)
-                bundle_path = bundle_path.encode(sys.getfilesystemencoding())
                 handlers.append(ValidatingHTTPSHandler(
                     ca_certs=bundle_path,
                     debug=debug,

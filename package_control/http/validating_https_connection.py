@@ -292,7 +292,7 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
                 Urllib HTTPS Debug General
                   Upgrading connection to SSL using CA certs file at %s
                 ''',
-                self.ca_certs.decode(sys.getfilesystemencoding())
+                self.ca_certs
             )
 
         hostname = self.host.split(':', 0)[0]
