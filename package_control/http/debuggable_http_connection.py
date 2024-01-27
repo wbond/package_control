@@ -60,10 +60,8 @@ class DebuggableHTTPConnection(HTTPConnection):
                 self.debuglevel = reset_debug
 
     def request(self, method, url, body=None, headers={}):
-        original_headers = headers.copy()
-
         # By default urllib2 and urllib.request override the Connection header,
         # however, it is preferred to be able to re-use it
-        original_headers['Connection'] = 'Keep-Alive'
+        headers['Connection'] = 'Keep-Alive'
 
-        HTTPConnection.request(self, method, url, body, original_headers)
+        HTTPConnection.request(self, method, url, body, headers)
