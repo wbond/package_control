@@ -4,7 +4,7 @@ import os
 import re
 import socket
 import ssl
-import sys
+
 from http.client import HTTPS_PORT
 from urllib.request import parse_keqv_list, parse_http_list
 
@@ -26,10 +26,7 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
     response_class = DebuggableHTTPSResponse
     _debug_protocol = 'HTTPS'
 
-    # The ssl.SSLContext() for the connection - Python 3 only
-    ctx = None
-
-    def __init__(self, host, port=None, key_file=None, cert_file=None, ca_certs=None, **kwargs):
+    def __init__(self, host, port=None, ca_certs=None, extra_ca_certs=None, **kwargs):
         passed_args = {}
         if 'timeout' in kwargs:
             passed_args['timeout'] = kwargs['timeout']
@@ -38,15 +35,43 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
         DebuggableHTTPConnection.__init__(self, host, port, **passed_args)
 
         self.passwd = kwargs.get('passwd')
-        self.key_file = key_file
-        self.cert_file = cert_file
-        self.ca_certs = ca_certs
+
         if 'user_agent' in kwargs:
             self.user_agent = kwargs['user_agent']
-        if self.ca_certs:
-            self.cert_reqs = ssl.CERT_REQUIRED
+
+        # build ssl context
+
+        context = ssl.SSLContext(
+            ssl.PROTOCOL_TLS_CLIENT if hasattr(ssl, 'PROTOCOL_TLS_CLIENT') else ssl.PROTOCOL_SSLv23)
+
+        if hasattr(context, 'minimum_version'):
+            context.minimum_version = ssl.TLSVersion.TLSv1
         else:
-            self.cert_reqs = ssl.CERT_NONE
+            context.options = ssl.OP_ALL | ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 \
+                | ssl.OP_NO_COMPRESSION | ssl.OP_CIPHER_SERVER_PREFERENCE
+
+        context.verify_mode = ssl.CERT_REQUIRED
+        if hasattr(context, 'check_hostname'):
+            context.check_hostname = False
+        if hasattr(context, 'post_handshake_auth'):
+            context.post_handshake_auth = True
+
+        if ca_certs:
+            context.load_verify_locations(ca_certs)
+            self.ca_certs = ca_certs
+        elif hasattr(context, 'load_default_certs'):
+            context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+            self.ca_certs = "OS native store"
+        else:
+            raise InvalidCertificateException(self.host, self.port, "CA missing")
+
+        if extra_ca_certs:
+            try:
+                context.load_verify_locations(extra_ca_certs)
+            except Exception:
+                pass
+
+        self._context = context
 
     def get_valid_hosts_for_cert(self, cert):
         """
@@ -290,23 +315,13 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
             console_write(
                 '''
                 Urllib HTTPS Debug General
-                  Upgrading connection to SSL using CA certs file at %s
+                  Upgrading connection to SSL using CA certs from %s
                 ''',
                 self.ca_certs
             )
 
         hostname = self.host.split(':', 0)[0]
 
-        proto = ssl.PROTOCOL_SSLv23
-        if sys.version_info >= (3, 6):
-            proto = ssl.PROTOCOL_TLS
-        self.ctx = ssl.SSLContext(proto)
-        if sys.version_info < (3, 7):
-            self.ctx.options = ssl.OP_ALL | ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3
-        else:
-            self.ctx.minimum_version = ssl.TLSVersion.TLSv1
-        self.ctx.verify_mode = self.cert_reqs
-        self.ctx.load_verify_locations(self.ca_certs)
         # We don't call load_cert_chain() with self.key_file and self.cert_file
         # since that is for servers, and this code only supports client mode
         if self.debuglevel == -1:
@@ -318,7 +333,7 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
                 indent='  ',
                 prefix=False
             )
-        self.sock = self.ctx.wrap_socket(
+        self.sock = self._context.wrap_socket(
             self.sock,
             server_hostname=hostname
         )
@@ -336,7 +351,7 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
             )
 
         # This debugs and validates the SSL certificate
-        if self.cert_reqs & ssl.CERT_REQUIRED:
+        if self._context.verify_mode & ssl.CERT_REQUIRED:
             cert = self.sock.getpeercert()
 
             if self.debuglevel == -1:
