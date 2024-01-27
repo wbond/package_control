@@ -5,6 +5,3 @@ class HttpError(Exception):
     def __init__(self, message, code):
         self.code = code
         super(HttpError, self).__init__(message)
-
-    def __bytes__(self):
-        return self.__str__().encode('utf-8')

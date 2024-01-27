@@ -12,6 +12,3 @@ class NonCleanExitError(Exception):
 
     def __str__(self):
         return str(self.returncode)
-
-    def __bytes__(self):
-        return self.__str__().encode('utf-8')
