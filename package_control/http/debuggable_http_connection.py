@@ -15,8 +15,6 @@ class DebuggableHTTPConnection(HTTPConnection):
     _debug_protocol = 'HTTP'
 
     def __init__(self, host, port=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, **kwargs):
-        self.passwd = kwargs.get('passwd')
-
         if 'debug' in kwargs and kwargs['debug']:
             self.debuglevel = 5
         elif 'debuglevel' in kwargs:

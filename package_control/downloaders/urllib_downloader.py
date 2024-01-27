@@ -299,7 +299,7 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
                     user_agent=self.settings.get('user_agent')
                 ))
             else:
-                handlers.append(DebuggableHTTPHandler(debug=debug, passwd=password_manager))
+                handlers.append(DebuggableHTTPHandler(debug=debug))
             self.opener = build_opener(*handlers)
 
     def supports_ssl(self):
