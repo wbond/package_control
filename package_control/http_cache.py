@@ -56,7 +56,8 @@ class HttpCache:
 
             # update filetime to prevent unmodified cache files
             # from being deleted, if they are frequently accessed.
-            os.utime(cache_file)
+            # NOTE: try to rely on OS updating access time (`os.stat(path).st_atime`)
+            # os.utime(cache_file)
 
             with open(cache_file, 'rb') as fobj:
                 return fobj.read()
