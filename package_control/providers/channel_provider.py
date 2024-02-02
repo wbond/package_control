@@ -403,7 +403,7 @@ class ChannelProvider:
             for library in chain(*libraries_cache.values()):
                 del library['load_order']
                 for release in library['releases']:
-                    release['python_versions'] = ['3.3']
+                    release['python_versions'] = release.get('python_versions', ['3.3'])
                 library['releases'] = version_sort(library['releases'], 'platforms', reverse=True)
 
         else:
