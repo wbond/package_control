@@ -27,6 +27,7 @@ DEPENDENCY_NAME_MAP = {
     "python-pywin32": "pywin32",
     "python-six": "six",
     "python-toml": "toml",
+    "pyyaml": "PyYAML",
     "ruamel-yaml": "ruamel.yaml",
     "serial": "pyserial",
 }
