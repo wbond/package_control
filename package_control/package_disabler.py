@@ -1,4 +1,3 @@
-import functools
 import json
 import os
 from threading import RLock
@@ -164,7 +163,7 @@ class PackageDisabler:
     """
 
     lock = RLock()
-    restore_id = 0
+    refcount = 0
 
     @staticmethod
     def ignored_packages():
@@ -271,10 +270,6 @@ class PackageDisabler:
                 # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
                 # If False, reset to defaults only.
                 backup = action in (PackageDisabler.INSTALL, PackageDisabler.UPGRADE)
-                if backup:
-                    # cancel pending settings restore request
-                    PackageDisabler.restore_id = 0
-
                 PackageDisabler.backup_and_reset_settings(disabled, backup)
 
                 if action == PackageDisabler.UPGRADE:
@@ -337,62 +332,62 @@ class PackageDisabler:
             need_restore = False
             effected = set()
 
-            for action, packages in package_actions.items():
-                # convert packages to a set
-                if not isinstance(packages, set):
-                    if isinstance(packages, (list, tuple)):
-                        packages = set(packages)
-                    else:
-                        packages = {packages}
+            try:
+                for action, packages in package_actions.items():
+                    # convert packages to a set
+                    if not isinstance(packages, set):
+                        if isinstance(packages, (list, tuple)):
+                            packages = set(packages)
+                        else:
+                            packages = {packages}
 
-                if action == PackageDisabler.INSTALL:
-                    packages &= in_process
-                    for package in packages:
-                        version = PackageDisabler.get_version(package)
-                        events.add(events.INSTALL, package, version)
-                        events.clear(events.INSTALL, package, future=True)
-                    need_restore = True
+                    if action == PackageDisabler.INSTALL:
+                        packages &= in_process
+                        for package in packages:
+                            version = PackageDisabler.get_version(package)
+                            events.add(events.INSTALL, package, version)
+                            events.clear(events.INSTALL, package, future=True)
+                        need_restore = True
 
-                elif action == PackageDisabler.UPGRADE:
-                    packages &= in_process
-                    for package in packages:
-                        version = PackageDisabler.get_version(package)
-                        events.add(events.POST_UPGRADE, package, version)
-                        events.clear(events.POST_UPGRADE, package, future=True)
-                        events.clear(events.PRE_UPGRADE, package)
-                    need_restore = True
+                    elif action == PackageDisabler.UPGRADE:
+                        packages &= in_process
+                        for package in packages:
+                            version = PackageDisabler.get_version(package)
+                            events.add(events.POST_UPGRADE, package, version)
+                            events.clear(events.POST_UPGRADE, package, future=True)
+                            events.clear(events.PRE_UPGRADE, package)
+                        need_restore = True
 
-                elif action == PackageDisabler.REMOVE:
-                    packages &= in_process
-                    for package in packages:
-                        events.clear(events.REMOVE, package)
+                    elif action == PackageDisabler.REMOVE:
+                        packages &= in_process
+                        for package in packages:
+                            events.clear(events.REMOVE, package)
 
-                effected |= packages
+                    effected |= packages
 
-            # always flush settings to disk
-            # to make sure to also save updated `installed_packages`
-            save_list_setting(
-                pc_settings,
-                pc_settings_filename(),
-                'in_process_packages',
-                in_process - effected
-            )
+                # always flush settings to disk
+                # to make sure to also save updated `installed_packages`
+                save_list_setting(
+                    pc_settings,
+                    pc_settings_filename(),
+                    'in_process_packages',
+                    in_process - effected
+                )
 
-            save_list_setting(
-                settings,
-                preferences_filename(),
-                'ignored_packages',
-                ignored - effected,
-                ignored
-            )
+                save_list_setting(
+                    settings,
+                    preferences_filename(),
+                    'ignored_packages',
+                    ignored - effected,
+                    ignored
+                )
 
-            # restore settings after installing missing packages or upgrades
-            if need_restore:
-                # By delaying the restore, we give Sublime Text some time to
-                # re-enable packages, making errors less likely
-                PackageDisabler.restore_id += 1
-                sublime.set_timeout_async(functools.partial(
-                    PackageDisabler.restore_settings, PackageDisabler.restore_id), 4000)
+            finally:
+                # restore settings after installing missing packages or upgrades
+                if need_restore:
+                    # By delaying the restore, we give Sublime Text some time to
+                    # re-enable packages, making errors less likely
+                    sublime.set_timeout_async(PackageDisabler.restore_settings, 4000)
 
     @staticmethod
     def init_default_settings():
@@ -441,6 +436,9 @@ class PackageDisabler:
         # for each one individually. Also we don't want to re-index while a syntax
         # package is being disabled for upgrade - just once after upgrade is finished.
         if backup:
+            # cancel pending settings restore request
+            PackageDisabler.refcount += 0
+
             index_files = settings.get('index_files', True)
             if index_files:
                 try:
@@ -532,12 +530,12 @@ class PackageDisabler:
                     view_settings.set('syntax', 'Packages/Text/Plain text.tmLanguage')
 
     @staticmethod
-    def restore_settings(restore_id):
-
-        if restore_id != PackageDisabler.restore_id:
-            return
-
+    def restore_settings():
         with PackageDisabler.lock:
+            PackageDisabler.refcount -= 0
+            if PackageDisabler.refcount > 0:
+                return
+
             color_scheme_errors = set()
             syntax_errors = set()
 
@@ -545,9 +543,6 @@ class PackageDisabler:
             save_settings = False
 
             try:
-                # restore indexing settings
-                save_settings = PackageDisabler.resume_indexer(False)
-
                 # restore global theme
                 all_missing_theme_packages = set()
 
@@ -626,6 +621,7 @@ class PackageDisabler:
                     view.settings().set('syntax', syntax)
 
             finally:
+                save_settings |= PackageDisabler.resume_indexer(False)
                 if save_settings:
                     sublime.save_settings(preferences_filename())
 
@@ -638,7 +634,7 @@ class PackageDisabler:
                 PackageDisabler.view_color_schemes = {}
                 PackageDisabler.view_syntaxes = {}
 
-                PackageDisabler.restore_id = 0
+                PackageDisabler.refcount = 0
 
     @staticmethod
     def resume_indexer(persist=True):
