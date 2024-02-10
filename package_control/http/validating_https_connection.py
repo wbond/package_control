@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import os
+import re
 import socket
 import ssl
 
@@ -51,7 +52,7 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
 
         context.verify_mode = ssl.CERT_REQUIRED
         if hasattr(context, 'check_hostname'):
-            context.check_hostname = False
+            context.check_hostname = True
         if hasattr(context, 'post_handshake_auth'):
             context.post_handshake_auth = True
 
@@ -71,6 +72,38 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
                 pass
 
         self._context = context
+
+    def get_valid_hosts_for_cert(self, cert):
+        """
+        Returns a list of valid hostnames for an SSL certificate
+
+        :param cert: A dict from SSLSocket.getpeercert()
+
+        :return: An array of hostnames
+        """
+
+        if 'subjectAltName' in cert:
+            return [x[1] for x in cert['subjectAltName'] if x[0].lower() == 'dns']
+        else:
+            return [x[0][1] for x in cert['subject'] if x[0][0].lower() == 'commonname']
+
+    def validate_cert_host(self, cert, hostname):
+        """
+        Checks if the cert is valid for the hostname
+
+        :param cert: A dict from SSLSocket.getpeercert()
+
+        :param hostname: A string hostname to check
+
+        :return: A boolean if the cert is valid for the hostname
+        """
+
+        hosts = self.get_valid_hosts_for_cert(cert)
+        for host in hosts:
+            host_re = host.replace('.', r'\.').replace('*', r'[^.]*')
+            if re.search('^%s$' % (host_re,), hostname, re.I):
+                return True
+        return False
 
     # Compatibility for python 3.3 vs 3.8
     #   python 3.8 replaced _set_hostport() by _get_hostport()
@@ -360,13 +393,11 @@ class ValidatingHTTPSConnection(DebuggableHTTPConnection):
                 if 'notAfter' in cert:
                     console_write('    expire date: %s', cert['notAfter'], prefix=False)
 
-            try:
-                ssl.match_hostname(cert, hostname)
+            if not self.validate_cert_host(cert, hostname):
                 if self.debuglevel == -1:
-                    console_write('  Certificate validated for %s', hostname, prefix=False)
+                    console_write('  Certificate INVALID', prefix=False)
 
-            except ssl.CertificateError as e:
-                if self.debuglevel == -1:
-                    console_write('  Certificate INVALID: %s', e, prefix=False)
+                raise InvalidCertificateException(hostname, cert, 'hostname mismatch')
 
-                raise InvalidCertificateException(hostname, cert, e)
+            if self.debuglevel == -1:
+                console_write('  Certificate validated for %s', hostname, prefix=False)

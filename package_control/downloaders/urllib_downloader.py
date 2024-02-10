@@ -124,6 +124,9 @@ class UrlLibDownloader(DecodingDownloader, LimitingDownloader, CachingDownloader
 
                 return self.cache_result('get', url, http_file.getcode(), http_file.headers, result)
 
+            except (ssl.CertificateError) as e:
+                error_string = 'Certificate validation for %s failed: %s' % (url, str(e))
+
             except (HTTPException) as e:
                 # Since we use keep-alives, it is possible the other end closed
                 # the connection, and we may just need to re-open
