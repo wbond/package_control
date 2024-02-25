@@ -1,8 +1,8 @@
 import re
 
+from ..pep440 import PEP440InvalidVersionError
 from ..pep440 import PEP440Version
 from ..pep440 import PEP440VersionSpecifier
-from ..package_version import version_sort
 
 from .json_api_client import JSONApiClient
 
@@ -64,6 +64,7 @@ class PyPiClient(JSONApiClient):
         :param asset_templates:
             A list of tuples of asset template and download_info.
 
+            ```py
             [
                 (
                     "coverage-${version}-cp33-*-win_amd64*.whl",
@@ -73,6 +74,7 @@ class PyPiClient(JSONApiClient):
                     }
                 )
             ]
+            ```
 
             Supported globs:
 
@@ -192,7 +194,17 @@ class PyPiClient(JSONApiClient):
         """
 
         pypi_url = "https://pypi.org/pypi/{}/json".format(name)
+
+        # fetch dictionary of form `version: [asset, asset]`
         releases = self.fetch_json(pypi_url)["releases"]
+
+        # create a list of valid pep440 versions
+        versions = []
+        for version in releases:
+            try:
+                versions.append(PEP440Version(version))
+            except PEP440InvalidVersionError:
+                continue
 
         asset_templates = self._expand_asset_variables(asset_templates)
 
@@ -201,16 +213,17 @@ class PyPiClient(JSONApiClient):
 
         # get latest compatible release for each asset template
         output = []
-        for version in version_sort(releases, reverse=True):
+        for version in sorted(versions, reverse=True):
             # we don"t want beta releases!
-            if not PEP440Version(version).is_final:
+            if not version.is_final:
                 continue
 
-            assets = releases[version]
+            version_string = str(version)
+            assets = releases[version_string]
             for idx, (pattern, selectors) in enumerate(asset_templates):
                 if max_releases > 0 and num_releases[idx] >= max_releases:
                     continue
-                info = self._make_download_info(pattern, selectors, version, assets)
+                info = self._make_download_info(pattern, selectors, version_string, assets)
                 if not info:
                     continue
                 output.append(info)
