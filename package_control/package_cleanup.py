@@ -102,10 +102,11 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         self.migrate_incompatible_packages(found_packages)
 
         self.install_missing_packages(found_packages)
-        self.install_missing_libraries()
 
         if self.manager.settings.get('remove_orphaned', True):
             self.manager.cleanup_libraries()
+
+        self.install_missing_libraries()
 
         if self.manager.settings.get('auto_upgrade'):
             AutomaticUpgrader(self.manager).run()
