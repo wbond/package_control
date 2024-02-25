@@ -22,7 +22,7 @@ jobs:
             arch: x86
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.8'
           architecture: ${{ matrix.arch }}
@@ -42,8 +42,8 @@ jobs:
   #   name: Python 3.3.7 on ubuntu-18.04 x64
   #   runs-on: ubuntu-18.04
   #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v4
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
   #       with:
   #         python-version: '3.3.7'
   #         architecture: x64
@@ -63,11 +63,11 @@ jobs:
   #   name: Python 3.3.7 on macos-11 x64
   #   runs-on: macos-11
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
 
   #     - name: Check pyenv
   #       id: check-pyenv
-  #       uses: actions/cache@v3
+  #       uses: actions/cache@v4
   #       with:
   #         path: ~/.pyenv
   #         key: macos-11-3.3-pyenv
@@ -96,11 +96,11 @@ jobs:
           - 'x86'
           - 'x64'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache Python
         id: cache-python
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/AppData/Local/Python3.3-${{ matrix.arch }}
           key: windows-2019-python-3.3-${{ matrix.arch }}
