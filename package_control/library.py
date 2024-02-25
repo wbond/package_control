@@ -15,7 +15,7 @@ BUILTIN_38_LIBRARIES = {
 
 DEPENDENCY_NAME_MAP = {
     "bs4": "beautifulsoup4",
-    "python-docx": "docx",
+    "dateutil": "python-dateutil",
     "python-jinja2": "Jinja2",
     "python-markdown": "Markdown",
     "python-pywin32": "pywin32",
