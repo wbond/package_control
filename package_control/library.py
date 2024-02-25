@@ -7,18 +7,12 @@ from . import sys_path
 from . import distinfo
 from .clear_directory import delete_directory
 
-# 3rd-party libraries, which are part of stdlib as of certain python version
 BUILTIN_38_LIBRARIES = {
     "3.3": {},
     "3.8": {"enum", "pathlib", "typing"}
 }
+"""3rd-party libraries, which are part of stdlib as of certain python version"""
 
-# Most legacy dependency are simply re-packed python packages.
-# Some of them had been given different names, which would cause issues, when
-# installing them directly from pypi.org. They are therefore translated, using
-# the following name map. This way legacy and maybe unmaintained packages
-# which still request old dependencies are pointed to the new ones,
-# which should reduce friction when moving on to python 3.8 onwards.
 DEPENDENCY_NAME_MAP = {
     "bs4": "beautifulsoup4",
     "python-docx": "docx",
@@ -31,6 +25,14 @@ DEPENDENCY_NAME_MAP = {
     "ruamel-yaml": "ruamel.yaml",
     "serial": "pyserial",
 }
+"""
+Most legacy dependency are simply re-packed python packages.
+Some of them had been given different names, which would cause issues, when
+installing them directly from pypi.org. They are therefore translated, using
+the following name map. This way legacy and maybe unmaintained packages
+which still request old dependencies are pointed to the new ones,
+which should reduce friction when moving on to python 3.8 onwards.
+"""
 
 
 def builtin_libraries(python_version):
@@ -175,9 +177,9 @@ def find_installed(lib):
         An InstalledLibrary() object
     """
 
-    install_root = sys_path.lib_paths()[lib.python_version]
-    for fname in os.listdir(install_root):
-        if lib.name == distinfo.library_name_from_dist_info_dirname(fname):
+    dist_pattern = distinfo.escape_name(lib.name) + "-"
+    for fname in os.listdir(sys_path.lib_paths()[lib.python_version]):
+        if fname.startswith(dist_pattern) and fname.endswith(".dist-info"):
             return InstalledLibrary(fname, lib.python_version)
     return None
 
@@ -257,7 +259,7 @@ def convert_dependency(dependency_path, python_version, name, version, descripti
     if not src_dir:
         raise ValueError('Unrecognized or incompatible source archive layout')
 
-    did_name = '%s-%s.dist-info' % (name, version)
+    did_name = '%s-%s.dist-info' % (distinfo.escape_name(name), version)
     did = distinfo.DistInfoDir(src_dir, did_name)
     did.ensure_exists()
     did.write_metadata(name, version, description, url)

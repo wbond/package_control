@@ -8,36 +8,21 @@ from . import __version__ as pc_version
 from . import pep440
 from . import sys_path
 
-_DIST_INFO_PATTERN = re.compile(
-    r"""(?x)
-    (?P<name>.+?)
-    -
-    (?P<version>
-        (?:\d+(?:\.\d+)*)
-        (?:[-._]?(?:alpha|a|beta|b|preview|pre|c|rc)\.?\d*)?
-        (?:-\d+|(?:[-._]?(?:rev|r|post)\.?\d*))?
-        (?:[-._]?dev\.?\d*)?
-    )
-    \.dist-info$
+PEP491_NAME_PATTERN = re.compile(r"[^\w\d.]+", re.UNICODE)
+"""PEP491 package name escape pattern."""
+
+
+def escape_name(library_name):
     """
-)
+    Escape library name according to PEP491
 
-
-def library_name_from_dist_info_dirname(dirname):
-    """
-    Strip version and extension from .dist-info directory.
-
-    :param dirname:
-        A unicode string of a libraries .dist-info directory of the form
-
-           <library-name>-<pep440-version>.dist-info
+    :param library_name:
+        library name
 
     :returns:
-        A unicode string with the name of the library.
+        PEP491 escaped distribution name
     """
-
-    parts = _DIST_INFO_PATTERN.match(dirname)
-    return parts.group('name') if parts else None
+    return PEP491_NAME_PATTERN.sub("_", library_name)
 
 
 def _trim_segments(rel_path, segments):
@@ -167,9 +152,13 @@ class DistInfoDir:
     @property
     def library_name(self):
         """
-        Return the library name, which is the distinfo dir name without version.
+        Return the library name.
+
+        :returns:
+            Unescaped library name.
         """
-        return library_name_from_dist_info_dirname(self.dir_name)
+        meta = self.read_metadata()
+        return meta["name"]
 
     def exists(self):
         """
