@@ -1,28 +1,11 @@
 import base64
 import hashlib
 import os
-import re
 import sys
 
 from . import __version__ as pc_version
 from . import pep440
 from . import sys_path
-
-PEP491_NAME_PATTERN = re.compile(r"[^\w\d.]+", re.UNICODE)
-"""PEP491 package name escape pattern."""
-
-
-def escape_name(library_name):
-    """
-    Escape library name according to PEP491
-
-    :param library_name:
-        library name
-
-    :returns:
-        PEP491 escaped distribution name
-    """
-    return PEP491_NAME_PATTERN.sub("_", library_name)
 
 
 def _trim_segments(rel_path, segments):
@@ -148,17 +131,6 @@ class DistInfoDir:
         Return the absolute path of the distinfo directory on filesystem.
         """
         return os.path.join(self.install_root, self.dir_name)
-
-    @property
-    def library_name(self):
-        """
-        Return the library name.
-
-        :returns:
-            Unescaped library name.
-        """
-        meta = self.read_metadata()
-        return meta["name"]
 
     def exists(self):
         """

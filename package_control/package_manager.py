@@ -239,13 +239,7 @@ class PackageManager:
         if not names:
             return set()
 
-        builtin = library.builtin_libraries(python_version)
-
-        return set(
-            library.Library(library.translate_name(name), python_version)
-            for name in names
-            if name not in builtin
-        )
+        return set(library.names_to_libraries(names, python_version))
 
     def get_python_version(self, package_name):
         """
@@ -536,9 +530,9 @@ class PackageManager:
                                 # in scheme 4.0.0. Do it here to apply only on client side.
                                 name = info['name'] = library.translate_name(name)
 
-                                info['releases'] = self.select_releases(name, info['releases'])
                                 if info['releases']:
-                                    filtered_libraries[name] = info
+                                    dist_name = library.escape_name(name).lower()
+                                    filtered_libraries[dist_name] = info
                                 else:
                                     unavailable_libraries.append(name)
 
@@ -672,7 +666,8 @@ class PackageManager:
 
                 info['releases'] = self.select_releases(name, info['releases'])
                 if info['releases']:
-                    repository_libraries[name] = info
+                    dist_name = library.escape_name(name).lower()
+                    repository_libraries[dist_name] = info
                 else:
                     unavailable_libraries.append(name)
 
@@ -1164,7 +1159,7 @@ class PackageManager:
         release = None
         available_version = None
 
-        available_library = self.list_available_libraries().get(lib.name)
+        available_library = self.list_available_libraries().get(lib.dist_name)
         if available_library:
             for available_release in available_library['releases']:
                 if lib.python_version in available_release['python_versions']:
@@ -1244,7 +1239,7 @@ class PackageManager:
             # search '<name>-<version>.dist-info/RECORD' directory in archive
             # be permissive with version part as it may have a different format as `available_version`
             new_did_name = None
-            pattern = re.compile(r'({0.name}-\S+\.dist-info)/RECORD'.format(lib))
+            pattern = re.compile(r'({0.dist_name}-\S+\.dist-info)/RECORD'.format(lib), re.IGNORECASE)
             for i in library_zip.infolist():
                 match = pattern.match(i.filename)
                 if match:
@@ -1577,13 +1572,8 @@ class PackageManager:
                 library_names = self.select_libraries(lib_info)
 
             if library_names:
-                builtin = library.builtin_libraries(python_version)
                 self.install_libraries(
-                    (
-                        library.Library(library.translate_name(name), python_version)
-                        for name in library_names
-                        if name not in builtin
-                    ),
+                    library.names_to_libraries(library_names, python_version),
                     fail_early=False
                 )
 
