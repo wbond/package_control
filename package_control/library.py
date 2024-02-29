@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 
 import sublime
@@ -7,7 +8,7 @@ from . import sys_path
 from . import distinfo
 from .clear_directory import delete_directory
 
-BUILTIN_38_LIBRARIES = {
+BUILTIN_LIBRARIES = {
     "3.3": {},
     "3.8": {"enum", "pathlib", "typing"}
 }
@@ -34,35 +35,61 @@ which still request old dependencies are pointed to the new ones,
 which should reduce friction when moving on to python 3.8 onwards.
 """
 
+PEP491_NAME_PATTERN = re.compile(r"[^\w.]+", re.UNICODE)
+"""PEP491 package name escape pattern."""
 
-def builtin_libraries(python_version):
+
+def escape_name(name):
     """
-    Determine built-in library names, which were 3rd-party libraries before
+    Escape library name according to PEP491
 
-    :param python_version:
-        The python version to return built-in libraries for
+    :param name:
+        library name
 
     :returns:
-        A set of library names.
+        PEP491 escaped distribution name
     """
-    return BUILTIN_38_LIBRARIES.get(python_version, set())
+    return PEP491_NAME_PATTERN.sub("_", name)
 
 
-def translate_name(dependency_name):
+def translate_name(name):
     """
     Translate old dependency name to real pypi library name
 
-    :param dependency_name:
+    :param name:
         Legacy Sublime Text dependency name
 
     :returns:
         PyPI complient library name.
     """
-    return DEPENDENCY_NAME_MAP.get(dependency_name, dependency_name)
+    return DEPENDENCY_NAME_MAP.get(name, name)
+
+
+def names_to_libraries(names, python_version):
+    """
+    Convert a set of dependency names into libraries.
+
+    :param names:
+        The iteratable of possibly legacy dependency or library names.
+
+    :param python_version:
+        The python version to built the set for.
+
+    :returns:
+        A generator object of ``Library`` objects.
+    """
+    builtins = BUILTIN_LIBRARIES.get(python_version, set())
+
+    for name in names:
+        name = translate_name(name)
+        if name not in builtins:
+            yield Library(name, python_version)
+
+    return None
 
 
 class Library:
-    __slots__ = ['name', 'python_version']
+    __slots__ = ['name', 'dist_name', 'python_version']
 
     def __init__(self, name, python_version):
         if not isinstance(name, str):
@@ -78,13 +105,14 @@ class Library:
             )
 
         self.name = name
+        self.dist_name = escape_name(self.name).lower()
         self.python_version = python_version
 
     def __repr__(self):
-        return "Library(%r, %r)" % (self.name, self.python_version)
+        return "{}({!r}, {!r})".format(self.__class__.__name__, self.name, self.python_version)
 
-    def _to_tuple(self, lower=False):
-        return (self.name.lower() if lower else self.name, self.python_version)
+    def __str__(self):
+        return self.name
 
     def __hash__(self):
         return hash(self._to_tuple())
@@ -95,24 +123,24 @@ class Library:
     def __ne__(self, rhs):
         return self._to_tuple() != rhs._to_tuple()
 
-    def __lt__(self, rhs):
-        """
-        Default sorting is case insensitive
-        """
+    def __gt__(self, rhs):
+        return self._to_tuple() > rhs._to_tuple()
 
-        self_lt = self._to_tuple(lower=True)
-        rhs_lt = self._to_tuple(lower=True)
-        if self_lt == rhs_lt:
-            return self._to_tuple() < rhs._to_tuple()
-        return self_lt < rhs_lt
+    def __lt__(self, rhs):
+        return self._to_tuple() < rhs._to_tuple()
+
+    def _to_tuple(self):
+        return (self.dist_name, self.python_version)
 
 
 class InstalledLibrary(Library):
     __slots__ = ['dist_info']
 
-    def __init__(self, dist_info_dir, python_version):
-        self.dist_info = distinfo.DistInfoDir(sys_path.lib_paths()[python_version], dist_info_dir)
-        super().__init__(self.dist_info.library_name, python_version)
+    def __init__(self, install_root, dist_info_dir, python_version):
+        self.dist_info = distinfo.DistInfoDir(install_root, dist_info_dir)
+        self.name = self.dist_info.read_metadata()["name"]
+        self.dist_name = dist_info_dir[:dist_info_dir.find("-")].lower()
+        self.python_version = python_version
 
 
 def list_all():
@@ -131,7 +159,7 @@ def list_all():
             record_path = os.path.join(install_root, fname, 'RECORD')
             if not os.path.isfile(record_path):
                 continue
-            out.add(InstalledLibrary(fname, python_version))
+            out.add(InstalledLibrary(install_root, fname, python_version))
 
     return out
 
@@ -147,7 +175,7 @@ def list_unmanaged():
     out = set()
     for python_version, install_root in sys_path.lib_paths().items():
         for fname in os.listdir(install_root):
-            if not fname.endswith(".dist-info"):
+            if not fname.lower().endswith(".dist-info"):
                 continue
             installer_path = os.path.join(install_root, fname, 'INSTALLER')
             if not os.path.isfile(installer_path):
@@ -158,7 +186,7 @@ def list_unmanaged():
                 if f.read().strip().startswith('Package Control'):
                     continue
 
-            out.add(InstalledLibrary(fname, python_version))
+            out.add(InstalledLibrary(install_root, fname, python_version))
 
     return out
 
@@ -176,11 +204,12 @@ def find_installed(lib):
     returns:
         An InstalledLibrary() object
     """
+    pattern = re.compile(r"{0.dist_name}-\S+\.dist-info".format(lib), re.IGNORECASE)
+    install_root = sys_path.lib_paths()[lib.python_version]
+    for fname in os.listdir(install_root):
+        if pattern.match(fname):
+            return InstalledLibrary(install_root, fname, lib.python_version)
 
-    dist_pattern = distinfo.escape_name(lib.name) + "-"
-    for fname in os.listdir(sys_path.lib_paths()[lib.python_version]):
-        if fname.startswith(dist_pattern) and fname.endswith(".dist-info"):
-            return InstalledLibrary(fname, lib.python_version)
     return None
 
 
@@ -259,7 +288,7 @@ def convert_dependency(dependency_path, python_version, name, version, descripti
     if not src_dir:
         raise ValueError('Unrecognized or incompatible source archive layout')
 
-    did_name = '%s-%s.dist-info' % (distinfo.escape_name(name), version)
+    did_name = '%s-%s.dist-info' % (escape_name(name), version)
     did = distinfo.DistInfoDir(src_dir, did_name)
     did.ensure_exists()
     did.write_metadata(name, version, description, url)
