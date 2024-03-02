@@ -530,6 +530,7 @@ class PackageManager:
                                 # in scheme 4.0.0. Do it here to apply only on client side.
                                 name = info['name'] = library.translate_name(name)
 
+                                info['releases'] = self.select_releases(name, info['releases'])
                                 if info['releases']:
                                     dist_name = library.escape_name(name).lower()
                                     filtered_libraries[dist_name] = info
