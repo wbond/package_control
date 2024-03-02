@@ -25,20 +25,20 @@ class SatisfyLibrariesCommand(sublime_plugin.ApplicationCommand):
 
                 required_libraries = manager.find_required_libraries()
 
-                if not manager.install_libraries(libraries=required_libraries, fail_early=False):
+                if not manager.cleanup_libraries(required_libraries=required_libraries):
                     show_error(
                         '''
-                        One or more libraries could not be installed or updated.
+                        One or more orphaned libraries could not be removed.
 
                         Please check the console for details.
                         '''
                     )
                     error = True
 
-                if not manager.cleanup_libraries(required_libraries=required_libraries):
+                if not manager.install_libraries(libraries=required_libraries, fail_early=False):
                     show_error(
                         '''
-                        One or more orphaned libraries could not be removed.
+                        One or more libraries could not be installed or updated.
 
                         Please check the console for details.
                         '''
