@@ -22,7 +22,7 @@ def _trim_segments(rel_path, segments):
         The relative path, trimmed to the number of segments
     """
 
-    return '/'.join(rel_path.split('/')[0:segments])
+    return "/".join(rel_path.split("/")[0:segments])
 
 
 def _verify_file(abs_path, hash_, size):
@@ -46,9 +46,9 @@ def _verify_file(abs_path, hash_, size):
     disk_size = os.path.getsize(abs_path)
     if disk_size != size:
         return False
-    with open(abs_path, 'rb') as f:
+    with open(abs_path, "rb") as f:
         digest = hashlib.sha256(f.read()).digest()
-        sha = base64.urlsafe_b64encode(digest).rstrip(b'=').decode('utf-8')
+        sha = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("utf-8")
     if sha != hash_:
         return False
     return True
@@ -59,7 +59,7 @@ class RecordInfo:
     This class describes a the content of a /RECORD line.
     """
 
-    __slots__ = ['relative_path', 'absolute_path', 'size', 'sha256']
+    __slots__ = ["relative_path", "absolute_path", "size", "sha256"]
 
     def __init__(self, rel_path, abs_path, size, sha256):
         self.relative_path = rel_path
@@ -79,12 +79,7 @@ class RecordInfo:
         return True
 
     def __hash__(self):
-        return hash((
-            self.relative_path,
-            self.absolute_path,
-            self.size,
-            self.sha256
-        ))
+        return hash((self.relative_path, self.absolute_path, self.size, self.sha256))
 
 
 class DistInfoNotFoundError(FileNotFoundError):
@@ -106,7 +101,7 @@ class DistInfoDir:
     operations required to read or write meta data of a library.
     """
 
-    __slots__ = ['install_root', 'dir_name']
+    __slots__ = ["install_root", "dir_name"]
 
     def __init__(self, install_root, dist_info_dir):
         """
@@ -165,27 +160,27 @@ class DistInfoDir:
         if python_version is not None and python_version not in {"3.3", "3.8"}:
             raise ValueError("Invalid python_version %s" % repr(python_version))
 
-        version_tag = 'py3'
+        version_tag = "py3"
         if python_version is not None:
-            version_tag = 'py' + python_version.replace('.', '')
-        abi_tag = 'none'
-        arch_tag = 'any'
+            version_tag = "py" + python_version.replace(".", "")
+        abi_tag = "none"
+        arch_tag = "any"
         if python_version is not None and plat_specific is not False:
-            abi_tag = 'cp' + python_version.replace('.', '') + 'm'
-            if sys.platform == 'darwin':
+            abi_tag = "cp" + python_version.replace(".", "") + "m"
+            if sys.platform == "darwin":
                 arch = os.uname()[4]
-                if python_version == '3.3':
-                    arch_tag = 'macosx_10_7_%s' % arch
-                elif python_version == '3.8':
-                    arch_tag = 'macosx_10_9_%s' % arch
-            elif sys.platform == 'linux':
-                arch_tag = 'linux_%s' % os.uname()[4]
+                if python_version == "3.3":
+                    arch_tag = "macosx_10_7_%s" % arch
+                elif python_version == "3.8":
+                    arch_tag = "macosx_10_9_%s" % arch
+            elif sys.platform == "linux":
+                arch_tag = "linux_%s" % os.uname()[4]
             else:
                 if sys.maxsize == 2147483647:
-                    arch_tag = 'win32'
+                    arch_tag = "win32"
                 else:
-                    arch_tag = 'win_amd64'
-        tag = '%s-%s-%s' % (version_tag, abi_tag, arch_tag)
+                    arch_tag = "win_amd64"
+        tag = "%s-%s-%s" % (version_tag, abi_tag, arch_tag)
 
         output = "Wheel-Version: 1.0\n"
         output += "Generator: Package Control (%s)\n" % pc_version
@@ -214,7 +209,7 @@ class DistInfoDir:
         output += "Name: %s\n" % name
         output += "Version: %s\n" % version
         if isinstance(desc, str):
-            output += "Summary: %s\n" % desc.replace('\n', ' ')
+            output += "Summary: %s\n" % desc.replace("\n", " ")
         if isinstance(homepage, str):
             output += "Home-page: %s\n" % homepage
 
@@ -241,22 +236,22 @@ class DistInfoDir:
         entries = []
 
         def _unix_path(path):
-            if os.name == 'nt':
-                return path.replace('\\', '/')
+            if os.name == "nt":
+                return path.replace("\\", "/")
             return path
 
         def _entry(rel_path):
             fpath = os.path.join(self.install_root, rel_path)
             size = os.stat(fpath).st_size
-            with open(fpath, 'rb') as f:
+            with open(fpath, "rb") as f:
                 digest = hashlib.sha256(f.read()).digest()
-                sha = base64.urlsafe_b64encode(digest).rstrip(b'=')
-            return (_unix_path(rel_path), 'sha256=%s' % sha.decode('utf-8'), str(size))
+                sha = base64.urlsafe_b64encode(digest).rstrip(b"=")
+            return (_unix_path(rel_path), "sha256=%s" % sha.decode("utf-8"), str(size))
 
         for fname in os.listdir(self.path):
             rel_path = os.path.join(self.dir_name, fname)
-            if fname == 'RECORD':
-                entries.append((_unix_path(rel_path), '', ''))
+            if fname == "RECORD":
+                entries.append((_unix_path(rel_path), "", ""))
             else:
                 entries.append(_entry(rel_path))
 
@@ -270,7 +265,7 @@ class DistInfoDir:
         for f in package_files:
             entries.append(_entry(f))
 
-        output = ''
+        output = ""
         for e in sorted(entries, key=lambda e: e[0]):
             output += ",".join(e) + "\n"
 
@@ -287,31 +282,31 @@ class DistInfoDir:
 
         return {
             # Files that may contain legal info
-            'copying',
-            'copying.txt',
-            'license',
-            'license.md',
-            'license.txt',
-            'notice',
-            'patents',
+            "copying",
+            "copying.txt",
+            "license",
+            "license.md",
+            "license.txt",
+            "notice",
+            "patents",
             # Other general metadata files
-            'authors',
-            'authors.rst',
-            'authors.txt',
-            'changelog',
-            'changelog.rst',
-            'changes',
-            'changes.rst',
-            'contributors',
-            'readme',
-            'readme.md',
-            'readme.rst',
-            'readme.txt',
-            'releasing',
-            'news',
-            'news.txt',
-            'notes',
-            'notes.rst'
+            "authors",
+            "authors.rst",
+            "authors.txt",
+            "changelog",
+            "changelog.rst",
+            "changes",
+            "changes.rst",
+            "contributors",
+            "readme",
+            "readme.md",
+            "readme.rst",
+            "readme.txt",
+            "releasing",
+            "news",
+            "news.txt",
+            "notes",
+            "notes.rst",
         }
 
     @staticmethod
@@ -322,12 +317,7 @@ class DistInfoDir:
             libraries
         """
 
-        return {
-            '.dll',
-            '.pyd',
-            '.so',
-            '.dylib'
-        }
+        return {".dll", ".pyd", ".so", ".dylib"}
 
     def abs_path(self, file_name):
         """
@@ -350,11 +340,11 @@ class DistInfoDir:
             A dictionary with lower case keys.
         """
 
-        with open(self.abs_path('METADATA'), 'r', encoding='utf-8') as fobj:
+        with open(self.abs_path("METADATA"), "r", encoding="utf-8") as fobj:
             entries = {}
             for line in fobj.readlines():
                 try:
-                    key, value = line.split(': ', 1)
+                    key, value = line.split(": ", 1)
                     entries[key.strip().lower()] = value.strip()
                 except ValueError:
                     break
@@ -377,13 +367,8 @@ class DistInfoDir:
             An optional unicode string of the URL to the homepage
         """
 
-        contents = self.generate_metadata(
-            name,
-            version,
-            desc,
-            homepage
-        )
-        with open(self.abs_path('METADATA'), 'w', encoding='utf-8', newline='\n') as fobj:
+        contents = self.generate_metadata(name, version, desc, homepage)
+        with open(self.abs_path("METADATA"), "w", encoding="utf-8", newline="\n") as fobj:
             fobj.write(contents)
 
     def read_installer(self):
@@ -394,7 +379,7 @@ class DistInfoDir:
             An unicode string of of which installer was used.
         """
 
-        with open(self.abs_path('INSTALLER'), 'r', encoding='utf-8') as fobj:
+        with open(self.abs_path("INSTALLER"), "r", encoding="utf-8") as fobj:
             return fobj.readline().strip()
 
     def write_installer(self):
@@ -403,7 +388,7 @@ class DistInfoDir:
         """
 
         contents = self.generate_installer()
-        with open(self.abs_path('INSTALLER'), 'w', encoding='utf-8', newline='\n') as fobj:
+        with open(self.abs_path("INSTALLER"), "w", encoding="utf-8", newline="\n") as fobj:
             fobj.write(contents)
 
     def read_record(self):
@@ -414,21 +399,21 @@ class DistInfoDir:
             A list of RecordInfo objects
         """
 
-        with open(self.abs_path('RECORD'), 'r', encoding='utf-8') as fobj:
+        with open(self.abs_path("RECORD"), "r", encoding="utf-8") as fobj:
             entries = []
             for line in fobj.readlines():
                 line = line.strip()
-                elements = line.split(',')
+                elements = line.split(",")
                 if len(elements) != 3:
-                    raise ValueError('Invalid record entry: %s' % line)
+                    raise ValueError("Invalid record entry: %s" % line)
                 is_record_path = elements[0] == self.dir_name + "/RECORD"
-                if not elements[1].startswith('sha256=') and not is_record_path:
-                    raise ValueError('Unabled to parse sha256 hash: %s' % line)
+                if not elements[1].startswith("sha256=") and not is_record_path:
+                    raise ValueError("Unabled to parse sha256 hash: %s" % line)
                 ri = RecordInfo(
                     elements[0],
                     sys_path.longpath(os.path.join(self.install_root, elements[0])),
                     int(elements[2]) if not is_record_path else None,
-                    elements[1][7:] if not is_record_path else None
+                    elements[1][7:] if not is_record_path else None,
                 )
                 entries.append(ri)
             return entries
@@ -444,10 +429,10 @@ class DistInfoDir:
         paths = {}
         min_level = 500
         for ri in self.read_record():
-            if ri.relative_path.endswith('/'):
-                level = ri.relative_path.rstrip('/').count('/')
+            if ri.relative_path.endswith("/"):
+                level = ri.relative_path.rstrip("/").count("/")
             else:
-                level = ri.relative_path.count('/')
+                level = ri.relative_path.count("/")
 
             if level < min_level:
                 min_level = level
@@ -457,7 +442,7 @@ class DistInfoDir:
                 path_seg = _trim_segments(path_seg, min_level + 1)
 
             while True:
-                num_levels = path_seg.count('/')
+                num_levels = path_seg.count("/")
                 if num_levels <= min_level:
                     if num_levels not in paths:
                         paths[num_levels] = set()
@@ -480,10 +465,10 @@ class DistInfoDir:
         """
 
         # Create an empty file so it shows up in its own file list
-        record_path = self.abs_path('RECORD')
-        open(record_path, 'wb').close()
+        record_path = self.abs_path("RECORD")
+        open(record_path, "wb").close()
         contents = self.generate_record(package_dirs, package_files)
-        with open(record_path, 'w', encoding='utf-8', newline='\n') as fobj:
+        with open(record_path, "w", encoding="utf-8", newline="\n") as fobj:
             fobj.write(contents)
 
     def has_wheel(self):
@@ -493,7 +478,7 @@ class DistInfoDir:
         :returns:
             `True`, if WHEEL file exists, `False` otherwise.
         """
-        return os.path.isfile(self.abs_path('WHEEL'))
+        return os.path.isfile(self.abs_path("WHEEL"))
 
     def read_wheel(self):
         """
@@ -503,10 +488,10 @@ class DistInfoDir:
             A dictionary with lower case keys.
         """
 
-        with open(self.abs_path('WHEEL'), 'r', encoding='utf-8') as fobj:
+        with open(self.abs_path("WHEEL"), "r", encoding="utf-8") as fobj:
             entries = {}
             for line in fobj.readlines():
-                key, value = line.split(': ')
+                key, value = line.split(": ")
                 entries[key.strip().lower()] = value.strip()
             return entries
 
@@ -523,7 +508,7 @@ class DistInfoDir:
         """
 
         contents = self.generate_wheel(python_version, plat_specific)
-        with open(self.abs_path('WHEEL'), 'w', encoding='utf-8', newline='\n') as fobj:
+        with open(self.abs_path("WHEEL"), "w", encoding="utf-8", newline="\n") as fobj:
             fobj.write(contents)
 
     def verify_python_version(self, python_version):
@@ -547,9 +532,7 @@ class DistInfoDir:
         for specifier in version_specifier.split(","):
             if not pep440.check_version(specifier, python_version):
                 raise EnvironmentError(
-                    'The library "{}" is not compatible with Python {}'.format(
-                        metadata["name"], python_version
-                    )
+                    'The library "{}" is not compatible with Python {}'.format(metadata["name"], python_version)
                 )
 
     def verify_files(self, missing_ok=False):
