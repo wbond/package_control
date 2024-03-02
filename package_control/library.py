@@ -348,8 +348,7 @@ def install(dist_info, new_install_root):
         src_path = os.path.join(dist_info.install_root, rel_path)
         dest_path = os.path.join(new_install_root, rel_path)
         dest_parent = os.path.dirname(dest_path)
-        if not os.path.exists(dest_parent):
-            os.makedirs(dest_parent)
+        os.makedirs(dest_parent, exist_ok=True)
         # shutil.move() will nest folders if the destination exists already
         if os.path.isdir(src_path):
             if os.path.exists(dest_path):
@@ -407,5 +406,4 @@ def remove(installed_library):
                     pass
 
     # remove .dist-info directory
-    abs_path = os.path.join(dist_info.install_root, dist_info.dir_name)
-    delete_directory(abs_path, ignore_errors=False)
+    delete_directory(dist_info.path, ignore_errors=False)
