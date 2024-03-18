@@ -604,6 +604,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             ],
                             "releases": [
                                 {
+                                    "date": "2014-11-12 02:02:22",
                                     "version": "1.0.0",
                                     "url": "https://packagecontrol.io/bz2.sublime-package",
                                     "sublime_text": "*",
@@ -676,6 +677,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             ],
                             "releases": [
                                 {
+                                    "date": "2014-11-12 02:02:22",
                                     "version": "1.0.0",
                                     "url": "https://packagecontrol.io/bz2.sublime-package",
                                     "sublime_text": "*",
