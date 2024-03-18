@@ -254,7 +254,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
             }
             allowed_release_keys = {  # todo: remove 'branch'
                 'base', 'version', 'sublime_text', 'platforms', 'python_versions',
-                'branch', 'tags', 'asset', 'url', 'sha256'
+                'branch', 'tags', 'asset', 'url', 'date', 'sha256'
             }
         else:
             allowed_library_keys = {
@@ -262,7 +262,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
             }
             allowed_release_keys = {
                 'base', 'version', 'sublime_text', 'platforms',
-                'branch', 'tags', 'url', 'sha256'
+                'branch', 'tags', 'url', 'date', 'sha256'
             }
 
         copied_library_keys = ('name', 'description', 'author', 'homepage', 'issues')

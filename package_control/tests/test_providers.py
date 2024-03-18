@@ -27,7 +27,7 @@ from ._config import (
 )
 
 # URL to repository with test data (channels, repositories)
-TEST_REPOSITORY_URL = "https://raw.githubusercontent.com/wbond/package_control/master/package_control/tests/repositories/"
+TEST_REPOSITORY_URL = "https://raw.githubusercontent.com/wbond/package_control/fix/library-date-keys/package_control/tests/repositories/"
 
 # prevent optimizations when running tests those
 # filter out required results for platform independent tests.
@@ -604,6 +604,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             ],
                             "releases": [
                                 {
+                                    "date": "2014-11-12 02:02:22",
                                     "version": "1.0.0",
                                     "url": "https://packagecontrol.io/bz2.sublime-package",
                                     "sublime_text": "*",
@@ -676,6 +677,7 @@ class JsonRepositoryProviderTests(unittest.TestCase):
                             ],
                             "releases": [
                                 {
+                                    "date": "2014-11-12 02:02:22",
                                     "version": "1.0.0",
                                     "url": "https://packagecontrol.io/bz2.sublime-package",
                                     "sublime_text": "*",
