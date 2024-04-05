@@ -1,3 +1,4 @@
+import errno
 import os
 import stat
 import sys
@@ -53,21 +54,13 @@ def clear_directory(directory, ignored_files=None, ignore_errors=True):
     trash_dir = sys_path.trash_path()
     os.makedirs(trash_dir, exist_ok=True)
 
-    ignored_dirs = set()
     was_exception = False
 
     for root, dirs, files in os.walk(directory, topdown=False):
         try:
-            for d in dirs:
-                path = os.path.join(root, d)
-                if path not in ignored_dirs:
-                    os.rmdir(path)
-
             for f in files:
                 path = os.path.normcase(os.path.join(root, f))
                 if ignored_files and path in ignored_files:
-                    # also ignore parent folder from being removed
-                    ignored_dirs.add(root)
                     continue
 
                 try:
@@ -85,7 +78,15 @@ def clear_directory(directory, ignored_files=None, ignore_errors=True):
                     )
                     os.rename(path, trash_path)
 
-        except OSError:
+            for d in dirs:
+                try:
+                    os.rmdir(os.path.join(root, d))
+                except OSError as e:
+                    if e.errno == errno.ENOTEMPTY:
+                        continue
+                    raise
+
+        except OSError as e:
             if not ignore_errors:
                 raise
             was_exception = True
