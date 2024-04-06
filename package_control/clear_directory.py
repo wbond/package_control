@@ -86,7 +86,7 @@ def clear_directory(directory, ignored_files=None, ignore_errors=True):
                         continue
                     raise
 
-        except OSError as e:
+        except OSError:
             if not ignore_errors:
                 raise
             was_exception = True
