@@ -1,6 +1,6 @@
 {
 	"name": "Package Control",
-	"version": "4.0.5",
+	"version": "4.0.6",
 	"description": "A full-featured package manager",
 	"platforms": ["*"],
 	"sublime_text": ">=3143",
