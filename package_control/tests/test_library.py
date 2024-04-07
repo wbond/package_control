@@ -1,7 +1,10 @@
+import sys
 import unittest
 
 from .. import library
 from ._data_decorator import data_decorator, data
+
+PY33 = sys.version_info[:2] == (3, 3)
 
 
 @data_decorator
@@ -55,6 +58,7 @@ class LibraryTests(unittest.TestCase):
     def translate_name(self, name, result):
         self.assertEqual(result, library.translate_name(name))
 
+    @unittest.skipIf(PY33, "requires ST4 with py38")
     def test_names_to_libraries(self):
         self.assertEqual(
             [
@@ -83,7 +87,6 @@ class LibraryTests(unittest.TestCase):
 
     @data(
         (
-            (("test-lib", "3.3"), ("test-lib", "3.8")),
             (("test-lib", "3.3"), ("test.lib", "3.3")),
             (("test_lib", "3.3"), ("test.lib", "3.3")),
             (("testlib", "3.3"), ("test.lib", "3.3")),
@@ -96,7 +99,6 @@ class LibraryTests(unittest.TestCase):
 
     @data(
         (
-            (("test-lib", "3.3"), ("test-lib", "3.8")),
             (("test-lib-1", "3.3"), ("test-lib-2", "3.3")),
             (("test-lib-a", "3.3"), ("test-lib-b", "3.3")),
         )
@@ -106,10 +108,21 @@ class LibraryTests(unittest.TestCase):
 
     @data(
         (
-            (("test-lib", "3.8"), ("test-lib", "3.3")),
             (("test-lib-2", "3.3"), ("test-lib-1", "3.3")),
             (("test-lib-b", "3.3"), ("test-lib-a", "3.3")),
         )
     )
     def library_greater(self, a, b):
         self.assertGreater(library.Library(*a), library.Library(*b))
+
+    @unittest.skipIf(PY33, "requires ST4 with py38")
+    def test_library_not_equal_33_38(self):
+        self.assertNotEqual(library.Library("test-lib", "3.3"), library.Library("test-lib", "3.8"))
+
+    @unittest.skipIf(PY33, "requires ST4 with py38")
+    def test_library_lesser_33_38(self):
+        self.assertLess(library.Library("test-lib", "3.3"), library.Library("test-lib", "3.8"))
+
+    @unittest.skipIf(PY33, "requires ST4 with py38")
+    def test_library_greater_38_33(self):
+        self.assertGreater(library.Library("test-lib", "3.8"), library.Library("test-lib", "3.3"))

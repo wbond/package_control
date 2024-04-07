@@ -3,119 +3,52 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  test-all-38:
-    name: Python 3.8 on ${{ matrix.os }} ${{ matrix.arch }}
+  test-all:
+    name: UnitTests on ST${{ matrix.st-version }} ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
-          - windows-2019
-          - macos-11
-          - ubuntu-20.04
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
         arch:
           - x86
           - x64
+        st-version:
+          - 3
+          - 4
         exclude:
-          - os: macos-11
+          - st-version: 4
             arch: x86
-          - os: ubuntu-20.04
+          - os: macos-latest
             arch: x86
+          - os: ubuntu-latest
+            arch: x86
+    steps:
+      - uses: actions/checkout@v4
+      - uses: SublimeText/UnitTesting/actions/setup@v1
+        with:
+          package-name: Package Control
+          sublime-text-version: ${{ matrix.st-version }}
+      - uses: SublimeText/UnitTesting/actions/run-tests@v1
+        with:
+          package-name: Package Control
+        env:
+          GH_PASS: ${{ secrets.GH_PASS }}
+          GL_PASS: ${{ secrets.GL_PASS }}
+          BB_PASS: ${{ secrets.BB_PASS }}
+
+  lint:
+    name: Check Code Style
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.8'
-          architecture: ${{ matrix.arch }}
       - name: Install dependencies
-        run: pip install -U flake8 pytest
+        run: pip install -U flake8
       - name: Run linter
         run: flake8
-      - name: Run tests
-        run: pytest
-        env:
-          ST_DIR: ~/sublime_text
-          GH_PASS: ${{ secrets.GH_PASS }}
-          GL_PASS: ${{ secrets.GL_PASS }}
-          BB_PASS: ${{ secrets.BB_PASS }}
-
-  # test-linux-33:
-  #   name: Python 3.3.7 on ubuntu-18.04 x64
-  #   runs-on: ubuntu-18.04
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.3.7'
-  #         architecture: x64
-  #     - name: Install dependencies
-  #       run: python dev/deps.py
-  #     - name: Run linter
-  #       run: python dev/lint.py
-  #     - name: Run tests
-  #       run: python dev/tests.py
-  #       env:
-  #         ST_DIR: ~/sublime_text
-  #         GH_PASS: ${{ secrets.GH_PASS }}
-  #         GL_PASS: ${{ secrets.GL_PASS }}
-  #         BB_PASS: ${{ secrets.BB_PASS }}
-
-  # test-mac-33:
-  #   name: Python 3.3.7 on macos-11 x64
-  #   runs-on: macos-11
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - name: Check pyenv
-  #       id: check-pyenv
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: ~/.pyenv
-  #         key: macos-11-3.3-pyenv
-
-  #     - name: Install Python 3.3
-  #       run: python dev/pyenv-install.py 3.3 >> $GITHUB_PATH
-
-  #     - name: Install dependencies
-  #       run: python dev/deps.py
-  #     - name: Run linter
-  #       run: python dev/lint.py
-  #     - name: Run tests
-  #       run: python dev/tests.py
-  #       env:
-  #         ST_DIR: ~/sublime_text
-  #         GH_PASS: ${{ secrets.GH_PASS }}
-  #         GL_PASS: ${{ secrets.GL_PASS }}
-  #         BB_PASS: ${{ secrets.BB_PASS }}
-
-  test-windows-33:
-    name: Python 3.3.5 on windows-2019 ${{ matrix.arch }}
-    runs-on: windows-2019
-    strategy:
-      matrix:
-        arch:
-          - 'x86'
-          - 'x64'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache Python
-        id: cache-python
-        uses: actions/cache@v4
-        with:
-          path: ~/AppData/Local/Python3.3-${{ matrix.arch }}
-          key: windows-2019-python-3.3-${{ matrix.arch }}
-
-      - name: Install Python 3.3.5
-        run: python dev/python-install.py 3.3 ${{ matrix.arch }} | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Install dependencies
-        run: python dev/deps.py
-      - name: Run linter
-        run: python dev/lint.py
-      - name: Run tests
-        run: python dev/tests.py
-        env:
-          ST_DIR: ~/sublime_text
-          GH_PASS: ${{ secrets.GH_PASS }}
-          GL_PASS: ${{ secrets.GL_PASS }}
-          BB_PASS: ${{ secrets.BB_PASS }}

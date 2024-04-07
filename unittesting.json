@@ -1,0 +1,5 @@
+{
+	"tests_dir": "package_control/tests",
+	"pattern": "test*.py",
+	"verbosity": 1
+}
