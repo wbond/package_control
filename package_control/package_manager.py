@@ -11,6 +11,7 @@ import time
 import zipfile
 
 from concurrent import futures
+from functools import partial
 from io import BytesIO
 from stat import S_IXUSR
 from threading import RLock
@@ -2203,55 +2204,74 @@ class PackageManager:
         if not output:
             return
 
-        output = "\n\n{}\n{}\n{}".format(package_name, '-' * len(package_name), output)
+        def print_message(package_name, output, unattended):
+            """
+            Prints a message in UI thread
 
-        window = None
-        view = None
-        view_name = 'Package Control Messages'
+            By running in UI thread, the active view keeps focused, when optionally creating
+            or updating the Package Control Messages output view in background.
 
-        for _window in sublime.windows():
-            for _view in _window.views():
-                if _view.name() == view_name:
-                    window = _window
-                    view = _view
-                    break
+            :param package_name:
+                The package name to print update message for.
 
-        if view is None:
-            window = sublime.active_window()
-            if not window:
-                window = sublime.windows()[0]
+            :param output:
+                string to print
 
-            active_view = window.active_view()
+            :param unattended:
+                If `True` the message view is created in background without stealing focus
+                of active view.
+            """
+            output = "\n\n{}\n{}\n{}".format(package_name, '-' * len(package_name), output)
 
-            view = window.new_file()
-            window.set_view_index(view, 0, 0)
+            window = None
+            view = None
+            view_name = 'Package Control Messages'
 
-            if unattended and active_view:
-                window.focus_view(active_view)
+            for _window in sublime.windows():
+                for _view in _window.views():
+                    if _view.name() == view_name:
+                        window = _window
+                        view = _view
+                        break
 
-            view.set_name(view_name)
-            view.set_scratch(True)
-            settings = view.settings()
-            settings.set('auto_complete', False)
-            settings.set('auto_indent', False)
-            settings.set('gutter', False)
-            settings.set('tab_width', 2)
-            settings.set('word_wrap', True)
+            if view is None:
+                window = sublime.active_window()
+                if not window:
+                    window = sublime.windows()[0]
 
-        # As 'package_control_message' command is not available during
-        # Package Control upgrade, fallback to built-in commands to insert message
-        if package_name == 'Package Control':
-            output = "{}\n{}\n{}".format(view_name, '=' * len(view_name), output)
-            view.run_command('move_to', {'to': 'eof'})
-            view.run_command('move_to', {'to': 'bof', 'extend': True})
-            view.set_read_only(False)
-            view.run_command('insert', {'characters': output})
-            view.set_read_only(True)
-            view.run_command('move_to', {'to': 'bof'})
-            return
+                active_view = window.active_view()
 
-        # append message to view without touching scroll position or selection
-        view.run_command('package_control_message', {'message': output})
+                view = window.new_file()
+                window.set_view_index(view, 0, 0)
+
+                if unattended and active_view:
+                    window.focus_view(active_view)
+
+                view.set_name(view_name)
+                view.set_scratch(True)
+                settings = view.settings()
+                settings.set('auto_complete', False)
+                settings.set('auto_indent', False)
+                settings.set('gutter', False)
+                settings.set('tab_width', 2)
+                settings.set('word_wrap', True)
+
+            # As 'package_control_message' command is not available during
+            # Package Control upgrade, fallback to built-in commands to insert message
+            if package_name == 'Package Control':
+                output = "{}\n{}\n{}".format(view_name, '=' * len(view_name), output)
+                view.run_command('move_to', {'to': 'eof'})
+                view.run_command('move_to', {'to': 'bof', 'extend': True})
+                view.set_read_only(False)
+                view.run_command('insert', {'characters': output})
+                view.set_read_only(True)
+                view.run_command('move_to', {'to': 'bof'})
+                return
+
+            # append message to view without touching scroll position or selection
+            view.run_command('package_control_message', {'message': output})
+
+        sublime.set_timeout(partial(print_message, package_name, output, unattended))
 
     def record_usage(self, params):
         """
