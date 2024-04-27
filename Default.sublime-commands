@@ -12,6 +12,10 @@
         "command": "disable_packages"
     },
     {
+        "caption": "Package Control: List Available Libraries",
+        "command": "list_available_libraries"
+    },
+    {
         "caption": "Package Control: Advanced Enable Packages",
         "command": "enable_packages"
     },

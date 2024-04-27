@@ -9,6 +9,7 @@ from .enable_package_command import EnablePackageCommand
 from .enable_packages_command import EnablePackagesCommand
 from .install_package_command import InstallPackageCommand
 from .install_packages_command import InstallPackagesCommand
+from .list_available_libraries_command import ListAvailableLibrariesCommand
 from .list_packages_command import ListPackagesCommand
 from .list_unmanaged_packages_command import ListUnmanagedPackagesCommand
 from .new_template_command import NewChannelJsonCommand
@@ -41,6 +42,7 @@ __all__ = [
     'EnablePackagesCommand',
     'InstallPackageCommand',
     'InstallPackagesCommand',
+    'ListAvailableLibrariesCommand',
     'ListPackagesCommand',
     'ListUnmanagedPackagesCommand',
     'NewChannelJsonCommand',
