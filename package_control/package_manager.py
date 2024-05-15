@@ -1158,6 +1158,13 @@ class PackageManager:
                 installed_version = pep440.PEP440Version(installed_version)
 
         is_upgrade = installed_library is not None
+        if is_upgrade and not installed_library.is_managed():
+            if debug:
+                console_write(
+                    'The library "%s" for Python %s was not installed by Package Control; leaving alone',
+                    (lib.name, lib.python_version)
+                )
+            return True
 
         release = None
         available_version = None
