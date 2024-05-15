@@ -378,9 +378,11 @@ class DistInfoDir:
         :returns:
             An unicode string of of which installer was used.
         """
-
-        with open(self.abs_path("INSTALLER"), "r", encoding="utf-8") as fobj:
-            return fobj.readline().strip()
+        try:
+            with open(self.abs_path("INSTALLER"), "r", encoding="utf-8") as fobj:
+                return fobj.readline().strip()
+        except FileNotFoundError:
+            return ""
 
     def write_installer(self):
         """

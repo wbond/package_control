@@ -141,6 +141,12 @@ class InstalledLibrary(Library):
         self.dist_name = dist_info_dir[: dist_info_dir.find("-")].lower()
         self.python_version = python_version
 
+    def is_managed(self):
+        """
+        Library was installed and is therefore managed by Package Control.
+        """
+        return self.dist_info.read_installer() == self.dist_info.generate_installer().strip()
+
 
 def list_all():
     """
