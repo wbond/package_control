@@ -1128,7 +1128,7 @@ class PackageManager:
         """
 
         error = False
-        for lib in libraries:
+        for lib in sorted(libraries):
             if not self.install_library(lib):
                 if fail_early:
                     return False
@@ -1351,7 +1351,7 @@ class PackageManager:
         orphaned_libraries = self.find_orphaned_libraries(required_libraries)
 
         error = False
-        for lib in orphaned_libraries:
+        for lib in sorted(orphaned_libraries):
             if not self.remove_library(lib):
                 error = True
 
