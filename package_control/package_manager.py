@@ -1275,6 +1275,9 @@ class PackageManager:
                     )
                     return False
 
+                temp_did.write_installer()
+                temp_did.add_installer_to_record()
+
                 try:
                     temp_did.verify_python_version(lib.python_version)
                 except EnvironmentError as e:
