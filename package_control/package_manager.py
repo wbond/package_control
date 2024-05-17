@@ -114,6 +114,7 @@ class PackageManager:
             'package_destination',
             'package_name_map',
             'package_profiles',
+            'print_messages',
             'proxy_password',
             'proxy_username',
             'remove_orphaned',
@@ -2140,6 +2141,13 @@ class PackageManager:
         :param unattended:
             If ``True`` don't focus "Package Control Messages".
         """
+
+        if self.settings["print_messages"] == "disabled":
+            return
+        elif self.settings["print_messages"] == "background":
+            unattended = True
+        elif self.settings["print_messages"] == "foreground":
+            unattended = False
 
         try:
             messages_file = os.path.join(package_dir, 'messages.json')
