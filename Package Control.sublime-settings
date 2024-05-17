@@ -60,6 +60,14 @@
 	// to the Sublime Text console
 	"debug": false,
 
+	// Print package install and upgrade messages.
+	// Valid values are:
+	// - "disabled": don't print anything
+	// - "background": open message view in background
+	// - "foreground": open message view in foreground
+	// - "auto": focus messages depending on command mode (unattended)
+	"print_messages": "auto",
+
 	// If package install, upgrade and removal info should be submitted to
 	// the channel for aggregated statistics
 	"submit_usage": true,
