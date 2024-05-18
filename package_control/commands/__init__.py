@@ -17,7 +17,6 @@ from .package_control_disable_debug_mode_command import PackageControlDisableDeb
 from .package_control_enable_debug_mode_command import PackageControlEnableDebugModeCommand
 from .package_control_insert_command import PackageControlInsertCommand
 from .package_control_message_command import PackageControlMessageCommand
-from .package_control_tests_command import PackageControlTestsCommand
 from .remove_channel_command import RemoveChannelCommand
 from .remove_package_command import RemovePackageCommand
 from .remove_packages_command import RemovePackagesCommand
@@ -50,7 +49,6 @@ __all__ = [
     'PackageControlEnableDebugModeCommand',
     'PackageControlInsertCommand',
     'PackageControlMessageCommand',
-    'PackageControlTestsCommand',
     'RemoveChannelCommand',
     'RemovePackageCommand',
     'RemovePackagesCommand',
