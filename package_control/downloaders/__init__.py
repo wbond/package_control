@@ -13,12 +13,14 @@ DOWNLOADERS = {
     'wget': WgetDownloader
 }
 
-# oscrypto can fail badly on Linux in the Sublime Text 3 environment due to
-# trying to mix the statically-linked OpenSSL in plugin_host with the OpenSSL
-# loaded from the operating system. On Python 3.8 we dynamically link OpenSSL,
-# so it just needs to be configured properly, which is handled in
-# oscrypto_downloader.py.
-if sys.platform != 'linux' or sys.version_info[:2] != (3, 3) or sys.executable != 'python3':
+# oscrypto can fail badly
+# 1. on Linux in the Sublime Text 3 environment due to trying to mix the
+#    statically-linked OpenSSL in plugin_host with the OpenSSL loaded from the
+#    operating system. On Python 3.8 we dynamically link OpenSSL, so it just needs
+#    to be configured properly, which is handled in oscrypto_downloader.py.
+# 2. on MacOS ARM plattform due to whatever reason. Due to maintanance state of
+#    oscrypto, start fading it out by disabling it on python 3.8 (ST4)
+if sys.platform != 'linux' and sys.version_info[:2] == (3, 3):
     try:
         from .oscrypto_downloader import OscryptoDownloader
         DOWNLOADERS['oscrypto'] = OscryptoDownloader
