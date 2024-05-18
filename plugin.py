@@ -236,7 +236,6 @@ for suffix in (
     '.commands.package_control_enable_debug_mode_command',
     '.commands.package_control_insert_command',
     '.commands.package_control_message_command',
-    '.commands.package_control_tests_command',
     '.commands',
 
     '.automatic_upgrader',
