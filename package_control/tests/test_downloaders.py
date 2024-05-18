@@ -143,13 +143,8 @@ class WgetDownloaderTests(unittest.TestCase, DownloaderTestsMixin):
 if hasattr(downloaders, 'OscryptoDownloader'):
     class OscryptoDownloaderTests(unittest.TestCase, DownloaderTestsMixin):
         downloader_class = downloaders.OscryptoDownloader
-else:
-    class OscryptoDownloaderTests(unittest.TestCase):
-        pass
+
 
 if hasattr(downloaders, 'WinINetDownloader'):
     class WinINetDownloaderTests(unittest.TestCase, DownloaderTestsMixin):
         downloader_class = downloaders.WinINetDownloader
-else:
-    class WinINetDownloaderTests(unittest.TestCase):
-        pass
