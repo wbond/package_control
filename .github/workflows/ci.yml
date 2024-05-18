@@ -1,6 +1,15 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+    paths:
+      - '.github/workflows/ci.yml'
+      - 'package_control/**/*.py'
+  workflow_dispatch:
 
 jobs:
   test-all:
