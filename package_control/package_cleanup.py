@@ -97,6 +97,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         removed_packages = None
 
         self.remove_legacy_libraries()
+        self.autofix_missing_installer()
 
         # Check metadata to verify packages were not improperly installed
         self.migrate_incompatible_packages(found_packages)
@@ -445,6 +446,47 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         if tasks:
             with ActivityIndicator('Installing missing packages...') as progress:
                 self.run_install_tasks(tasks, progress, unattended=True, package_kind='missing')
+
+    def autofix_missing_installer(self):
+        """
+        Add missing INSTALLER file to available unmodified libraries
+
+        Libraries without INSTALLER are treated unmanaged
+        and thus are not upgraded or removed automatically.
+
+        Package Control prior to v4.0.7 didn't add INSTALLER for
+        installed whl files. This option lets users fix it, manually.
+        """
+
+        available_libraries = self.manager.list_available_libraries()
+        for lib in self.manager.list_libraries():
+            installer = lib.dist_info.read_installer()
+            if installer:
+                continue
+
+            available_library = available_libraries.get(lib.dist_name)
+            if not available_library:
+                continue
+
+            if not any(
+                lib.python_version in available_release['python_versions']
+                for available_release in available_library['releases']
+            ):
+                continue
+
+            if not lib.dist_info.verify_files():
+                console_write(
+                    'Library "%s" for Python %s was modified, skipping!',
+                    (lib.name, lib.python_version)
+                )
+                continue
+
+            lib.dist_info.write_installer()
+            lib.dist_info.add_installer_to_record()
+            console_write(
+                'Library "%s" for Python %s fixed!',
+                (lib.name, lib.python_version)
+            )
 
     def remove_legacy_libraries(self):
         """

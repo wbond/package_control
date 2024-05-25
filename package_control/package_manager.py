@@ -958,8 +958,8 @@ class PackageManager:
         installed_libraries = self.list_libraries()
         if required_libraries is None:
             required_libraries = self.find_required_libraries()
-        unmanaged_libraries = library.list_unmanaged()
-        return installed_libraries - required_libraries - unmanaged_libraries
+
+        return set(lib for lib in installed_libraries - required_libraries if lib.is_managed())
 
     def _download_zip_file(self, name, url, sha256=None):
         try:
@@ -1128,7 +1128,7 @@ class PackageManager:
         """
 
         error = False
-        for lib in libraries:
+        for lib in sorted(libraries):
             if not self.install_library(lib):
                 if fail_early:
                     return False
@@ -1158,6 +1158,13 @@ class PackageManager:
                 installed_version = pep440.PEP440Version(installed_version)
 
         is_upgrade = installed_library is not None
+        if is_upgrade and not installed_library.is_managed():
+            if debug:
+                console_write(
+                    'The library "%s" for Python %s was not installed by Package Control; leaving alone',
+                    (lib.name, lib.python_version)
+                )
+            return True
 
         release = None
         available_version = None
@@ -1268,6 +1275,9 @@ class PackageManager:
                     )
                     return False
 
+                temp_did.write_installer()
+                temp_did.add_installer_to_record()
+
                 try:
                     temp_did.verify_python_version(lib.python_version)
                 except EnvironmentError as e:
@@ -1344,7 +1354,7 @@ class PackageManager:
         orphaned_libraries = self.find_orphaned_libraries(required_libraries)
 
         error = False
-        for lib in orphaned_libraries:
+        for lib in sorted(orphaned_libraries):
             if not self.remove_library(lib):
                 error = True
 

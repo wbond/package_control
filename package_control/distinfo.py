@@ -222,6 +222,28 @@ class DistInfoDir:
 
         return "Package Control\n"
 
+    def add_installer_to_record(self):
+        R"""
+        Add INSTALLER entry to .dist-info/RECORD file.
+
+        Note: hash has been pre-compiled using...
+
+        ```py
+        digest = hashlib.sha256("Package Control\n".encode("utf-8")).digest()
+        sha = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("utf-8")
+        ```
+        """
+        installer = self.dir_name + "/INSTALLER,"
+        record = self.abs_path("RECORD")
+
+        # make sure not to add duplicate entries
+        with open(record, "r", encoding="utf-8") as fobj:
+            items = [item for item in fobj.readlines() if not item.startswith(installer)]
+            items.append(installer + "sha256=Hg_Q6w_I4zpFfb6C24LQdd4oTAMHJZDk9gtuV2yOgkw,16\n")
+
+        with open(record, "w", encoding="utf-8", newline="\n") as fobj:
+            fobj.writelines(sorted(items))
+
     def generate_record(self, package_dirs, package_files):
         """
         Generates the .dist-info/RECORD file contents
@@ -378,9 +400,11 @@ class DistInfoDir:
         :returns:
             An unicode string of of which installer was used.
         """
-
-        with open(self.abs_path("INSTALLER"), "r", encoding="utf-8") as fobj:
-            return fobj.readline().strip()
+        try:
+            with open(self.abs_path("INSTALLER"), "r", encoding="utf-8") as fobj:
+                return fobj.readline().strip()
+        except FileNotFoundError:
+            return ""
 
     def write_installer(self):
         """
