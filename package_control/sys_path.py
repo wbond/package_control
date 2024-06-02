@@ -2,77 +2,70 @@ import os
 import sys
 
 import sublime
-import sublime_plugin
 
 PREFIX = '\\\\?\\' if sys.platform == 'win32' else ''
 
-# Determine default packages path
-try:
-    import Default.sort as default_module
+__executable_path = sublime.executable_path()
+if not __executable_path:
+    # Until ST4187 sublime.executable_path() doesn't return anything at import time.
+    # On python 3.3 os.abspath() is required to return absolute path of sys.executable
+    __executable_path = os.path.abspath(sys.executable)
 
-    __default_packages_path = os.path.dirname(os.path.dirname(default_module.__file__))
+# Default packages are located in application installation directory next to executables.
+__default_packages_path = os.path.join(os.path.dirname(__executable_path), 'Packages')
+if not os.path.isdir(__default_packages_path):
+    raise FileNotFoundError('Default Packages')
 
-    # When loaded as a .sublime-package file, __file__ ends up being
-    # {data_dir}/Installed Packages/Package Control.sublime-package/package_control/sys_path.py
-    if isinstance(__loader__, sublime_plugin.ZipLoader):
-        __installed_packages_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        # For a non-development build, the Packages are next to the Installed Packages dir
-        __packages_path = os.path.join(os.path.dirname(__installed_packages_path), 'Packages')
-        if not os.path.exists(__packages_path):
-            __packages_path = None
+# Determine user's data path.
+# - for portable setups resolves to __executable_path/Data
+# - for Normal setups resolves to %APPDATA%\Sublime Text or ~/.config/sublime-text
+# When loaded as a .sublime-package file, __file__ ends up being
+# {data_dir}/Installed Packages/Package Control.sublime-package/package_control/sys_path.py
+# When loaded as unpacked package, __file__ ends up being
+# {data_dir}/Packages/Package Control/package_control/sys_path.py
+__data_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-    # When loaded as unpacked package, __file__ ends up being
-    # {data_dir}/Packages/Package Control/package_control/sys_path.py
+# Determine extracted packages path
+__packages_path = os.path.join(__data_path, 'Packages')
+if not os.path.isdir(__packages_path):
+    # in ST development environment default package must be a directory
+    if not os.path.isdir(os.path.join(__default_packages_path, 'Default')):
+        raise FileNotFoundError('Packages')
+    __packages_path = __default_packages_path
+
+# Determine installed packages path
+__installed_packages_path = os.path.join(__data_path, 'Installed Packages')
+if not os.path.isdir(__installed_packages_path):
+    __installed_packages_path = None
+
+if __installed_packages_path is None:
+    if sys.platform == 'darwin':
+        __data_path = os.path.expanduser('~/Library/Application Support')
+    elif sys.platform == 'win32':
+        __data_path = os.environ.get('APPDATA')
     else:
-        __packages_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        # For a non-development build, the Installed Packages are next to the Packages dir
-        __installed_packages_path = os.path.join(os.path.dirname(__packages_path), 'Installed Packages')
-        if not os.path.exists(__installed_packages_path):
-            __installed_packages_path = None
+        __data_path = os.environ.get('XDG_CONFIG_HOME')
+        if __data_path is None:
+            __data_path = os.path.expanduser('~/.config')
 
-    if __packages_path is None:
-        # default package must not be zipped in dev environment
-        if isinstance(default_module.__loader__, sublime_plugin.ZipLoader):
-            raise FileNotFoundError('Packages')
-        __packages_path = __default_packages_path
+    if __data_path:
+        for __leaf in ('Sublime Text Development', 'Sublime Text 3 Development'):
+            if sys.platform not in set(('win32', 'darwin')):
+                __leaf = __leaf.lower().replace(' ', '-')
+            __data_path = os.path.join(__data_path, __leaf)
+            __installed_packages_path = os.path.join(__data_path, 'Installed Packages')
+            if not os.path.exists(__installed_packages_path):
+                __installed_packages_path = None
 
     if __installed_packages_path is None:
-        if sys.platform == 'darwin':
-            __data_base = os.path.expanduser('~/Library/Application Support')
-        elif sys.platform == 'win32':
-            __data_base = os.environ.get('APPDATA')
-        else:
-            __data_base = os.environ.get('XDG_CONFIG_HOME')
-            if __data_base is None:
-                __data_base = os.path.expanduser('~/.config')
-
-        if __data_base:
-            for __leaf in ('Sublime Text Development', 'Sublime Text 3 Development'):
-                if sys.platform not in set(('win32', 'darwin')):
-                    __leaf = __leaf.lower().replace(' ', '-')
-                __data_path = os.path.join(__data_base, __leaf)
-                __installed_packages_path = os.path.join(__data_path, 'Installed Packages')
-                if not os.path.exists(__installed_packages_path):
-                    __installed_packages_path = None
-
-        if __installed_packages_path is None:
-            raise FileNotFoundError('Installed Packages')
-
-except ImportError:
-    # All this song and dance, just to satisfy CI test runner!
-    # Import error of Default.sort indicates CI test environment
-    # Unfortunately we can't use this simple lines in production
-    # as API can be called at import time only with ST4088+.
-    __default_packages_path = os.path.join(os.path.dirname(sublime.executable_path()))
-    __installed_packages_path = sublime.installed_packages_path()
-    __packages_path = sublime.packages_path()
+        raise FileNotFoundError('Installed Packages')
 
 if PREFIX:
+    __data_path = PREFIX + __data_path
     __default_packages_path = PREFIX + __default_packages_path
     __installed_packages_path = PREFIX + __installed_packages_path
     __packages_path = PREFIX + __packages_path
 
-__data_path = os.path.dirname(__installed_packages_path)
 __cache_path = None
 __package_control_cache_path = None
 __python_libs_cache_path = None
