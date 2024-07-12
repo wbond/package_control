@@ -14,6 +14,11 @@ if not __executable_path:
 # Default packages are located in application installation directory next to executables.
 __default_packages_path = os.path.join(os.path.dirname(__executable_path), 'Packages')
 if not os.path.isdir(__default_packages_path):
+    # Fall back to detecting the path using the location of the module
+    import Default.sort as default_module
+    __default_packages_path = os.path.dirname(os.path.dirname(default_module.__file__))
+
+if not os.path.isdir(__default_packages_path):
     raise FileNotFoundError('Default Packages')
 
 # Determine user's data path.
