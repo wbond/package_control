@@ -239,6 +239,7 @@ class PackageDisabler:
             in_process_at_start = load_list_setting(pc_settings, 'in_process_packages')
             in_process = set()
 
+            need_restore = False
             effected = set()
 
             for action, packages in package_actions.items():
@@ -267,9 +268,10 @@ class PackageDisabler:
                 else:
                     in_process |= in_process_at_start | disabled
 
-                # Derermine whether to Backup old color schemes, ayntaxes and theme for later restore.
+                # Derermine whether to Backup old color schemes, syntaxes and theme for later restore.
                 # If False, reset to defaults only.
                 backup = action in (PackageDisabler.INSTALL, PackageDisabler.UPGRADE)
+                need_restore |= backup
                 PackageDisabler.backup_and_reset_settings(disabled, backup)
 
                 if action == PackageDisabler.UPGRADE:
@@ -281,6 +283,12 @@ class PackageDisabler:
                     for package in disabled:
                         version = PackageDisabler.get_version(package)
                         events.add(events.REMOVE, package, version)
+
+            if need_restore:
+                if PackageDisabler.refcount == 0:
+                    PackageDisabler.disable_indexer()
+
+                PackageDisabler.refcount += 1
 
             save_list_setting(
                 pc_settings,
@@ -431,25 +439,6 @@ class PackageDisabler:
         settings = sublime.load_settings(preferences_filename())
         cached_settings = {}
 
-        # Temporarily disable indexing during package updates, so multiple syntax
-        # packages can be disabled/installed and re-enabled without indexer restarting
-        # for each one individually. Also we don't want to re-index while a syntax
-        # package is being disabled for upgrade - just once after upgrade is finished.
-        if backup:
-            # cancel pending settings restore request
-            PackageDisabler.refcount += 0
-
-            index_files = settings.get('index_files', True)
-            if index_files:
-                try:
-                    # note: uses persistent cookie to survive PC updates.
-                    with open(os.path.join(pc_cache_dir(), 'backup.json'), 'x', encoding='utf-8') as fobj:
-                        json.dump({'index_files': index_files}, fobj)
-                    settings.set('index_files', False)
-                    console_write('pausing indexer')
-                except OSError:
-                    pass
-
         # Backup and reset global theme(s)
         for key, default_file in PackageDisabler.default_themes.items():
             theme_file = settings.get(key)
@@ -532,7 +521,7 @@ class PackageDisabler:
     @staticmethod
     def restore_settings():
         with PackageDisabler.lock:
-            PackageDisabler.refcount -= 0
+            PackageDisabler.refcount -= 1
             if PackageDisabler.refcount > 0:
                 return
 
@@ -635,6 +624,24 @@ class PackageDisabler:
                 PackageDisabler.view_syntaxes = {}
 
                 PackageDisabler.refcount = 0
+
+    @staticmethod
+    def disable_indexer():
+        # Temporarily disable indexing during package updates, so multiple syntax
+        # packages can be disabled/installed and re-enabled without indexer restarting
+        # for each one individually. Also we don't want to re-index while a syntax
+        # package is being disabled for upgrade - just once after upgrade is finished.
+        settings = sublime.load_settings(preferences_filename())
+        index_files = settings.get('index_files', True)
+        if index_files:
+            try:
+                # note: uses persistent cookie to survive PC updates.
+                with open(os.path.join(pc_cache_dir(), 'backup.json'), 'x', encoding='utf-8') as fobj:
+                    json.dump({'index_files': index_files}, fobj)
+                settings.set('index_files', False)
+                console_write('pausing indexer')
+            except OSError:
+                pass
 
     @staticmethod
     def resume_indexer(persist=True):
