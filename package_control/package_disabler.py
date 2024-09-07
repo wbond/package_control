@@ -240,7 +240,7 @@ class PackageDisabler:
             in_process = set()
 
             need_restore = False
-            effected = set()
+            affected = set()
 
             for action, packages in package_actions.items():
                 # convert packages to a set
@@ -251,7 +251,7 @@ class PackageDisabler:
                         packages = {packages}
 
                 disabled = packages - (ignored_at_start - in_process_at_start)
-                effected |= disabled
+                affected |= disabled
                 ignored |= ignored_at_start | disabled
 
                 # Clear packages from in-progress when disabling them, otherwise
@@ -306,7 +306,7 @@ class PackageDisabler:
                 ignored_at_start
             )
 
-            return effected
+            return affected
 
     @staticmethod
     def reenable_packages(package_actions):
@@ -338,7 +338,7 @@ class PackageDisabler:
             in_process = load_list_setting(pc_settings, 'in_process_packages')
 
             need_restore = False
-            effected = set()
+            affected = set()
 
             try:
                 for action, packages in package_actions.items():
@@ -371,7 +371,7 @@ class PackageDisabler:
                         for package in packages:
                             events.clear(events.REMOVE, package)
 
-                    effected |= packages
+                    affected |= packages
 
                 # always flush settings to disk
                 # to make sure to also save updated `installed_packages`
@@ -379,14 +379,14 @@ class PackageDisabler:
                     pc_settings,
                     pc_settings_filename(),
                     'in_process_packages',
-                    in_process - effected
+                    in_process - affected
                 )
 
                 save_list_setting(
                     settings,
                     preferences_filename(),
                     'ignored_packages',
-                    ignored - effected,
+                    ignored - affected,
                     ignored
                 )
 

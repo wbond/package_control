@@ -119,7 +119,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                 Package clean-up could not be completed.
                 You may need to restart your OS to unlock relevant files and directories.
 
-                The following packages are effected: "%s"
+                The following packages are affected: "%s"
                 ''',
                 '", "'.join(sorted(self.failed_cleanup, key=lambda s: s.lower()))
             )
