@@ -130,8 +130,6 @@ class Cli:
             if input and isinstance(input, str):
                 input = input.encode(encoding)
 
-            stuck = True
-
             binary_name = os.path.basename(args[0])
             if re.search('git', binary_name):
                 is_vcs = True
@@ -140,41 +138,7 @@ class Cli:
             else:
                 is_vcs = False
 
-            if sublime:
-                def kill_proc():
-                    if not stuck:
-                        return
-                    # This doesn't actually work!
-                    proc.kill()
-
-                    message = text.format(
-                        '''
-                        The process %s seems to have gotten stuck.
-
-                        Command: %s
-
-                        Working directory: %s
-                        ''',
-                        (binary_name, create_cmd(args), orig_cwd)
-                    )
-                    if is_vcs:
-                        message += text.format(
-                            '''
-
-                            This is likely due to a password or passphrase
-                            prompt. Please ensure %s works without a prompt, or
-                            change the "ignore_vcs_packages" Package Control
-                            setting to true.
-                            ''',
-                            binary_name
-                        )
-                    show_error(message)
-                sublime.set_timeout(kill_proc, 60000)
-
-            output, error = proc.communicate(input)
-
-            stuck = False
-
+            output, error = proc.communicate(input, timeout=60.0)
             output = output.decode(encoding)
             output = output.replace('\r\n', '\n').rstrip(' \n\r')
 
@@ -208,6 +172,33 @@ class Cli:
                 console_write(output, indent='  ', prefix=False)
 
             return output
+
+        except subprocess.TimeoutExpired:
+            proc.terminate()
+
+            message = text.format(
+                '''
+                The process %s seems to have gotten stuck.
+
+                Command: %s
+
+                Working directory: %s
+                ''',
+                (binary_name, create_cmd(args), orig_cwd)
+            )
+            if is_vcs:
+                message += text.format(
+                    '''
+
+                    This is likely due to a password or passphrase
+                    prompt. Please ensure %s works without a prompt, or
+                    change the "ignore_vcs_packages" Package Control
+                    setting to true.
+                    ''',
+                    binary_name
+                )
+            show_error(message)
+            return False
 
         except (OSError) as e:
             show_error(
