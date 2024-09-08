@@ -270,9 +270,7 @@ class PackageDisabler:
 
                 # Derermine whether to Backup old color schemes, syntaxes and theme for later restore.
                 # If False, reset to defaults only.
-                backup = action in (PackageDisabler.INSTALL, PackageDisabler.UPGRADE)
-                need_restore |= backup
-                PackageDisabler.backup_and_reset_settings(disabled, backup)
+                need_restore |= action in (PackageDisabler.INSTALL, PackageDisabler.UPGRADE)
 
                 if action == PackageDisabler.UPGRADE:
                     for package in disabled:
@@ -284,11 +282,7 @@ class PackageDisabler:
                         version = PackageDisabler.get_version(package)
                         events.add(events.REMOVE, package, version)
 
-            if need_restore:
-                if PackageDisabler.refcount == 0:
-                    PackageDisabler.disable_indexer()
-
-                PackageDisabler.refcount += 1
+            PackageDisabler.backup_and_reset_settings(affected, need_restore)
 
             save_list_setting(
                 pc_settings,
@@ -438,6 +432,12 @@ class PackageDisabler:
 
         settings = sublime.load_settings(preferences_filename())
         cached_settings = {}
+
+        if backup:
+            if PackageDisabler.refcount == 0:
+                PackageDisabler.disable_indexer()
+
+            PackageDisabler.refcount += 1
 
         # Backup and reset global theme(s)
         for key, default_file in PackageDisabler.default_themes.items():
