@@ -213,7 +213,13 @@ def find_installed(lib):
     install_root = sys_path.lib_paths()[lib.python_version]
     for fname in os.listdir(install_root):
         if pattern.match(fname):
-            return InstalledLibrary(install_root, fname, lib.python_version)
+            try:
+                return InstalledLibrary(install_root, fname, lib.python_version)
+            except (FileNotFoundError, KeyError):
+                # remove malformed dist-info dir to enforce library re-installation
+                #   METADATA missing or does not contain "name"
+                delete_directory(os.path.join(install_root, fname))
+                break
 
     return None
 
