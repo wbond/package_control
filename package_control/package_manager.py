@@ -45,7 +45,7 @@ from .providers import CHANNEL_PROVIDERS, REPOSITORY_PROVIDERS
 from .providers.channel_provider import UncachedChannelRepositoryError
 from .providers.provider_exception import ProviderException
 from .selectors import is_compatible_version, is_compatible_platform, get_compatible_platform
-from .settings import load_list_setting, pc_settings_filename
+from .settings import load_list_setting, pc_settings_filename, preferences_filename
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 
@@ -148,6 +148,13 @@ class PackageManager:
         self.settings['platform'] = sublime.platform()
         self.settings['arch'] = sublime.arch()
         self.settings['version'] = int(sublime.version())
+
+        # Cache some user preferences
+        if self.settings['version'] > 4192:
+            settings = sublime.load_settings(preferences_filename())
+            self.settings['disable_plugin_host_3.3'] = settings.get('disable_plugin_host_3.3', False)
+        else:
+            self.settings['disable_plugin_host_3.3'] = False
 
         # Use the cache to see if settings have changed since the last
         # time the package manager was created, and clearing any cached
@@ -253,6 +260,9 @@ class PackageManager:
         :return:
             A unicode string of "3.3" or "3.8"
         """
+
+        if self.settings["disable_plugin_host_3.3"]:
+            return "3.8"
 
         python_version = read_package_file(package_name, ".python-version")
         if python_version:
