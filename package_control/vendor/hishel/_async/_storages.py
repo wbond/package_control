@@ -11,14 +11,14 @@ from copy import deepcopy
 from pathlib import Path
 
 try:
-    import boto3
+    from ... import boto3
 
     from .._s3 import AsyncS3Manager
 except ImportError:  # pragma: no cover
     boto3 = None  # type: ignore
 
 try:
-    import anysqlite
+    from ... import anysqlite
 except ImportError:  # pragma: no cover
     anysqlite = None  # type: ignore
 

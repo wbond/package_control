@@ -161,6 +161,6 @@ def get_async_backend(asynclib_name: str | None = None) -> type[AsyncBackend]:
     try:
         return loaded_backends[asynclib_name]
     except KeyError:
-        module = import_module(f"anyio._backends._{asynclib_name}")
+        module = import_module(f".._backends._{asynclib_name}", __package__)
         loaded_backends[asynclib_name] = module.backend_class
         return module.backend_class
