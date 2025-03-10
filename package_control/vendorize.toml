@@ -1,0 +1,18 @@
+target = "vendor"
+packages = [
+    "anyio",
+    "exceptiongroup",   # required < python 3.12
+    "h11",
+    "h2",
+    "hpack",
+    "httpcore",
+    "httpx",
+    "hyperframe",
+    "idna",
+    "msgpack",
+    "sniffio",
+    # caching
+    "anysqlite",
+    "hishel",
+    "typing_extensions"
+]
