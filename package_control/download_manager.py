@@ -1,27 +1,28 @@
+from __future__ import annotations
+import asyncio
 import os
 import re
-import socket
-import sys
+import sqlite3
+import ssl
+import time
+
+from pathlib import Path
 from threading import Lock, Timer
-from urllib.parse import unquote_to_bytes, urljoin, urlparse
+from typing import TYPE_CHECKING
+from urllib.parse import unquote_to_bytes, urljoin
 
-from . import __version__
-from . import text
-from .cache import set_cache, get_cache
 from .console_write import console_write
-from .show_error import show_error
+from .sys_path import pc_cache_dir
+from .vendor import anysqlite
+from .vendor import httpx
+from .vendor import hishel
+from .vendor.httpx import HTTPStatusError, Request, RequestError, Response
 
-from .downloaders import DOWNLOADERS
-from .downloaders.binary_not_found_error import BinaryNotFoundError
-from .downloaders.downloader_exception import DownloaderException
-from .downloaders.rate_limit_exception import RateLimitException
-from .downloaders.rate_limit_exception import RateLimitSkipException
-from .http_cache import HttpCache
+if TYPE_CHECKING:
+    from typing import Generator
 
-_http_cache = None
-
-_managers = {}
-"""A dict of domains - each points to a list of downloaders"""
+_client = None
+"""Active HTTP client in use"""
 
 _in_use = 0
 """How many managers are currently checked out"""
@@ -44,12 +45,11 @@ def http_get(url, settings, error_message='', prefer_cached=False):
         The dictionary with downloader settings.
 
           - ``debug``
-          - ``downloader_precedence``
           - ``http_basic_auth``
           - ``http_cache``
           - ``http_cache_length``
           - ``http_proxy``
-          - ``https_proxy``
+          - ``proxy_ca``
           - ``proxy_username``
           - ``proxy_password``
           - ``user_agent``
@@ -75,18 +75,33 @@ def http_get(url, settings, error_message='', prefer_cached=False):
         except OSError as e:
             raise DownloaderException(str(e))
 
-    manager = None
-    result = None
+    global _client, _in_use, _timer
 
     try:
-        manager = _grab(url, settings)
-        result = manager.fetch(url, error_message, prefer_cached)
+        with _lock:
+            if _timer:
+                _timer.cancel()
+                _timer = None
+
+            if _client is None:
+                _client = create_client(settings)
+
+            _in_use += 1
+
+        response = _client.get(update_url(url, False))
+        if response.is_error:
+            raise DownloaderException(f"HTTP Errror {response.status_code} for {response.url}")
+
+        return response.content
 
     finally:
-        if manager:
-            _release(url, manager)
-
-    return result
+        with _lock:
+            _in_use -= 1
+            if _in_use < 1:
+                if _timer:
+                    _timer.cancel()
+                _timer = Timer(20.0, close_client)
+                _timer.start()
 
 
 def from_uri(uri: str) -> str:  # roughly taken from Python 3.13
@@ -116,80 +131,93 @@ def from_uri(uri: str) -> str:  # roughly taken from Python 3.13
     return path
 
 
-def _grab(url, settings):
-    global _http_cache, _managers, _lock, _in_use, _timer
+def create_client(settings):
+    """
+    Creates a HTTP client.
+
+    :param settings:
+        A dictionary with settings
+
+    :returns:
+        httpx.Client object
+    """
+    # setup http(s) proxy
+    proxy = None
+    proxy_url = settings.get("http_proxy")
+    if proxy_url:
+        proxy_url = httpx.URL(os.path.expandvars(proxy_url))
+
+        # setup ssl context
+        proxy_ssl_context = None
+        if proxy_url.scheme == "https":
+            proxy_cafile = settings.get("proxy_cafile")
+            if proxy_cafile:
+                proxy_ssl_context = ssl.create_default_context(cafile=os.path.expandvars(proxy_cafile))
+
+        # setup authentication
+        proxy_auth = None
+        proxy_user = settings.get("proxy_username")
+        if proxy_user:
+            proxy_auth = (
+                os.path.expandvars(proxy_user),
+                os.path.expandvars(settings.get("proxy_password", ""))
+            )
+
+        # instantiate proxy
+        proxy = httpx.Proxy(
+            url=proxy_url,
+            auth=proxy_auth,
+            ssl_context=proxy_ssl_context
+        )
+
+    return httpx.Client(
+        auth=HostSpecificBasicAuth(settings.get("http_basic_auth")),
+        headers={
+            "user-agent": settings["user_agent"]
+        },
+        transport=hishel.CacheTransport(
+            transport=RateLimitTransport(
+                transport=httpx.HTTPTransport(
+                    http2=True,
+                    proxy=proxy
+                ),
+            ),
+            controller=hishel.Controller(
+                allow_heuristics=True,
+                allow_stale=True,
+            ),
+            storage=hishel.SQLiteStorage(
+                connection=cache_db(),
+                ttl=settings.get("http_cache_length", 604800)
+            )
+        ),
+        follow_redirects=True,
+    )
+
+
+def close_client():
+    global _client
 
     with _lock:
-        if _timer:
-            _timer.cancel()
-            _timer = None
-
-        parsed = urlparse(url)
-        if not parsed or not parsed.hostname:
-            raise DownloaderException('The URL "%s" is malformed' % url)
-        hostname = parsed.hostname.lower()
-        if hostname not in _managers:
-            _managers[hostname] = []
-
-        if not _managers[hostname]:
-            http_cache = None
-            if settings.get('http_cache'):
-                # first call defines http cache settings
-                # It is safe to assume all calls share same settings.
-                if not _http_cache:
-                    _http_cache = HttpCache(settings.get('http_cache_length', 604800))
-                http_cache = _http_cache
-
-            _managers[hostname].append(DownloadManager(settings, http_cache))
-
-        _in_use += 1
-
-        return _managers[hostname].pop()
+        if _client:
+            _client.close()
+            _client = None
 
 
-def _release(url, manager):
-    global _managers, _lock, _in_use, _timer
-
-    with _lock:
-        parsed = urlparse(url)
-        if not parsed or not parsed.hostname:
-            raise DownloaderException('The URL "%s" is malformed' % url)
-        hostname = parsed.hostname.lower()
-
-        # This means the package was reloaded between _grab and _release,
-        # so the downloader is using old code and we want to discard it
-        if hostname not in _managers:
-            return
-
-        _managers[hostname].insert(0, manager)
-
-        _in_use -= 1
-
-        if _timer:
-            _timer.cancel()
-            _timer = None
-
-        if _in_use == 0:
-            _timer = Timer(5.0, close_all_connections)
-            _timer.start()
-
-
-def close_all_connections():
-    global _http_cache, _managers, _lock, _in_use, _timer
-
-    with _lock:
-        if _timer:
-            _timer.cancel()
-            _timer = None
-
-        if _http_cache:
-            _http_cache.prune()
-            _http_cache = None
-
-        for managers in _managers.values():
-            for manager in managers:
-                manager.close()
-        _managers = {}
+def cache_db():
+    cache_dir = Path(pc_cache_dir())
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(cache_dir / "http_cache.sqlite", check_same_thread=False)
+    connection.execute("PRAGMA analysis_limit = 400")
+    connection.execute("PRAGMA foreign_keys = ON")
+    connection.execute("PRAGMA journal_mode = WAL")
+    connection.execute("PRAGMA journal_size_limit = 27103364")
+    connection.execute("PRAGMA legacy_alter_table = OFF")
+    connection.execute("PRAGMA mmap_size = 134217728")
+    connection.execute("PRAGMA optimize")
+    connection.execute("PRAGMA synchronous = NORMAL")
+    connection.execute("PRAGMA temp_store = memory")
+    return connection
 
 
 def resolve_urls(root_url, uris):
@@ -293,217 +321,81 @@ def update_url(url, debug):
     return url
 
 
-class DownloadManager:
+class DownloaderException(Exception):
+    """If a downloader could not download a URL"""
 
-    def __init__(self, settings, http_cache=None):
-        # Cache the downloader for re-use
-        self.downloader = None
 
-        keys_to_copy = {
-            'debug',
-            'downloader_precedence',
-            'http_basic_auth',
-            'http_proxy',
-            'https_proxy',
-            'proxy_username',
-            'proxy_password',
-            'user_agent',
-            'timeout',
+class RateLimitException(DownloaderException):
+    """
+    An exception for when the rate limit of an API has been exceeded.
+    """
+
+    def __init__(self, domain, limit):
+        self.domain = domain
+        self.limit = limit
+
+    def __str__(self):
+        return f"Hit rate limit of {self.limit} for {self.domain}."
+
+
+class RateLimitSkipException(DownloaderException):
+    """
+    An exception for when skipping requests due to rate limit of an API has been exceeded.
+    """
+
+    def __init__(self, domain):
+        self.domain = domain
+
+    def __str__(self):
+        return f"Skipping {self.domain} due to rate limit."
+
+
+class HostSpecificBasicAuth(httpx.Auth):
+    """
+    Allows the 'auth' argument to be passed as a (username, password) pair,
+    and uses HTTP Basic authentication.
+    """
+
+    def __init__(self, auth: dict[str, tuple[str, str]]) -> None:
+        self._auth = {
+            host: httpx.BasicAuth(*map(os.path.expandvars, user_password))
+            for host, user_password in auth.items()
         }
 
-        # Copy required settings to avoid manipulating caller's environment.
-        # It's needed as e.g. `cache_length` is defined with different meaning in PackageManager's
-        # settings. Also `cache` object shouldn't be propagated to caller.
-        self.settings = {key: value for key, value in settings.items() if key in keys_to_copy}
-
-        # add package control version to user agent
-        user_agent = self.settings.get('user_agent')
-        if user_agent and '%s' in user_agent:
-            self.settings['user_agent'] = user_agent % __version__
-
-        # assign global http cache storage driver
-        if http_cache:
-            self.settings['cache'] = http_cache
-            self.settings['cache_length'] = http_cache.ttl
-
-    def close(self):
-        if self.downloader:
-            self.downloader.close()
-            self.downloader = None
-
-    def fetch(self, url, error_message, prefer_cached=False):
-        """
-        Downloads a URL and returns the contents
-
-        :param url:
-            The string URL to download
-
-        :param error_message:
-            The error message to include if the download fails
-
-        :param prefer_cached:
-            If cached version of the URL content is preferred over a new request
-
-        :raises:
-            DownloaderException: if there was an error downloading the URL
-
-        :return:
-            The string contents of the URL
-        """
-
-        is_ssl = re.search('^https://', url) is not None
-
-        url = update_url(url, self.settings.get('debug'))
-
-        # We don't use sublime.platform() here since this is used for
-        # the crawler on packagecontrol.io also
-        if sys.platform == 'darwin':
-            platform = 'osx'
-        elif sys.platform == 'win32':
-            platform = 'windows'
+    def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
+        if request.url.host in self._auth:
+            yield from self._auth[request.url.host].auth_flow(request)
         else:
-            platform = 'linux'
+            yield request
 
-        downloader_precedence = self.settings.get(
-            'downloader_precedence',
-            {
-                "windows": ["wininet", "oscrypto", "urllib"],
-                "osx": ["urllib", "oscrypto", "curl"],
-                "linux": ["urllib", "oscrypto", "curl", "wget"]
-            }
-        )
-        downloader_list = downloader_precedence.get(platform, [])
 
-        if not isinstance(downloader_list, list) or len(downloader_list) == 0:
-            error_string = text.format(
-                '''
-                No list of preferred downloaders specified in the
-                "downloader_precedence" setting for the platform "%s"
-                ''',
-                platform
-            )
-            show_error(error_string)
-            raise DownloaderException(error_string)
+class RateLimitTransport(httpx.BaseTransport):
+    """
+    This class describes a rate limit transport with legacy behaviror.
 
-        # Make sure we have a downloader, and it supports SSL if we need it
-        if not self.downloader or (
-                (is_ssl and not self.downloader.supports_ssl())
-                or (not is_ssl and not self.downloader.supports_plaintext())):
+    The transport behaves like Package Control's legacy rate_limiting_downloader
+    by just raising `RateLimitException` exception if a domain's rate limit
+    has been exceeted, skipping all further requests by `RateLimitSkipException`.
+    """
+    def __init__(self, *args, transport: httpx.BaseTransport, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._transport = transport
+        self._rate_limits = {}
 
-            for downloader_name in downloader_list:
+    def handle_request(self, request: Request) -> Response:
+        # skip furhter requests to rate limited host
+        if request.url.host in self._rate_limits:
+            if self._rate_limits[request.url.host] > int(time.time()):
+                raise RateLimitSkipException(request.url.host)
 
-                try:
-                    downloader_class = DOWNLOADERS[downloader_name]
-                    if downloader_class is None:
-                        continue
+            del self._rate_limits[request.url.host]
 
-                except KeyError:
-                    error_string = text.format(
-                        '''
-                        The downloader "%s" from the "downloader_precedence"
-                        setting for the platform "%s" is invalid
-                        ''',
-                        (downloader_name, platform)
-                    )
-                    show_error(error_string)
-                    raise DownloaderException(error_string)
+        response = self._transport.handle_request(request)
+        if response.status_code == 403:
+            limit_remaining = int(response.headers.get('x-ratelimit-remaining', '1'))
+            if limit_remaining == 0:
+                limit = int(response.headers.get('x-ratelimit-limit', '1'))
+                self._rate_limits[request.url.host] = int(response.headers.get('x-ratelimit-reset', '1'))
+                raise RateLimitException(response.url.host, limit)
 
-                try:
-                    downloader = downloader_class(self.settings)
-                    if is_ssl and not downloader.supports_ssl():
-                        continue
-                    if not is_ssl and not downloader.supports_plaintext():
-                        continue
-                    self.downloader = downloader
-                    break
-
-                except BinaryNotFoundError:
-                    pass
-
-        if not self.downloader:
-            error_string = text.format(
-                '''
-                None of the preferred downloaders can download %s.
-
-                This is usually either because the ssl module is unavailable
-                and/or the command line curl or wget executables could not be
-                found in the PATH.
-
-                If you customized the "downloader_precedence" setting, please
-                verify your customization.
-                ''',
-                url
-            )
-            show_error(error_string)
-            raise DownloaderException(error_string.replace('\n\n', ' '))
-
-        url = url.replace(' ', '%20')
-        parsed = urlparse(url)
-        if not parsed or not parsed.hostname:
-            raise DownloaderException('The URL "%s" is malformed' % url)
-        hostname = parsed.hostname.lower()
-
-        timeout = self.settings.get('timeout', 3)
-
-        rate_limited_domains = get_cache('rate_limited_domains', [])
-
-        if self.settings.get('debug'):
-            try:
-                port = 443 if is_ssl else 80
-                ipv6_info = socket.getaddrinfo(hostname, port, socket.AF_INET6)
-                if ipv6_info:
-                    ipv6 = ipv6_info[0][4][0]
-                else:
-                    ipv6 = None
-            except (socket.gaierror):
-                ipv6 = None
-            except (TypeError):
-                ipv6 = None
-
-            try:
-                ip = socket.gethostbyname(hostname)
-            except (socket.gaierror) as e:
-                ip = str(e)
-            except (TypeError):
-                ip = None
-
-            console_write(
-                '''
-                Download Debug
-                  URL: %s
-                  Timeout: %s
-                  Resolved IP: %s
-                ''',
-                (url, str(timeout), ip)
-            )
-            if ipv6:
-                console_write(
-                    '  Resolved IPv6: %s',
-                    ipv6,
-                    prefix=False
-                )
-
-        if hostname in rate_limited_domains:
-            exception = RateLimitSkipException(hostname)
-            if self.settings.get('debug'):
-                console_write('  %s' % exception, prefix=False)
-            raise exception
-
-        try:
-            return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
-
-        except (RateLimitException) as e:
-            rate_limited_domains.append(hostname)
-            set_cache(
-                'rate_limited_domains',
-                rate_limited_domains,
-                self.settings.get('cache_length', 604800)
-            )
-
-            console_write(
-                '''
-                %s Skipping all further download requests for this domain.
-                ''',
-                str(e)
-            )
-            raise
+        return response

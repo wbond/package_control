@@ -1,6 +1,6 @@
 from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
-from ..downloaders.downloader_exception import DownloaderException
+from ..download_manager import DownloaderException
 from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import (
     GitProviderDownloadInfoException,

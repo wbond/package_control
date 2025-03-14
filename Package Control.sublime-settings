@@ -111,19 +111,19 @@
 	// The number of seconds to cache repository and package info for
 	"cache_length": 300,
 
-	// An HTTP proxy server to use for requests. Not normally used on Windows
-	// since the system proxy configuration is utilized via WinINet.
+	// An HTTP(s) proxy server to use for requests.
+	// If empty default OS level proxy is used.
+	// Environment variables (e.g. $HTTP_PROXY) are supported.
 	"http_proxy": "",
 
-	// An HTTPS proxy server to use for requests - this will inherit from
-	// http_proxy if it is set to "" or null and http_proxy has a value. You
-	// can set this to false to prevent inheriting from http_proxy. Not
-	// normally used on Windows since the system proxy configuration is
-	// utilized via WinINet.
-	"https_proxy": "",
+	// Custom certificate authority to verify https proxy connections.
+	// If empty default OS level certificate authority is used.
+	// Environment variables (e.g. $SSL_CERT_FILE) are supported.
+	"proxy_cafile": "",
 
-	// Username and password for both http_proxy and https_proxy. May be used
-	// with WinINet to set credentials for system-level proxy config.
+	// Username and password for both http_proxy and https_proxy.
+	// If empty default OS level proxy authentication is used.
+	// Environment variables (e.g. $HTTP_PROXY or $HTTP_PASS) are supported.
 	"proxy_username": "",
 	"proxy_password": "",
 
@@ -185,25 +185,6 @@
 
 	// Additional packages to ignore when listing unmanaged packages.
 	"unmanaged_packages_ignore": [],
-
-	// The downloader backends that should be used for HTTP(S) requests, split
-	// by operating system to allow for configuration to be shared.
-	//
-	// Valid options include: "urllib", "oscrypto", "curl", "wget",
-	// (Windows-only) "wininet"
-	//
-	// This setting allows Windows users to bypass wininet and use urllib
-	// instead if they machine or network presents trouble to wininet. Some
-	// OS X and Linux users have also reported better luck with certain
-	// proxies using curl or wget instead of urllib.
-	//
-	// The "curl" and "wget" options require the command line "curl" or "wget"
-	// program installed and present in the PATH.
-	"downloader_precedence": {
-		"windows": ["wininet", "oscrypto", "urllib"],
-		"osx": ["urllib", "oscrypto", "curl"],
-		"linux": ["urllib", "oscrypto", "curl", "wget"]
-	},
 
 	// Directories to ignore when creating a package
 	"dirs_to_ignore": [

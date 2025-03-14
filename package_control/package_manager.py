@@ -26,7 +26,7 @@ from .clear_directory import clear_directory, delete_directory
 from .clients.client_exception import ClientException
 from .console_write import console_write
 from .download_manager import http_get
-from .downloaders.downloader_exception import DownloaderException
+from .download_manager import DownloaderException
 from .package_io import (
     create_empty_file,
     get_installed_package_path,
@@ -95,7 +95,6 @@ class PackageManager:
             'channels',
             'debug',
             'dirs_to_ignore',
-            'downloader_precedence',
             'files_to_ignore',
             'files_to_include',
             'git_binary',
@@ -106,7 +105,6 @@ class PackageManager:
             'http_cache',
             'http_cache_length',
             'http_proxy',
-            'https_proxy',
             'ignore_vcs_packages',
             'install_missing',
             'install_prereleases',
@@ -115,6 +113,7 @@ class PackageManager:
             'package_name_map',
             'package_profiles',
             'print_messages',
+            'proxy_ca',
             'proxy_password',
             'proxy_username',
             'remove_orphaned',
