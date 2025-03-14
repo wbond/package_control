@@ -1,6 +1,6 @@
 from ..clients.bitbucket_client import BitBucketClient
 from ..clients.client_exception import ClientException
-from ..downloaders.downloader_exception import DownloaderException
+from ..download_manager import DownloaderException
 from .base_repository_provider import BaseRepositoryProvider
 from .provider_exception import (
     GitProviderDownloadInfoException,

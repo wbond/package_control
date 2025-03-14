@@ -118,13 +118,5 @@
             "base_file": "${packages}/Package Control/Package Control.sublime-settings",
             "default": "// See the left pane for the list of settings and valid values\n{\n\t$0\n}\n"
         }
-    },
-    {
-        "caption": "Package Control: User CA bundle",
-        "command": "open_file",
-        "args": {
-            "file": "$packages/User/Package Control.user-ca-bundle",
-            "semi_transient": true
-        },
     }
 ]
