@@ -1,4 +1,4 @@
-import threading
+import sublime_aio
 
 from ..activity_indicator import ActivityIndicator
 from ..package_tasks import PackageTaskRunner
@@ -54,9 +54,9 @@ class RemovePackageCommand(ExistingPackagesCommand):
             A package name to perform action for
         """
 
-        def worker():
+        async def worker():
             with ActivityIndicator() as progress:
                 remover = PackageTaskRunner(manager)
-                remover.remove_packages({package_name}, progress)
+                await remover.remove_packages({package_name}, progress)
 
-        threading.Thread(target=worker).start()
+        sublime_aio.run_coroutine(worker())

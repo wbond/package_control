@@ -79,7 +79,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         self.repo_info = None
         self.schema_version = None
 
-    def fetch(self):
+    async def fetch(self):
         """
         Retrieves and loads the JSON for other methods to use
 
@@ -96,7 +96,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
             return False
 
         try:
-            self.repo_info = self.fetch_repo(self.repo_url)
+            self.repo_info = await self.fetch_repo(self.repo_url)
             self.schema_version = self.repo_info['schema_version']
         except (DownloaderException, ClientException, ProviderException) as e:
             self.failed_sources[self.repo_url] = e
@@ -106,7 +106,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         return True
 
-    def fetch_repo(self, location):
+    async def fetch_repo(self, location):
         """
         Fetches the contents of a URL of file path
 
@@ -127,7 +127,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         self.included_urls.add(location)
 
-        json_string = http_get(location, self.settings, 'Error downloading repository.')
+        json_string = await http_get(location, self.settings, 'Error downloading repository.')
 
         try:
             repo_info = json.loads(json_string.decode('utf-8'))
@@ -167,7 +167,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         if includes:
             for include in resolve_urls(self.repo_url, includes):
                 try:
-                    include_info = self.fetch_repo(include)
+                    include_info = await self.fetch_repo(include)
                 except (DownloaderException, ClientException, ProviderException) as e:
                     self.failed_sources[include] = e
                 else:
@@ -181,7 +181,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         return repo_info
 
-    def get_libraries(self, invalid_sources=None):
+    async def get_libraries(self, invalid_sources=None):
         """
         Provides access to the libraries in this repository
 
@@ -221,7 +221,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         if invalid_sources is not None and self.repo_url in invalid_sources:
             return
 
-        if not self.fetch():
+        if not await self.fetch():
             return
 
         if not self.repo_info:
@@ -402,13 +402,13 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
                     elif tags:
                         for client in clients:
-                            downloads = client.download_info_from_tags(base_url, extra)
+                            downloads = await client.download_info_from_tags(base_url, extra)
                             if downloads is not None:
                                 break
 
                     elif branch:
                         for client in clients:
-                            downloads = client.download_info_from_branch(base_url, branch)
+                            downloads = await client.download_info_from_branch(base_url, branch)
                             if downloads is not None:
                                 break
                     else:
@@ -436,7 +436,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 # gather download_info from releases
                 for (base_url, extra), asset_templates in staged_releases.items():
                     for client in clients:
-                        downloads = client.download_info_from_releases(base_url, asset_templates, extra)
+                        downloads = await client.download_info_from_releases(base_url, asset_templates, extra)
                         if downloads is not None:
                             info['releases'].extend(downloads)
                             break
@@ -463,7 +463,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         self.libraries = output
 
-    def get_packages(self, invalid_sources=None):
+    async def get_packages(self, invalid_sources=None):
         """
         Provides access to the packages in this repository
 
@@ -510,7 +510,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
         if invalid_sources is not None and self.repo_url in invalid_sources:
             return
 
-        if not self.fetch():
+        if not await self.fetch():
             return
 
         if not self.repo_info:
@@ -565,7 +565,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                     repo_info = None
 
                     for client in clients:
-                        repo_info = client.repo_info(details)
+                        repo_info = await client.repo_info(details)
                         if repo_info:
                             break
                     else:
@@ -730,13 +730,13 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
                         elif tags:
                             for client in clients:
-                                downloads = client.download_info_from_tags(base_url, extra)
+                                downloads = await client.download_info_from_tags(base_url, extra)
                                 if downloads is not None:
                                     break
 
                         elif branch:
                             for client in clients:
-                                downloads = client.download_info_from_branch(base_url, branch)
+                                downloads = await client.download_info_from_branch(base_url, branch)
                                 if downloads is not None:
                                     break
                         else:
@@ -806,7 +806,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                         downloads = None
 
                         for client in clients:
-                            downloads = client.download_info(download_details)
+                            downloads = await client.download_info(download_details)
                             if downloads is not None:
                                 break
 
@@ -829,7 +829,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 # gather download_info from releases
                 for (base_url, extra), asset_templates in staged_releases.items():
                     for client in clients:
-                        downloads = client.download_info_from_releases(base_url, asset_templates, extra)
+                        downloads = await client.download_info_from_releases(base_url, asset_templates, extra)
                         if downloads is not None:
                             info['releases'].extend(downloads)
                             break
@@ -871,7 +871,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         self.packages = output
 
-    def get_sources(self):
+    async def get_sources(self):
         """
         Return a list of current URLs that are directly referenced by the repo
 
@@ -879,7 +879,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
             A list of URLs and/or file paths
         """
 
-        if not self.fetch():
+        if not await self.fetch():
             return []
 
         output = [self.repo_url]
@@ -889,10 +889,10 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
                 output.append(details)
         return output
 
-    def get_renamed_packages(self):
+    async def get_renamed_packages(self):
         """:return: A dict of the packages that have been renamed"""
 
-        if not self.fetch():
+        if not await self.fetch():
             return {}
 
         output = {}

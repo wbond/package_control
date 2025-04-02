@@ -1,6 +1,5 @@
-import threading
-
 import sublime
+import sublime_aio
 import sublime_plugin
 
 from ..activity_indicator import ActivityIndicator
@@ -31,14 +30,14 @@ class UpgradePackagesCommand(sublime_plugin.ApplicationCommand):
     def run(self, packages=None, unattended=False):
         if isinstance(packages, list):
 
-            def worker():
+            async def worker():
                 message = 'Searching updates...'
                 with ActivityIndicator(message) as progress:
                     console_write(message)
                     upgrader = PackageTaskRunner()
-                    upgrader.upgrade_packages(packages, None, unattended, progress)
+                    await upgrader.upgrade_packages(packages, None, unattended, progress)
 
-            threading.Thread(target=worker).start()
+            sublime_aio.run_coroutine(worker())
             return
 
         def on_done(input_text):

@@ -264,5 +264,6 @@ else:
             by `bootstrap()` hook.
             """
 
+            import sublime_aio
             from .package_control.bootstrap import bootstrap
-            bootstrap()
+            sublime_aio.run_coroutine(bootstrap())

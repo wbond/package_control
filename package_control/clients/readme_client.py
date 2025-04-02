@@ -20,7 +20,7 @@ _readme_formats = {
 
 class ReadmeClient(JSONApiClient):
 
-    def readme_info(self, url):
+    async def readme_info(self, url):
         """
         Retrieve the readme and info about it
 
@@ -55,13 +55,13 @@ class ReadmeClient(JSONApiClient):
             query_string = urlencode({'ref': branch})
             readme_json_url = 'https://api.github.com/repos/%s/readme?%s' % (user_repo, query_string)
             try:
-                info = self.fetch_json(readme_json_url, prefer_cached=True)
+                info = await self.fetch_json(readme_json_url, prefer_cached=True)
                 contents = base64.b64decode(info['content'])
             except (ValueError):
                 pass
 
         if not contents:
-            contents = self.fetch(url)
+            contents = await self.fetch(url)
 
         _, ext = os.path.splitext(url)
         format = 'txt'

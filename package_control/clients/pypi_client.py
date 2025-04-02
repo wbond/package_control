@@ -18,13 +18,13 @@ class PyPiClient(JSONApiClient):
 
         return (None, None)
 
-    def repo_info(self, url):
+    async def repo_info(self, url):
         name, _ = self.name_and_version(url)
         if not name:
             return None
 
         pypi_url = "https://pypi.org/pypi/{}/json".format(name)
-        info = self.fetch_json(pypi_url)
+        info = await self.fetch_json(pypi_url)
 
         return {
             "name": name,
@@ -36,19 +36,19 @@ class PyPiClient(JSONApiClient):
             or info.get("project_urls", {}).get("Issues"),
         }
 
-    def download_info(self, url, tag_prefix=None):
+    async def download_info(self, url, tag_prefix=None):
         """Branch or tag based releases are not supported."""
         return None
 
-    def download_info_from_branch(self, url, default_branch=None):
+    async def download_info_from_branch(self, url, default_branch=None):
         """Branch or tag based releases are not supported."""
         return None
 
-    def download_info_from_tags(self, url, tag_prefix=None):
+    async def download_info_from_tags(self, url, tag_prefix=None):
         """Branch or tag based releases are not supported."""
         return None
 
-    def download_info_from_releases(self, url, asset_templates, tag_prefix=None):
+    async def download_info_from_releases(self, url, asset_templates, tag_prefix=None):
         """
         Retrieve information about package
 
@@ -142,13 +142,13 @@ class PyPiClient(JSONApiClient):
             return None
 
         if version:
-            return self._download_info_from_fixed_version(
+            return await self._download_info_from_fixed_version(
                 name, version, asset_templates
             )
 
-        return self._download_info_from_latest_version(name, asset_templates)
+        return await self._download_info_from_latest_version(name, asset_templates)
 
-    def _download_info_from_fixed_version(self, name, version, asset_templates):
+    async def _download_info_from_fixed_version(self, name, version, asset_templates):
         """
         Build download information from fixed version.
 
@@ -165,7 +165,7 @@ class PyPiClient(JSONApiClient):
         """
 
         pypi_url = "https://pypi.org/pypi/{}/{}/json".format(name, version)
-        assets = self.fetch_json(pypi_url)["urls"]
+        assets = await self.fetch_json(pypi_url)["urls"]
 
         asset_templates = self._expand_asset_variables(asset_templates)
 
@@ -177,7 +177,7 @@ class PyPiClient(JSONApiClient):
 
         return output
 
-    def _download_info_from_latest_version(self, name, asset_templates):
+    async def _download_info_from_latest_version(self, name, asset_templates):
         """
         Build download information from latest compatible versions of each asset template.
 
@@ -196,7 +196,7 @@ class PyPiClient(JSONApiClient):
         pypi_url = "https://pypi.org/pypi/{}/json".format(name)
 
         # fetch dictionary of form `version: [asset, asset]`
-        releases = self.fetch_json(pypi_url)["releases"]
+        releases = await self.fetch_json(pypi_url)["releases"]
 
         # create a list of valid pep440 versions
         versions = []

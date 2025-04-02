@@ -1,12 +1,10 @@
-import threading
-
-import sublime_plugin
+import sublime_aio
 
 from ..activity_indicator import ActivityIndicator
 from ..package_tasks import PackageTaskRunner
 
 
-class SatisfyPackagesCommand(sublime_plugin.ApplicationCommand):
+class SatisfyPackagesCommand(sublime_aio.ApplicationCommand):
 
     """
     A command to sync ``installed_packages`` with filesystem.
@@ -18,12 +16,8 @@ class SatisfyPackagesCommand(sublime_plugin.ApplicationCommand):
     present in ``installed_packages``.
     """
 
-    def run(self):
-
-        def worker():
-            message = 'Satisfying packages...'
-            with ActivityIndicator(message) as progress:
-                installer = PackageTaskRunner()
-                installer.satisfy_packages(progress)
-
-        threading.Thread(target=worker).start()
+    async def run(self):
+        message = 'Satisfying packages...'
+        with ActivityIndicator(message) as progress:
+            installer = PackageTaskRunner()
+            await installer.satisfy_packages(progress)

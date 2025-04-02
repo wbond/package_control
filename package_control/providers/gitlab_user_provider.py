@@ -49,7 +49,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
         user, repo, _ = GitLabClient.user_repo_branch(repo_url)
         return bool(user and not repo)
 
-    def get_packages(self, invalid_sources=None):
+    async def get_packages(self, invalid_sources=None):
         """
         Uses the lab API to construct necessary info for all packages
 
@@ -98,7 +98,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
         client = GitLabClient(self.settings)
 
         try:
-            user_repos = client.user_info(self.repo_url)
+            user_repos = await client.user_info(self.repo_url)
             if not user_repos:
                 raise GitProviderUserInfoException(self)
         except (DownloaderException, ClientException, ProviderException) as e:
@@ -116,7 +116,7 @@ class GitLabUserProvider(BaseRepositoryProvider):
                 continue
 
             try:
-                downloads = client.download_info_from_branch(repo_url, repo_info['default_branch'])
+                downloads = await client.download_info_from_branch(repo_url, repo_info['default_branch'])
                 if not downloads:
                     raise GitProviderDownloadInfoException(self)
 

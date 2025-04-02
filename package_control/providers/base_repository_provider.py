@@ -52,14 +52,14 @@ class BaseRepositoryProvider:
 
         return True
 
-    def prefetch(self):
+    async def prefetch(self):
         """
         Go out and perform HTTP operations, caching the result
         """
+        async for f in self.get_packages():
+            pass
 
-        [name for name, info in self.get_packages()]
-
-    def fetch(self):
+    async def fetch(self):
         """
         Retrieves and loads the JSON for other methods to use
 
@@ -69,7 +69,7 @@ class BaseRepositoryProvider:
 
         raise NotImplementedError()
 
-    def get_broken_libraries(self):
+    async def get_broken_libraries(self):
         """
         List of library names for libraries that are missing information
 
@@ -79,7 +79,7 @@ class BaseRepositoryProvider:
 
         return self.broken_libriaries.items()
 
-    def get_broken_packages(self):
+    async def get_broken_packages(self):
         """
         List of package names for packages that are missing information
 
@@ -89,7 +89,7 @@ class BaseRepositoryProvider:
 
         return self.broken_packages.items()
 
-    def get_failed_sources(self):
+    async def get_failed_sources(self):
         """
         List of any URLs that could not be accessed while accessing this repository
 
@@ -99,21 +99,21 @@ class BaseRepositoryProvider:
 
         return self.failed_sources.items()
 
-    def get_libraries(self, invalid_sources=None):
+    async def get_libraries(self, invalid_sources=None):
         """
         For API-compatibility with RepositoryProvider
         """
 
-        return {}.items()
+        yield None, None
 
-    def get_packages(self, invalid_sources=None):
+    async def get_packages(self, invalid_sources=None):
         """
         For API-compatibility with RepositoryProvider
         """
 
-        return {}.items()
+        yield None, None
 
-    def get_sources(self):
+    async def get_sources(self):
         """
         Return a list of current URLs that are directly referenced by the repo
 
@@ -123,7 +123,7 @@ class BaseRepositoryProvider:
 
         return [self.repo_url]
 
-    def get_renamed_packages(self):
+    async def get_renamed_packages(self):
         """For API-compatibility with RepositoryProvider"""
 
         return {}

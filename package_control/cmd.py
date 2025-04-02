@@ -1,10 +1,11 @@
+import asyncio
 import os
 import subprocess
 import re
 
+from . import text
 from .console_write import console_write
 from .show_error import show_error
-from . import text
 
 if os.name == 'nt':
     from ctypes import windll, create_unicode_buffer
@@ -69,7 +70,7 @@ class Cli:
         self.binary_locations = binary_locations
         self.debug = debug
 
-    def execute(self, args, cwd, input=None, encoding='utf-8', meaningful_output=False, ignore_errors=None):
+    async def execute(self, args, cwd, input=None, encoding='utf-8', meaningful_output=False, ignore_errors=None):
         """
         Creates a subprocess with the executable/args
 
@@ -100,14 +101,6 @@ class Cli:
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-            # Make sure the cwd is ascii
-            try:
-                cwd.encode('mbcs')
-            except UnicodeEncodeError:
-                buf = create_unicode_buffer(512)
-                if windll.kernel32.GetShortPathNameW(cwd, buf, len(buf)):
-                    cwd = buf.value
-
         if self.debug:
             console_write(
                 '''
@@ -117,8 +110,8 @@ class Cli:
             )
 
         try:
-            proc = subprocess.Popen(
-                args,
+            proc = await asyncio.create_subprocess_exec(
+                *args,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -138,7 +131,7 @@ class Cli:
             else:
                 is_vcs = False
 
-            output, error = proc.communicate(input, timeout=60.0)
+            output, error = await asyncio.wait_for(proc.communicate(input), timeout=60.0)
             output = output.decode(encoding)
             output = output.replace('\r\n', '\n').rstrip(' \n\r')
 
@@ -173,7 +166,7 @@ class Cli:
 
             return output
 
-        except subprocess.TimeoutExpired:
+        except asyncio.TimeoutError:
             proc.terminate()
 
             message = text.format(
