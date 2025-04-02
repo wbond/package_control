@@ -2,12 +2,10 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-import sqlite3
 import ssl
 import time
 
 from pathlib import Path
-from threading import Lock, Timer
 from typing import TYPE_CHECKING
 from urllib.parse import unquote_to_bytes, urljoin
 
@@ -21,20 +19,17 @@ from .vendor.httpx import HTTPStatusError, Request, RequestError, Response
 if TYPE_CHECKING:
     from typing import Generator
 
-_client = None
+_client: httpx.AsyncClient | None = None
 """Active HTTP client in use"""
 
-_in_use = 0
+_in_use: int = 0
 """How many managers are currently checked out"""
 
-_lock = Lock()
-"""Make sure connection management doesn't run into threading issues"""
-
-_timer = None
+_timer: asyncio.Task | None = None
 """A timer used to disconnect all managers after a period of no usage"""
 
 
-def http_get(url, settings, error_message='', prefer_cached=False):
+async def http_get(url, settings, error_message='', prefer_cached=False):
     """
     Performs a HTTP GET request using best matching downloader.
 
@@ -78,30 +73,27 @@ def http_get(url, settings, error_message='', prefer_cached=False):
     global _client, _in_use, _timer
 
     try:
-        with _lock:
-            if _timer:
-                _timer.cancel()
-                _timer = None
+        if _timer:
+            _timer.cancel()
+            _timer = None
 
-            if _client is None:
-                _client = create_client(settings)
+        if _client is None:
+            _client = await create_client(settings)
 
-            _in_use += 1
+        _in_use += 1
 
-        response = _client.get(update_url(url, False))
+        response = await _client.get(update_url(url, False))
         if response.is_error:
             raise DownloaderException(f"HTTP Errror {response.status_code} for {response.url}")
 
         return response.content
 
     finally:
-        with _lock:
-            _in_use -= 1
-            if _in_use < 1:
-                if _timer:
-                    _timer.cancel()
-                _timer = Timer(20.0, close_client)
-                _timer.start()
+        _in_use -= 1
+        if _in_use < 1:
+            if _timer:
+                _timer.cancel()
+            _timer = asyncio.create_task(close_client())
 
 
 def from_uri(uri: str) -> str:  # roughly taken from Python 3.13
@@ -131,7 +123,7 @@ def from_uri(uri: str) -> str:  # roughly taken from Python 3.13
     return path
 
 
-def create_client(settings):
+async def create_client(settings):
     """
     Creates a HTTP client.
 
@@ -170,53 +162,51 @@ def create_client(settings):
             ssl_context=proxy_ssl_context
         )
 
-    return httpx.Client(
+    return hishel.AsyncCacheClient(
         auth=HostSpecificBasicAuth(settings.get("http_basic_auth")),
         headers={
             "user-agent": settings["user_agent"]
         },
-        transport=hishel.CacheTransport(
-            transport=RateLimitTransport(
-                transport=httpx.HTTPTransport(
-                    http2=True,
-                    proxy=proxy
-                ),
+        transport=AsyncRateLimitTransport(
+            transport=httpx.AsyncHTTPTransport(
+                http2=True,
+                proxy=proxy
             ),
-            controller=hishel.Controller(
-                allow_heuristics=True,
-                allow_stale=True,
-            ),
-            storage=hishel.SQLiteStorage(
-                connection=cache_db(),
-                ttl=settings.get("http_cache_length", 604800)
-            )
+        ),
+        controller=hishel.Controller(
+            allow_heuristics=True,
+            allow_stale=True,
+        ),
+        storage=hishel.AsyncSQLiteStorage(
+            connection=await cache_db(),
+            ttl=settings.get("http_cache_length", 604800)
         ),
         follow_redirects=True,
     )
 
 
-def close_client():
+async def close_client():
     global _client
 
-    with _lock:
-        if _client:
-            _client.close()
-            _client = None
+    if _client:
+        await asyncio.sleep(20.0)
+        await _client.aclose()
+        _client = None
 
 
-def cache_db():
+async def cache_db():
     cache_dir = Path(pc_cache_dir())
     cache_dir.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(cache_dir / "http_cache.sqlite", check_same_thread=False)
-    connection.execute("PRAGMA analysis_limit = 400")
-    connection.execute("PRAGMA foreign_keys = ON")
-    connection.execute("PRAGMA journal_mode = WAL")
-    connection.execute("PRAGMA journal_size_limit = 27103364")
-    connection.execute("PRAGMA legacy_alter_table = OFF")
-    connection.execute("PRAGMA mmap_size = 134217728")
-    connection.execute("PRAGMA optimize")
-    connection.execute("PRAGMA synchronous = NORMAL")
-    connection.execute("PRAGMA temp_store = memory")
+    connection = await anysqlite.connect(cache_dir / "http_cache.sqlite", check_same_thread=False)
+    await connection.execute("PRAGMA analysis_limit = 400")
+    await connection.execute("PRAGMA foreign_keys = ON")
+    await connection.execute("PRAGMA journal_mode = WAL")
+    await connection.execute("PRAGMA journal_size_limit = 27103364")
+    await connection.execute("PRAGMA legacy_alter_table = OFF")
+    await connection.execute("PRAGMA mmap_size = 134217728")
+    await connection.execute("PRAGMA optimize")
+    await connection.execute("PRAGMA synchronous = NORMAL")
+    await connection.execute("PRAGMA temp_store = memory")
     return connection
 
 
@@ -369,7 +359,7 @@ class HostSpecificBasicAuth(httpx.Auth):
             yield request
 
 
-class RateLimitTransport(httpx.BaseTransport):
+class AsyncRateLimitTransport(httpx.AsyncBaseTransport):
     """
     This class describes a rate limit transport with legacy behaviror.
 
@@ -377,12 +367,12 @@ class RateLimitTransport(httpx.BaseTransport):
     by just raising `RateLimitException` exception if a domain's rate limit
     has been exceeted, skipping all further requests by `RateLimitSkipException`.
     """
-    def __init__(self, *args, transport: httpx.BaseTransport, **kwargs):
+    def __init__(self, *args, transport: httpx.AsyncBaseTransport, **kwargs):
         super().__init__(*args, **kwargs)
         self._transport = transport
         self._rate_limits = {}
 
-    def handle_request(self, request: Request) -> Response:
+    async def handle_async_request(self, request: Request) -> Response:
         # skip furhter requests to rate limited host
         if request.url.host in self._rate_limits:
             if self._rate_limits[request.url.host] > int(time.time()):
@@ -390,7 +380,7 @@ class RateLimitTransport(httpx.BaseTransport):
 
             del self._rate_limits[request.url.host]
 
-        response = self._transport.handle_request(request)
+        response = await self._transport.handle_async_request(request)
         if response.status_code == 403:
             limit_remaining = int(response.headers.get('x-ratelimit-remaining', '1'))
             if limit_remaining == 0:

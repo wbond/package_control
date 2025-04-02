@@ -61,7 +61,7 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
         user, repo, _ = GitHubClient.user_repo_branch(repo_url)
         return bool(user and repo)
 
-    def get_packages(self, invalid_sources=None):
+    async def get_packages(self, invalid_sources=None):
         """
         Uses the GitHub API to construct necessary info for a package
 
@@ -110,11 +110,11 @@ class GitHubRepositoryProvider(BaseRepositoryProvider):
         client = GitHubClient(self.settings)
 
         try:
-            repo_info = client.repo_info(self.repo_url)
+            repo_info = await client.repo_info(self.repo_url)
             if not repo_info:
                 raise GitProviderRepoInfoException(self)
 
-            downloads = client.download_info_from_branch(self.repo_url, repo_info['default_branch'])
+            downloads = await client.download_info_from_branch(self.repo_url, repo_info['default_branch'])
             if not downloads:
                 raise GitProviderDownloadInfoException(self)
 

@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import hashlib
 import json
@@ -274,7 +275,7 @@ class PackageManager:
 
         return "3.3"
 
-    def get_version(self, package_name):
+    async def get_version(self, package_name):
         """
         Determines the current version for a package
 
@@ -289,7 +290,7 @@ class PackageManager:
 
         upgrader = self.instantiate_upgrader(package_name)
         if upgrader:
-            version = upgrader.latest_commit()
+            version = await upgrader.latest_commit()
             if version:
                 return '%s commit %s' % (upgrader.cli_name, version)
 
@@ -458,7 +459,7 @@ class PackageManager:
         # errors, then it just means there are not libraries for this machine
         return []
 
-    def list_repositories(self):
+    async def list_repositories(self):
         """
         Returns a master list of all repositories pulled from all sources
 
@@ -513,7 +514,7 @@ class PackageManager:
                     continue
 
                 try:
-                    channel_repositories = provider.get_repositories()
+                    channel_repositories = await provider.get_repositories()
                     if channel[:8].lower() != "file:///":
                         set_cache(cache_key, channel_repositories, cache_ttl)
 
@@ -524,7 +525,7 @@ class PackageManager:
 
                         try:
                             filtered_packages = {}
-                            for name, info in provider.get_packages(repo):
+                            async for name, info in provider.get_packages(repo):
                                 info['releases'] = self.select_releases(name, info['releases'])
                                 if info['releases']:
                                     filtered_packages[name] = info
@@ -539,7 +540,7 @@ class PackageManager:
 
                         try:
                             filtered_libraries = {}
-                            for name, info in provider.get_libraries(repo):
+                            async for name, info in provider.get_libraries(repo):
                                 # Convert legacy dependency names to official pypi package names.
                                 # This is required for forward compatibility with upcomming changes
                                 # in scheme 4.0.0. Do it here to apply only on client side.
@@ -558,7 +559,7 @@ class PackageManager:
                         except UncachedChannelRepositoryError:
                             pass
 
-                    renamed_packages = provider.get_renamed_packages()
+                    renamed_packages = await provider.get_renamed_packages()
                     set_cache_under_settings(self, 'renamed_packages', channel, renamed_packages, cache_ttl)
 
                     set_cache_under_settings(
@@ -586,7 +587,7 @@ class PackageManager:
 
         return [repo.strip() for repo in repositories]
 
-    def fetch_available(self):
+    async def fetch_available(self):
         """
         Fetch available packages and libraries from available sources.
 
@@ -624,17 +625,16 @@ class PackageManager:
         packages = {}
         libraries = {}
 
-        def download_repo(url):
+        async def download_repo(url):
             for provider_class in REPOSITORY_PROVIDERS:
                 if provider_class.match_url(url):
                     provider = provider_class(url, self.settings)
-                    provider.prefetch()
                     providers.append(provider)
                     break
 
         # Repositories are run in reverse order so that the ones first
         # on the list will overwrite those last on the list
-        for repo in reversed(self.list_repositories()):
+        for repo in reversed(await self.list_repositories()):
             if re.match(r'https?://([^.]+\.)*package-control\.io', repo):
                 console_write('Removed malicious repository %s' % repo)
                 continue
@@ -654,18 +654,18 @@ class PackageManager:
                     libraries.update(repository_libraries)
 
             if repository_packages is None and repository_libraries is None:
-                if executor is None:
-                    executor = futures.ThreadPoolExecutor(max_workers=10)
-                downloaders.append(executor.submit(download_repo, repo))
+                downloaders.append(download_repo(repo))
 
         # wait for downloads to complete
-        futures.wait(downloaders)
+        await asyncio.gather(*downloaders)
 
         # Grabs the results and stuff it all in the cache
         for provider in providers:
             repository_packages = {}
             unavailable_packages = []
-            for name, info in provider.get_packages():
+            async for name, info in provider.get_packages():
+                if info is None:
+                    break
                 name = name_map.get(name, name)
                 info['name'] = name
                 info['releases'] = self.select_releases(name, info['releases'])
@@ -676,7 +676,9 @@ class PackageManager:
 
             repository_libraries = {}
             unavailable_libraries = []
-            for name, info in provider.get_libraries():
+            async for name, info in provider.get_libraries():
+                if info is None:
+                    break
                 # Convert legacy dependency names to official pypi package names.
                 # This is required for forward compatibility with upcomming changes
                 # in scheme 4.0.0. Do it here to apply only on client side.
@@ -690,11 +692,11 @@ class PackageManager:
                     unavailable_libraries.append(name)
 
             # Display errors we encountered while fetching package info
-            for _, exception in provider.get_failed_sources():
+            for _, exception in await provider.get_failed_sources():
                 console_write(exception)
-            for _, exception in provider.get_broken_packages():
+            for _, exception in await provider.get_broken_packages():
                 console_write(exception)
-            for _, exception in provider.get_broken_libraries():
+            for _, exception in await provider.get_broken_libraries():
                 console_write(exception)
 
             if provider.repo_url[:8].lower() != "file:///":
@@ -706,7 +708,7 @@ class PackageManager:
             packages.update(repository_packages)
             libraries.update(repository_libraries)
 
-            renamed_packages = provider.get_renamed_packages()
+            renamed_packages = await provider.get_renamed_packages()
             set_cache_under_settings(self, 'renamed_packages', provider.repo_url, renamed_packages, cache_ttl)
 
             set_cache_under_settings(
@@ -729,7 +731,7 @@ class PackageManager:
         self._available_packages = packages
         self._available_libraries = libraries
 
-    def list_available_libraries(self):
+    async def list_available_libraries(self):
         """
         Returns a master list of every available library from all sources that
         are compatible with the version of Python specified
@@ -745,11 +747,11 @@ class PackageManager:
         """
 
         if self._available_libraries is None:
-            self.fetch_available()
+            await self.fetch_available()
 
         return self._available_libraries or {}
 
-    def list_available_packages(self):
+    async def list_available_packages(self):
         """
         Returns a master list of every available package from all sources
 
@@ -764,7 +766,7 @@ class PackageManager:
         """
 
         if self._available_packages is None:
-            self.fetch_available()
+            await self.fetch_available()
 
         return self._available_packages or {}
 
@@ -977,9 +979,9 @@ class PackageManager:
 
         return set(lib for lib in installed_libraries - required_libraries if lib.is_managed())
 
-    def _download_zip_file(self, name, url, sha256=None):
+    async def _download_zip_file(self, name, url, sha256=None):
         try:
-            content = http_get(url, self.settings, '')
+            content = await http_get(url, self.settings, '')
             if sha256:
                 content_hash = hashlib.sha256(content).hexdigest()
                 if content_hash.lower() != sha256.lower():
@@ -1135,7 +1137,7 @@ class PackageManager:
 
         return False
 
-    def install_libraries(self, libraries, fail_early=True):
+    async def install_libraries(self, libraries, fail_early=True):
         """
         Ensures a list of libraries are installed and up-to-date
 
@@ -1149,16 +1151,9 @@ class PackageManager:
             A boolean indicating if the libraries are properly installed
         """
 
-        error = False
-        for lib in sorted(libraries):
-            if not self.install_library(lib):
-                if fail_early:
-                    return False
-                error = True
+        return not all(await asyncio.gather(*map(self.install_library, libraries)))
 
-        return not error
-
-    def install_library(self, lib):
+    async def install_library(self, lib):
         """
         Install a library
 
@@ -1191,7 +1186,8 @@ class PackageManager:
         release = None
         available_version = None
 
-        available_library = self.list_available_libraries().get(lib.dist_name)
+        available_libraries = await self.list_available_libraries()
+        available_library = available_libraries.get(lib.dist_name)
         if available_library:
             for available_release in available_library['releases']:
                 if lib.python_version in available_release['python_versions']:
@@ -1256,7 +1252,7 @@ class PackageManager:
         library_zip = None
 
         try:
-            library_zip = self._download_zip_file(lib.name, release['url'], release.get("sha256"))
+            library_zip = await self._download_zip_file(lib.name, release['url'], release.get("sha256"))
             if library_zip is False:
                 return False
 
@@ -1359,9 +1355,10 @@ class PackageManager:
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            sublime.set_timeout(lambda: delete_directory(tmp_dir), 1000)
+            await asyncio.sleep(1.0)
+            delete_directory(tmp_dir)
 
-    def cleanup_libraries(self, required_libraries=None):
+    async def cleanup_libraries(self, required_libraries=None):
         """
         Remove all not needed libraries by the installed packages,
         ignoring the specified package.
@@ -1377,12 +1374,12 @@ class PackageManager:
 
         error = False
         for lib in sorted(orphaned_libraries):
-            if not self.remove_library(lib):
+            if not await self.remove_library(lib):
                 error = True
 
         return not error
 
-    def remove_library(self, lib):
+    async def remove_library(self, lib):
         """
         Deletes a library
 
@@ -1429,7 +1426,7 @@ class PackageManager:
             )
             return True
 
-    def install_package(self, package_name, unattended=False):
+    async def install_package(self, package_name, unattended=False):
         """
         Downloads and installs (or upgrades) a package
 
@@ -1483,7 +1480,7 @@ class PackageManager:
                 )
                 return False
 
-            result = upgrader.run()
+            result = await upgrader.run()
 
             # We are done here, if the package is an unmanaged VCS package.
             # Otherwise the package might just be an override.
@@ -1495,7 +1492,7 @@ class PackageManager:
         old_package_name = package_name
         package_name = self.settings.get('renamed_packages', {}).get(package_name) or package_name
 
-        packages = self.list_available_packages()
+        packages = await self.list_available_packages()
         if package_name not in packages:
             if package_name in self.settings.get('unavailable_packages', []):
                 console_write(
@@ -1529,7 +1526,7 @@ class PackageManager:
             old_version = old_metadata.get('version')
             is_upgrade = old_version is not None
 
-            package_zip = self._download_zip_file(package_name, release['url'], release.get("sha256"))
+            package_zip = await self._download_zip_file(package_name, release['url'], release.get("sha256"))
             if package_zip is False:
                 return False
 
@@ -1607,7 +1604,7 @@ class PackageManager:
                 library_names = self.select_libraries(lib_info)
 
             if library_names:
-                self.install_libraries(
+                await self.install_libraries(
                     library.names_to_libraries(library_names, python_version),
                     fail_early=False
                 )
@@ -1766,7 +1763,7 @@ class PackageManager:
                     'operation': 'install',
                     'version': new_version
                 }
-            self.record_usage(params)
+            await self.record_usage(params)
 
             # Record the install in the settings file so that you can move
             # settings across computers and have the same packages installed
@@ -1855,7 +1852,8 @@ class PackageManager:
             # Try to remove the tmp dir after a second to make sure
             # a virus scanner is holding a reference to the zipfile
             # after we close it.
-            sublime.set_timeout_async(lambda: delete_directory(tmp_dir), 1000)
+            await asyncio.sleep(1.0)
+            delete_directory(tmp_dir)
 
     def rename_package(self, package_name, new_package_name):
         """
@@ -1945,7 +1943,7 @@ class PackageManager:
 
         return True
 
-    def remove_package(self, package_name):
+    async def remove_package(self, package_name):
         """
         Deletes a package
 
@@ -1971,14 +1969,14 @@ class PackageManager:
 
         result = self.delete_package(package_name)
         if result is not False:
-            self.record_usage({
+            await self.record_usage({
                 'package': package_name,
                 'operation': 'remove',
                 'version': version
             })
 
             # Remove libraries that are no longer needed
-            self.cleanup_libraries()
+            await self.cleanup_libraries()
 
         return result
 
@@ -2314,7 +2312,7 @@ class PackageManager:
 
         sublime.set_timeout(partial(print_message, package_name, output, unattended))
 
-    def record_usage(self, params):
+    async def record_usage(self, params):
         """
         Submits install, upgrade and delete actions to a usage server
 
@@ -2335,7 +2333,7 @@ class PackageManager:
         url = self.settings.get('submit_url', '') + '?' + urlencode(params)
 
         try:
-            result = http_get(url, self.settings, 'Error submitting usage information.')
+            result = await http_get(url, self.settings, 'Error submitting usage information.')
         except (DownloaderException) as e:
             console_write(e)
             return

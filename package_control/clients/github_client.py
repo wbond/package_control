@@ -1,4 +1,6 @@
+import asyncio
 import re
+from itertools import chain
 from urllib.parse import urlencode, quote
 
 from ..download_manager import DownloaderException
@@ -54,7 +56,7 @@ class GitHubClient(JSONApiClient):
 
         return 'https://github.com/%s/%s' % (quote(user_name), quote(repo_name))
 
-    def download_info(self, url, tag_prefix=None):
+    async def download_info(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package
 
@@ -82,12 +84,12 @@ class GitHubClient(JSONApiClient):
               `date` - the ISO-8601 timestamp string when the version was published
         """
 
-        output = self.download_info_from_branch(url)
+        output = await self.download_info_from_branch(url)
         if output is None:
-            output = self.download_info_from_tags(url, tag_prefix)
+            output = await self.download_info_from_tags(url, tag_prefix)
         return output
 
-    def download_info_from_branch(self, url, default_branch=None):
+    async def download_info_from_branch(self, url, default_branch=None):
         """
         Retrieve information about downloading a package
 
@@ -120,18 +122,18 @@ class GitHubClient(JSONApiClient):
         if branch is None:
             branch = default_branch
             if branch is None:
-                repo_info = self.fetch_json(self._api_url(user_repo))
+                repo_info = await self.fetch_json(self._api_url(user_repo))
                 branch = repo_info.get('default_branch', 'master')
 
         branch_url = self._api_url(user_repo, '/branches/%s' % branch)
-        branch_info = self.fetch_json(branch_url)
+        branch_info = await self.fetch_json(branch_url)
 
         timestamp = branch_info['commit']['commit']['committer']['date'][0:19].replace('T', ' ')
         version = re.sub(r'[\-: ]', '.', timestamp)
 
         return [self._make_download_info(user_repo, branch, version, timestamp)]
 
-    def download_info_from_releases(self, url, asset_templates, tag_prefix=None):
+    async def download_info_from_releases(self, url, asset_templates, tag_prefix=None):
         """
         Retrieve information about downloading a package
 
@@ -224,12 +226,12 @@ class GitHubClient(JSONApiClient):
         if not match:
             return None
 
-        def _get_releases(user_repo, tag_prefix=None, page_size=1000):
+        async def _get_releases(user_repo, tag_prefix=None, page_size=1000):
             used_versions = set()
             for page in range(10):
                 query_string = urlencode({'page': page * page_size, 'per_page': page_size})
                 api_url = self._api_url(user_repo, '/releases?%s' % query_string)
-                releases = self.fetch_json(api_url)
+                releases = await self.fetch_json(api_url)
 
                 for release in releases:
                     if release['draft']:
@@ -264,7 +266,7 @@ class GitHubClient(JSONApiClient):
 
         output = []
 
-        for release in _get_releases(user_repo, tag_prefix):
+        async for release in _get_releases(user_repo, tag_prefix):
             version, timestamp, assets = release
 
             version_string = str(version)
@@ -294,7 +296,7 @@ class GitHubClient(JSONApiClient):
 
         return output
 
-    def download_info_from_tags(self, url, tag_prefix=None):
+    async def download_info_from_tags(self, url, tag_prefix=None):
         """
         Retrieve information about downloading a package
 
@@ -324,12 +326,12 @@ class GitHubClient(JSONApiClient):
         if not tags_match:
             return None
 
-        def _get_releases(user_repo, tag_prefix=None, page_size=1000):
+        async def _get_releases(user_repo, tag_prefix=None, page_size=1000):
             used_versions = set()
             for page in range(10):
                 query_string = urlencode({'page': page * page_size, 'per_page': page_size})
                 tags_url = self._api_url(user_repo, '/tags?%s' % query_string)
-                tags_json = self.fetch_json(tags_url)
+                tags_json = await self.fetch_json(tags_url)
 
                 for tag in tags_json:
                     version = version_match_prefix(tag['name'], tag_prefix)
@@ -346,13 +348,13 @@ class GitHubClient(JSONApiClient):
         num_releases = 0
 
         output = []
-        for release in sorted(_get_releases(user_repo, tag_prefix), reverse=True):
+        async for release in _get_releases(user_repo, tag_prefix):
             version, tag, tag_url = release
 
             if is_client:
                 timestamp = '1970-01-01 00:00:00'
             else:
-                tag_info = self.fetch_json(tag_url)
+                tag_info = await self.fetch_json(tag_url)
                 timestamp = tag_info['commit']['committer']['date'][0:19].replace('T', ' ')
 
             output.append(self._make_download_info(user_repo, tag, str(version), timestamp))
@@ -361,9 +363,10 @@ class GitHubClient(JSONApiClient):
             if max_releases > 0 and num_releases >= max_releases:
                 break
 
+        output.sort(reverse=True)
         return output
 
-    def repo_info(self, url):
+    async def repo_info(self, url):
         """
         Retrieve general information about a repository
 
@@ -394,14 +397,14 @@ class GitHubClient(JSONApiClient):
 
         user_repo = "%s/%s" % (user_name, repo_name)
         api_url = self._api_url(user_repo)
-        repo_info = self.fetch_json(api_url)
+        repo_info = await self.fetch_json(api_url)
 
         if branch is None:
             branch = repo_info.get('default_branch', 'master')
 
-        return self._extract_repo_info(branch, repo_info)
+        return await self._extract_repo_info(branch, repo_info)
 
-    def user_info(self, url):
+    async def user_info(self, url):
         """
         Retrieve general information about all repositories that are
         part of a user/organization.
@@ -433,14 +436,13 @@ class GitHubClient(JSONApiClient):
         user = user_match.group(1)
         api_url = 'https://api.github.com/users/%s/repos' % user
 
-        repos_info = self.fetch_json(api_url)
-
-        return [
+        tasks = [
             self._extract_repo_info(info.get('default_branch', 'master'), info)
-            for info in repos_info
+            for info in await self.fetch_json(api_url)
         ]
+        return await asyncio.gather(*tasks)
 
-    def _extract_repo_info(self, branch, result):
+    async def _extract_repo_info(self, branch, result):
         """
         Extracts information about a repository from the API result
 
@@ -475,7 +477,7 @@ class GitHubClient(JSONApiClient):
             'description': result['description'] or 'No description provided',
             'homepage': result['homepage'] or result['html_url'],
             'author': user_name,
-            'readme': self._readme_url(user_repo, branch),
+            'readme': await self._readme_url(user_repo, branch),
             'issues': issues_url,
             'donate': None,
             'default_branch': branch
@@ -530,7 +532,7 @@ class GitHubClient(JSONApiClient):
 
         return 'https://api.github.com/repos/%s%s' % (user_repo, suffix)
 
-    def _readme_url(self, user_repo, branch, prefer_cached=False):
+    async def _readme_url(self, user_repo, branch, prefer_cached=False):
         """
         Fetches the raw GitHub API information about a readme
 
@@ -555,7 +557,8 @@ class GitHubClient(JSONApiClient):
         readme_url = self._api_url(user_repo, '/readme?%s' % query_string)
 
         try:
-            readme_file = self.fetch_json(readme_url, prefer_cached).get('path')
+            readme_file = await self.fetch_json(readme_url, prefer_cached)
+            readme_file = readme_file.get('path')
             if readme_file:
                 return 'https://raw.githubusercontent.com/%s/%s/%s' % (user_repo, branch, readme_file)
 

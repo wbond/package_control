@@ -15,19 +15,14 @@ class HgUpgrader(VcsUpgrader):
 
     ok_returncodes = set([0, 1])
 
-    def retrieve_binary(self):
-        """
-        Returns the path to the hg executable
-
-        :return: The string path to the executable or False on error
-        """
+    def __init__(self, *args):
+        super(HgUpgrader, self).__init__(*args)
 
         name = 'hg'
         if os.name == 'nt':
             name += '.exe'
-        binary = self.find_binary(name)
-
-        if not binary:
+        self.binary = self.find_binary(name)
+        if not self.binary:
             show_error(
                 '''
                 Unable to find %s.
@@ -41,31 +36,25 @@ class HgUpgrader(VcsUpgrader):
                 ''',
                 name
             )
-            return False
 
-        return binary
-
-    def run(self):
+    async def run(self):
         """
         Updates the repository with remote changes
 
         :return: False or error, or True on success
         """
-
-        binary = self.retrieve_binary()
-        if not binary:
-            return False
-        args = [binary]
-        args.extend(self.update_command)
-        args.append('default')
-        result = self.execute(args, self.working_copy, meaningful_output=True)
+        result = await self.execute(
+            args=[self.binary, *self.update_command, 'default'],
+            cwd=self.working_copy,
+            meaningful_output=True
+        )
         if result is not False:
             cache_key = self.working_copy + '.incoming'
             set_cache(cache_key, None, 0)
 
         return True
 
-    def incoming(self):
+    async def incoming(self):
         """:return: bool if remote revisions are available"""
 
         cache_key = self.working_copy + '.incoming'
@@ -73,12 +62,11 @@ class HgUpgrader(VcsUpgrader):
         if incoming is not None:
             return incoming
 
-        binary = self.retrieve_binary()
-        if not binary:
-            return False
-
-        args = [binary, 'in', '-q', 'default']
-        output = self.execute(args, self.working_copy, meaningful_output=True)
+        output = await self.execute(
+            args=[self.binary, 'in', '-q', 'default'],
+            cwd=self.working_copy,
+            meaningful_output=True
+        )
         if output is False:
             return False
 
@@ -87,18 +75,16 @@ class HgUpgrader(VcsUpgrader):
         set_cache(cache_key, incoming, self.cache_length)
         return incoming
 
-    def latest_commit(self):
+    async def latest_commit(self):
         """
         :return:
             The latest commit hash
         """
 
-        binary = self.retrieve_binary()
-        if not binary:
-            return False
-
-        args = [binary, 'id', '-i']
-        output = self.execute(args, self.working_copy)
+        output = await self.execute(
+            args=[self.binary, 'id', '-i'],
+            cwd=self.working_copy
+        )
         if output is False:
             return False
 

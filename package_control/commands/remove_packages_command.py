@@ -1,4 +1,4 @@
-import threading
+import sublime_aio
 
 import sublime
 import sublime_plugin
@@ -24,12 +24,12 @@ class RemovePackagesCommand(sublime_plugin.ApplicationCommand):
     def run(self, packages=None):
         if isinstance(packages, list):
 
-            def worker():
+            async def worker():
                 with ActivityIndicator() as progress:
                     remover = PackageTaskRunner()
-                    remover.remove_packages(packages, progress)
+                    await remover.remove_packages(packages, progress)
 
-            threading.Thread(target=worker).start()
+            sublime_aio.run_coroutine(worker())
             return
 
         def on_done(input_text):

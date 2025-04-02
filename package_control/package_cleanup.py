@@ -1,6 +1,6 @@
+import asyncio
 import os
 import json
-import threading
 import time
 import traceback
 
@@ -17,7 +17,7 @@ from .package_tasks import PackageTaskRunner
 from .show_error import show_error, show_message
 
 
-class PackageCleanup(threading.Thread, PackageTaskRunner):
+class PackageCleanup(PackageTaskRunner):
 
     """
     Perform initial package maintenance tasks after start of ST.
@@ -40,12 +40,11 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
     """
 
     def __init__(self):
-        threading.Thread.__init__(self)
         PackageTaskRunner.__init__(self)
         self.failed_cleanup = set()
         self.updated_libraries = False
 
-    def run(self):
+    async def run(self):
         # This song and dance is necessary so Package Control doesn't try to clean
         # itself up, but also get properly marked as installed in the settings
         # Ensure we record the installation of Package Control itself
@@ -66,12 +65,12 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         clear_directory(sys_path.trash_path())
 
         # Scan through packages and complete pending operations
-        found_packages = self.cleanup_pending_packages()
+        found_packages = await self.cleanup_pending_packages()
 
         # Clean-up packages that were installed via Package Control, but have been
         # removed from the "installed_packages" list - usually by removing them
         # from another computer and the settings file being synced.
-        removed_packages = self.remove_orphaned_packages(found_packages)
+        removed_packages = await self.remove_orphaned_packages(found_packages)
         found_packages -= removed_packages
 
         # Make sure we didn't accidentally ignore packages because something was
@@ -97,17 +96,17 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         removed_packages = None
 
         # Check metadata to verify packages were not improperly installed
-        self.migrate_incompatible_packages(found_packages)
+        await self.migrate_incompatible_packages(found_packages)
 
-        self.install_missing_packages(found_packages)
+        await self.install_missing_packages(found_packages)
 
         if self.manager.settings.get('remove_orphaned', True):
-            self.manager.cleanup_libraries()
+            await self.manager.cleanup_libraries()
 
-        self.install_missing_libraries()
+        await self.install_missing_libraries()
 
         if self.manager.settings.get('auto_upgrade'):
-            AutomaticUpgrader(self.manager).run()
+            await AutomaticUpgrader(self.manager).run()
 
         # make sure to restore indexing state
         # note: required after Package Control upgrade
@@ -141,7 +140,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         if message:
             show_message('Sublime Text needs to be restarted %s.' % message)
 
-    def cleanup_pending_packages(self):
+    async def cleanup_pending_packages(self):
         """
         Scan through packages and complete pending operations
 
@@ -259,7 +258,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                         package_name
                     )
 
-                elif not self.manager.install_package(package_name, unattended=True):
+                elif not await self.manager.install_package(package_name, unattended=True):
                     create_empty_file(reinstall_file)
 
             # Convert unpacked managed package into unmanaged package,
@@ -289,7 +288,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         return found_packages
 
-    def migrate_incompatible_packages(self, found_packages):
+    async def migrate_incompatible_packages(self, found_packages):
         """
         Determine and reinstall all incompatible packages
 
@@ -308,7 +307,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             return set()
 
         if self.manager.settings.get('auto_migrate', True):
-            available_packages = set(self.manager.list_available_packages())
+            available_packages = set(await self.manager.list_available_packages())
             migrate_packages = incompatible_packages & available_packages
             if migrate_packages:
                 num_packages = len(migrate_packages)
@@ -320,14 +319,14 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
                 with ActivityIndicator(message) as progress:
                     reenable_packages = self.disable_packages({self.UPGRADE: migrate_packages})
-                    time.sleep(0.7)
+                    await asyncio.sleep(0.7)
 
                     num_success = 0
 
                     for package_name in sorted(migrate_packages, key=lambda s: s.lower()):
                         try:
                             progress.set_label('Migrating package {}...'.format(package_name))
-                            result = self.manager.install_package(package_name, unattended=True)
+                            result = await self.manager.install_package(package_name, unattended=True)
                             if result is True:
                                 num_success += 1
 
@@ -352,13 +351,13 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
                         console_write(message)
 
                     if reenable_packages:
-                        time.sleep(0.7)
+                        await asyncio.sleep(0.7)
                         self.reenable_packages({self.UPGRADE: reenable_packages})
 
                     progress.finish(message)
 
         if incompatible_packages:
-            self.remove_packages(incompatible_packages, package_kind='incompatible')
+            await self.remove_packages(incompatible_packages, package_kind='incompatible')
 
             if len(incompatible_packages) == 1:
                 message = text.format(
@@ -400,7 +399,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         return incompatible_packages
 
-    def install_missing_libraries(self):
+    async def install_missing_libraries(self):
         missing_libraries = self.manager.find_missing_libraries()
         if not missing_libraries:
             return
@@ -413,12 +412,9 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
             console_write(message)
 
         with ActivityIndicator(message) as progress:
-            for lib in missing_libraries:
-                progress.set_label('Installing library {}'.format(lib.name))
-                if self.manager.install_library(lib):
-                    self.updated_libraries = True
+            self.updated_libraries = any(await asyncio.gather(*map(self.manager.install_library, missing_libraries)))
 
-    def install_missing_packages(self, found_packages):
+    async def install_missing_packages(self, found_packages):
         """
         Install missing packages.
 
@@ -435,16 +431,16 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         installed_packages = self.manager.installed_packages()
 
-        tasks = self.create_package_tasks(
+        tasks = await self.create_package_tasks(
             actions=(self.INSTALL, self.OVERWRITE),
             include_packages=installed_packages,
             found_packages=found_packages
         )
         if tasks:
             with ActivityIndicator('Installing missing packages...') as progress:
-                self.run_install_tasks(tasks, progress, unattended=True, package_kind='missing')
+                await self.run_install_tasks(tasks, progress, unattended=True, package_kind='missing')
 
-    def remove_orphaned_packages(self, found_packages):
+    async def remove_orphaned_packages(self, found_packages):
         """
         Removes orphaned packages.
 
@@ -476,6 +472,6 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         if orphaned_packages:
             with ActivityIndicator('Removing orphaned packages...') as progress:
-                self.remove_packages(orphaned_packages, package_kind='orphaned', progress=progress)
+                await self.remove_packages(orphaned_packages, package_kind='orphaned', progress=progress)
 
         return orphaned_packages

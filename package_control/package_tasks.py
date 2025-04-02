@@ -1,11 +1,11 @@
-from datetime import datetime
+import asyncio
 import html
 import re
 import time
-
-from concurrent import futures
+from datetime import datetime
 
 import sublime
+import sublime_aio
 
 from .console_write import console_write
 from .package_manager import PackageManager
@@ -116,7 +116,7 @@ class PackageTaskRunner(PackageDisabler):
 
         self.manager = manager or PackageManager()
 
-    def install_packages(self, packages, unattended=False, progress=None):
+    async def install_packages(self, packages, unattended=False, progress=None):
         """
         Install specified packages
 
@@ -138,7 +138,7 @@ class PackageTaskRunner(PackageDisabler):
                     raise TypeError("Argument 'packages' must be a string, list or set!")
                 packages = set(packages)
 
-        tasks = self.create_package_tasks(
+        tasks = await self.create_package_tasks(
             actions=(self.INSTALL, self.OVERWRITE),
             include_packages=packages
         )
@@ -167,9 +167,9 @@ class PackageTaskRunner(PackageDisabler):
                 show_message(message)
             return
 
-        return self.run_install_tasks(tasks, progress, unattended)
+        return await self.run_install_tasks(tasks, progress, unattended)
 
-    def upgrade_packages(self, packages=None, ignore_packages=None, unattended=False, progress=None):
+    async def upgrade_packages(self, packages=None, ignore_packages=None, unattended=False, progress=None):
         """
         Upgrade specified packages
 
@@ -208,7 +208,7 @@ class PackageTaskRunner(PackageDisabler):
                 raise TypeError("Argument 'ignore_packages' must be a string, list or set!")
             ignore_packages = set(ignore_packages)
 
-        tasks = self.create_package_tasks(
+        tasks = await self.create_package_tasks(
             actions=(self.PULL, self.UPGRADE),
             include_packages=packages,
             ignore_packages=ignore_packages | self.ignored_packages()  # don't upgrade disabled packages
@@ -238,9 +238,9 @@ class PackageTaskRunner(PackageDisabler):
                 show_message(message)
             return True
 
-        return self.run_upgrade_tasks(tasks, progress, unattended)
+        return await self.run_upgrade_tasks(tasks, progress, unattended)
 
-    def remove_packages(self, packages, progress=None, package_kind=''):
+    async def remove_packages(self, packages, progress=None, package_kind=''):
         """
         Removes packages.
 
@@ -279,7 +279,7 @@ class PackageTaskRunner(PackageDisabler):
             progress.set_label(message)
 
         self.disable_packages({self.REMOVE: packages})
-        time.sleep(0.7)
+        await asyncio.sleep(0.7)
 
         deferred = set()
         num_success = 0
@@ -288,7 +288,7 @@ class PackageTaskRunner(PackageDisabler):
             for package in sorted(packages, key=lambda s: s.lower()):
                 if progress:
                     progress.set_label('Removing {}package {}'.format(package_kind, package))
-                result = self.manager.remove_package(package)
+                result = await self.manager.remove_package(package)
                 if result is True:
                     num_success += 1
                 # do not re-enable package if operation is deferred to next start
@@ -309,10 +309,10 @@ class PackageTaskRunner(PackageDisabler):
                 progress.finish(message)
 
         finally:
-            time.sleep(0.7)
+            await asyncio.sleep(0.7)
             self.reenable_packages({self.REMOVE: packages - deferred})
 
-    def satisfy_packages(self, progress=None, unattended=False):
+    async def satisfy_packages(self, progress=None, unattended=False):
         """
         Install missing and remove orphaned packages.
 
@@ -327,26 +327,26 @@ class PackageTaskRunner(PackageDisabler):
         found_packages = self.manager.list_packages()
 
         # find missing packages
-        tasks = self.create_package_tasks(
+        tasks = await self.create_package_tasks(
             actions=(self.INSTALL, self.OVERWRITE),
             include_packages=installed_packages,
             found_packages=found_packages
         )
 
         if tasks:
-            self.run_install_tasks(tasks, progress, unattended, package_kind='missing')
+            await self.run_install_tasks(tasks, progress, unattended, package_kind='missing')
 
         # find all managed orphaned packages
         orphaned_packages = set(filter(self.manager.is_managed, found_packages - installed_packages))
         if orphaned_packages:
-            self.remove_packages(orphaned_packages, progress, package_kind='orphaned')
+            await self.remove_packages(orphaned_packages, progress, package_kind='orphaned')
 
         message = 'All packages satisfied!'
         console_write(message)
         if progress:
             progress.finish(message)
 
-    def run_install_tasks(self, tasks, progress=None, unattended=False, package_kind=''):
+    async def run_install_tasks(self, tasks, progress=None, unattended=False, package_kind=''):
         """
         Execute specified package install tasks
 
@@ -380,7 +380,7 @@ class PackageTaskRunner(PackageDisabler):
         package_names = set(task.package_name for task in tasks)
 
         self.disable_packages({self.INSTALL: package_names})
-        time.sleep(0.7)
+        await asyncio.sleep(0.7)
 
         num_success = 0
 
@@ -388,7 +388,7 @@ class PackageTaskRunner(PackageDisabler):
             for task in tasks:
                 if progress:
                     progress.set_label('Installing {}package {}'.format(package_kind, task.package_name))
-                result = self.manager.install_package(task.package_name, unattended)
+                result = await self.manager.install_package(task.package_name, unattended)
                 if result is True:
                     num_success += 1
                 # do not re-enable package if operation is deferred to next start
@@ -413,10 +413,10 @@ class PackageTaskRunner(PackageDisabler):
                 progress.finish(message)
 
         finally:
-            time.sleep(0.7)
+            await asyncio.sleep(0.7)
             self.reenable_packages({self.INSTALL: package_names})
 
-    def run_upgrade_tasks(self, tasks, progress=None, unattended=False):
+    async def run_upgrade_tasks(self, tasks, progress=None, unattended=False):
         """
         Execute specified package update tasks
 
@@ -470,7 +470,7 @@ class PackageTaskRunner(PackageDisabler):
             progress.set_label(message)
 
         self.disable_packages(disable_packages)
-        time.sleep(0.7)
+        await asyncio.sleep(0.7)
 
         num_success = 0
 
@@ -479,7 +479,7 @@ class PackageTaskRunner(PackageDisabler):
                 package = task.package_name
                 if progress:
                     progress.set_label('Upgrading package {}'.format(task.package_name))
-                result = self.manager.install_package(package, unattended)
+                result = await self.manager.install_package(package, unattended)
                 if result is True:
                     num_success += 1
                 # do not re-enable package if operation is deferred to next start
@@ -506,12 +506,12 @@ class PackageTaskRunner(PackageDisabler):
                 progress.finish(message)
 
         finally:
-            time.sleep(0.7)
+            await asyncio.sleep(0.7)
             self.reenable_packages(disable_packages)
 
         return update_completed
 
-    def create_package_tasks(self, actions, include_packages=None, ignore_packages=None, found_packages=None):
+    async def create_package_tasks(self, actions, include_packages=None, ignore_packages=None, found_packages=None):
         """
         Makes tasks.
 
@@ -542,7 +542,7 @@ class PackageTaskRunner(PackageDisabler):
 
         tasks = []
 
-        available_packages = self.manager.list_available_packages()
+        available_packages = await self.manager.list_available_packages()
         if not available_packages:
             return False
 
@@ -555,11 +555,10 @@ class PackageTaskRunner(PackageDisabler):
         if not ignore_vcs_packages:
             ignore_vcs_packages = self.manager.settings.get('ignore_vcs_packages', False)
 
-        executor = futures.ThreadPoolExecutor(max_workers=10)
-        vcs_futures = []
+        vcs_tasks = []
 
-        def create_vcs_task(upgrader, package_name):
-            if not upgrader.incoming():
+        async def create_vcs_task(upgrader, package_name):
+            if not await upgrader.incoming():
                 return None
             return PackageInstallTask(self.PULL, package_name, upgrader=upgrader)
 
@@ -580,7 +579,7 @@ class PackageTaskRunner(PackageDisabler):
                 if isinstance(ignore_vcs_packages, list) and package_name in ignore_vcs_packages:
                     continue
 
-                vcs_futures.append(executor.submit(create_vcs_task, upgrader, package_name))
+                vcs_tasks.append(create_vcs_task(upgrader, package_name))
                 continue
 
             # if a package was renamed, new name is to be used to lookup update info
@@ -612,11 +611,7 @@ class PackageTaskRunner(PackageDisabler):
                 tasks.append(PackageInstallTask(action, package_name, package_version, update_info))
 
         # add results from vcs upgraders
-        vcs_futures = futures.wait(vcs_futures)
-        for future in vcs_futures.done:
-            task = future.result()
-            if task:
-                tasks.append(task)
+        tasks.extend(f for f in await asyncio.gather(*vcs_tasks) if f is not None)
 
         # packages to install
         if self.INSTALL in actions:
@@ -629,7 +624,8 @@ class PackageTaskRunner(PackageDisabler):
                     continue
                 tasks.append(PackageInstallTask(self.INSTALL, package_name, update_info=update_info))
 
-        return sorted(tasks, key=lambda task: task.package_name.lower())
+        tasks.sort(key=lambda task: task.package_name.lower())
+        return tasks
 
     def render_quick_panel_items(self, tasks):
         """

@@ -4,7 +4,7 @@ import threading
 from datetime import datetime
 
 import sublime
-import sublime_plugin
+import sublime_aio
 
 from ..activity_indicator import ActivityIndicator
 from ..console_write import console_write
@@ -14,39 +14,36 @@ from ..show_error import show_message
 USE_QUICK_PANEL_ITEM = hasattr(sublime, "QuickPanelItem")
 
 
-class ListAvailableLibrariesCommand(sublime_plugin.ApplicationCommand):
+class ListAvailableLibrariesCommand(sublime_aio.ApplicationCommand):
 
     """
     A command that presents the list of available packages and allows the
     user to pick one to install.
     """
 
-    def run(self):
-        def show_quick_panel():
-            manager = PackageManager()
+    async def run(self):
+        manager = PackageManager()
 
-            with ActivityIndicator("Loading libraries...") as progress:
-                libraries = manager.list_available_libraries()
-                if not libraries:
-                    message = "There are no libraries available for installation"
-                    console_write(message)
-                    progress.finish(message)
-                    show_message(
-                        """
-                        %s
+        with ActivityIndicator("Loading libraries...") as progress:
+            libraries = await manager.list_available_libraries()
+            if not libraries:
+                message = "There are no libraries available for installation"
+                console_write(message)
+                progress.finish(message)
+                show_message(
+                    """
+                    %s
 
-                        Please see https://packagecontrol.io/docs/troubleshooting for help
-                        """,
-                        message,
-                    )
-                    return
+                    Please see https://packagecontrol.io/docs/troubleshooting for help
+                    """,
+                    message,
+                )
+                return
 
-            if USE_QUICK_PANEL_ITEM:
-                self.show_quick_panel_st4(libraries.values())
-            else:
-                self.show_quick_panel_st3(libraries.values())
-
-        threading.Thread(target=show_quick_panel).start()
+        if USE_QUICK_PANEL_ITEM:
+            self.show_quick_panel_st4(libraries.values())
+        else:
+            self.show_quick_panel_st3(libraries.values())
 
     def show_quick_panel_st3(self, libraries):
         items = [

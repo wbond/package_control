@@ -72,7 +72,7 @@ class ChannelProvider:
 
         return True
 
-    def prefetch(self):
+    async def prefetch(self):
         """
         Go out and perform HTTP operations, caching the result
 
@@ -81,9 +81,9 @@ class ChannelProvider:
             DownloaderException: when an error occurs trying to open a URL
         """
 
-        self.fetch()
+        await self.fetch()
 
-    def fetch(self):
+    async def fetch(self):
         """
         Retrieves and loads the JSON for other methods to use
 
@@ -96,7 +96,7 @@ class ChannelProvider:
         if self.repositories is not None:
             return
 
-        json_string = http_get(self.channel_url, self.settings, 'Error downloading channel.')
+        json_string = await http_get(self.channel_url, self.settings, 'Error downloading channel.')
 
         try:
             channel_info = json.loads(json_string.decode('utf-8'))
@@ -117,7 +117,7 @@ class ChannelProvider:
         self.packages_cache = self._migrate_packages_cache(channel_info, schema_version)
         self.libraries_cache = self._migrate_libraries_cache(channel_info, schema_version)
 
-    def get_renamed_packages(self):
+    async def get_renamed_packages(self):
         """
         :raises:
             ProviderException: when an error occurs with the channel contents
@@ -127,7 +127,7 @@ class ChannelProvider:
             A dict of the packages that have been renamed
         """
 
-        self.fetch()
+        await self.fetch()
 
         output = {}
         for package in chain(*self.packages_cache.values()):
@@ -139,7 +139,7 @@ class ChannelProvider:
 
         return output
 
-    def get_repositories(self):
+    async def get_repositories(self):
         """
         :raises:
             ProviderException: when an error occurs with the channel contents
@@ -149,11 +149,11 @@ class ChannelProvider:
             A list of the repository URLs
         """
 
-        self.fetch()
+        await self.fetch()
 
         return self.repositories
 
-    def get_sources(self):
+    async def get_sources(self):
         """
         Return a list of current URLs that are directly referenced by the
         channel
@@ -162,9 +162,9 @@ class ChannelProvider:
             A list of URLs and/or file paths
         """
 
-        return self.get_repositories()
+        return await self.get_repositories()
 
-    def get_packages(self, repo_url):
+    async def get_packages(self, repo_url):
         """
         Provides access to the repository info that is cached in a channel
 
@@ -207,7 +207,7 @@ class ChannelProvider:
             tuples
         """
 
-        self.fetch()
+        await self.fetch()
 
         if repo_url not in self.packages_cache:
             raise UncachedChannelRepositoryError(repo_url)
@@ -216,7 +216,7 @@ class ChannelProvider:
             if package['releases']:
                 yield (package['name'], package)
 
-    def get_libraries(self, repo_url):
+    async def get_libraries(self, repo_url):
         """
         Provides access to the library info that is cached in a channel
 
@@ -251,7 +251,7 @@ class ChannelProvider:
             tuples
         """
 
-        self.fetch()
+        await self.fetch()
 
         if repo_url not in self.libraries_cache:
             raise UncachedChannelRepositoryError(repo_url)
@@ -260,7 +260,7 @@ class ChannelProvider:
             if library['releases']:
                 yield (library['name'], library)
 
-    def get_broken_packages(self):
+    async def get_broken_packages(self):
         """
         Provide package names without releases.
 
@@ -272,13 +272,13 @@ class ChannelProvider:
             A generator of 'package names'
         """
 
-        self.fetch()
+        await self.fetch()
 
         for package in chain(*self.packages_cache.values()):
             if not package['releases']:
                 yield package['name']
 
-    def get_broken_libraries(self):
+    async def get_broken_libraries(self):
         """
         Provide library names without releases.
 
@@ -290,7 +290,7 @@ class ChannelProvider:
             A generator of 'library names'
         """
 
-        self.fetch()
+        await self.fetch()
 
         for library in chain(*self.libraries_cache.values()):
             if not library['releases']:

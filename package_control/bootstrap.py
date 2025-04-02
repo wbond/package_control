@@ -1,10 +1,11 @@
+import asyncio
 import json
 import os
 import zipfile
 from textwrap import dedent
-from threading import Thread
 
 import sublime
+import sublime_aio
 
 from . import library, sys_path
 from .clear_directory import delete_directory
@@ -37,7 +38,7 @@ def disable_package_control():
     )
 
 
-def bootstrap():
+async def bootstrap():
     """
     Bootstrap Package Control
 
@@ -51,19 +52,17 @@ def bootstrap():
     if not os.path.exists(LOADER_PACKAGE_PATH):
         # Start shortly after Sublime starts so package renames don't cause errors
         # with key bindings, settings, etc. disappearing in the middle of parsing
-        sublime.set_timeout(PackageCleanup().start, 2000)
+        await asyncio.sleep(2)
+        await PackageCleanup().run()
         return
 
-    sublime.set_timeout(_bootstrap, 10)
-
-
-def _bootstrap():
     PackageDisabler.disable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
     # Give ST a second to disable 0_package_control_loader
-    sublime.set_timeout(Thread(target=_migrate_dependencies).start, 1000)
+    await asyncio.sleep(1)
+    await _migrate_dependencies()
 
 
-def _migrate_dependencies():
+async def _migrate_dependencies():
     """
     Moves old Package Control 3-style dependencies to the new 4-style
     libraries, which use the Lib folder
@@ -110,17 +109,16 @@ def _migrate_dependencies():
 
         os.remove(LOADER_PACKAGE_PATH)
 
-        def _reenable_loader():
-            PackageDisabler.reenable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
-            show_message(
-                '''
-                Dependencies have just been migrated to python libraries.
+        await asyncio.sleep(500)
 
-                You may need to restart Sublime Text.
-                '''
-            )
+        PackageDisabler.reenable_packages({PackageDisabler.LOADER: LOADER_PACKAGE_NAME})
+        show_message(
+            '''
+            Dependencies have just been migrated to python libraries.
 
-        sublime.set_timeout(_reenable_loader, 500)
+            You may need to restart Sublime Text.
+            '''
+        )
 
     except (OSError) as e:
         console_write('Error trying to migrate dependencies - %s' % e)
