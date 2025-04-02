@@ -16,7 +16,7 @@ class GitProviderUserInfoException(ProviderException):
         self.url = provider.repo_url
 
     def __str__(self):
-        return '%s unable to fetch user information from "%s".' % (self.provider_name, self.url)
+        return f'{self.provider_name} unable to fetch user information from "{self.url}".'
 
 
 class GitProviderRepoInfoException(ProviderException):
@@ -32,7 +32,7 @@ class GitProviderRepoInfoException(ProviderException):
         self.url = provider.repo_url
 
     def __str__(self):
-        return '%s unable to fetch repo information from "%s".' % (self.provider_name, self.url)
+        return f'{self.provider_name} unable to fetch repo information from "{self.url}".'
 
 
 class GitProviderDownloadInfoException(ProviderException):
@@ -48,4 +48,4 @@ class GitProviderDownloadInfoException(ProviderException):
         self.url = url or provider.repo_url
 
     def __str__(self):
-        return '%s unable to fetch download information from "%s".' % (self.provider_name, self.url)
+        return f'{self.provider_name} unable to fetch download information from "{self.url}".'
