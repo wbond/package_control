@@ -245,7 +245,10 @@ class GitLabClient(JSONApiClient):
                         version,
                         release['released_at'][0:19].replace('T', ' '),
                         [
-                            ((a['name'], a['direct_asset_url']))
+                            (
+                                a['name'] or a['direct_asset_url'].rpartition("/")[-1],
+                                a['direct_asset_url']
+                            )
                             for a in release['assets']['links']
                         ]
                     )

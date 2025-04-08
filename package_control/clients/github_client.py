@@ -244,7 +244,10 @@ class GitHubClient(JSONApiClient):
                         version,
                         release['published_at'][0:19].replace('T', ' '),
                         [
-                            ((a['label'], a['browser_download_url']))
+                            (
+                                a['label'] or a['browser_download_url'].rpartition("/")[-1],
+                                a['browser_download_url']
+                            )
                             for a in release['assets']
                             if a['state'] == 'uploaded'
                         ]
