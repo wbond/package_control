@@ -3,7 +3,7 @@ import re
 import socket
 import sys
 from threading import Lock, Timer
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 from . import __version__
 from . import text
@@ -67,6 +67,9 @@ def http_get(url, settings, error_message='', prefer_cached=False):
     :return:
         The string contents of the URL
     """
+    if url.startswith("file:///"):
+        with open(unquote(url[8:]), "rb") as f:
+            return f.read()
 
     manager = None
     result = None
