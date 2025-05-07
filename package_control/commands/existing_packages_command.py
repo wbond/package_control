@@ -29,7 +29,7 @@ class ExistingPackagesCommand(sublime_plugin.ApplicationCommand):
         default_packages = manager.list_default_packages()
         default_version = 'built-in v' + sublime.version()
 
-        url_pattern = re.compile(r'^https?://')
+        url_pattern = re.compile(r'^(?:file:///|https?://)')
 
         package_list = []
         for package in sorted(self.list_packages(manager), key=lambda s: s.lower()):

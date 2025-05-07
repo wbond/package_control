@@ -30,7 +30,7 @@ class AddChannelCommand(sublime_plugin.ApplicationCommand):
         if isinstance(url, str):
             url = url.strip()
 
-            if re.match(r'https?://', url, re.I) is None:
+            if re.match(r'^(?:file:///|https?://)', url, re.I) is None:
                 output_fn = console_write if unattended else show_error
                 output_fn(
                     '''
