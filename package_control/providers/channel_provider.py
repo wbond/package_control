@@ -99,25 +99,7 @@ class ChannelProvider:
         if self.repositories is not None:
             return
 
-        if re.match(r'https?://', self.channel_url, re.I):
-            json_string = http_get(self.channel_url, self.settings, 'Error downloading channel.')
-
-        # All other channels are expected to be filesystem paths
-        else:
-            if not os.path.exists(self.channel_url):
-                raise ProviderException('Error, file %s does not exist' % self.channel_url)
-
-            if self.settings.get('debug'):
-                console_write(
-                    '''
-                    Loading %s as a channel
-                    ''',
-                    self.channel_url
-                )
-
-            # We open as binary so we get bytes like the DownloadManager
-            with open(self.channel_url, 'rb') as f:
-                json_string = f.read()
+        json_string = http_get(self.channel_url, self.settings, 'Error downloading channel.')
 
         try:
             channel_info = json.loads(json_string.decode('utf-8'))

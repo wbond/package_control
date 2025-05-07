@@ -130,25 +130,7 @@ class JsonRepositoryProvider(BaseRepositoryProvider):
 
         self.included_urls.add(location)
 
-        if re.match(r'https?://', location, re.I):
-            json_string = http_get(location, self.settings, 'Error downloading repository.')
-
-        # Anything that is not a URL is expected to be a filesystem path
-        else:
-            if not os.path.exists(location):
-                raise ProviderException('Error, file %s does not exist' % location)
-
-            if self.settings.get('debug'):
-                console_write(
-                    '''
-                    Loading %s as a repository
-                    ''',
-                    location
-                )
-
-            # We open as binary so we get bytes like the DownloadManager
-            with open(location, 'rb') as f:
-                json_string = f.read()
+        json_string = http_get(location, self.settings, 'Error downloading repository.')
 
         try:
             repo_info = json.loads(json_string.decode('utf-8'))

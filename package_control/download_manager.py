@@ -67,9 +67,13 @@ def http_get(url, settings, error_message='', prefer_cached=False):
     :return:
         The string contents of the URL
     """
-    if url.startswith("file:///"):
-        with open(unquote(url[8:]), "rb") as f:
-            return f.read()
+
+    if url[:8].lower() == "file:///":
+        try:
+            with open(unquote(url[8:]), "rb") as f:
+                return f.read()
+        except OSError as e:
+            raise DownloaderException(str(e))
 
     manager = None
     result = None
@@ -175,11 +179,7 @@ def resolve_urls(root_url, uris):
         A generator of resolved URLs
     """
 
-    scheme_match = re.match(r'(https?:)//', root_url, re.I)
-    if scheme_match is None:
-        root_dir = os.path.dirname(root_url)
-    else:
-        root_dir = ''
+    scheme_match = re.match(r'^(file:/|https?:)//', root_url, re.I)
 
     for url in uris:
         if not url:
@@ -193,10 +193,7 @@ def resolve_urls(root_url, uris):
             # We don't allow absolute repositories
             continue
         elif url.startswith('./') or url.startswith('../'):
-            if root_dir:
-                url = os.path.normpath(os.path.join(root_dir, url))
-            else:
-                url = urljoin(root_url, url)
+            url = urljoin(root_url, url)
         yield url
 
 
@@ -217,23 +214,15 @@ def resolve_url(root_url, url):
     if not url:
         return url
 
-    scheme_match = re.match(r'(https?:)//', root_url, re.I)
-    if scheme_match is None:
-        root_dir = os.path.dirname(root_url)
-    else:
-        root_dir = ''
-
     if url.startswith('//'):
+        scheme_match = re.match(r'^(file:/|https?:)//', root_url, re.I)
         if scheme_match is not None:
             return scheme_match.group(1) + url
         else:
             return 'https:' + url
 
     elif url.startswith('./') or url.startswith('../'):
-        if root_dir:
-            return os.path.normpath(os.path.join(root_dir, url))
-        else:
-            return urljoin(root_url, url)
+        return urljoin(root_url, url)
 
     return url
 
