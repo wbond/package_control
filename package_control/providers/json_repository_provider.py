@@ -1,6 +1,4 @@
 import json
-import re
-import os
 from itertools import chain
 from urllib.parse import urlparse
 
@@ -9,7 +7,6 @@ from ..clients.client_exception import ClientException
 from ..clients.github_client import GitHubClient
 from ..clients.gitlab_client import GitLabClient
 from ..clients.pypi_client import PyPiClient
-from ..console_write import console_write
 from ..download_manager import http_get, resolve_url, resolve_urls, update_url
 from ..downloaders.downloader_exception import DownloaderException
 from ..package_version import version_sort
