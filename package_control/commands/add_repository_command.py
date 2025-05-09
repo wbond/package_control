@@ -3,6 +3,9 @@ import re
 import sublime
 import sublime_plugin
 
+from os.path import isabs
+from urllib.request import pathname2url
+
 from ..console_write import console_write
 from ..settings import pc_settings_filename
 from ..show_error import show_error
@@ -31,15 +34,18 @@ class AddRepositoryCommand(sublime_plugin.ApplicationCommand):
             url = url.strip()
 
             if re.match(r'^(?:file:///|https?://)', url, re.I) is None:
-                output_fn = console_write if unattended else show_error
-                output_fn(
-                    '''
-                    Unable to add the repository "%s" since it does not appear to
-                    be served via HTTP (http:// or https://).
-                    ''',
-                    url
-                )
-                return
+                if not isabs(url):
+                    output_fn = console_write if unattended else show_error
+                    output_fn(
+                        '''
+                        Unable to add the repository "%s" since it does not appear to
+                        be a local URL (file://) or served via HTTP (http:// or https://).
+                        ''',
+                        url
+                    )
+                    return
+
+                url = "file:" + pathname2url(url)
 
             settings = sublime.load_settings(pc_settings_filename())
             repositories = settings.get('repositories')
@@ -54,7 +60,7 @@ class AddRepositoryCommand(sublime_plugin.ApplicationCommand):
             return
 
         sublime.active_window().show_input_panel(
-            'GitHub, GitLab or BitBucket Web URL, or Custom JSON Repository URL',
+            'GitHub, GitLab, BitBucket or JSON repository URL',
             '',
             self.run,
             None,
