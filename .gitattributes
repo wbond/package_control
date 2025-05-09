@@ -5,8 +5,6 @@
 .gitattributes export-ignore
 
 # development utilities
-/dev/ export-ignore
-.travis.yml export-ignore
 tox.ini export-ignore
 
 # unittests
