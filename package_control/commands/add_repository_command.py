@@ -3,7 +3,7 @@ import re
 import sublime
 import sublime_plugin
 
-from os.path import isabs
+from os.path import isabs, normcase, normpath
 from urllib.request import pathname2url
 
 from ..console_write import console_write
@@ -45,7 +45,7 @@ class AddRepositoryCommand(sublime_plugin.ApplicationCommand):
                     )
                     return
 
-                url = "file:" + pathname2url(url)
+                url = "file:" + pathname2url(normcase(normpath(url)))
 
             settings = sublime.load_settings(pc_settings_filename())
             repositories = settings.get('repositories')
