@@ -493,7 +493,10 @@ class PackageManager:
 
             # Caches various info from channels for performance
             cache_key = channel + '.repositories'
-            channel_repositories = get_cache(cache_key)
+            if channel[:8].lower() == "file:///":
+                channel_repositories = None
+            else:
+                channel_repositories = get_cache(cache_key)
 
             merge_cache_under_settings(self, 'renamed_packages', channel)
             merge_cache_under_settings(self, 'unavailable_packages', channel, list_=True)
@@ -636,17 +639,20 @@ class PackageManager:
                 console_write('Removed malicious repository %s' % repo)
                 continue
 
-            cache_key = repo + '.packages'
-            repository_packages = get_cache(cache_key)
+            if repo[:8].lower() == "file:///":
+                repository_packages = None
+                repository_libraries = None
+            else:
+                cache_key = repo + '.packages'
+                repository_packages = get_cache(cache_key)
 
-            if repository_packages:
-                packages.update(repository_packages)
+                if repository_packages:
+                    packages.update(repository_packages)
 
-            cache_key = repo + '.libraries'
-            repository_libraries = get_cache(cache_key)
-
-            if repository_libraries:
-                libraries.update(repository_libraries)
+                cache_key = repo + '.libraries'
+                repository_libraries = get_cache(cache_key)
+                if repository_libraries:
+                    libraries.update(repository_libraries)
 
             if repository_packages is None and repository_libraries is None:
                 if executor is None:
