@@ -1,0 +1,88 @@
+name: Publish channel.json Asset
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: channel-latest
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Generate new channel.json
+        id: generate
+        run: |
+          curl -s -L -o channel.json https://packagecontrol.io/channel_v3.json
+          # Verify the file was created
+          if [ ! -f "channel.json" ]; then
+            echo "Error: channel.json was not generated"
+            exit 1
+          fi
+
+          # Calculate hash of new file
+          NEW_HASH=$(sha256sum channel.json | cut -d ' ' -f 1)
+          echo "new_hash=$NEW_HASH" >> $GITHUB_OUTPUT
+          echo "New channel.json hash: $NEW_HASH"
+
+      - name: Try to download existing channel.json
+        id: download
+        continue-on-error: true
+        run: |
+          curl -s -L -o existing-channel.json https://github.com/${{ github.repository }}/releases/download/${{ env.RELEASE_TAG }}/channel.json || echo "First run or download failed"
+          if [ -f "existing-channel.json" ]; then
+            EXISTING_HASH=$(sha256sum existing-channel.json | cut -d ' ' -f 1)
+            echo "existing_hash=$EXISTING_HASH" >> $GITHUB_OUTPUT
+            echo "Existing channel.json hash: $EXISTING_HASH"
+          else
+            echo "No existing channel.json found or download failed"
+            echo "existing_hash=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine if update is needed
+        id: check
+        run: |
+          # If first run or hashes differ, update is needed
+          if [ "${{ steps.download.outputs.existing_hash }}" != "${{ steps.generate.outputs.new_hash }}" ]; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "Update needed: Content has changed or first run"
+          else
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+            echo "No update needed: Content is unchanged"
+          fi
+
+      - name: Update release and upload asset if needed
+        if: steps.check.outputs.update_needed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create or update the release
+          gh release view ${{ env.RELEASE_TAG }} || \
+          gh release create ${{ env.RELEASE_TAG }} \
+            --title "Channel Asset" \
+            --notes "Latest channel.json"
+
+          echo "Uploading channel.json file..."
+          gh release upload ${{ env.RELEASE_TAG }} channel.json \
+            --clobber
+
+      - name: Output result
+        run: |
+          if [ "${{ steps.check.outputs.update_needed }}" = "true" ]; then
+            echo "✅ Channel updated with new content"
+          else
+            echo "ℹ️ No changes detected in channel.json, skipped update"
+          fi
