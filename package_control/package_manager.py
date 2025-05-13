@@ -515,7 +515,8 @@ class PackageManager:
 
                 try:
                     channel_repositories = provider.get_repositories()
-                    set_cache(cache_key, channel_repositories, cache_ttl)
+                    if channel[:8].lower() != "file:///":
+                        set_cache(cache_key, channel_repositories, cache_ttl)
 
                     unavailable_packages = []
                     unavailable_libraries = []
@@ -698,12 +699,14 @@ class PackageManager:
             for _, exception in provider.get_broken_libraries():
                 console_write(exception)
 
-            cache_key = provider.repo_url + '.packages'
-            set_cache(cache_key, repository_packages, cache_ttl)
-            packages.update(repository_packages)
+            if provider.repo_url[:8].lower() != "file:///":
+                cache_key = provider.repo_url + '.packages'
+                set_cache(cache_key, repository_packages, cache_ttl)
 
-            cache_key = provider.repo_url + '.libraries'
-            set_cache(cache_key, repository_libraries, cache_ttl)
+                cache_key = provider.repo_url + '.libraries'
+                set_cache(cache_key, repository_libraries, cache_ttl)
+
+            packages.update(repository_packages)
             libraries.update(repository_libraries)
 
             renamed_packages = provider.get_renamed_packages()
