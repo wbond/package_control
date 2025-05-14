@@ -19,14 +19,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
       - name: Generate new channel.json
         id: generate
         run: |
-          curl -s -L -o channel.json https://packagecontrol.io/channel_v3.json
+          python scripts/generate_channel.py
           # Verify the file was created
           if [ ! -f "channel.json" ]; then
             echo "Error: channel.json was not generated"
