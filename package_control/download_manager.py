@@ -1,8 +1,10 @@
+import os
+from pathlib import Path
 import re
 import socket
 import sys
 from threading import Lock, Timer
-from urllib.parse import unquote, urljoin, urlparse
+from urllib.parse import unquote_to_bytes, urljoin, urlparse
 
 from . import __version__
 from . import text
@@ -69,7 +71,7 @@ def http_get(url, settings, error_message='', prefer_cached=False):
 
     if url[:8].lower() == "file:///":
         try:
-            with open(unquote(url[8:]), "rb") as f:
+            with open(from_uri(url), "rb") as f:
                 return f.read()
         except OSError as e:
             raise DownloaderException(str(e))
@@ -86,6 +88,34 @@ def http_get(url, settings, error_message='', prefer_cached=False):
             _release(url, manager)
 
     return result
+
+
+def from_uri(uri: str) -> str:  # roughly taken from Python 3.13
+    """Return a new path from the given 'file' URI."""
+    if not uri.lower().startswith('file:'):
+        raise ValueError("URI does not start with 'file:': {uri!r}".format(uri=uri))
+    path = os.fsdecode(unquote_to_bytes(uri))
+    path = path[5:]
+    if path[:3] == '///':
+        # Remove empty authority
+        path = path[2:]
+    elif path[:12].lower() == '//localhost/':
+        # Remove 'localhost' authority
+        path = path[11:]
+    if path[:3] == '///' or (path[:1] == '/' and path[2:3] in ':|'):
+        # Remove slash before DOS device/UNC path
+        path = path[1:]
+        path = path[0].upper() + path[1:]
+    if path[1:2] == '|':
+        # Replace bar with colon in DOS drive
+        path = path[:1] + ':' + path[2:]
+    path_ = Path(path)
+    if not path_.is_absolute():
+        raise ValueError(
+            "URI is not absolute: {uri!r}.  Parsed so far: {path_!r}"
+            .format(uri=uri, path_=path_)
+        )
+    return str(path_)
 
 
 def _grab(url, settings):
