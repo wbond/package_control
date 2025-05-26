@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 import re
 import socket
 import sys
@@ -109,13 +108,12 @@ def from_uri(uri: str) -> str:  # roughly taken from Python 3.13
     if path[1:2] == '|':
         # Replace bar with colon in DOS drive
         path = path[:1] + ':' + path[2:]
-    path_ = Path(path)
-    if not path_.is_absolute():
+    if not os.path.isabs(path):
         raise ValueError(
-            "URI is not absolute: {uri!r}.  Parsed so far: {path_!r}"
-            .format(uri=uri, path_=path_)
+            "URI is not absolute: {uri!r}. Parsed so far: {path!r}"
+            .format(uri=uri, path=path)
         )
-    return str(path_)
+    return path
 
 
 def _grab(url, settings):
