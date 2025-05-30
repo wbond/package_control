@@ -493,7 +493,10 @@ class PackageManager:
 
             # Caches various info from channels for performance
             cache_key = channel + '.repositories'
-            channel_repositories = get_cache(cache_key)
+            if channel[:8].lower() == "file:///":
+                channel_repositories = None
+            else:
+                channel_repositories = get_cache(cache_key)
 
             merge_cache_under_settings(self, 'renamed_packages', channel)
             merge_cache_under_settings(self, 'unavailable_packages', channel, list_=True)
@@ -512,7 +515,8 @@ class PackageManager:
 
                 try:
                     channel_repositories = provider.get_repositories()
-                    set_cache(cache_key, channel_repositories, cache_ttl)
+                    if channel[:8].lower() != "file:///":
+                        set_cache(cache_key, channel_repositories, cache_ttl)
 
                     unavailable_packages = []
                     unavailable_libraries = []
@@ -636,17 +640,19 @@ class PackageManager:
                 console_write('Removed malicious repository %s' % repo)
                 continue
 
-            cache_key = repo + '.packages'
-            repository_packages = get_cache(cache_key)
+            if repo[:8].lower() == "file:///":
+                repository_packages = None
+                repository_libraries = None
+            else:
+                cache_key = repo + '.packages'
+                repository_packages = get_cache(cache_key)
+                if repository_packages:
+                    packages.update(repository_packages)
 
-            if repository_packages:
-                packages.update(repository_packages)
-
-            cache_key = repo + '.libraries'
-            repository_libraries = get_cache(cache_key)
-
-            if repository_libraries:
-                libraries.update(repository_libraries)
+                cache_key = repo + '.libraries'
+                repository_libraries = get_cache(cache_key)
+                if repository_libraries:
+                    libraries.update(repository_libraries)
 
             if repository_packages is None and repository_libraries is None:
                 if executor is None:
@@ -692,12 +698,13 @@ class PackageManager:
             for _, exception in provider.get_broken_libraries():
                 console_write(exception)
 
-            cache_key = provider.repo_url + '.packages'
-            set_cache(cache_key, repository_packages, cache_ttl)
-            packages.update(repository_packages)
+            if provider.repo_url[:8].lower() != "file:///":
+                cache_key = provider.repo_url + '.packages'
+                set_cache(cache_key, repository_packages, cache_ttl)
+                cache_key = provider.repo_url + '.libraries'
+                set_cache(cache_key, repository_libraries, cache_ttl)
 
-            cache_key = provider.repo_url + '.libraries'
-            set_cache(cache_key, repository_libraries, cache_ttl)
+            packages.update(repository_packages)
             libraries.update(repository_libraries)
 
             renamed_packages = provider.get_renamed_packages()
