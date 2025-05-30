@@ -646,7 +646,6 @@ class PackageManager:
             else:
                 cache_key = repo + '.packages'
                 repository_packages = get_cache(cache_key)
-
                 if repository_packages:
                     packages.update(repository_packages)
 
@@ -702,7 +701,6 @@ class PackageManager:
             if provider.repo_url[:8].lower() != "file:///":
                 cache_key = provider.repo_url + '.packages'
                 set_cache(cache_key, repository_packages, cache_ttl)
-
                 cache_key = provider.repo_url + '.libraries'
                 set_cache(cache_key, repository_libraries, cache_ttl)
 
