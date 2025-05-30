@@ -1600,6 +1600,33 @@ class PackageManager:
                     fail_early=False
                 )
 
+            try:
+                extra_pc_settings_json = package_zip.read(common_folder + 'Package Control.sublime-settings')
+                extra_pc_settings = json.loads(extra_pc_settings_json.decode('utf-8'))
+            except (KeyError):
+                pass
+            except (ValueError):
+                console_write(
+                    '''
+                    Failed to parse the Package Control.sublime-settings for "%s"
+                    ''',
+                    package_name
+                )
+            else:
+                wanted_packages = set(extra_pc_settings.get('installed_packages') or [])
+                pc_settings = sublime.load_settings(pc_settings_filename())
+                in_process_packages = load_list_setting(pc_settings, 'in_process_packages')
+                additional_packages = wanted_packages - in_process_packages - self.installed_packages()
+                if additional_packages:
+                    console_write(
+                        '''
+                        Failed to install %s -
+                        deferring until next start to install additional packages
+                        ''',
+                        package_name
+                    )
+                    return None
+
             if package_name != old_package_name:
                 self.rename_package(old_package_name, package_name)
 
