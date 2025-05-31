@@ -395,14 +395,18 @@ class PackageTaskRunner(PackageDisabler):
                 elif result is None:
                     package_names.remove(task.package_name)
 
-            if num_packages == 1:
-                message = 'Package {} successfully installed'.format(tasks[0].package_name)
-            elif num_packages == num_success:
-                message = 'All {}packages successfully installed'.format(package_kind)
+            if num_packages == num_success:
+                if package_kind or num_packages > 1:
+                    message = 'All {}packages successfully installed'.format(package_kind)
+                else:
+                    message = 'Package {} successfully installed'.format(tasks[0].package_name)
                 console_write(message)
             else:
-                message = '{} of {} {}packages successfully installed'.format(
-                    num_success, num_packages, package_kind)
+                message = (
+                    '{} of {} {}packages successfully installed. '
+                    'Restart Sublime Text to attempt to install the remaining ones.'
+                    .format(num_success, num_packages, package_kind)
+                )
                 console_write(message)
 
             if progress:
@@ -484,13 +488,18 @@ class PackageTaskRunner(PackageDisabler):
                     if package != task.available_name:
                         disable_packages[self.INSTALL].remove(task.available_name)
 
-            if num_packages == 1:
-                message = 'Package {} successfully upgraded'.format(tasks[0].package_name)
-            elif num_packages == num_success:
-                message = 'All packages successfully upgraded'
+            if num_packages == num_success:
+                if num_packages > 1:
+                    message = 'All packages successfully upgraded'
+                else:
+                    message = 'Package {} successfully upgraded'.format(tasks[0].package_name)
                 console_write(message)
             else:
-                message = '{} of {} packages successfully upgraded'.format(num_success, num_packages)
+                message = (
+                    '{} of {} packages successfully upgraded. '
+                    'Restart Sublime Text to attempt to upgrade the remaining ones.'
+                    .format(num_success, num_packages)
+                )
                 console_write(message)
 
             if progress:
