@@ -10,8 +10,19 @@
 	// All repositories must be an HTTPS URL. SSL certificates help prevent
 	// unauthorized code being loaded onto users' machines.
 	"repositories": [
+		// include another external repository.json
 		"https://packagecontrol.io/packages.json",
+
+		// include repository located relative to this one
+		"./local/repository.json",
+
+		// include a locally hosted repository.json
+		"file:///absolute/path/to/repository.json",
+
+		// include single GitHub repository (possible, but not recommended)
 		"https://github.com/buymeasoda/soda-theme",
+
+		// include Github user or organization (possible, but not recommended)
 		"https://github.com/SublimeText"
 	],
 

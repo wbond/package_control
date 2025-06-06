@@ -572,6 +572,26 @@
 					"tags": "st4107-"
 				}
 			]
+		},
+
+		// Locally hosted package using `file://` protocol.
+		{
+			"name": "My Package",
+			"description": "A locally hosted Sublime Text package",
+			"author": "John Doe",
+			"issues": "https://company.com/software/issues",
+			"releases": [
+				{
+					"platforms": ["windows-x64"],
+					"version": "1.0.0",
+					"url": "file:///c:/absolute/path/to/My Package.sublime-package"
+				},
+				{
+					"platforms": ["linux-x64"],
+					"version": "1.0.0",
+					"url": "./path/relative/to/repository_json/My Package.sublime-package"
+				}
+			]
 		}
 	],
 
@@ -803,6 +823,28 @@
 					"python_versions": ["3.3"]
 				}
 			]
+		},
+
+		// Locally hosted libraries using `file://` protocol.
+		{
+			"name": "My Library",
+			"description": "A locally hosted python package",
+			"author": "John Doe",
+			"issues": "https://company.com/software/issues",
+			"releases": [
+				{
+					"platforms": ["linux-x64"],
+					"python_versions": ["3.8"],
+					"version": "1.0.0",
+					"url": "file:///absolute/path/to/my_librariy.whl"
+				},
+				{
+					"platforms": ["windows-x64"],
+					"python_versions": ["3.8"],
+					"version": "1.0.0",
+					"url": "./path/relative/to/repository_json/my_librariy.whl"
+				}
+			]
 		}
 	],
 
@@ -821,7 +863,10 @@
 		"./repository/0-9.json",
 		"./repository/a.json",
 
-		// An example of an absolute URL
+		// An example of a local absolute URL
+		"file:///absolute/path/to/repository.json",
+
+		// An example of a remote absolute URL
 		"https://packagecontrol.io/repository/b.json"
 	]
 }
