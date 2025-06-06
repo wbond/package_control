@@ -2327,7 +2327,7 @@ class PackageManager:
         params['sublime_version'] = self.settings.get('version')
 
         # packagecontrol.io
-        url = self.settings.get('submit_usage_url', '')
+        url = self.settings.get('submit_url', '')
         if url:
             url += '?' + urlencode(params)
 
