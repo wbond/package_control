@@ -130,7 +130,7 @@
 							"type": "object",
 							"markdownDescription": "A map of repository URLs and lists of packages it provides.",
 							"patternProperties": {
-								"^https?://.+\\.json$": {
+								"^(?:file:///|https?://|\\./).+\\.json$": {
 									"$ref": "sublime://packagecontrol.io/schemas/repository/4.0.0#/definitions/ResolvedPackagesList"
 								}
 							}
@@ -140,7 +140,7 @@
 							"markdownDescription": "A map of repository URLs and lists of libraries it provides.",
 							"additionalProperties": false,
 							"patternProperties": {
-								"^https?://.+\\.json$": {
+								"^(?:file:///|https?://|\\./).+\\.json$": {
 									"$ref": "sublime://packagecontrol.io/schemas/repository/4.0.0#/definitions/ResolvedLibrariesList"
 								}
 							}
@@ -1165,7 +1165,7 @@
 							"items": {
 								"type": "string",
 								"markdownDescription": "```json\n\"https://domain.com/repository.json\",\n\"./subdir/repository.json\"\n```\n\nURL or URI of a repository.\n\nRelative paths are resolved using the owning directory of this repository.",
-								"pattern": "^(?:https?://|\\./).+\\.json$"
+								"pattern": "^(?:file:///|https?://|\\./).+\\.json$"
 							},
 							"additionalItems": false,
 							"uniqueItems": true
