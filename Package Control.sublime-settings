@@ -218,23 +218,24 @@
 
 	// Files to ignore when creating a package
 	"files_to_ignore": [
+		"*.pyc",
 		"*.sublime-project",
 		"*.sublime-workspace",
 		"*.tmTheme.cache",
 		".bzrignore",
-		".gitignore",
-		".gitattributes",
-		".hgignore",
 		".codecov.yml",
-		".travis.yml",
-		"appveyor.yml",
-		"codecov.yml",
-		"*.pyc",
 		".coveragerc",
 		".flake8",
+		".gitattributes",
+		".gitignore",
+		".hgignore",
+		".travis.yml",
+		"__init__.py",
+		"appveyor.yml",
+		"codecov.yml",
+		"mypy.ini",
 		"pyproject.toml",
 		"tox.ini",
-		"mypy.ini"
 	],
 
 	// Files to include, even if they match a pattern in files_to_ignore
@@ -282,10 +283,7 @@
 				"mypy.ini"
 			],
 
-			// Include __init__.py so Sublime Text will load the package
-			"files_to_include": [
-				"__init__.py"
-			]
+			"files_to_include": []
 		}
 	},
 }
