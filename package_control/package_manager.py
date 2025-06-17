@@ -1056,7 +1056,7 @@ class PackageManager:
 
         return sep.join(common) + sep if common else ''
 
-    def _extract_zip(self, name, zf, src_dir, dest_dir, extracted_files=None):
+    def _extract_zip(self, name, zf, src_dir, dest_dir, exclude=[], extracted_files=None):
         """
         Extracts a zip to a folder
 
@@ -1073,6 +1073,9 @@ class PackageManager:
         :param dest_dir:
             A unicode string of the destination directory
 
+        :param exclude:
+            Files not to extract.
+
         :param extracted_files:
             A set of all of the files paths extracted from the zip
 
@@ -1087,6 +1090,9 @@ class PackageManager:
             source = info.filename
 
             if source.endswith('/'):
+                continue
+
+            if source in exclude:
                 continue
 
             if is_win and any(c in source for c in ':*?"<>|'):
@@ -1673,6 +1679,7 @@ class PackageManager:
                 package_zip,
                 common_folder,
                 package_dir,
+                [common_folder + "__init__.py"],
                 extracted_files,
             )
 
