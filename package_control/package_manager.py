@@ -122,6 +122,7 @@ class PackageManager:
             'repositories',
             'submit_url',
             'submit_usage',
+            'submit_usage_url',
             'timeout',
             'user_agent'
         ]
