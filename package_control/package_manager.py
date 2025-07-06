@@ -2350,10 +2350,16 @@ class PackageManager:
                     params['package']
                 )
 
-        # new stats
+        # stats.sublimetext.io
         url = self.settings.get('submit_usage_url', '')
         if url:
-            url += '?' + urlencode({"pkg": params["package"], "type": params["operation"]})
+            # rename some parameters
+            params["pkg"] = params["package"]
+            del params["package"]
+            params["type"] = params["operation"]
+            del params["operation"]
+            # create url
+            url += '?' + urlencode(params)
 
             try:
                 result = http_get(url, self.settings, 'Error submitting usage information.')
@@ -2366,5 +2372,5 @@ class PackageManager:
                     '''
                     Error submitting usage information for %s
                     ''',
-                    params['package']
+                    params['pkg']
                 )
