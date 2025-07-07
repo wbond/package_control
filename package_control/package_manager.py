@@ -122,6 +122,7 @@ class PackageManager:
             'repositories',
             'submit_url',
             'submit_usage',
+            'submit_usage_url',
             'timeout',
             'user_agent'
         ]
@@ -2333,22 +2334,50 @@ class PackageManager:
         params['sublime_platform'] = self.settings.get('platform')
         params['sublime_version'] = self.settings.get('version')
 
-        url = self.settings.get('submit_url', '') + '?' + urlencode(params)
+        # packagecontrol.io
+        url = self.settings.get('submit_url', '')
+        if url:
+            url += '?' + urlencode(params)
 
-        try:
-            result = http_get(url, self.settings, 'Error submitting usage information.')
-        except (DownloaderException) as e:
-            console_write(e)
-            return
+            try:
+                result = http_get(url, self.settings, 'Error submitting usage information.')
+            except (DownloaderException) as e:
+                console_write(e)
+                return
 
-        try:
-            result = json.loads(result.decode('utf-8'))
-            if result['result'] != 'success':
-                raise ValueError()
-        except (ValueError):
-            console_write(
-                '''
-                Error submitting usage information for %s
-                ''',
-                params['package']
-            )
+            try:
+                result = json.loads(result.decode('utf-8'))
+                if result['result'] != 'success':
+                    raise ValueError()
+            except (ValueError):
+                console_write(
+                    '''
+                    Error submitting usage information for %s
+                    ''',
+                    params['package']
+                )
+
+        # stats.sublimetext.io
+        url = self.settings.get('submit_usage_url', '')
+        if url:
+            # rename some parameters
+            params["pkg"] = params["package"]
+            del params["package"]
+            params["type"] = params["operation"]
+            del params["operation"]
+            # create url
+            url += '?' + urlencode(params)
+
+            try:
+                result = http_get(url, self.settings, 'Error submitting usage information.')
+            except (DownloaderException) as e:
+                console_write(e)
+                return
+
+            if result.strip() != b'OK':
+                console_write(
+                    '''
+                    Error submitting usage information for %s
+                    ''',
+                    params['pkg']
+                )

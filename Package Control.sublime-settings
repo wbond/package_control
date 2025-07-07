@@ -74,8 +74,15 @@
 	// the channel for aggregated statistics
 	"submit_usage": true,
 
-	// The URL to post install, upgrade and removal notices to
+	// The classic URL to post install, upgrade and removal notices to
+	// It drives install stats on packagecontrol.io.
+	// (empty value disables the target)
 	"submit_url": "https://packagecontrol.io/submit",
+
+	// The new URL to post install, upgrade and removal notices to
+	// It drives install stats on packages.sublimetext.io.
+	// (empty value disables the target)
+	"submit_usage_url": "https://stats.sublimetext.io/event",
 
 	// Maximum days to keep backups. All older ones are removed when ST starts
 	"max_backup_age": 14,
