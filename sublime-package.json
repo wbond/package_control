@@ -1273,7 +1273,7 @@
 							"defaultSnippets": [
 								{
 									"label": "Release Artefact",
-									"bodyText": "{\n\t\"version\": \"${1:1}.${2:0}.${3:0}\",\n\t\"url\": \"$4\",\n\t\"sublime_text\": \"${5:*}\",\n\t\"platforms\": [\"${6:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+									"bodyText": "{\n\t\"version\": \"${1:1}.${2:0}.${3:0}\",\n\t\"url\": \"$4\",\n\t\"sublime_text\": \"${5:*}\",\n\t\"platforms\": [\"${6:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\", \"3.13\"]\n}"
 								}
 							]
 						},
@@ -1299,7 +1299,7 @@
 									"defaultSnippets": [
 										{
 											"label": "release based release template with download asset",
-											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.whl}\",\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"asset\": \"${2:FileName-*.*.*-\\$\\{platform\\}.whl}\",\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\", \"3.13\"]\n}"
 										}
 									]
 								},
@@ -1322,7 +1322,7 @@
 									"defaultSnippets": [
 										{
 											"label": "tag based release template",
-											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"tags\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\", \"3.13\"]\n}"
 										}
 									]
 								},
@@ -1345,7 +1345,7 @@
 									"defaultSnippets": [
 										{
 											"label": "branch based release template",
-											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\"]\n}"
+											"bodyText": "{\n\t\"base\": \"${1:https://github.com/author/repo}\",\n\t\"branch\": ${2:true},\n\t\"platforms\": [\"${4:*}\"],\n\t\"python_versions\": [\"3.3\", \"3.8\", \"3.13\"]\n}"
 										}
 									]
 								}
@@ -1786,11 +1786,11 @@
 							},
 							"python_versions": {
 								"type": "array",
-								"markdownDescription": "```json\n\"python_versions\": [\"3.3\", \"3.8\"]\n```\n\nA list of python versions, supported by the package/library release. Must be one of `\"3.3\"` or `\"3.8\"`.",
+								"markdownDescription": "```json\n\"python_versions\": [\"3.3\", \"3.8\", \"3.13\"]\n```\n\nA list of python versions, supported by the package/library release. Must be one of `\"3.3\"` or `\"3.8\"`.",
 								"default": ["3.3"],
 								"items": {
 									"type": "string",
-									"enum": ["3.3", "3.8"]
+									"enum": ["3.3", "3.8", "3.13"]
 								},
 								"additionalItems": false,
 								"uniqueItems": true
