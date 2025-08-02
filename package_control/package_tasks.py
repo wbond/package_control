@@ -295,6 +295,9 @@ class PackageTaskRunner(PackageDisabler):
                 elif result is None:
                     deferred.add(package)
 
+            required_libraries = self.manager.find_required_libraries()
+            self.manager.cleanup_libraries(required_libraries=required_libraries)
+
             if num_packages == 1:
                 message = 'Package {} successfully removed'.format(list(packages)[0])
             elif num_packages == num_success:
@@ -395,6 +398,10 @@ class PackageTaskRunner(PackageDisabler):
                 elif result is None:
                     package_names.remove(task.package_name)
 
+            required_libraries = self.manager.find_required_libraries()
+            self.manager.install_libraries(libraries=required_libraries, fail_early=False)
+            self.manager.cleanup_libraries(required_libraries=required_libraries)
+
             if num_packages == num_success:
                 if package_kind or num_packages > 1:
                     message = 'All {}packages successfully installed'.format(package_kind)
@@ -487,6 +494,10 @@ class PackageTaskRunner(PackageDisabler):
                     disable_packages[self.REMOVE].remove(package)
                     if package != task.available_name:
                         disable_packages[self.INSTALL].remove(task.available_name)
+
+            required_libraries = self.manager.find_required_libraries()
+            self.manager.install_libraries(libraries=required_libraries, fail_early=False)
+            self.manager.cleanup_libraries(required_libraries=required_libraries)
 
             if num_packages == num_success:
                 if num_packages > 1:

@@ -1593,31 +1593,6 @@ class PackageManager:
             except (FileNotFoundError):
                 pass
 
-            library_names = release.get('libraries')
-            if not library_names:
-                # If libraries were not in the channel, try the package
-                try:
-                    lib_info_json = package_zip.read(common_folder + 'dependencies.json')
-                    lib_info = json.loads(lib_info_json.decode('utf-8'))
-                except (KeyError):
-                    lib_info = {}
-                except (ValueError):
-                    console_write(
-                        '''
-                        Failed to parse the dependencies.json for "%s"
-                        ''',
-                        package_name
-                    )
-                    return False
-
-                library_names = self.select_libraries(lib_info)
-
-            if library_names:
-                self.install_libraries(
-                    library.names_to_libraries(library_names, python_version),
-                    fail_early=False
-                )
-
             if package_name != old_package_name:
                 self.rename_package(old_package_name, package_name)
 
