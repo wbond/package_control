@@ -92,6 +92,16 @@ def add_dependency(name, first=False):
     pass
 
 
+def python_versions():
+    """
+    Return a tuple of supported python versions.
+
+    returns
+        A tuple of e.g. ("3.3", "3.8")
+    """
+    return tuple(lib_paths())
+
+
 def cache_path():
     """
     Returns the ST cache directory
@@ -131,12 +141,27 @@ def lib_paths():
     try:
         return lib_paths.cache
     except AttributeError:
-        lib_paths.cache = {
-            "3.3": os.path.join(__data_path, "Lib", "python33"),
-            "3.8": os.path.join(__data_path, "Lib", "python38")
-        } if int(sublime.version()) >= 4000 else {
-            "3.3": os.path.join(__data_path, "Lib", "python3.3")
-        }
+        st_version = int(sublime.version())
+        if st_version > 4000:
+            root = os.path.dirname(__executable_path)
+            fext = ".exe" if sublime.platform() == "windows" else ""
+
+            settings = sublime.load_settings("Preferences.sublime-settings")
+            data = (
+                ("3.3", "python33", not settings.get('disable_plugin_host_3.3', False)),
+                ("3.8", "python38", True),
+                ("3.13", "python-3.13", True),
+            )
+            lib_paths.cache = {
+                py_ver: os.path.join(__data_path, "Lib", py_dir)
+                for py_ver, py_dir, enable in data
+                if enable and os.path.isfile(os.path.join(root, "plugin_host-" + py_ver + fext))
+            }
+
+        else:
+            lib_paths.cache = {
+                "3.3": os.path.join(__data_path, "Lib", "python3.3")
+            }
         return lib_paths.cache
 
 
