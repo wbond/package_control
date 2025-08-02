@@ -261,20 +261,24 @@ class PackageManager:
         :return:
             A unicode string of "3.3" or "3.8"
         """
+        supported_python_versions = sys_path.python_versions()
 
-        if self.settings["disable_plugin_host_3.3"]:
-            return "3.8"
+        # package runs on latest available python version
+        if len(supported_python_versions) == 1 or package_name.lower() == "user":
+            return supported_python_versions[-1]
 
         python_version = read_package_file(package_name, ".python-version")
         if python_version:
             python_version = python_version.strip()
-            if python_version in sys_path.lib_paths():
+            # if requested version is supported, use it
+            if python_version in supported_python_versions:
                 return python_version
 
-        if package_name.lower() == "user" and self.settings['version'] > 4000:
-            return "3.8"
+            # otherwise, use latest python version
+            return supported_python_versions[-1]
 
-        return "3.3"
+        # package runs on earliest available python
+        return supported_python_versions[0]
 
     def get_version(self, package_name):
         """
@@ -1555,8 +1559,8 @@ class PackageManager:
                 except (KeyError):
                     unpack = False
 
+            supported_python_versions = sys_path.python_versions()
             python_version = "3.3"
-            supported_python_versions = set(sys_path.lib_paths().keys())
 
             try:
                 python_version_file = common_folder + '.python-version'
