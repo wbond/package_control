@@ -2,6 +2,11 @@ import os
 import sublime
 import sys
 
+# Ensure compatibility with python 3.3 to 3.13+
+if sys.version_info > (3, 8):
+    __name__ = __spec__.name
+    __package__ = __spec__.parent
+
 # Clear module cache to force reloading all modules of this package.
 prefix1 = __package__ + "."     # sub modules of Package Control package
 prefix2 = "package_control."    # sub modules of package_control namespace package
