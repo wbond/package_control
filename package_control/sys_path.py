@@ -77,6 +77,7 @@ __python_libs_cache_path = None
 __python_packages_cache_path = None
 __trash_path = os.path.join(__data_path, "Trash")
 __user_config_path = os.path.join(__packages_path, 'User')
+__is_portable = __data_path == os.path.join(os.path.dirname(__executable_path), "Data")
 
 
 def add_dependency(name, first=False):
@@ -193,11 +194,15 @@ def python_libs_cache_path(python_version):
 
     global __python_libs_cache_path
 
-    if not __python_libs_cache_path:
+    if __python_libs_cache_path is None:
+        if __is_portable:
+            root = os.path.join(cache_path(), '__pycache__', 'install', 'Data', 'Lib')
+        else:
+            root = os.path.join(cache_path(), '__pycache__', 'data', 'Lib')
+
         __python_libs_cache_path = {
-            "3.3": None,    # bytecode cache not supported
-            "3.8": os.path.join(
-                cache_path(), '__pycache__', 'install', 'Data', 'Lib', "python38")
+            py: None if py == "3.3" else os.path.join(root, os.path.basename(lib))
+            for py, lib in lib_paths().items()
         }
 
     return str(__python_libs_cache_path[python_version])
@@ -213,9 +218,15 @@ def python_packages_cache_path():
 
     global __python_packages_cache_path
 
-    if not __python_packages_cache_path:
-        __python_packages_cache_path = os.path.join(
-            cache_path(), '__pycache__', 'install', 'Data', 'Packages')
+    if __python_packages_cache_path is None:
+        if __is_portable:
+            __python_packages_cache_path = os.path.join(
+                cache_path(), '__pycache__', 'install', 'Data', 'Packages'
+            )
+        else:
+            __python_packages_cache_path = os.path.join(
+                cache_path(), '__pycache__', 'data', 'Packages'
+            )
 
     return str(__python_packages_cache_path)
 
@@ -230,7 +241,7 @@ def pc_cache_dir():
 
     global __package_control_cache_path
 
-    if not __package_control_cache_path:
+    if __package_control_cache_path is None:
         __package_control_cache_path = os.path.join(cache_path(), 'Package Control')
 
     return str(__package_control_cache_path)
