@@ -288,3 +288,18 @@ class PyPiClient(JSONApiClient):
             return info
 
         return None
+
+    @staticmethod
+    def _expand_asset_variables(asset_templates):
+        output = []
+        for pattern, spec in JSONApiClient._expand_asset_variables(asset_templates):
+            if len(spec["python_versions"]) == 1:
+                output.append((pattern, spec))
+                continue
+
+            for py_ver in spec["python_versions"]:
+                new_spec = spec.copy()
+                new_spec["python_versions"] = [py_ver]
+                output.append((pattern, new_spec))
+
+        return output
