@@ -8,7 +8,11 @@ from . import sys_path
 from . import distinfo
 from .clear_directory import delete_directory
 
-BUILTIN_LIBRARIES = {"3.3": {}, "3.8": {"enum", "pathlib", "typing"}}
+BUILTIN_LIBRARIES = {
+    "3.3": {},
+    "3.8": {"enum", "pathlib", "typing"},
+    "3.13": {"enum", "pathlib", "typing"},
+}
 """3rd-party libraries, which are part of stdlib as of certain python version"""
 
 DEPENDENCY_NAME_MAP = {
