@@ -16,7 +16,12 @@ __default_packages_path = os.path.join(os.path.dirname(__executable_path), 'Pack
 if not os.path.isdir(__default_packages_path):
     # Fall back to detecting the path using the location of the module
     import Default.sort as default_module
-    __default_packages_path = os.path.dirname(os.path.dirname(default_module.__file__))
+    try:
+        # python 3.8+
+        __default_packages_path = os.path.dirname(os.path.dirname(default_module.__spec__.origin))
+    except (AttributeError, NameError):
+        # python 3.3
+        __default_packages_path = os.path.dirname(os.path.dirname(default_module.__file__))
 
 if not os.path.isdir(__default_packages_path):
     raise FileNotFoundError('Default Packages')
@@ -28,7 +33,12 @@ if not os.path.isdir(__default_packages_path):
 # {data_dir}/Installed Packages/Package Control.sublime-package/package_control/sys_path.py
 # When loaded as unpacked package, __file__ ends up being
 # {data_dir}/Packages/Package Control/package_control/sys_path.py
-__data_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+try:
+    # python 3.8+
+    __data_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__spec__.origin))))
+except (AttributeError, NameError):
+    # python 3.3
+    __data_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 # Determine extracted packages path
 __packages_path = os.path.join(__data_path, 'Packages')
