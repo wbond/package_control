@@ -341,7 +341,7 @@ class BitBucketClient(JSONApiClient):
 
         return 'https://api.bitbucket.org/2.0/repositories/%s%s' % (user_repo, suffix)
 
-    def _readme_url(self, user_repo, branch, prefer_cached=False):
+    def _readme_url(self, user_repo, branch):
         """
         Parse the root directory listing for the repo and return the URL
         to any file that looks like a readme
@@ -351,9 +351,6 @@ class BitBucketClient(JSONApiClient):
 
         :param branch:
             The branch to fetch the readme from
-
-        :param prefer_cached:
-            If a cached directory listing should be used instead of a new HTTP request
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -367,7 +364,7 @@ class BitBucketClient(JSONApiClient):
 
         try:
             while listing_url:
-                root_dir_info = self.fetch_json(listing_url, prefer_cached)
+                root_dir_info = self.fetch_json(listing_url)
 
                 for entry in root_dir_info['values']:
                     if entry['path'].lower() in _readme_filenames:

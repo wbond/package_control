@@ -55,7 +55,7 @@ class ReadmeClient(JSONApiClient):
             query_string = urlencode({'ref': branch})
             readme_json_url = 'https://api.github.com/repos/%s/readme?%s' % (user_repo, query_string)
             try:
-                info = self.fetch_json(readme_json_url, prefer_cached=True)
+                info = self.fetch_json(readme_json_url)
                 contents = base64.b64decode(info['content'])
             except (ValueError):
                 pass

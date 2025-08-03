@@ -10,15 +10,12 @@ class JSONApiClient:
     def __init__(self, settings):
         self.settings = settings
 
-    def fetch(self, url, prefer_cached=False):
+    def fetch(self, url):
         """
         Retrieves the contents of a URL
 
         :param url:
             The URL to download the content from
-
-        :param prefer_cached:
-            If a cached copy of the content is preferred
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -35,17 +32,14 @@ class JSONApiClient:
             joiner = '?%s' if url.find('?') == -1 else '&%s'
             url += joiner % params
 
-        return http_get(url, self.settings, 'Error downloading repository.', prefer_cached)
+        return http_get(url, self.settings, 'Error downloading repository.')
 
-    def fetch_json(self, url, prefer_cached=False):
+    def fetch_json(self, url):
         """
         Retrieves and parses the JSON from a URL
 
         :param url:
             The URL to download the JSON from
-
-        :param prefer_cached:
-            If a cached copy of the JSON is preferred
 
         :raises:
             ClientException: when there is an error parsing the response
@@ -54,7 +48,7 @@ class JSONApiClient:
             A dict or list from the JSON
         """
 
-        repository_json = self.fetch(url, prefer_cached)
+        repository_json = self.fetch(url)
 
         try:
             return json.loads(repository_json.decode('utf-8'))

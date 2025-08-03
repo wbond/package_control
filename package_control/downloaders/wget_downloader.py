@@ -40,7 +40,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
 
         pass
 
-    def download(self, url, error_message, timeout, tries, prefer_cached=False):
+    def download(self, url, error_message, timeout, tries):
         """
         Downloads a URL and returns the contents
 
@@ -58,9 +58,6 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             The int number of times to try and download the URL in the case of
             a timeout or HTTP 503 error
 
-        :param prefer_cached:
-            If a cached version should be returned instead of trying a new request
-
         :raises:
             RateLimitException: when a rate limit is hit
             DownloaderException: when any other download error occurs
@@ -69,7 +66,7 @@ class WgetDownloader(CliDownloader, DecodingDownloader, LimitingDownloader, Cach
             The string contents of the URL
         """
 
-        if prefer_cached or self.is_cache_fresh(url):
+        if self.is_cache_fresh(url):
             cached = self.retrieve_cached(url)
             if cached:
                 return cached

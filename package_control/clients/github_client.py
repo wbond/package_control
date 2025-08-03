@@ -530,7 +530,7 @@ class GitHubClient(JSONApiClient):
 
         return 'https://api.github.com/repos/%s%s' % (user_repo, suffix)
 
-    def _readme_url(self, user_repo, branch, prefer_cached=False):
+    def _readme_url(self, user_repo, branch):
         """
         Fetches the raw GitHub API information about a readme
 
@@ -539,9 +539,6 @@ class GitHubClient(JSONApiClient):
 
         :param branch:
             The branch to pull the readme from
-
-        :param prefer_cached:
-            If a cached version of the info should be returned instead of making a new HTTP request
 
         :raises:
             DownloaderException: when there is an error downloading
@@ -555,7 +552,7 @@ class GitHubClient(JSONApiClient):
         readme_url = self._api_url(user_repo, '/readme?%s' % query_string)
 
         try:
-            readme_file = self.fetch_json(readme_url, prefer_cached).get('path')
+            readme_file = self.fetch_json(readme_url).get('path')
             if readme_file:
                 return 'https://raw.githubusercontent.com/%s/%s/%s' % (user_repo, branch, readme_file)
 

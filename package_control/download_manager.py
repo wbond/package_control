@@ -33,7 +33,7 @@ _timer = None
 """A timer used to disconnect all managers after a period of no usage"""
 
 
-def http_get(url, settings, error_message='', prefer_cached=False):
+def http_get(url, settings, error_message=''):
     """
     Performs a HTTP GET request using best matching downloader.
 
@@ -58,9 +58,6 @@ def http_get(url, settings, error_message='', prefer_cached=False):
     :param error_message:
         The error message to include if the download fails
 
-    :param prefer_cached:
-        If cached version of the URL content is preferred over a new request
-
     :raises:
         DownloaderException: if there was an error downloading the URL
 
@@ -80,7 +77,7 @@ def http_get(url, settings, error_message='', prefer_cached=False):
 
     try:
         manager = _grab(url, settings)
-        result = manager.fetch(url, error_message, prefer_cached)
+        result = manager.fetch(url, error_message)
 
     finally:
         if manager:
@@ -337,7 +334,7 @@ class DownloadManager:
             self.downloader.close()
             self.downloader = None
 
-    def fetch(self, url, error_message, prefer_cached=False):
+    def fetch(self, url, error_message):
         """
         Downloads a URL and returns the contents
 
@@ -346,9 +343,6 @@ class DownloadManager:
 
         :param error_message:
             The error message to include if the download fails
-
-        :param prefer_cached:
-            If cached version of the URL content is preferred over a new request
 
         :raises:
             DownloaderException: if there was an error downloading the URL
@@ -496,7 +490,7 @@ class DownloadManager:
             raise exception
 
         try:
-            return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
+            return self.downloader.download(url, error_message, timeout, 3)
 
         except (RateLimitException) as e:
             # rate limits are normally reset after an hour
