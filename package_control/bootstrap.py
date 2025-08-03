@@ -46,8 +46,6 @@ def bootstrap():
     by `plugin_loaded()` hook.
     """
 
-    _install_injectors()
-
     if not os.path.exists(LOADER_PACKAGE_PATH):
         # Start shortly after Sublime starts so package renames don't cause errors
         # with key bindings, settings, etc. disappearing in the middle of parsing
@@ -131,25 +129,28 @@ def _install_injectors():
     Makes sure the module injectors are in place
     """
 
-    injector_code = R"""
+    injector_code = R'''
+        """
+        Public Package Control API
+        """
         import os
         import sys
         import zipfile
 
         import sublime_plugin
 
-        __data_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
+        # python 3.13 may no longer provide __file__
+        __data_path = os.path.dirname(os.path.dirname(os.path.dirname(
+            __spec__.origin if hasattr(globals(), '__spec__') else __file__))
+        )
         __pkg_path = os.path.join(__data_path, 'Packages', 'Package Control', 'package_control')
         __zip_path = os.path.join(__data_path, 'Installed Packages', 'Package Control.sublime-package')
-
         __code = None
 
         # We check the .sublime-package first, since the sublime_plugin.ZipLoader deals with overrides
         if os.path.exists(__zip_path):
             __pkg_path = os.path.join(__zip_path, 'package_control')
             __file_path = os.path.join(__pkg_path, '__init__.py')
-
             __loader__ = sublime_plugin.ZipLoader(__zip_path)
 
             try:
@@ -162,7 +163,7 @@ def _install_injectors():
             except (OSError, KeyError):
                 pass
 
-            # may be required before Package Control has been loaded
+            # required for events to be available on plugin_host Package Control is not running on
             events = sys.modules.get('package_control.events')
             if events is None:
                 events = __loader__.load_module("Package Control.package_control.events")
@@ -174,7 +175,6 @@ def _install_injectors():
             from importlib.machinery import SourceFileLoader
 
             __file_path = os.path.join(__pkg_path, '__init__.py')
-
             __loader__ = SourceFileLoader('package_control', __file_path)
 
             try:
@@ -183,7 +183,7 @@ def _install_injectors():
             except (OSError):
                 pass
 
-            # may be required before Package Control has been loaded
+            # required for events to be available on plugin_host Package Control is not running on
             events = sys.modules.get('package_control.events')
             if events is None:
                 events = SourceFileLoader('events', os.path.join(__pkg_path, 'events.py')).load_module()
@@ -198,36 +198,25 @@ def _install_injectors():
 
         __file__ = __file_path
         __package__ = 'package_control'
-        __path__ = [__pkg_path]
-
-        # initial cleanup
-        del globals()['__f']
-        del globals()['__file_path']
-        del globals()['__zip_path']
-        del globals()['__pkg_path']
-        del globals()['__data_path']
-        del globals()['sublime_plugin']
-        del globals()['zipfile']
-        del globals()['sys']
-        del globals()['os']
-
+        __path__ = []
         __data = {}
         exec(__code, __data)
         globals().update(__data)
 
-        # Python 3.3 doesn't have __spec__
-        if hasattr(globals(), '__spec__'):
-            __spec__.loader = __loader__
-            __spec__.origin = __file__
-            __spec__.submodule_search_locations = __path__
-            __spec__.cached = None
-
-        # final cleanup
-        del globals()['__data']
-        del globals()['__code']
-        # out-dated internals
+        # cleanup temporary globals
         del globals()['__cached__']
-    """
+        del globals()['__code']
+        del globals()['__data']
+        del globals()['__data_path']
+        del globals()['__f']
+        del globals()['__file_path']
+        del globals()['__pkg_path']
+        del globals()['__zip_path']
+        del globals()['os']
+        del globals()['sublime_plugin']
+        del globals()['sys']
+        del globals()['zipfile']
+    '''
 
     injector_code = dedent(injector_code).lstrip()
     injector_code = injector_code.encode('utf-8')
@@ -249,3 +238,5 @@ def _install_injectors():
             pass
         except OSError as e:
             console_write('Unable to write injector to "%s" - %s' % (injector_path, e))
+
+_install_injectors()
