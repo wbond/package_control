@@ -21,6 +21,39 @@ class HttpCache:
         self.base_path = os.path.join(sys_path.pc_cache_dir(), 'http_cache')
         os.makedirs(self.base_path, exist_ok=True)
 
+    def age(self, key):
+        """
+        Return time since last modification.
+
+        :param key:
+            The key to fetch the cache for
+                """
+        try:
+            cache_file = os.path.join(self.base_path, key)
+            return time.time() - os.stat(cache_file).st_mtime
+        except FileNotFoundError:
+            return 2 ** 32
+
+    def touch(self, key):
+        """
+        Update modification time
+
+        :param key:
+            The key to fetch the cache for
+        """
+        now = time.time()
+
+        try:
+            cache_file = os.path.join(self.base_path, key)
+            os.utime(cache_file, (now, now))
+        except FileNotFoundError:
+            pass
+        try:
+            cache_file = os.path.join(self.base_path, key + '.info')
+            os.utime(cache_file, (now, now))
+        except FileNotFoundError:
+            pass
+
     def prune(self):
         """
         Removes all cache entries older than the TTL

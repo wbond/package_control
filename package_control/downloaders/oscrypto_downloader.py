@@ -90,7 +90,7 @@ class OscryptoDownloader(DecodingDownloader, LimitingDownloader, CachingDownload
             The string contents of the URL
         """
 
-        if prefer_cached:
+        if prefer_cached or self.is_cache_fresh(url):
             cached = self.retrieve_cached(url)
             if cached:
                 return cached

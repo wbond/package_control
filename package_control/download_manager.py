@@ -324,7 +324,13 @@ class DownloadManager:
         # assign global http cache storage driver
         if http_cache:
             self.settings['cache'] = http_cache
-            self.settings['cache_length'] = http_cache.ttl
+
+            # specify maximum time a local cache is considdered fresh
+            # currently uses values from 'cache_length' setting to keep in sync
+            # with in-memory key-value cache layer.
+            max_age = settings.get('cache_length')
+            if max_age is not None and 0 <= max_age <= 24 * 60 * 60:
+                self.settings['max_age'] = max_age
 
     def close(self):
         if self.downloader:

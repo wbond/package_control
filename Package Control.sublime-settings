@@ -116,7 +116,8 @@
 	"timeout": 30,
 
 	// The number of seconds to cache repository and package info for
-	"cache_length": 300,
+	// No HTTP requests are made for responses with up to this age.
+	"cache_length": 600,
 
 	// An HTTP proxy server to use for requests. Not normally used on Windows
 	// since the system proxy configuration is utilized via WinINet.

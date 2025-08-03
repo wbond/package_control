@@ -12,6 +12,32 @@ class CachingDownloader:
     and make conditional requests.
     """
 
+    def is_cache_fresh(self, url):
+        """
+        Determines if cache fresh.
+
+        :param url:
+            The url of the request
+        :param max_age:
+            The maximum age of a cache until it is considdered fresh.
+
+        :returns:
+            True if cache is still fresh.
+        """
+        cache = self.settings.get('cache')
+        if not cache:
+            return False
+
+        info_key = self.generate_key(url)
+        age = cache.age(info_key)
+        is_fresh = age < self.settings.get('max_age', 600)
+        if self.settings.get('debug'):
+            if is_fresh:
+                console_write('Cached repsonse for "%s" is fresh (%ds).', (url, age))
+            else:
+                console_write('Cached repsonse for "%s" is %ds old, needs validation.', (url, age))
+        return is_fresh
+
     def add_conditional_headers(self, url, headers):
         """
         Add `If-Modified-Since` and `If-None-Match` headers to a request if a
@@ -121,6 +147,7 @@ class CachingDownloader:
                         ''',
                         (url, cache.path(key))
                     )
+                cache.touch(key)
                 return cached_content
 
             # If we got a 304, but did not have the cached content
