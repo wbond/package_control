@@ -1,0 +1,41 @@
+Version 4.2.0 Release Notes
+===========================
+
+IMPORTANT NOTICE!
+
+  This is the last version with support for ST3.
+
+NEW DEFAULT CHANNEL
+
+  Package Control is using the following new default channel by default:
+
+        https://packages.sublimetext.io/channel.json
+
+  Any request to https://packagecontrol.io/channel_v3.json is redirected.
+
+  To discover packages online, visit
+
+        https://packages.sublimetext.io
+
+  New packages and libraries are published daily at 0:00 UTC.
+
+  Dedicated libraries channel is still available, but its content is merged
+  into new default channel and thus doesn't need to be specified explicitly.
+
+  This change is required as packagecontrol.io is more or less unmaintained
+  for several years, didn't even receive related Package Control 4 updates,
+  suffered various even long lasting outages and its infrastructure seems to
+  struggle with current amount of packages and data needed to be managed,
+  which results in packages frequently not being available for install or
+  upgrade. As current community doesn't have access to its infrastructure.
+
+  The new crawler works way more efficient and uses a more intelligent
+  caching strategy to reduce network bandwidth. Full downloads are only
+  made if packages or libraries have been added or modified really changed.
+
+  There's still some work to do to consolidate new infrastructure,
+  which this change is a first and important step, for.
+
+  The new crawler and website are maintained under:
+
+        https://github.com/packagecontrol
