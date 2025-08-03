@@ -9,4 +9,4 @@ class DiscoverPackagesCommand(sublime_plugin.ApplicationCommand):
     """
 
     def run(self):
-        sublime.run_command('open_url', {'url': 'https://packagecontrol.io/#discover'})
+        sublime.run_command('open_url', {'url': 'https://packages.sublimetext.io'})

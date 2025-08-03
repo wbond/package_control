@@ -3,14 +3,7 @@
 	// The repositories from these channels are placed in order after the
 	// repositories from the "repositories" setting
 	"channels": [
-		// channel_v4 for python 3.8 compatible libraries to enable plugins
-		// to migrate to python 3.8 until packagecontrol.io supports new scheme.
-		// Note: Must always be located before default channel in the list!
-		// Repo: https://github.com/packagecontrol/channel
-		"https://packagecontrol.github.io/channel/channel_v4.json",
-		// default channel for packages
-		// Repo: https://github.com/wbond/package_control_channel
-		"https://packagecontrol.io/channel_v3.json"
+		"https://packages.sublimetext.io/channel.json"
 	],
 
 	// A list of URLs that contain a packages JSON file or point to a
