@@ -139,6 +139,8 @@
 	"http_cache": true,
 
 	// Number of seconds to cache HTTP responses for, defaults to one week
+	// If a local cache entry hasn't been requested within this time span,
+	// it will be removed from storage.
 	"http_cache_length": 604800,
 
 	// User agent for HTTP requests. If "%s" is present, will be replaced

@@ -499,12 +499,10 @@ class DownloadManager:
             return self.downloader.download(url, error_message, timeout, 3, prefer_cached)
 
         except (RateLimitException) as e:
+            # rate limits are normally reset after an hour
+            # store rate limited domain for this time to avoid further requests
             rate_limited_domains.append(hostname)
-            set_cache(
-                'rate_limited_domains',
-                rate_limited_domains,
-                self.settings.get('cache_length', 604800)
-            )
+            set_cache('rate_limited_domains', rate_limited_domains, 3610)
 
             console_write(
                 '''
