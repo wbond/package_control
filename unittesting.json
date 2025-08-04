@@ -1,5 +1,6 @@
 {
 	"tests_dir": "package_control/tests",
 	"pattern": "test*.py",
+	"reload_package_on_testing": false,
 	"verbosity": 1
 }

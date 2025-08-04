@@ -198,7 +198,7 @@ def _install_injectors():
 
         __file__ = __file_path
         __package__ = 'package_control'
-        __path__ = []
+        __path__ = [__pkg_path]
         __data = {}
         exec(__code, __data)
         globals().update(__data)
