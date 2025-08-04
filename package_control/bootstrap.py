@@ -239,4 +239,5 @@ def _install_injectors():
         except OSError as e:
             console_write('Unable to write injector to "%s" - %s' % (injector_path, e))
 
+
 _install_injectors()
