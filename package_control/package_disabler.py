@@ -172,7 +172,7 @@ class PackageDisabler:
     def ignored_packages():
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            return load_list_setting(settings, IN_PROCESS_PACKAGES)
+            return load_list_setting(settings, IGNORED_PACKAGES)
 
     @staticmethod
     def in_process_packages():
@@ -235,7 +235,7 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored_at_start = load_list_setting(settings, IN_PROCESS_PACKAGES)
+            ignored_at_start = load_list_setting(settings, IGNORED_PACKAGES)
             ignored = set()
 
             pc_settings = sublime.load_settings(pc_settings_filename())
@@ -298,7 +298,7 @@ class PackageDisabler:
             save_list_setting(
                 settings,
                 preferences_filename(),
-                IN_PROCESS_PACKAGES,
+                IGNORED_PACKAGES,
                 ignored,
                 ignored_at_start
             )
@@ -329,7 +329,7 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored = load_list_setting(settings, IN_PROCESS_PACKAGES)
+            ignored = load_list_setting(settings, IGNORED_PACKAGES)
 
             pc_settings = sublime.load_settings(pc_settings_filename())
             in_process = load_list_setting(pc_settings, IN_PROCESS_PACKAGES)
@@ -382,7 +382,7 @@ class PackageDisabler:
                 save_list_setting(
                     settings,
                     preferences_filename(),
-                    IN_PROCESS_PACKAGES,
+                    IGNORED_PACKAGES,
                     ignored - affected,
                     ignored
                 )
