@@ -103,7 +103,7 @@ class Library:
         if python_version not in sys_path.lib_paths():
             raise ValueError(
                 "python_version must be one of {}, not {!r}".format(
-                    list(sys_path.lib_paths().keys()), python_version
+                    sys_path.python_versions(), python_version
                 )
             )
 

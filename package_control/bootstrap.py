@@ -68,7 +68,10 @@ def _migrate_dependencies():
     """
 
     # All old dependencies that are being migrated are treated as for 3.3
-    lib_path = sys_path.lib_paths()["3.3"]
+    # or the first available one, if "3.3" is disabled or does not exist.
+
+    python_version = sys_path.python_versions()[0]
+    lib_path = sys_path.lib_paths()[python_version]
 
     try:
         with zipfile.ZipFile(LOADER_PACKAGE_PATH, 'r') as z:
@@ -92,7 +95,7 @@ def _migrate_dependencies():
 
                     did = library.convert_dependency(
                         dep_path,
-                        "3.3",
+                        python_version,
                         name,
                         metadata['version'],
                         metadata['description'],
