@@ -160,7 +160,7 @@ def lib_paths():
             data = (
                 ("3.3", "python33", not settings.get('disable_plugin_host_3.3', False)),
                 ("3.8", "python38", True),
-                ("3.13", "python-3.13", True),
+                ("3.13", "python3.13", True),
             )
             lib_paths.cache = {
                 py_ver: os.path.join(__data_path, "Lib", py_dir)
