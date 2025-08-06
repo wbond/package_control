@@ -77,7 +77,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
         # Make sure we didn't accidentally ignore packages because something was
         # interrupted before it completed. Keep orphaned packages disabled which
         # are deferred to next start.
-        in_process = self.in_progress_packages() - removed_packages
+        in_process = self.in_process_packages() - removed_packages
         if in_process:
             console_write(
                 'Re-enabling %d package%s after a Package Control operation was interrupted...',
@@ -127,7 +127,7 @@ class PackageCleanup(threading.Thread, PackageTaskRunner):
 
         message = ''
 
-        in_process = self.in_progress_packages()
+        in_process = self.in_process_packages()
         if in_process:
             message += 'to complete pending package operations on "%s"' \
                 % '", "'.join(sorted(in_process, key=lambda s: s.lower()))

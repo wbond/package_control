@@ -23,6 +23,9 @@ from .settings import (
 from .show_error import show_error
 from .sys_path import pc_cache_dir
 
+IGNORED_PACKAGES = 'ignored_packages'
+IN_PROCESS_PACKAGES = 'in_process_packages'
+
 
 class PackageDisabler:
 
@@ -169,13 +172,13 @@ class PackageDisabler:
     def ignored_packages():
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            return load_list_setting(settings, 'ignored_packages')
+            return load_list_setting(settings, IN_PROCESS_PACKAGES)
 
     @staticmethod
-    def in_progress_packages():
+    def in_process_packages():
         with PackageDisabler.lock:
             settings = sublime.load_settings(pc_settings_filename())
-            return load_list_setting(settings, 'in_progress_packages')
+            return load_list_setting(settings, IN_PROCESS_PACKAGES)
 
     @staticmethod
     def get_version(package):
@@ -232,11 +235,11 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored_at_start = load_list_setting(settings, 'ignored_packages')
+            ignored_at_start = load_list_setting(settings, IN_PROCESS_PACKAGES)
             ignored = set()
 
             pc_settings = sublime.load_settings(pc_settings_filename())
-            in_process_at_start = load_list_setting(pc_settings, 'in_process_packages')
+            in_process_at_start = load_list_setting(pc_settings, IN_PROCESS_PACKAGES)
             in_process = set()
 
             need_restore = False
@@ -287,7 +290,7 @@ class PackageDisabler:
             save_list_setting(
                 pc_settings,
                 pc_settings_filename(),
-                'in_process_packages',
+                IN_PROCESS_PACKAGES,
                 in_process,
                 in_process_at_start
             )
@@ -295,7 +298,7 @@ class PackageDisabler:
             save_list_setting(
                 settings,
                 preferences_filename(),
-                'ignored_packages',
+                IN_PROCESS_PACKAGES,
                 ignored,
                 ignored_at_start
             )
@@ -326,10 +329,10 @@ class PackageDisabler:
 
         with PackageDisabler.lock:
             settings = sublime.load_settings(preferences_filename())
-            ignored = load_list_setting(settings, 'ignored_packages')
+            ignored = load_list_setting(settings, IN_PROCESS_PACKAGES)
 
             pc_settings = sublime.load_settings(pc_settings_filename())
-            in_process = load_list_setting(pc_settings, 'in_process_packages')
+            in_process = load_list_setting(pc_settings, IN_PROCESS_PACKAGES)
 
             need_restore = False
             affected = set()
@@ -372,14 +375,14 @@ class PackageDisabler:
                 save_list_setting(
                     pc_settings,
                     pc_settings_filename(),
-                    'in_process_packages',
+                    IN_PROCESS_PACKAGES,
                     in_process - affected
                 )
 
                 save_list_setting(
                     settings,
                     preferences_filename(),
-                    'ignored_packages',
+                    IN_PROCESS_PACKAGES,
                     ignored - affected,
                     ignored
                 )
