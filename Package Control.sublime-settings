@@ -89,6 +89,9 @@
 	// the Package Control.sublime-settings file was synced to this machine.
 	"remove_orphaned": true,
 
+	// Remove libraries of disabled or absent plugin_hosts at startup.
+	"remove_orphaned_enviornments": true,
+
 	// If incompatible packages should be automatically upgraded when ST starts.
 	// If ST is upgraded or moved to other computers, installed packages may
 	// become incompatible with either ST, OS or CPU architecture.

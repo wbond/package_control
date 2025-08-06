@@ -40,6 +40,9 @@ def clear_directory(directory, ignored_files=None, ignore_errors=True):
         If all of the files and folders were successfully deleted
     """
 
+    if not os.path.isdir(directory):
+        return True
+
     # make sure not to lock directory by current working directory
     if sys_path.longpath(os.path.normcase(os.getcwd())).startswith(os.path.normcase(directory)):
         os.chdir(os.path.dirname(directory))
