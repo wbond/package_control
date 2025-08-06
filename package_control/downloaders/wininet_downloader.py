@@ -191,7 +191,7 @@ class WinINetDownloader(DecodingDownloader, LimitingDownloader, CachingDownloade
             )
             changed_state_back = True
 
-        if self.debug:
+        if self.debug and self.scheme and self.hostname:
             s = '' if self.use_count == 1 else 's'
             console_write(
                 '''
