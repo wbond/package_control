@@ -49,11 +49,9 @@ from .settings import load_list_setting, pc_settings_filename, preferences_filen
 from .upgraders.git_upgrader import GitUpgrader
 from .upgraders.hg_upgrader import HgUpgrader
 
-DEFAULT_CHANNEL = 'https://packages.sublimetext.io/channel.json'
-DEFAULT_CHANNEL_ST3 = 'https://packages.sublimetext.io/channel_st3.json'
 
+DEFAULT_CHANNEL = 'https://packagecontrol.io/channel_v3.json'
 OLD_DEFAULT_CHANNELS = set([
-    'https://packagecontrol.io/channel_v3.json',
     'https://packagecontrol.io/channel.json',
     'https://sublime.wbond.net/channel.json',
     'https://sublime.wbond.net/repositories.json'
@@ -479,7 +477,6 @@ class PackageManager:
             A list of all available repositories
         """
 
-        is_st3 = int(sublime.version()) < 4000
         cache_ttl = self.settings.get('cache_length', 300)
         channels = self.settings.get('channels', [])
         # create copy to prevent backlash to settings object due to being extended
@@ -489,14 +486,16 @@ class PackageManager:
         found_default = False
         for channel in channels:
             channel = channel.strip()
-            if channel.lower() in OLD_DEFAULT_CHANNELS:
+
+            if re.match(r'https?://([^.]+\.)*package-control\.io', channel):
+                console_write('Removed malicious channel %s' % channel)
+                continue
+
+            if channel in OLD_DEFAULT_CHANNELS:
                 if found_default:
                     continue
                 found_default = True
                 channel = DEFAULT_CHANNEL
-
-            if is_st3 and channel.lower() == DEFAULT_CHANNEL:
-                channel = DEFAULT_CHANNEL_ST3
 
             # Caches various info from channels for performance
             cache_key = channel + '.repositories'

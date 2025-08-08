@@ -274,6 +274,11 @@ def update_url(url, debug):
     url = url.replace('://nodeload.github.com/', '://codeload.github.com/')
     url = re.sub(r'^(https://codeload\.github\.com/[^/#?]+/[^/#?]+/)zipball(/.*)$', '\\1zip\\2', url)
 
+    # Fix URLs from old versions of Package Control since we are going to
+    # remove all packages but Package Control from them to force upgrades
+    if url == 'https://sublime.wbond.net/repositories.json' or url == 'https://sublime.wbond.net/channel.json':
+        url = 'https://packagecontrol.io/channel_v3.json'
+
     if debug and url != original_url:
         console_write(
             '''
