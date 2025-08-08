@@ -25,6 +25,8 @@ from .cache import clear_cache, set_cache, get_cache, merge_cache_under_settings
 from .clear_directory import clear_directory, delete_directory
 from .clients.client_exception import ClientException
 from .console_write import console_write
+from .deps.packaging import tags as packaging_tags, version as packaging_version
+from .deps.packaging.utils import parse_wheel_filename
 from .download_manager import http_get
 from .downloaders.downloader_exception import DownloaderException
 from .package_io import (
@@ -736,6 +738,62 @@ class PackageManager:
         self._available_packages = packages
         self._available_libraries = libraries
 
+    def lookup_library(self, lib: library.Library):
+        available_library = self.list_available_libraries().get(lib.dist_name)
+        if available_library:
+            for release in available_library['releases']:
+                if lib.python_version in release['python_versions']:
+                    # first found one is latest available
+                    return {
+                        **available_library,
+                        'releases': [release]
+                    }
+
+        metadata = self._fetch_pypi_metadata(lib.name)
+        for release in self._find_newest_release(metadata):
+            return {
+                'name': lib.name,
+                'description': metadata.get('summary', ''),
+                'homepage': metadata.get('home_page') or metadata.get('project_url', ''),
+                'releases': [release]
+            }
+
+        return None
+
+    def _fetch_pypi_metadata(self, name):
+        url = f'https://pypi.org/pypi/{name}/json'
+        result = http_get(url, self.settings, f'Error downloading pypi information for {name}')
+        return json.loads(result.decode('utf-8'))
+
+    def _find_newest_release(self, metadata, newest=True):
+        compatible = list(packaging_tags.sys_tags())
+        versions_sorted = sorted(
+            metadata.get('releases', {}).keys(),
+            key=packaging_version.parse,
+            reverse=True
+        )
+        for ver_str in versions_sorted:
+            files = metadata.get('releases', {}).get(ver_str, [])
+            for file in files:
+                if file.get('yanked', False):
+                    continue
+
+                if file.get('packagetype') == 'bdist_wheel':
+                    # Check wheel compatibility
+                    parsed_filename = parse_wheel_filename(file['filename'])
+                    wheel_tags = parsed_filename[3]
+                    if any(tag in compatible for tag in wheel_tags):
+                        yield {
+                            'version': ver_str,
+                            'date': file['upload_time'].replace('T', ' ').rstrip('Z'),
+                            'filename': file['filename'],
+                            'sha256': file['digests']['sha256'],
+                            'url': file['url'],
+                        }
+                        if newest:
+                            # If we're only interested in the newest version, stop after the first match
+                            return
+
     def list_available_libraries(self):
         """
         Returns a master list of every available library from all sources that
@@ -1195,17 +1253,13 @@ class PackageManager:
                 )
             return True
 
+        available_library = self.lookup_library(lib)
         release = None
         available_version = None
 
-        available_library = self.list_available_libraries().get(lib.dist_name)
         if available_library:
-            for available_release in available_library['releases']:
-                if lib.python_version in available_release['python_versions']:
-                    # first found one is latest available
-                    release = available_release
-                    available_version = pep440.PEP440Version(release['version'])
-                    break
+            release = available_library['releases'][0]
+            available_version = pep440.PEP440Version(release['version'])
 
         if available_version is None:
             is_unavailable = lib.name in self.settings.get('unavailable_libraries', [])
