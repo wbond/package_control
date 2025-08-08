@@ -100,6 +100,11 @@ class PackageTaskRunner(PackageDisabler):
     Overwrite existing unmanaged packages.
     """
 
+    ENABLE = 'enable'
+    """
+    Enable existing managed packages.
+    """
+
     PULL = 'pull'
     """
     Upgrade unmanaged vcs packages.
@@ -658,7 +663,7 @@ class PackageTaskRunner(PackageDisabler):
 
         for task in tasks:
             action = task.action
-            if action == self.INSTALL or action == self.REINSTALL:
+            if action in (self.INSTALL, self.REINSTALL, self.ENABLE):
                 extra = ' v{}'.format(task.available_version)
             elif action == self.DOWNGRADE or action == self.UPGRADE:
                 extra = ' to v{} from v{}'.format(task.available_version, task.package_version)
@@ -688,7 +693,7 @@ class PackageTaskRunner(PackageDisabler):
                 annotation = ''
                 if task.last_modified:
                     try:
-                        # strip time as it is not of interrest and to be permissive with repos,
+                        # strip time as it is not of interest and to be permissive with repos,
                         # which don't provide full timestamp.
                         date, _ = task.last_modified.split(' ', 1)
                         annotation = datetime.strptime(date, '%Y-%m-%d').strftime('Updated on %a %b %d, %Y')
